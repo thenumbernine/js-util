@@ -427,6 +427,8 @@ GL = new function() {
 					//builtin procedural generation
 					var i = 0;
 					var data = new Uint8Array(width * height * 4);
+					format = gl.RGBA;
+					type = gl.UNSIGNED_BYTE;	//though floats would be nice ...
 					for (var y = 0; y < height; ++y) {
 						for (var x = 0; x < width; ++x) {
 							var c = args.data(x,y);
@@ -470,19 +472,27 @@ GL = new function() {
 		},
 		setData : function(args) {
 			if (args.data === undefined) return;
-		
-			if (typeof(args.data) == 'function') {
+	
+			gl.bindTexture(this.target, this.obj);
+			var isArray = typeof(args.data) == 'object';	//$.isArray(value);
+			if (isArray && args.data.length >= 6) {
+				var srcdata = args.data;
+				for (var side = 0; side < 6; ++side) {
+					args.data = srcdata[side];
+					args.target = gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+					Texture2D.prototype.setImage.call(this, args);
+				}
+			} else if (typeof(args.data) == 'function') {
 				var srcdata = args.data;
 				for (var side = 0; side < 6; ++side) {
 					args.data = function(x,y) {
 						return srcdata(x,y,side);
 					};
 					args.target = gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
-					gl.bindTexture(this.target, this.obj);
 					Texture2D.prototype.setImage.call(this, args);
-					gl.bindTexture(this.target, null);
 				}
 			}
+			gl.bindTexture(this.target, null);
 	
 		}
 	

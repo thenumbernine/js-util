@@ -191,3 +191,69 @@ function assertExists(obj,field,msg) {
 Math.clamp = function(x,min,max) {
 	return Math.max(min,Math.min(max,x));
 };
+
+/*
+args:
+	map : map, for key/value iterating
+	start : first iteration value, inclusive
+	end : last iteration value, exclusive
+	step : increment between values.  default is 1
+	timeout: how many ms to run each iteration before calling next interval
+	callback : callback per-iteration
+	done : function to call after iteration
+
+asyncfor(map, callback); calls callback(k,v);
+asyncfor(start, end, callback); calls callback(start <= i < end);
+asyncfor(start, end, step, callback); calls callback(start <= i < end);
+
+right now the end conditions are exact, so stepping isn't a good idea
+i might change that, but that might mean inclusive end bounds for most intuitive use
+
+implementing this the lazy way first: buffering everything then popping as we go
+*/
+function asyncfor(args) {
+	var buffer = [];
+	var callback = args.callback;
+	if (callback === undefined) {
+		throw 'expected callback';
+	}
+	var done = args.done;
+	var timeout = args.timeout !== undefined ? args.timeout : 0;
+	if (args.map !== undefined) {	
+		$.each(args.map, function(k,v) {
+			buffer.push([k,v]);
+		});
+	} else {
+		var start = args.start;
+		var end = args.end;
+		if (start === undefined || end === undefined) {
+			throw 'expected map or both start and end';
+		}
+		var step = args.step;
+		if (step === undefined) step = 1;
+		for (var i = start; i != end; i += step) {
+			buffer.push([i]);
+		}
+	}
+
+	var interval;
+	//makes use of function scope
+	var iterate = function() {
+		var starttime = Date.now();
+		var thistime;
+		do {
+			thistime = Date.now();
+			if (buffer.length == 0) {
+				clearInterval(interval);
+				if (done) done.apply(undefined, args);
+				return;
+			} else {
+				var args = buffer.splice(0, 1)[0];
+				callback.apply(undefined, args);
+			}
+		} while (thistime - starttime < timeout);
+	};
+	interval = setInterval(iterate, 1);
+	return interval;
+}
+
