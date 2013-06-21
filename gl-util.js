@@ -236,6 +236,9 @@ GL = new function() {
 		
 		gl.linkProgram(this.obj);
 		if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
+			//throw 'Link Error: '+gl.getShaderInfoLog(this.obj);	
+			console.log('vertex code: '+(args.vertexCode || $('#'+args.vertexCodeID).text()).replace(new RegExp('\n', 'g'), '\\n'));
+			console.log('fragment code: '+(args.fragmentCode || $('#'+args.fragmentCodeID).text()).replace(new RegExp('\n', 'g'), '\\n'));
 			throw "Could not initialize shaders";
 		}
 		
@@ -661,27 +664,12 @@ end
 			binding the associated color attachment at 'GL_COLOR_ATTACHMENT0+index[side]'
 			and running the callback for each, passing the side as a parameter
 		*/
-		drawToCallback : function(index, callback) {
+		drawToCallback : function(callback/*, index*/) {
 			this.bind();
-
 			this.check();
-
 			//no need to preserve the previous draw buffer in webgl
 			//simply binding a framebuffer changes the render target to it
-			//var drawbuffer = gl.getParameter(gl.DRAW_BUFFER);
-			if (typeof(index)=='number') {
-				gl.drawBuffer(gl.COLOR_ATTACHMENT0 + index);
-				callback();
-			} else if (typeof(index)=='object') {
-				// TODO - table attachments should probably make use of glDrawBuffers for multiple draw to's
-				// cubemaps should go through the tedious-but-readable chore of calling this method six times
-				$.each(index, function(side, colorAttachment) {
-					gl.drawBuffer(gl.COLOR_ATTACHMENT0 + colorAttachment);	//index[side])
-					callback(side);
-				});
-			}
-			//gl.drawBuffer(drawbuffer);
-
+			callback();	
 			this.unbind();
 		},
 
@@ -693,6 +681,11 @@ end
 				gl.viewport.apply(gl, args.viewport);
 			}
 			//if (args.resetProjection) throw 'not supported in webgl';
+			
+			//something to consider:
+			//the draw callback will most likely need a shader to bind its vertex attribute to
+			//the fbo itself doesn't necessarily need one, nor does it store uniforms
+			//so args.shader, args.uniforms, and args.texs might be moot here
 			if (args.shader) {
 				gl.useProgram(args.shader.obj);
 				if (args.uniforms) {
@@ -709,7 +702,7 @@ end
 			// no one seems to use fbo:draw... at all...
 			// so why preserve a function that no one uses?
 			// why not just merge it in here?
-			this.drawToCallback(args.colorAttachment || 0, args.callback/* || drawScreenQuad*/);
+			this.drawToCallback(args.callback/* || drawScreenQuad, args.colorAttachment || 0*/);
 			
 			if (args.texs) unbindTextureSet(args.texs);
 			if (args.shader) {
@@ -805,12 +798,12 @@ end
 	
 		this.children = [];
 		
-		if (args && args.parent) {
+		if (args && 'parent' in args) {
 			this.parent = args.parent;
 		} else {
 			this.parent = GL.root;
 		}
-		if (this.parent !== undefined) {
+		if (this.parent) {
 			this.parent.children.push(this);
 		}
 
@@ -848,7 +841,7 @@ end
 			//TODO make matrix stuff optional?
 			if (!this.static) {
 				mat4.fromRotationTranslation(this.localMat, this.angle, this.pos);
-				if (this.parent !== undefined) {
+				if (this.parent) {
 					mat4.multiply(this.mvMat, this.parent.targetMat, this.localMat);
 				} else {
 					mat4.multiply(this.mvMat, GL.mvMat, this.localMat);
