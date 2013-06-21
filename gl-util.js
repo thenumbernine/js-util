@@ -80,7 +80,7 @@ GL = new function() {
 		gl.clearColor(0,0,0,1);
 	
 		$.each(GL.oninit, function(k,v) {
-			v.call(GL);
+			v.call(GL, gl);
 		});
 
 		return gl;
@@ -566,12 +566,11 @@ GL = new function() {
 		useDepth : set to create a depth renderbuffer for this framebuffer.
 	*/
 	var Framebuffer = function(args) {
-		args = args || {};
-		this.width = args.width;
-		this.height = args.height;
+		this.width = args !== undefined ? args.width : undefined;
+		this.height = args !== undefined ? args.height : undefined;
 		this.obj = gl.createFramebuffer();
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
-		if (args.useDepth) {
+		if (args !== undefined && args.useDepth) {
 			this.depthObj = gl.createRenderbuffer();
 			gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthObj);
 			gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, this.width, this.height);
@@ -607,16 +606,19 @@ GL = new function() {
 			}
 		},
 		setColorAttachmentTex2D : function(index, tex, target, level) {
+			if (level === undefined) level = 0;
 			this.bind();
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target || gl.TEXTURE_2D, tex, level || 0);
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target || gl.TEXTURE_2D, tex, level);
 			this.unbind();
 		},
 		setColorAttachmentTexCubeMapSide : function(index, tex, side, level) {
-			this.bind();
 			if (side === undefined) side = index;
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_CUBE_MAP_POSITIVE_X + side, tex, level || 0);
+			if (level === undefined) level = 0;
+			this.bind();
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_CUBE_MAP_POSITIVE_X + side, tex, level);
 			this.unbind();
 		},
+/* WebGL only supports one color attachment at a time ...
 		setColorAttachmentTexCubeMap : function(tex, level) {
 			this.bind();
 			for (var i = 0; i < 6; i++) {
@@ -624,7 +626,8 @@ GL = new function() {
 			}
 			this.unbind();
 		},
-		/* only available by extension ...
+*/
+/* only available by extension ...
 function FBO:setColorAttachmentTex3D(index, tex, slice, target, level)
 	if not tonumber(slice) then error("unable to convert slice to number: " ..tostring(slice)) end
 	slice = tonumber(slice)
@@ -632,7 +635,7 @@ function FBO:setColorAttachmentTex3D(index, tex, slice, target, level)
 	gl.glFramebufferTexture3D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0 + index, target or gl.GL_TEXTURE_3D, tex, level or 0, slice)
 	self:unbind()
 end
-		*/
+*/
 		//general, object-based type-deducing
 		setColorAttachment : function(index, tex) {
 			if (typeof(tex) == 'object') {
@@ -689,21 +692,19 @@ end
 				var oldvp = gl.getParameter(gl.VIEWPORT);
 				gl.viewport.apply(gl, args.viewport);
 			}
-			if (args.resetProjection) throw 'not supported in webgl';
+			//if (args.resetProjection) throw 'not supported in webgl';
 			if (args.shader) {
 				gl.useProgram(args.shader.obj);
-			}
-			if (args.uniforms) {
 				if (args.uniforms) {
-					for (var k in args.uniforms) {
-						this.shader.setUniform(k, args.uniforms[k]);
+					if (args.uniforms) {
+						args.shader.setUniforms(args.uniforms);
 					}
 				}
 			}
 			if (args.texs) bindTextureSet(args.texs);
 
-			if (args.color) throw 'color not supported in webgl';
-			if (args.dest) throw 'depth not supported in webgl';
+			//if (args.color) throw 'color not supported in webgl';
+			//if (args.dest) throw 'multiple color attachments not supported in webgl';
 			
 			// no one seems to use fbo:draw... at all...
 			// so why preserve a function that no one uses?

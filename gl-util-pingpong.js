@@ -1,7 +1,5 @@
-if (!GL) throw "require gl-util.js before gl-util-font.js";
-GL.oninit.push(function() {
-	var gl = GL.gl;
-	
+if (!GL) throw "require gl-util.js before gl-util-pingpong.js";
+GL.oninit.push(function(gl) {
 	/*
 	args:
 		width : framebuffer width (optional)
@@ -15,7 +13,7 @@ GL.oninit.push(function() {
 		this.width = args.width;
 		this.height = args.height;
 		this.index = 0;	//history index
-		var numBuffers = args.numBuffers || 2;
+		var numBuffers = args.numBuffers !== undefined ? args.numBuffers : 2;
 		for (var i = 0; i < numBuffers; i++) {
 			var tex = new GL.Texture2D(args);
 			this.history.push(tex);
@@ -25,7 +23,7 @@ GL.oninit.push(function() {
 	};
 	PingPong.prototype = {
 		nextIndex : function(n) {
-			n = n || 1;
+			if (n === undefined) n = 1;
 			return (this.index + n) % this.history.length;
 		},
 		swap : function() {
@@ -63,5 +61,5 @@ end
 */
 
 	};
-	GL.PingPong = PingPong;
+	this.PingPong = PingPong;
 });
