@@ -148,7 +148,13 @@ GL = new function() {
 		this.obj = gl.createShader(this.shaderType);
 		gl.shaderSource(this.obj, code);
 		gl.compileShader(this.obj);
-		if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(this.obj);
+		if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) {
+			//stupid grep for tablet aLogCat
+			$.each(code.split('\n'), function(i,line) {
+				console.log(i+': '+line);
+			});
+			throw gl.getShaderInfoLog(this.obj);
+		}
 	}
 	this.Shader = Shader;
 
@@ -338,10 +344,12 @@ GL = new function() {
 		bind : function(unit) { 
 			if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
 			gl.bindTexture(this.target, this.obj);
+			return this;
 		},
 		unbind : function(unit) { 
 			if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
 			gl.bindTexture(this.target, null); 
+			return this;
 		},
 		/*
 		args:
@@ -365,6 +373,7 @@ GL = new function() {
 				}
 			}
 			this.setData(args);
+			return this;
 		},
 		//typically overwritten. default calls setImage if args.data is provided
 		setData : function(args) {
@@ -576,9 +585,9 @@ GL = new function() {
 		if (args !== undefined && args.useDepth) {
 			this.depthObj = gl.createRenderbuffer();
 			gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthObj);
-			gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, this.width, this.height);
-			gl.bindRenderbuffer(gl.RENDERBUFFER, 0);
+			gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
 			gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthObj);
+			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 		}
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	};

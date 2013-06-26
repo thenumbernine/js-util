@@ -124,8 +124,8 @@ the rest of args becomes the prototype
 if super is provided then super's prototype is merged into this class' prototype
 */
 function makeClass(args) {
-	var classname = ('classname' in args) ? args.classname : 'classObj';
 	if (args == undefined) args = {};
+	var classname = ('classname' in args) ? args.classname : 'classObj';
 	if (!('init' in args)) {
 		if ('super' in args) {
 			args.init = eval('var '+classname+' = function() { args.super.apply(this, arguments); }; '+classname+';');
@@ -195,6 +195,9 @@ function assertExists(obj,field,msg) {
 Math.clamp = function(x,min,max) {
 	return Math.max(min,Math.min(max,x));
 };
+
+Math.rad = function(deg) { return deg * Math.PI / 180; };
+Math.deg = function(rad) { return rad * 180 / Math.PI; };
 
 /*
 args:
