@@ -30,7 +30,7 @@ GL = new function() {
 
 	this.init = function(canvas, args) {
 		//get gl context
-		GL.canvas = canvas;
+		this.canvas = canvas;
 
 		var webGLNames = ['webgl', 'experimental-webgl'];
 		for (var i = 0; i < webGLNames.length; i++) {
@@ -53,7 +53,7 @@ GL = new function() {
 			gl = WebGLDebugUtils.makeDebugContext(gl);	
 		}
 
-		GL.gl = gl;	
+		this.gl = gl;	
 	
 		//gather extensions
 		gl.getExtension('OES_texture_float');
@@ -64,10 +64,10 @@ GL = new function() {
 
 		//now that gl exists, add all those function prototypes that needed it ...
 		
-		GL.VertexShader.prototype.shaderType = gl.VERTEX_SHADER;
-		GL.FragmentShader.prototype.shaderType = gl.FRAGMENT_SHADER;
-		GL.Texture2D.prototype.target = gl.TEXTURE_2D;
-		GL.TextureCube.prototype.target = gl.TEXTURE_CUBE_MAP;
+		this.VertexShader.prototype.shaderType = gl.VERTEX_SHADER;
+		this.FragmentShader.prototype.shaderType = gl.FRAGMENT_SHADER;
+		this.Texture2D.prototype.target = gl.TEXTURE_2D;
+		this.TextureCube.prototype.target = gl.TEXTURE_CUBE_MAP;
 
 		wrapMap = {
 			s : gl.TEXTURE_WRAP_S,
@@ -78,9 +78,10 @@ GL = new function() {
 		//remove these as seen fit
 	
 		gl.clearColor(0,0,0,1);
-	
-		$.each(GL.oninit, function(k,v) {
-			v.call(GL, gl);
+
+		var thiz = this;
+		$.each(this.oninit, function(k,v) {
+			v.call(thiz, gl);
 		});
 
 		return gl;
@@ -121,10 +122,13 @@ GL = new function() {
 	this.resize = function() {
 		gl.viewport(0, 0, GL.canvas.width, GL.canvas.height);
 		this.updateProjection();
+		
+		
 		//auto draw on resize?
 		//flag?
 		//or leave it up to the caller?
-		GL.draw();
+		if (this.dontDrawOnResize) return;
+		this.draw();
 	};
 
 	/*
@@ -183,33 +187,33 @@ GL = new function() {
 	var getUniformSettersForGLType = function(gltype) {
 		switch (gltype) {
 		case gl.FLOAT: 
-			return [gl.uniform1f, null];
+			return {arg:gl.uniform1f, count:1};
 		case gl.INT:
 		case gl.BOOL:
 		case gl.SAMPLER_2D:
 		case gl.SAMPLER_CUBE: 
-			return [gl.uniform1i, null];
+			return {arg:gl.uniform1i, count:1};
 		case gl.FLOAT_VEC2: 
-			return [gl.uniform2f, gl.uniform2fv];
+			return {arg:gl.uniform2f, count:2, vec:gl.uniform2fv};
 		case gl.INT_VEC2:
 		case gl.BOOL_VEC2:
-			return [gl.uniform2i, gl.uniform2iv];
+			return {arg:gl.uniform2i, count:2, vec:gl.uniform2iv};
 		case gl.FLOAT_VEC3: 
-			return [gl.uniform3f, gl.uniform3fv];
+			return {arg:gl.uniform3f, count:3, vec:gl.uniform3fv};
 		case gl.INT_VEC3:
 		case gl.BOOL_VEC3:
-			return [gl.uniform3i, gl.uniform3iv];
+			return {arg:gl.uniform3i, count:3, vec:gl.uniform3iv};
 		case gl.FLOAT_VEC4: 
-			return [gl.uniform4f, gl.uniform4fv];
+			return {arg:gl.uniform4f, count:4, vec:gl.uniform4fv};
 		case gl.INT_VEC4:
 		case gl.BOOL_VEC4:
-			return [gl.uniform4i, gl.uniform4iv];
+			return {arg:gl.uniform4i, count:4, vec:gl.uniform4iv};
 		case gl.FLOAT_MAT2:
-			return [null, null, gl.uniformMatrix2fv];
+			return {mat:gl.uniformMatrix2fv};
 		case gl.FLOAT_MAT3:
-			return [null, null, gl.uniformMatrix3fv];
+			return {mat:gl.uniformMatrix3fv};
 		case gl.FLOAT_MAT4:
-			return [null, null, gl.uniformMatrix4fv];
+			return {mat:gl.uniformMatrix4fv};
 		}
 	}
 
@@ -294,15 +298,18 @@ GL = new function() {
 			var setters = info.setters;
 			var loc = info.loc;
 			if (!isArray) {
-				var setter = setters[0];
+				var setter = setters.arg;
 				if (!setter) throw "failed to find non-array setter for uniform "+name;
 				Array.prototype.splice.call(arguments, 0, 1, loc);
+				if (arguments.length < setters.count) {
+					throw 'setUniform('+name+') needed '+setters.count+' arguments';
+				}
 				setter.apply(gl, arguments);
 			} else {
-				if (setters[1]) {
-					setters[1].call(gl, loc, value);
-				} else if (setters[2]) {
-					setters[2].call(gl, loc, false, value);
+				if (setters.vec) {
+					setters.vec.call(gl, loc, value);
+				} else if (setters.mat) {
+					setters.mat.call(gl, loc, false, value);
 				} else {
 					throw "failed to find array setter for uniform "+name;
 				}
@@ -516,24 +523,27 @@ GL = new function() {
 		data = either a Float32Array object, or a constructor for a Float32Array object
 		usage = gl.bufferData usage
 		dim = dimension / # elements per vector in data. only used for attrs and calculating length. default 3
+		keep = optional, set to retain data in .data
 	*/
 	var ArrayBuffer = function(args) {
 		if (args === undefined) args = {};
 		this.obj = gl.createBuffer();
 		this.dim = args.dim !== undefined ? args.dim : 3;
-		this.setData(args.data, args.usage || gl.STATIC_DRAW);
+		this.setData(args.data, args.usage || gl.STATIC_DRAW, args.keep);
 	};
 	ArrayBuffer.prototype = {
-		setData : function(data, usage) {
+		setData : function(data, usage, keep) {
 			if (data.constructor != Float32Array) {
 				data = new Float32Array(data);
 			}
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
 			gl.bufferData(gl.ARRAY_BUFFER, data, usage);
 			this.count = data.length / this.dim;
+			if (keep) this.data = data;
 		},
 		updateData : function(data, offset) {
 			if (offset === undefined) offset = 0;
+			if (data === undefined) data = this.data;
 			if (data.constructor != Float32Array) {
 				data = new Float32Array(data);
 			}
@@ -753,37 +763,78 @@ end
 	/*
 	args:
 		mode
-		count
+		count (optional).  required unless 'indexes' or 'vertexes' is provided.
+		indexes (optional).  specifies to use drawElements instead of drawArrays
+		vertexes (optional).  solely used for providing 'count' when 'indexes' and 'count' is not used.
+		offset (optional).
+	*/
+	var Geometry = function(args) {
+		this.mode = args.mode;
+		this.count = args.count;
+		this.indexes = args.indexes;
+		this.vertexes = args.vertexes;
+		this.offset = args.offset !== undefined ? args.offset : 0;
+	};
+	Geometry.prototype = {
+		draw : function(args) {
+			var mode = this.mode;
+			var count = this.count;
+			var offset = this.offset;
+			//allow overrides?  for which variables?
+			if (args !== undefined) {
+				if (args.mode !== undefined) mode = args.mode;
+				if (args.count !== undefined) count = args.count;
+				if (args.offset !== undefined) offset = args.offset;
+			}
+			if (this.indexes !== undefined) {
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
+				if (count === undefined) {
+					count = this.indexes.count;
+				}
+				gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
+			} else {
+				if (count === undefined && this.vertexes !== undefined) {
+					count = this.vertexes.count;
+				}
+				gl.drawArrays(mode, offset, count);
+			}
+	
+		}
+	};
+	this.Geometry = Geometry;
+
+	/*
+	args:
+		geometry
+			-or-
+		mode
+		count 	used to specify the number of elements to render.  not necessary if attrs.vertex is provided.
+		index	(optional) used to specify drawElements instead of drawArrays	
+		offset	offset into arrays to draw.  default: 0
+		
 		shader
 		uniforms
-		attrs
+		attrs:
+			vertex:	vertex buffer used to override 'count'
 		texs
-		blend
-		useDepth
-		vertexBuffer: override for count and attrs.vtx 
-		indexBuffer	
+
+		scenegraph / questionable vars:
+			blend
+			useDepth
+			static
+			parent
+			pos
+			angle
 	*/
 	var SceneObject = function(args) {
 		if (args) {
 			this.shader = args.shader;
 			this.uniforms = args.uniforms;
 			this.attrs = args.attrs;
-			this.mode = args.mode;
-			this.count = args.count;
 			this.texs = args.texs;
 			this.blend = args.blend;
 			this.useDepth = args.useDepth;
 
-			this.indexBuffer = args.indexBuffer;
-
-			this.vertexBuffer = args.vertexBuffer;
-			if (this.vertexBuffer !== undefined) {
-				if (this.attrs === undefined) {
-					this.attrs = {};
-				}
-				this.attrs.vtx = this.vertexBuffer;
-			}
-			
 			if ('static' in args) this.static = args.static;
 			if (args.pos) {
 				this.pos = vec3.clone(args.pos);
@@ -792,6 +843,18 @@ end
 			if (args.angle) {
 				this.angle = quat.clone(args.angle);
 				this.static = false;
+			}
+
+			if (args.geometry !== undefined) {
+				this.geometry = args.geometry;
+			} else {
+				this.geometry = new GL.Geometry({
+					mode : args.mode,
+					count : args.count,
+					offset : args.offset,
+					indexes : args.indexes,
+					vertexes : this.attrs !== undefined ? this.attrs.vertex : undefined
+				});
 			}
 		}
 
@@ -840,10 +903,13 @@ end
 	SceneObject.prototype = {
 		static : true,
 		/*
-		args:
+		args: all optional and all overrides for args of constructor and shader constructor
 			shader
 			uniforms
 			attrs
+			mode
+			count
+			offset
 		*/
 		draw : function(args) {
 		
@@ -885,20 +951,11 @@ end
 				if (this.attrs) shader.setAttrs(this.attrs);
 				if (args && args.attrs) shader.setAttrs(args.attrs);
 			}
-			
-			var count = this.count;
-			if (this.indexBuffer !== undefined) {
-				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer.obj);
-				if (count === undefined) {
-					count = this.indexBuffer.count;
-				}
-				gl.drawElements(this.mode, count, gl.UNSIGNED_SHORT, 0);
-			} else {
-				if (count === undefined && this.vertexBuffer !== undefined) {
-					count = this.vertexBuffer.count;
-				}
-				gl.drawArrays(this.mode, 0, count);
+		
+			if (this.geometry !== undefined) {
+				this.geometry.draw(args);
 			}
+			
 			//nest within state & shader binding so children can inherit
 			// they can also screw up state, mind you
 			for (var i = 0; i < this.children.length; i++) {

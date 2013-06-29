@@ -6,7 +6,7 @@ other libraries I'm using
 - jquery.cookie 1.3.1
 - mediawiki.api
 - purl 2.2.1
-- webgl-debug
+- webgl-debug.js
 
 considerations:
 	- draw object: to combine ArrayBuffers, optionally ElementArrayBuffers (to switch from drawArrays to drawElements), mode (geometry), optional offset, optional count, and optional vertex buffer source for implicit "count"

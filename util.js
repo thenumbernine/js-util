@@ -75,13 +75,19 @@ Array.prototype.clone = function() {
 	};
 
 	//http://stackoverflow.com/questions/476679/preloading-images-with-jquery
-	$.fn.preload = function(done, update) {
+	$.fn.preload = function(done, update, error) {
 		var checklist = this.toArray();
 		var totalLength = checklist.length;
 		this.each(function() {
-			$('<img>').attr({src:this}).load(function() {
+			$('<img>')
+			.attr({src:this})
+			.load(function() {
 				checklist.remove($(this).attr('src'));
-				if (update) update(1 - checklist.length / totalLength);
+				if (update) update(1 - checklist.length / totalLength, $(this).attr('src'));
+				if (checklist.length == 0 && done !== undefined) done();
+			}).error(function() {
+				checklist.remove($(this).attr('src'));
+				if (error) error(1 - checklist.length / totalLength, $(this).attr('src'));
 				if (checklist.length == 0 && done !== undefined) done();
 			});
 		});

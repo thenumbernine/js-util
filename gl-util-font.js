@@ -4,7 +4,40 @@ GL.oninit.push(function(gl) {
 	var fontSize = 16;
 	var charSubtexSize = 16;
 	var lettersPerSize = 16;
-	
+
+	var unitQuadVtxs = new Float32Array([0,0, 1,0, 0,1, 1,1]);
+	var quad = new GL.SceneObject({
+		attrs : {
+			vertex : new GL.ArrayBuffer({
+				dim : 2,
+				data : unitQuadVtxs
+			})
+		},
+		shader : new GL.ShaderProgram({
+			vertexCode :[
+'attribute vec2 vertex;',
+'varying vec2 vertexv;',
+'uniform mat4 projMat;',
+'uniform mat4 mvMat;',
+'void main() {',
+'	vertexv = vertex;',
+'	gl_Position = projMat * mvMat * vec4(vertex, 0., 1.);',
+'}'].join('\n'),
+			fragmentCode : [
+'precision mediump float;',
+'varying vec2 vertexv;',
+'uniform vec2 texMinLoc;',
+'uniform vec2 texMaxLoc;',
+'uniform sampler2D tex;',
+'void main() {',
+'	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);',
+'}'].join('\n'),
+			uniforms : {
+				tex : 0
+			}
+		})
+	});
+
 	//Font.init:
 	var Font = function() {
 		var c = $('<canvas>').get(0);
@@ -60,7 +93,7 @@ GL.oninit.push(function(gl) {
 	Font.prototype = {
 		draw : function(posX, posY, fontSizeX, fontSizeY, text, sizeX, sizeY, colorR, colorG, colorB, colorA, dontRender, singleLine) {
 			var cursorX = 0;
-		var cursorY = 0;
+			var cursorY = 0;
 			var maxx = 0;
 
 			var lastCharWasSpace = true;
@@ -117,7 +150,7 @@ GL.oninit.push(function(gl) {
 						var tx = charIndex%lettersPerSize;
 						var ty = (charIndex-tx)/lettersPerSize;
 
-						mat4.translate(letterMat, mvMat, [
+						mat4.translate(letterMat, GL.mvMat, [
 							(-startWidth) * fontSizeX + cursorX + posX,
 							cursorY + posY,
 							0]);
@@ -143,8 +176,7 @@ GL.oninit.push(function(gl) {
 			}
 			
 			if (!dontRender) {
-				gl.glEnd()
-				gl.glDisable(gl.GL_TEXTURE_2D)
+				gl.bindTexture(gl.TEXTURE_2D, null);
 			}
 			
 			return [maxx, cursorY + fontSizeY];
