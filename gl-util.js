@@ -247,8 +247,14 @@ GL = new function() {
 		gl.linkProgram(this.obj);
 		if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
 			//throw 'Link Error: '+gl.getShaderInfoLog(this.obj);	
-			console.log('vertex code: '+(args.vertexCode || $('#'+args.vertexCodeID).text()).replace(new RegExp('\n', 'g'), '\\n'));
-			console.log('fragment code: '+(args.fragmentCode || $('#'+args.fragmentCodeID).text()).replace(new RegExp('\n', 'g'), '\\n'));
+			console.log('vertex code:');
+			$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
+				console.log(i+': '+line);
+			});
+			console.log('fragment code:');
+			$.each((args.fragmentCode || $('#'+args.fragmentCodeID).text()).split('\n'), function(i,line) {
+				console.log(i+': '+line);
+			});
 			throw "Could not initialize shaders";
 		}
 		
@@ -370,7 +376,8 @@ GL = new function() {
 		*/
 		setArgs : function(args) {
 			var target = this.target;
-			if (args.flipY) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			if (args.flipY === true) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			else if (args.flipY === false) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 			if (!args.dontPremultiplyAlpha) gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
 			if (args.magFilter) gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, args.magFilter);
 			if (args.minFilter) gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, args.minFilter);
@@ -628,9 +635,11 @@ GL = new function() {
 			}
 		},
 		setColorAttachmentTex2D : function(index, tex, target, level) {
+			if (index === undefined) index = 0;
+			if (target === undefined) target = gl.TEXTURE_2D;
 			if (level === undefined) level = 0;
 			this.bind();
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target || gl.TEXTURE_2D, tex, level);
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
 			this.unbind();
 		},
 		setColorAttachmentTexCubeMapSide : function(index, tex, side, level) {
