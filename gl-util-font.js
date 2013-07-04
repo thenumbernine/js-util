@@ -1,42 +1,11 @@
 if (!GL) throw "require gl-util.js before gl-util-font.js";
 
 GL.oninit.push(function(gl) {
+	if (!this.unitQuad) throw "require gl-util-unitquad.js before gl-util-font.js";
+	
 	var fontSize = 16;
 	var charSubtexSize = 16;
 	var lettersPerSize = 16;
-
-	var unitQuadVtxs = new Float32Array([0,0, 1,0, 0,1, 1,1]);
-	var quad = new GL.SceneObject({
-		attrs : {
-			vertex : new GL.ArrayBuffer({
-				dim : 2,
-				data : unitQuadVtxs
-			})
-		},
-		shader : new GL.ShaderProgram({
-			vertexCode :[
-'attribute vec2 vertex;',
-'varying vec2 vertexv;',
-'uniform mat4 projMat;',
-'uniform mat4 mvMat;',
-'void main() {',
-'	vertexv = vertex;',
-'	gl_Position = projMat * mvMat * vec4(vertex, 0., 1.);',
-'}'].join('\n'),
-			fragmentCode : [
-'precision mediump float;',
-'varying vec2 vertexv;',
-'uniform vec2 texMinLoc;',
-'uniform vec2 texMaxLoc;',
-'uniform sampler2D tex;',
-'void main() {',
-'	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);',
-'}'].join('\n'),
-			uniforms : {
-				tex : 0
-			}
-		})
-	});
 
 	//Font.init:
 	var Font = function() {
@@ -159,15 +128,14 @@ GL.oninit.push(function(gl) {
 							.5,
 							1]);
 						mat4.translate(letterMat, letterMat, [.5, .5, 0]);
-						quad.draw({
+						GL.unitQuad.draw({
+							shader : this.shader,
 							uniforms : {
 								texMinLoc : [tx+startWidth/lettersPerSize, ty],
 								texMaxLoc : [tx+finishWidth/lettersPerSize, ty+1/lettersPerSize],
 								mvMat : letterMat
 							}
 						});
-						//gl.glUniform2f(texMinLoc, 0,0);
-						//gl.glUniform2f(texMaxLoc, 1,1);
 					}	
 					cursorX += width * fontSizeX;
 				}
@@ -181,6 +149,31 @@ GL.oninit.push(function(gl) {
 			
 			return [maxx, cursorY + fontSizeY];
 		}
+	};
+	Font.prototype = {
+		shader : new GL.ShaderProgram({
+			vertexCode : [
+'attribute vec2 vertex;',
+'varying vec2 vertexv;',
+'uniform mat4 projMat;',
+'uniform mat4 mvMat;',
+'void main() {',
+'	vertexv = vertex;',
+'	gl_Position = projMat * mvMat * vec4(vertex, 0., 1.);',
+'}'].join('\n'),
+			fragmentCode : [
+'precision mediump float;',
+'varying vec2 vertexv;',
+'uniform vec2 texMinLoc;',
+'uniform vec2 texMaxLoc;',
+'uniform sampler2D tex;',
+'void main() {',
+'	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);',
+'}'].join('\n'),
+			uniforms : {
+				tex : 0
+			}
+		})
 	};
 	this.Font = Font;
 });

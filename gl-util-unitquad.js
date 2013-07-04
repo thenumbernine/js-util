@@ -9,19 +9,20 @@ GL.oninit.push(function(gl) {
 	this.unitQuad = {};
 
 	//2D tri strip front facing unit quad
-	this.unitQuad.vertexes = new Float32Array([
+	this.unitQuadVertexes = new Float32Array([
 		0,0,
 		1,0,
 		0,1,
 		1,1
 	]);
 
-	this.unitQuad.sceneObj = new GL.SceneObject({
+	this.unitQuad = new GL.SceneObject({
 		mode : gl.TRIANGLE_STRIP,
 		attrs : {
 			vertex : new GL.ArrayBuffer({
 				dim : 2,
-				data : this.unitQuad.vertexes
+				data : this.unitQuadVertexes,
+				keep : true
 			})
 		},
 		parent : null,

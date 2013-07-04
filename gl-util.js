@@ -131,53 +131,51 @@ GL = new function() {
 		this.draw();
 	};
 
-	/*
-	args:
+	var Shader = makeClass({
+		/*
+		args:
 			use one of the following:
-		code = shader code
-		id = the id of the DOM element containing the shader code
-	*/
-	var Shader = function(args) {
-		var code;
-		if (args.id) {
-			var src = $('#'+args.id);
-			//assert(src.attr('type') == this.domType);
-			code = src.text();
-		}
-		if (args.code) {
-			code = args.code;
-		}
-		if (!code) throw "expected code or id";
+			code = shader code
+			id = the id of the DOM element containing the shader code
+		*/
+		init : function(args) {
+			var code;
+			if (args.id) {
+				var src = $('#'+args.id);
+				//assert(src.attr('type') == this.domType);
+				code = src.text();
+			}
+			if (args.code) {
+				code = args.code;
+			}
+			if (!code) throw "expected code or id";
 
-		this.obj = gl.createShader(this.shaderType);
-		gl.shaderSource(this.obj, code);
-		gl.compileShader(this.obj);
-		if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) {
-			//stupid grep for tablet aLogCat
-			$.each(code.split('\n'), function(i,line) {
-				console.log(i+': '+line);
-			});
-			throw gl.getShaderInfoLog(this.obj);
+			this.obj = gl.createShader(this.shaderType);
+			gl.shaderSource(this.obj, code);
+			gl.compileShader(this.obj);
+			if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) {
+				//stupid grep for tablet aLogCat
+				$.each(code.split('\n'), function(i,line) {
+					console.log(i+': '+line);
+				});
+				throw gl.getShaderInfoLog(this.obj);
+			}
 		}
-	}
+	});
 	this.Shader = Shader;
 
-	var VertexShader = function(args) {
-		Shader.call(this, args);
-	}
-	VertexShader.prototype = {
+	var VertexShader = makeClass({
+		super : Shader,
 		//shaderType provided upon init 
 		domType : 'x-shader/x-vertex'
-	};
+	});
 	this.VertexShader = VertexShader;
 
-	var FragmentShader = function(args) {
-		Shader.call(this, args);
-	}
-	FragmentShader.prototype = {
+	var FragmentShader = makeClass({
+		super : Shader,
 		//shaderType provided upon init 
 		domType : 'x-shader/x-fragment'
-	};
+	});
 	this.FragmentShader = FragmentShader;
 
 	//returns an array of gl.uniform* functions to use with this uniform: 
@@ -215,76 +213,76 @@ GL = new function() {
 		case gl.FLOAT_MAT4:
 			return {mat:gl.uniformMatrix4fv};
 		}
-	}
+	};
 
-	/*
-	args:
-			one of the following:
-		vertexShader = the VertexShader object to link with
-		vertexCode = the vertex shader code
-		vertexCodeID = the id of the DOM element containing the vertex shader code
-			one of the following:
-		fragmentShader = the VertexShader object to link with
-		fragmentCode = the fragment shader code
-		fragmentCodeID = the id of the DOM element containing the fragment shader code
-			and any of the following:
-		uniforms = a key-value map containing initial values of any uniforms
-	*/
-	var ShaderProgram = function(args) {
-		var thiz = this;
-		this.vertexShader = args.vertexShader;
-		if (!this.vertexShader) this.vertexShader = new VertexShader({id:args.vertexCodeID, code:args.vertexCode});
-		if (!this.vertexShader) throw "expected vertexShader or vertexCode or vertexCodeID";
+	var ShaderProgram = makeClass({
+		/*
+		args:
+				one of the following:
+			vertexShader = the VertexShader object to link with
+			vertexCode = the vertex shader code
+			vertexCodeID = the id of the DOM element containing the vertex shader code
+				one of the following:
+			fragmentShader = the VertexShader object to link with
+			fragmentCode = the fragment shader code
+			fragmentCodeID = the id of the DOM element containing the fragment shader code
+				and any of the following:
+			uniforms = a key-value map containing initial values of any uniforms
+		*/
+		init : function(args) {
+			var thiz = this;
+			this.vertexShader = args.vertexShader;
+			if (!this.vertexShader) this.vertexShader = new VertexShader({id:args.vertexCodeID, code:args.vertexCode});
+			if (!this.vertexShader) throw "expected vertexShader or vertexCode or vertexCodeID";
 
-		this.fragmentShader = args.fragmentShader;
-		if (!this.fragmentShader) this.fragmentShader = new FragmentShader({id:args.fragmentCodeID, code:args.fragmentCode});
-		if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
+			this.fragmentShader = args.fragmentShader;
+			if (!this.fragmentShader) this.fragmentShader = new FragmentShader({id:args.fragmentCodeID, code:args.fragmentCode});
+			if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
 
-		this.obj = gl.createProgram();
-		gl.attachShader(this.obj, this.vertexShader.obj);
-		gl.attachShader(this.obj, this.fragmentShader.obj);
-		
-		gl.linkProgram(this.obj);
-		if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
-			//throw 'Link Error: '+gl.getShaderInfoLog(this.obj);	
-			console.log('vertex code:');
-			$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
-				console.log(i+': '+line);
-			});
-			console.log('fragment code:');
-			$.each((args.fragmentCode || $('#'+args.fragmentCodeID).text()).split('\n'), function(i,line) {
-				console.log(i+': '+line);
-			});
-			throw "Could not initialize shaders";
-		}
-		
-		gl.useProgram(this.obj);
-		
-		this.uniforms = {};
-		var maxUniforms = gl.getProgramParameter(this.obj, gl.ACTIVE_UNIFORMS);
-		for (var i = 0; i < maxUniforms; i++) {
-			var info = gl.getActiveUniform(this.obj, i);
-			info.loc = gl.getUniformLocation(this.obj, info.name);
-			info.setters = getUniformSettersForGLType(info.type);
-			this.uniforms[i] = info;
-			this.uniforms[info.name] = info;
-		}
+			this.obj = gl.createProgram();
+			gl.attachShader(this.obj, this.vertexShader.obj);
+			gl.attachShader(this.obj, this.fragmentShader.obj);
+			
+			gl.linkProgram(this.obj);
+			if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
+				//throw 'Link Error: '+gl.getShaderInfoLog(this.obj);	
+				console.log('vertex code:');
+				$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
+					console.log(i+': '+line);
+				});
+				console.log('fragment code:');
+				$.each((args.fragmentCode || $('#'+args.fragmentCodeID).text()).split('\n'), function(i,line) {
+					console.log(i+': '+line);
+				});
+				throw "Could not initialize shaders";
+			}
+			
+			gl.useProgram(this.obj);
+			
+			this.uniforms = {};
+			var maxUniforms = gl.getProgramParameter(this.obj, gl.ACTIVE_UNIFORMS);
+			for (var i = 0; i < maxUniforms; i++) {
+				var info = gl.getActiveUniform(this.obj, i);
+				info.loc = gl.getUniformLocation(this.obj, info.name);
+				info.setters = getUniformSettersForGLType(info.type);
+				this.uniforms[i] = info;
+				this.uniforms[info.name] = info;
+			}
 
-		this.attrs = {};
-		var maxAttrs = gl.getProgramParameter(this.obj, gl.ACTIVE_ATTRIBUTES);
-		for (var i = 0; i < maxAttrs; i++) {
-			var info = gl.getActiveAttrib(this.obj, i);
-			info.loc = gl.getAttribLocation(this.obj, info.name);
-			this.attrs[info.name] = info;
-		}
+			this.attrs = {};
+			var maxAttrs = gl.getProgramParameter(this.obj, gl.ACTIVE_ATTRIBUTES);
+			for (var i = 0; i < maxAttrs; i++) {
+				var info = gl.getActiveAttrib(this.obj, i);
+				info.loc = gl.getAttribLocation(this.obj, info.name);
+				this.attrs[info.name] = info;
+			}
 
-		if (args.uniforms) {
-			this.setUniforms(args.uniforms);
-		}
+			if (args.uniforms) {
+				this.setUniforms(args.uniforms);
+			}
 
-		gl.useProgram(null);
-	}
-	ShaderProgram.prototype = {
+			gl.useProgram(null);
+		},
 		setUniforms : function(uniforms) {
 			for (k in uniforms) {
 				this.setUniform(k, uniforms[k]);
@@ -343,16 +341,16 @@ GL = new function() {
 			if (info === undefined) return;
 			gl.disableVertexAttribArray(info.loc);
 		}
-	};
+	});
 	this.ShaderProgram = ShaderProgram;
 
-	var Texture = function(args) {
-		this.obj = gl.createTexture();
-		gl.bindTexture(this.target, this.obj);
-		if (args !== undefined) this.setArgs(args);
-		gl.bindTexture(this.target, null);
-	};
-	Texture.prototype = {
+	var Texture = makeClass({
+		init : function(args) {
+			this.obj = gl.createTexture();
+			gl.bindTexture(this.target, this.obj);
+			if (args !== undefined) this.setArgs(args);
+			gl.bindTexture(this.target, null);
+		},
 		//target provided upon init 
 		bind : function(unit) { 
 			if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
@@ -395,14 +393,12 @@ GL = new function() {
 				this.setImage(args);
 			}
 		}
-	};
+	});
 	GL.Texture = Texture;
 
 	//args match Texture2D.setArgs
-	var Texture2D = function(args) {
-		Texture.call(this, args);
-	};
-	Texture2D.prototype = mergeInto({
+	var Texture2D = makeClass({
+		super : Texture,
 		setData : function(args) {
 			if (args.url) {
 				var image = new Image();
@@ -471,12 +467,11 @@ GL = new function() {
 				gl.generateMipmap(this.target);
 			}
 		}
-	}, Texture.prototype);
+	});
 	this.Texture2D = Texture2D;
-	var TextureCube = function(args) {
-		Texture.call(this, args);
-	};
-	TextureCube.prototype = mergeInto({
+	
+	var TextureCube = makeClass({
+		super : Texture,
 		setArgs : function(args) {
 			Texture.prototype.setArgs.call(this, args);
 			if (args.urls) {
@@ -521,24 +516,23 @@ GL = new function() {
 			gl.bindTexture(this.target, null);
 	
 		}
-	
-	}, Texture.prototype);
+	});
 	this.TextureCube = TextureCube;
 
-	/*
-	args:
-		data = either a Float32Array object, or a constructor for a Float32Array object
-		usage = gl.bufferData usage
-		dim = dimension / # elements per vector in data. only used for attrs and calculating length. default 3
-		keep = optional, set to retain data in .data
-	*/
-	var ArrayBuffer = function(args) {
-		if (args === undefined) args = {};
-		this.obj = gl.createBuffer();
-		this.dim = args.dim !== undefined ? args.dim : 3;
-		this.setData(args.data, args.usage || gl.STATIC_DRAW, args.keep);
-	};
-	ArrayBuffer.prototype = {
+	var ArrayBuffer = makeClass({
+		/*
+		args:
+			data = either a Float32Array object, or a constructor for a Float32Array object
+			usage = gl.bufferData usage
+			dim = dimension / # elements per vector in data. only used for attrs and calculating length. default 3
+			keep = optional, set to retain data in .data
+		*/
+		init : function(args) {
+			if (args === undefined) args = {};
+			this.obj = gl.createBuffer();
+			this.dim = args.dim !== undefined ? args.dim : 3;
+			this.setData(args.data, args.usage || gl.STATIC_DRAW, args.keep);
+		},
 		setData : function(data, usage, keep) {
 			if (data.constructor != Float32Array) {
 				data = new Float32Array(data);
@@ -557,18 +551,19 @@ GL = new function() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
 			gl.bufferSubData(gl.ARRAY_BUFFER, offset, data);
 		}
-	};
+	});
 	this.ArrayBuffer = ArrayBuffer;
-	/*
-	args:
-		data = either a Float32Array object, or a constructor for a Float32Array object
-	*/
-	var ElementArrayBuffer = function(args) {
-		if (args === undefined) args = {};
-		this.obj = gl.createBuffer();
-		this.setData(args.data, args.usage || gl.STATIC_DRAW);
-	};
-	ElementArrayBuffer.prototype = {
+	
+	var ElementArrayBuffer = makeClass({
+		/*
+		args:
+			data = either a Float32Array object, or a constructor for a Float32Array object
+		*/
+		init : function(args) {
+			if (args === undefined) args = {};
+			this.obj = gl.createBuffer();
+			this.setData(args.data, args.usage || gl.STATIC_DRAW);
+		},
 		setData : function(data, usage) {
 			if (data.constructor != Uint16Array) {
 				data = new Uint16Array(data);
@@ -585,30 +580,30 @@ GL = new function() {
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
 			gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset, data);
 		}
-	};
+	});
 	this.ElementArrayBuffer = ElementArrayBuffer;
 
-	/*
-	args:
-		width : framebuffer width.  required with depth.
-		height : framebuffer height.  required with depth.
-		useDepth : set to create a depth renderbuffer for this framebuffer.
-	*/
-	var Framebuffer = function(args) {
-		this.width = args !== undefined ? args.width : undefined;
-		this.height = args !== undefined ? args.height : undefined;
-		this.obj = gl.createFramebuffer();
-		gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
-		if (args !== undefined && args.useDepth) {
-			this.depthObj = gl.createRenderbuffer();
-			gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthObj);
-			gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-			gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthObj);
-			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-		}
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-	};
-	Framebuffer.prototype = {
+	var Framebuffer = makeClass({
+		/*
+		args:
+			width : framebuffer width.  required with depth.
+			height : framebuffer height.  required with depth.
+			useDepth : set to create a depth renderbuffer for this framebuffer.
+		*/
+		init : function(args) {
+			this.width = args !== undefined ? args.width : undefined;
+			this.height = args !== undefined ? args.height : undefined;
+			this.obj = gl.createFramebuffer();
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
+			if (args !== undefined && args.useDepth) {
+				this.depthObj = gl.createRenderbuffer();
+				gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthObj);
+				gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+				gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthObj);
+				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+			}
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		},
 		bind : function() {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
 		},
@@ -741,7 +736,7 @@ end
 				gl.viewport.apply(gl, oldvp);
 			}
 		}
-	};
+	});
 	this.Framebuffer = Framebuffer;
 
 	var bindTextureSet = function(texs) {
@@ -769,22 +764,22 @@ end
 		gl.activeTexture(gl.TEXTURE0);
 	};
 
-	/*
-	args:
-		mode
-		count (optional).  required unless 'indexes' or 'vertexes' is provided.
-		indexes (optional).  specifies to use drawElements instead of drawArrays
-		vertexes (optional).  solely used for providing 'count' when 'indexes' and 'count' is not used.
-		offset (optional).
-	*/
-	var Geometry = function(args) {
-		this.mode = args.mode;
-		this.count = args.count;
-		this.indexes = args.indexes;
-		this.vertexes = args.vertexes;
-		this.offset = args.offset !== undefined ? args.offset : 0;
-	};
-	Geometry.prototype = {
+	var Geometry = makeClass({
+		/*
+		args:
+			mode
+			count (optional).  required unless 'indexes' or 'vertexes' is provided.
+			indexes (optional).  specifies to use drawElements instead of drawArrays
+			vertexes (optional).  solely used for providing 'count' when 'indexes' and 'count' is not used.
+			offset (optional).
+		*/
+		init : function(args) {
+			this.mode = args.mode;
+			this.count = args.count;
+			this.indexes = args.indexes;
+			this.vertexes = args.vertexes;
+			this.offset = args.offset !== undefined ? args.offset : 0;
+		},
 		draw : function(args) {
 			var mode = this.mode;
 			var count = this.count;
@@ -809,107 +804,107 @@ end
 			}
 	
 		}
-	};
+	});
 	this.Geometry = Geometry;
 
-	/*
-	args:
-		geometry
-			-or-
-		mode
-		count 	used to specify the number of elements to render.  not necessary if attrs.vertex is provided.
-		index	(optional) used to specify drawElements instead of drawArrays	
-		offset	offset into arrays to draw.  default: 0
+	var SceneObject = makeClass({
+		/*
+		args:
+			geometry
+				-or-
+			mode
+			count 	used to specify the number of elements to render.  not necessary if attrs.vertex is provided.
+			index	(optional) used to specify drawElements instead of drawArrays	
+			offset	offset into arrays to draw.  default: 0
+			
+			shader
+			uniforms
+			attrs:
+				vertex:	vertex buffer used to override 'count'
+			texs
+
+			scenegraph / questionable vars:
+				blend
+				useDepth
+				static
+				parent
+				pos
+				angle
+		*/
+		init : function(args) {
+			if (args) {
+				this.shader = args.shader;
+				this.uniforms = args.uniforms;
+				this.attrs = args.attrs;
+				this.texs = args.texs;
+				this.blend = args.blend;
+				this.useDepth = args.useDepth;
+
+				if ('static' in args) this.static = args.static;
+				if (args.pos) {
+					this.pos = vec3.clone(args.pos);
+					this.static = false;
+				}
+				if (args.angle) {
+					this.angle = quat.clone(args.angle);
+					this.static = false;
+				}
+
+				if (args.geometry !== undefined) {
+					this.geometry = args.geometry;
+				} else {
+					this.geometry = new GL.Geometry({
+						mode : args.mode,
+						count : args.count,
+						offset : args.offset,
+						indexes : args.indexes,
+						vertexes : this.attrs !== undefined ? this.attrs.vertex : undefined
+					});
+				}
+			}
+
+			if (!this.static) {
+				if (this.pos === undefined) {
+					this.pos = vec3.create();
+				}
+
+				if (this.angle === undefined) {
+					this.angle = quat.create();
+				}
+			}
 		
-		shader
-		uniforms
-		attrs:
-			vertex:	vertex buffer used to override 'count'
-		texs
-
-		scenegraph / questionable vars:
-			blend
-			useDepth
-			static
-			parent
-			pos
-			angle
-	*/
-	var SceneObject = function(args) {
-		if (args) {
-			this.shader = args.shader;
-			this.uniforms = args.uniforms;
-			this.attrs = args.attrs;
-			this.texs = args.texs;
-			this.blend = args.blend;
-			this.useDepth = args.useDepth;
-
-			if ('static' in args) this.static = args.static;
-			if (args.pos) {
-				this.pos = vec3.clone(args.pos);
-				this.static = false;
-			}
-			if (args.angle) {
-				this.angle = quat.clone(args.angle);
-				this.static = false;
-			}
-
-			if (args.geometry !== undefined) {
-				this.geometry = args.geometry;
+			this.children = [];
+			
+			if (args && 'parent' in args) {
+				this.parent = args.parent;
 			} else {
-				this.geometry = new GL.Geometry({
-					mode : args.mode,
-					count : args.count,
-					offset : args.offset,
-					indexes : args.indexes,
-					vertexes : this.attrs !== undefined ? this.attrs.vertex : undefined
-				});
+				this.parent = GL.root;
 			}
-		}
-
-		if (!this.static) {
-			if (this.pos === undefined) {
-				this.pos = vec3.create();
-			}
-
-			if (this.angle === undefined) {
-				this.angle = quat.create();
-			}
-		}
-	
-		this.children = [];
-		
-		if (args && 'parent' in args) {
-			this.parent = args.parent;
-		} else {
-			this.parent = GL.root;
-		}
-		if (this.parent) {
-			this.parent.children.push(this);
-		}
-
-		if (this.static) {
 			if (this.parent) {
-				this.targetMat = this.parent.targetMat;
-			} else {
-				this.targetMat = GL.mvMat;
+				this.parent.children.push(this);
 			}
-		} else {
-			this.localMat = mat4.create();
-			this.mvMat = mat4.create();
-			this.targetMat = this.mvMat;
-		}
-	
-		//default uniforms?
-		// don't create & use these if no pos & angle is provided?
-		if (this.shader)
-		{
-			if (!this.uniforms) this.uniforms = {};
-			if (this.uniforms.projMat === undefined) this.uniforms.projMat = GL.projMat;
-			if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
-		}
-	}
-	SceneObject.prototype = {
+
+			if (this.static) {
+				if (this.parent) {
+					this.targetMat = this.parent.targetMat;
+				} else {
+					this.targetMat = GL.mvMat;
+				}
+			} else {
+				this.localMat = mat4.create();
+				this.mvMat = mat4.create();
+				this.targetMat = this.mvMat;
+			}
+		
+			//default uniforms?
+			// don't create & use these if no pos & angle is provided?
+			if (this.shader)
+			{
+				if (!this.uniforms) this.uniforms = {};
+				if (this.uniforms.projMat === undefined) this.uniforms.projMat = GL.projMat;
+				if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
+			}
+		},
 		static : true,
 		/*
 		args: all optional and all overrides for args of constructor and shader constructor
@@ -1003,7 +998,7 @@ end
 			this.parent = parent;
 			this.parent.children.splice(0, 0, this);
 		}
-	};
+	});
 	this.SceneObject = SceneObject;
 	this.root = new SceneObject();
 
