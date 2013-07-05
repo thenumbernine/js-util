@@ -7,59 +7,82 @@ GL.oninit.push(function(gl) {
 	var charSubtexSize = 16;
 	var lettersPerSize = 16;
 
-	//Font.init:
-	var Font = function() {
-		var c = $('<canvas>').get(0);
-		c.width = 256;
-		c.height = 256;
-		var c2d = c.getContext('2d');
-		c2d.font = fontSize+'px Monospace';
-		var yOffset = -.25;
-		for (var i = 0, y = 0; y < lettersPerSize; y++) {
-			for (var x = 0; x < lettersPerSize; x++, i++) {
-				var ch = String.fromCharCode(i);
-				c2d.fillRect(ch, x*fontSize, (y+1+yOffset)*fontSize);
+	var letterMat = mat4.create();
+	var Font = makeClass({
+		init : function() {
+			var c = $('<canvas>').get(0);
+			c.width = 256;
+			c.height = 256;
+			var c2d = c.getContext('2d');
+			c2d.font = fontSize+'px Monospace';
+			var yOffset = -.25;
+			for (var i = 0, y = 0; y < lettersPerSize; y++) {
+				for (var x = 0; x < lettersPerSize; x++, i++) {
+					var ch = String.fromCharCode(i);
+					c2d.fillRect(ch, x*fontSize, (y+1+yOffset)*fontSize);
+				}
 			}
-		}
 
-		this.widths = [];
-		for (var i = 0,y = 0; y < lettersPerSize; y++) {
-			for (var x = 0; x < lettersPerSize; x++, i++) {
-				var firstx = charSubtexSize;
-				var lastx = -1;
-				var data = c2d.getImageData(x, y, charSubtexSize, charSubtexSize);
-				for (var v = 0; v < charSubtexSize; v++) {
-					for (var u = 0; u < charSubtexSize; u++) {
-						var pixel = data[4*(x+lettersPerSize*y)];
-						if (pixel != 0) {
-							if (x < firstx) firstx = x;
-							if (x > lastx) lastx = x;
+			this.widths = [];
+			for (var i = 0,y = 0; y < lettersPerSize; y++) {
+				for (var x = 0; x < lettersPerSize; x++, i++) {
+					var firstx = charSubtexSize;
+					var lastx = -1;
+					var data = c2d.getImageData(x, y, charSubtexSize, charSubtexSize);
+					for (var v = 0; v < charSubtexSize; v++) {
+						for (var u = 0; u < charSubtexSize; u++) {
+							var pixel = data[4*(x+lettersPerSize*y)];
+							if (pixel != 0) {
+								if (x < firstx) firstx = x;
+								if (x > lastx) lastx = x;
+							}
 						}
 					}
+					firstx--;
+					lastx += 2;
+					if (firstx < 0) firstx = 0;
+					if (lastx > charSubtexSize) lastx = charSubtexSize;
+					if (lastx < firstx) {
+						firstx = 0;
+						lastx = charSubtexSize / 2;
+					}
+					this.widths[i] = {start:firstx/charSubtexSize, finish:lastx/charSubtexSize};
 				}
-				firstx--;
-				lastx += 2;
-				if (firstx < 0) firstx = 0;
-				if (lastx > charSubtexSize) lastx = charSubtexSize;
-				if (lastx < firstx) {
-					firstx = 0;
-					lastx = charSubtexSize / 2;
-				}
-				this.widths[i] = {start:firstx/charSubtexSize, finish:lastx/charSubtexSize};
 			}
-		}
 
-		this.tex = gl.createTexture();
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);	//gl.LINEAR_MIPMAP_LINEAR);
-		gl.bindTexture(gl.TEXTURE_2D, null);
-	};
-
-	var letterMat = mat4.create();
-	Font.prototype = {
+			this.tex = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, this.tex);
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);	//gl.LINEAR_MIPMAP_LINEAR);
+			gl.bindTexture(gl.TEXTURE_2D, null);
+		},
+		
+		shader : new GL.ShaderProgram({
+			vertexCode : [
+'attribute vec2 vertex;',
+'varying vec2 vertexv;',
+'uniform mat4 projMat;',
+'uniform mat4 mvMat;',
+'void main() {',
+'	vertexv = vertex;',
+'	gl_Position = projMat * mvMat * vec4(vertex, 0., 1.);',
+'}'].join('\n'),
+			fragmentCode : [
+'precision mediump float;',
+'varying vec2 vertexv;',
+'uniform vec2 texMinLoc;',
+'uniform vec2 texMaxLoc;',
+'uniform sampler2D tex;',
+'void main() {',
+'	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);',
+'}'].join('\n'),
+			uniforms : {
+				tex : 0
+			}
+		}),
+		
 		draw : function(posX, posY, fontSizeX, fontSizeY, text, sizeX, sizeY, colorR, colorG, colorB, colorA, dontRender, singleLine) {
 			var cursorX = 0;
 			var cursorY = 0;
@@ -149,31 +172,6 @@ GL.oninit.push(function(gl) {
 			
 			return [maxx, cursorY + fontSizeY];
 		}
-	};
-	Font.prototype = {
-		shader : new GL.ShaderProgram({
-			vertexCode : [
-'attribute vec2 vertex;',
-'varying vec2 vertexv;',
-'uniform mat4 projMat;',
-'uniform mat4 mvMat;',
-'void main() {',
-'	vertexv = vertex;',
-'	gl_Position = projMat * mvMat * vec4(vertex, 0., 1.);',
-'}'].join('\n'),
-			fragmentCode : [
-'precision mediump float;',
-'varying vec2 vertexv;',
-'uniform vec2 texMinLoc;',
-'uniform vec2 texMaxLoc;',
-'uniform sampler2D tex;',
-'void main() {',
-'	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);',
-'}'].join('\n'),
-			uniforms : {
-				tex : 0
-			}
-		})
-	};
+	});
 	this.Font = Font;
 });
