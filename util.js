@@ -82,13 +82,22 @@ Array.prototype.clone = function() {
 			$('<img>')
 			.attr({src:this})
 			.load(function() {
+				//console.log('checklist was',checklist);
 				checklist.remove($(this).attr('src'));
+				//console.log('checklist is',checklist);
+				//this is calling done twice ?
 				if (update) update(1 - checklist.length / totalLength, $(this).attr('src'));
-				if (checklist.length == 0 && done !== undefined) done();
+				if (checklist.length == 0 && done !== undefined) {
+					console.log('empty list load calling done');
+					done();
+				}
 			}).error(function() {
 				checklist.remove($(this).attr('src'));
 				if (error) error(1 - checklist.length / totalLength, $(this).attr('src'));
-				if (checklist.length == 0 && done !== undefined) done();
+				if (checklist.length == 0 && done !== undefined) {
+					console.log('empty list error calling done');
+					done();
+				}
 			});
 		});
 	};

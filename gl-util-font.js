@@ -31,10 +31,10 @@ GL.oninit.push(function(gl) {
 					var data = c2d.getImageData(x, y, charSubtexSize, charSubtexSize);
 					for (var v = 0; v < charSubtexSize; v++) {
 						for (var u = 0; u < charSubtexSize; u++) {
-							var pixel = data[4*(x+lettersPerSize*y)];
+							var pixel = data[4*(u+charSubtexSize*v)];
 							if (pixel != 0) {
-								if (x < firstx) firstx = x;
-								if (x > lastx) lastx = x;
+								if (u < firstx) firstx = u;
+								if (u > lastx) lastx = u;
 							}
 						}
 					}
@@ -46,28 +46,39 @@ GL.oninit.push(function(gl) {
 						firstx = 0;
 						lastx = charSubtexSize / 2;
 					}
-					this.widths[i] = {start:firstx/charSubtexSize, finish:lastx/charSubtexSize};
+					this.widths[i] = {
+						start:firstx/charSubtexSize,
+						finish:lastx/charSubtexSize
+					};
+					console.log('i '+i+' char '+String.fromCharCode(i)+' start '+firstx+' finish '+lastx);
 				}
 			}
 
-			this.tex = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, this.tex);
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);	//gl.LINEAR_MIPMAP_LINEAR);
-			gl.bindTexture(gl.TEXTURE_2D, null);
+			this.tex = new GL.Texture2D({
+				flipY : true,
+				data : c,
+				minFilter : gl.NEAREST,
+				magFilter : gl.LINEAR
+			});
 		},
-		
 		shader : new GL.ShaderProgram({
 			vertexCode : [
 'attribute vec2 vertex;',
 'varying vec2 vertexv;',
-'uniform mat4 projMat;',
-'uniform mat4 mvMat;',
+'uniform vec4 ortho;',	//xyzw = xmin, xmax, ymin, ymax
+'uniform vec2 offset;',
+'uniform vec2 scale;',
 'void main() {',
 '	vertexv = vertex;',
-'	gl_Position = projMat * mvMat * vec4(vertex, 0., 1.);',
+'	vec2 vtx = vertex;',
+'	vtx += offset;',
+'	vtx *= scale;',
+'	vtx -= .5;',
+'	vtx -= ortho.xz;',
+'	vtx /= ortho.yw - ortho.xz;',
+'	vtx *= 2.;',
+'	vtx -= 1.;',
+'	gl_Position = vec4(vtx, 0., 1.);',
 '}'].join('\n'),
 			fragmentCode : [
 'precision mediump float;',
@@ -82,12 +93,19 @@ GL.oninit.push(function(gl) {
 				tex : 0
 			}
 		}),
-		
+		ortho : function(xmin, xmax, ymin, ymax) {
+			gl.useProgram(this.shader.obj);
+			gl.uniform4f(this.shader.uniforms.ortho.loc, xmin, xmax, ymin, ymax);
+			gl.useProgram(null);
+		},
 		draw : function(posX, posY, fontSizeX, fontSizeY, text, sizeX, sizeY, colorR, colorG, colorB, colorA, dontRender, singleLine) {
 			var cursorX = 0;
 			var cursorY = 0;
 			var maxx = 0;
 
+			if (!dontRender) {
+				gl.bindTexture(gl.TEXTURE_2D, this.tex.obj);
+			}
 			var lastCharWasSpace = true;
 			var a = 0;
 			while (a < text.length) {	
@@ -142,21 +160,19 @@ GL.oninit.push(function(gl) {
 						var tx = charIndex%lettersPerSize;
 						var ty = (charIndex-tx)/lettersPerSize;
 
-						mat4.translate(letterMat, GL.mvMat, [
-							(-startWidth) * fontSizeX + cursorX + posX,
-							cursorY + posY,
-							0]);
-						mat4.scale(letterMat, letterMat, [
-							(finishWidth - startWidth) * .5,
-							.5,
-							1]);
-						mat4.translate(letterMat, letterMat, [.5, .5, 0]);
 						GL.unitQuad.draw({
 							shader : this.shader,
 							uniforms : {
 								texMinLoc : [tx+startWidth/lettersPerSize, ty],
 								texMaxLoc : [tx+finishWidth/lettersPerSize, ty+1/lettersPerSize],
-								mvMat : letterMat
+								offset : [
+									(-startWidth) * fontSizeX + cursorX + posX,
+									cursorY + posY
+								],
+								scale : [
+									(finishWidth - startWidth) * .5,
+									.5,
+								]
 							}
 						});
 					}	

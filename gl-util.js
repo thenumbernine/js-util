@@ -440,6 +440,7 @@ GL = new function() {
 			var height = args.height;
 			var border = args.border !== undefined ? args.border : 0;
 			//NOTICE this method only works for ArrayBufferView.  maybe that should be my test
+			//console.log('setting image target',target,'level',level,'internalFormat',internalFormat,'width',width,'height',height,'border',border,'format',format,'type',type,'data',args.data);
 			if (width === undefined && height === undefined) {
 				gl.texImage2D(target, level, internalFormat, format, type, args.data);
 			} else {
@@ -472,20 +473,39 @@ GL = new function() {
 	
 	var TextureCube = makeClass({
 		super : Texture,
+		getTargetForSide : function(side) {	//static
+			return gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+		},
 		setArgs : function(args) {
 			Texture.prototype.setArgs.call(this, args);
 			if (args.urls) {
+				var loadedCount = 0;
+				//store 'generateMipmap' up front.  we can't set it per-loaded-face, we have to as a whole.
+				var generateMipmap = args.generateMipmap;
+				args.generateMipmap = undefined;
 				var thiz = this;
 				$.each(args.urls, function(side,url) {
 					var image = new Image();
 					image.onload = function() {
 						args.data = image;
-						args.target = gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+						args.target = thiz.getTargetForSide(side);
 						gl.bindTexture(thiz.target, thiz.obj);
 						Texture2D.prototype.setImage.call(thiz, args);
 						gl.bindTexture(thiz.target, null);
 					
-						if (args.onload) args.onload.call(thiz,side,url);
+						if (args.onload) args.onload.call(thiz,side,url,image);
+					
+						//provide an overall all-sides-loaded callback
+						//TODO make it generic?  add 'done' and 'onload' to Texture2D too?
+						loadedCount++;
+						if (loadedCount == 6) {
+							if (generateMipmap) {
+								gl.bindTexture(gl.TEXTURE_CUBE_MAP, thiz.obj);
+								gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+								gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+							}
+							if (args.done) args.done.call(thiz);
+						}
 					};
 					image.src = url;
 				});
@@ -493,14 +513,20 @@ GL = new function() {
 		},
 		setData : function(args) {
 			if (args.data === undefined) return;
+			
+			//store 'generateMipmap' up front.  we can't set it per-loaded-face, we have to as a whole.
+			var generateMipmap = args.generateMipmap;
+			args.generateMipmap = undefined;
 	
 			gl.bindTexture(this.target, this.obj);
 			var isArray = typeof(args.data) == 'object';	//$.isArray(value);
+			//console.log('isArray?',isArray);
 			if (isArray && args.data.length >= 6) {
 				var srcdata = args.data;
 				for (var side = 0; side < 6; ++side) {
 					args.data = srcdata[side];
-					args.target = gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+					args.target = this.getTargetForSide(side);
+					//console.log('setting target',args.target,' to data ',args.data);
 					Texture2D.prototype.setImage.call(this, args);
 				}
 			} else if (typeof(args.data) == 'function') {
@@ -509,10 +535,16 @@ GL = new function() {
 					args.data = function(x,y) {
 						return srcdata(x,y,side);
 					};
-					args.target = gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+					args.target = this.getTargetForSide(side);
 					Texture2D.prototype.setImage.call(this, args);
 				}
 			}
+			
+			if (generateMipmap) {
+				//console.log('generating mipmaps of data-driven cubemap');
+				gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+			}
+			
 			gl.bindTexture(this.target, null);
 	
 		}
@@ -641,14 +673,14 @@ GL = new function() {
 			if (side === undefined) side = index;
 			if (level === undefined) level = 0;
 			this.bind();
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_CUBE_MAP_POSITIVE_X + side, tex, level);
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, GL.TextureCube.prototype.getTargetForSide(side), tex, level);
 			this.unbind();
 		},
 /* WebGL only supports one color attachment at a time ...
 		setColorAttachmentTexCubeMap : function(tex, level) {
 			this.bind();
 			for (var i = 0; i < 6; i++) {
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, tex, level || 0);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, GL.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
 			}
 			this.unbind();
 		},
