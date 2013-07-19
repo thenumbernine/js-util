@@ -279,3 +279,94 @@ function asyncfor(args) {
 	return interval;
 }
 
+FileSetLoader = makeClass({
+	
+	/*
+	args:
+		files : array of string
+		onload(filename) : (optional) once one file is done
+		done : (optional) once they're all done
+	
+	produces:
+		this.files : a copy of the args.files
+		this.div : div containing the label and progress bar
+		this.loading : label
+		this.progress : progress bar
+		this.results : results from loaded files
+	*/
+	init : function(args) {
+		var thiz = this;
+		
+		this.files = args.files.clone();
+		
+		this.div = $('<div>', {
+			css : {
+				margin : 'auto'
+			}
+		}).prependTo(document.body);
+		this.loading = $('<span>', {text:'Loading...'}).appendTo(this.div);
+		$('<br>').appendTo(this.div);
+		this.progress = $('<progress>').attr('max', '0').attr('value', '0').appendTo(this.div);
+
+		this.results = [];
+		var totals = [];
+		var loadeds = [];
+		var dones = [];
+		for (var i = 0; i < this.files.length; ++i) {
+			totals[i] = 0;
+			loadeds[i] = 0;
+			dones[i] = false;
+			this.results[i] = null;
+		}
+		var updateProgress = function() {
+			var loaded = 0;
+			var total = 0;
+			for (var i = 0; i < thiz.files.length; ++i) {
+				loaded += loadeds[i];
+				total += totals[i];
+			}
+			thiz.progress.attr('max', total);
+			thiz.progress.attr('value', loaded);
+		};
+		var updateDones = function() {
+			for (var i = 0; i < thiz.files.length; ++i) {
+				if (!dones[i]) return;
+			}
+			thiz.div.remove();
+			if (args.done) args.done.call(thiz);
+		};
+		$.each(this.files, function(i,file) {
+			var xhr = new XMLHttpRequest();
+			
+			xhr.open('GET', file, true);
+			
+			xhr.onprogress = function(e) {
+				if (e.total) {
+					totals[i] = e.total;
+					loadeds[i] = e.loaded;
+				} else {
+					totals[i] = 0;
+					loadeds[i] = 0;
+				}
+				updateProgress();
+			};
+			
+			xhr.onload = function(e) {
+				console.log('file '+file);
+				console.log('size '+this.responseText.length);
+				console.log('contents');
+				console.log(this.responseText);
+				loadeds[i] = totals[i];
+				thiz.results[i] = this.responseText;
+				updateProgress();
+				dones[i] = true;
+				if (args.onload) args.onload.call(thiz, file, this.responseText);
+				updateDones();
+			};
+
+			xhr.send();
+		});
+	}
+});
+
+

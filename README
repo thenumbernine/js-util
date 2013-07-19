@@ -7,6 +7,7 @@ other libraries I'm using
 - mediawiki.api
 - purl 2.2.1
 - webgl-debug.js
+- lua.vm.js
 
 considerations:
 	- draw object: to combine ArrayBuffers, optionally ElementArrayBuffers (to switch from drawArrays to drawElements), mode (geometry), optional offset, optional count, and optional vertex buffer source for implicit "count"
