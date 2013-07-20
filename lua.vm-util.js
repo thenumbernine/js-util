@@ -2,6 +2,67 @@
 // I want this to turn into an in-page filesystem + lua interpreter
 //assumes lua.vm.js and util.js are already loaded 
 
+
+var luaVmPackageInfos = {
+	ext : {
+		files : [
+			{url:'/lua-ext/class.lua', dest:'ext/class.lua'},
+			{url:'/lua-ext/init.lua', dest:'ext/init.lua'},
+			{url:'/lua-ext/io.lua', dest:'ext/io.lua'},
+			{url:'/lua-ext/math.lua', dest:'ext/math.lua'},
+			{url:'/lua-ext/serialize.lua', dest:'ext/serialize.lua'},
+			{url:'/lua-ext/string.lua', dest:'ext/string.lua'},
+			{url:'/lua-ext/table.lua', dest:'ext/table.lua'}
+		]
+	},
+	symmath : {
+		files : [
+			{url:'/symbolic-lua/src/init.lua', dest:'symmath/init.lua'},
+			{url:'/symbolic-lua/src/symmath.lua', dest:'symmath/symmath.lua'},
+			{url:'/symbolic-lua/src/tensor.lua', dest:'symmath/tensor.lua'},
+			{url:'/symbolic-lua/src/notebook.lua', dest:'symmath/notebook.lua'}
+		],
+		tests : [
+			{url:'/symbolic-lua/src/tests/polar_geodesic.lua', dest:'symmath/tests/polar_geodesic.lua',  name:'Polar Geodesic'},
+			{url:'/symbolic-lua/src/tests/schwarzschild.lua', dest:'symmath/tests/schwarzschild.lua',  name:'Schwarzschild Geodesic'},
+			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua',  name:'Alcubierre Warp Bubble Geodesic'},
+			{url:'/symbolic-lua/src/tests/metric.lua', dest:'symmath/tests/metric.lua',  name:'Metric Test'},
+			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua',  name:'Gravitation by M.T.W. Ch.16 Prob.1'},
+		 	{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua',  name:'Validation Test (broken)'}
+		]
+	},
+	tensor : {
+		files : [
+			{url:'/tensor-calculator/src/tensor.lua', dest:'tensor/tensor.lua'},
+			{url:'/tensor-calculator/src/init.lua', dest:'tensor/init.lua'},
+			{url:'/tensor-calculator/src/delta.lua', dest:'tensor/delta.lua'},
+			{url:'/tensor-calculator/src/notebook.lua', dest:'tensor/notebook.lua'},
+			{url:'/tensor-calculator/src/matrix.lua', dest:'tensor/matrix.lua'}
+		],
+		tests : [
+			{url:'/tensor-calculator/src/tests/metric.lua', dest:'tensor/tests/metric.lua', name:'Metric'},
+			{url:'/tensor-calculator/src/tests/delta.lua', dest:'tensor/tests/delta.lua', name:'Kronecher Delta'},
+			{url:'/tensor-calculator/src/tests/test.lua', dest:'tensor/tests/test.lua', name:'Test'},
+			{url:'/tensor-calculator/src/tests/inverse.lua', dest:'tensor/tests/inverse.lua', name:'Inverse Matrix'}
+		]
+	},
+	htmlparser : {
+		files : [
+			{url:'/html-beautifier/src/init.lua', dest:'htmlparser/init.lua'},
+			{url:'/html-beautifier/src/htmlparser.lua', dest:'htmlparser/htmlparser.lua'},
+			{url:'/html-beautifier/src/common.lua', dest:'htmlparser/common.lua'},
+			{url:'/html-beautifier/src/xpath.lua', dest:'htmlparser/xpath.lua'}
+		],
+		tests : [
+			{url:'/html-beautifier/src/tests/dominion.lua', dest:'htmlparser/tests/dominion.lua', name:'Dominion Card List'},
+			{url:'/html-beautifier/src/tests/exportITunesPlaylist.lua', dest:'htmlparser/tests/exportITunesPlaylist.lua', name:'Export iTunes Playlist'},
+			{url:'/html-beautifier/src/tests/prettyprint.lua', dest:'htmlparser/tests/prettyprint.lua', name:'Pretty Printer'},
+			{url:'/html-beautifier/src/tests/yqlkey.lua', dest:'htmlparser/tests/yqlkey.lua', name:'Yahoo Finance Quotes'}
+		]
+	}
+};
+
+
 /*
 args:
 	files : files
@@ -13,15 +74,17 @@ args:
 function executeLuaVMFileSet(args) {
 	var files = args.files.clone();
 	files.splice(0, 0, '/js/lua.vm.js');
+	if (args.packages) {
+		$.each(args.packages, function(_,packageName) {
+			var packageContent = luaVmPackageInfos[packageName];
+			if (packageContent) {
+				if (packageContent.files) files = files.concat(packageContent.files);
+				if (packageContent.tests) files = files.concat(packageContent.tests);
+			}
+		});
+	}
 	if (args.ext) {
 		var extFiles = [
-			'class.lua',
-			'init.lua',
-			'io.lua',
-			'math.lua',
-			'serialize.lua',
-			'string.lua',
-			'table.lua'
 		];
 		for (var i = 0; i < extFiles.length; ++i) {
 			var extFile = extFiles[i];
@@ -82,11 +145,45 @@ a commonly used one
 specify the files you want and let it go at it
 args are passed on to executeLuaVMFileSet plus ...
 	id : id of the parent container for all this to go
+	tests : list of buttons to provide the user at the bottom of the container.  each member of the array contains the following:
+		url : where to find the file
+		dest : where in the filesystem to find it
+		name : button title
+		
+		these are automatically added to args.files.   no need to duplicate.
+	packages : (optional) auto-populates files and tests
 */
 var EmbeddedLuaInterpreter = makeClass({
 	init : function(args) {
 		var thiz = this;
-		
+
+		//granted it doesn't make much sense to include tests from one package without including the package itself ...
+		if (args.packageTests) {
+			if (!args.tests) args.tests = [];
+			$.each(args.packageTests, function(_,packageName) {
+				var packageContent = luaVmPackageInfos[packageName];
+				if (packageContent) {
+					if (packageContent.tests) args.tests = args.tests.concat(packageContent.tests);
+				}
+			});
+			args.packageTests = undefined;
+		}
+		if (args.packages) {
+			if (!args.files) args.files = [];
+			$.each(args.packages, function(_,packageName) {
+				var packageContent = luaVmPackageInfos[packageName];
+				if (packageContent) {
+					if (packageContent.files) args.files = args.files.concat(packageContent.files);
+				}
+			});
+			args.packages = undefined;
+		}
+
+		this.tests = args.tests;
+		if (args.tests !== undefined) {
+			args.files = args.files.concat(args.tests);
+		}
+
 		//setup Module global for lua.vm.js
 		window.Module = {
 			print : function(s) { thiz.printOutAndErr(s); },
@@ -100,6 +197,8 @@ var EmbeddedLuaInterpreter = makeClass({
 
 		this.container = $('<div>').appendTo(this.parentContainer);
 		this.container.hide();
+
+		$('<div>', {html:'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>'}).appendTo(this.container);
 
 		this.outputBuffer = '';
 		this.output = $('<div>', {
@@ -135,7 +234,9 @@ var EmbeddedLuaInterpreter = makeClass({
 			};
 			args.done = function() {
 				Module.print('initializing...');
-				thiz.doneLoadingFilesystem();
+				setTimeout(function() {
+					thiz.doneLoadingFilesystem();
+				}, 1);
 			};
 			executeLuaVMFileSet(args);
 		});
@@ -155,7 +256,26 @@ var EmbeddedLuaInterpreter = makeClass({
 				processInput();
 			}
 		});
-	
+
+		//provide test buttons
+		if (this.tests) {
+			$.each(this.tests, function(_,info) {
+				$('<a>', {
+					href:info.url, 
+					text:'[View]', 
+					target:'_blank',
+					css : {'padding-right' : '10px'}
+				}).appendTo(thiz.container);
+				$('<button>', {
+					text:info.name, 
+					click:function() { 
+						thiz.executeAndPrint("dofile '"+info.dest+"'");
+					}
+				}).appendTo(thiz.container);
+				$('<br>').appendTo(thiz.container);
+			});
+		}
+
 		if (this.done) this.done();
 	},
 	executeAndPrint : function(s) {
@@ -163,7 +283,6 @@ var EmbeddedLuaInterpreter = makeClass({
 		Lua.execute(s);
 	},
 	printOutAndErr : function(s) {
-		console.log("print: "+s);
 		if (this.outputBuffer !== '') this.outputBuffer += '\n';
 		this.outputBuffer += s
 		this.output.html(this.outputBuffer
