@@ -279,6 +279,9 @@ function asyncfor(args) {
 	return interval;
 }
 
+//used especially with the lua.vm-utils.js
+//but I could also potentially form it into the loader that universe uses ... 
+// it'd just take changing the loading div stuff and change the xmlhttprequest data type
 FileSetLoader = makeClass({
 	
 	/*
@@ -289,6 +292,7 @@ FileSetLoader = makeClass({
 	
 	produces:
 		this.files : a copy of the args.files
+			either strings or {url, dest} for remote/local locations
 		this.div : div containing the label and progress bar
 		this.loading : label
 		this.progress : progress bar
@@ -298,6 +302,12 @@ FileSetLoader = makeClass({
 		var thiz = this;
 		
 		this.files = args.files.clone();
+		for (var i = 0; i < this.files.length; ++i) {
+			var file = this.files[i];
+			if (typeof(file) == 'string') {
+				this.files[i] = {url:file, dest:file};
+			}
+		}
 		
 		this.div = $('<div>', {
 			css : {
@@ -338,7 +348,7 @@ FileSetLoader = makeClass({
 		$.each(this.files, function(i,file) {
 			var xhr = new XMLHttpRequest();
 			
-			xhr.open('GET', file, true);
+			xhr.open('GET', file.url, true);
 			
 			xhr.onprogress = function(e) {
 				if (e.total) {
@@ -352,15 +362,11 @@ FileSetLoader = makeClass({
 			};
 			
 			xhr.onload = function(e) {
-				console.log('file '+file);
-				console.log('size '+this.responseText.length);
-				console.log('contents');
-				console.log(this.responseText);
 				loadeds[i] = totals[i];
 				thiz.results[i] = this.responseText;
 				updateProgress();
 				dones[i] = true;
-				if (args.onload) args.onload.call(thiz, file, this.responseText);
+				if (args.onload) args.onload.call(thiz, file.url, file.dest, this.responseText);
 				updateDones();
 			};
 
@@ -369,4 +375,25 @@ FileSetLoader = makeClass({
 	}
 });
 
+//returns {dir, file, ext}
+function pathToParts(path) {
+	var parts = {};
+	var lastSlash = path.lastIndexOf('/');
+	if (lastSlash != -1) {
+		parts.dir = path.substring(0, lastSlash);
+		parts.file = path.substring(lastSlash+1);
+	} else {
+		parts.dir = '.';
+		parts.file = path;
+	}
+
+	var lastDot = path.lastIndexOf('.');
+	if (lastDot != -1) {
+		parts.ext = path.substring(lastDot+1);
+	} else {
+		parts.ext = '';
+	}
+
+	return parts;
+}
 

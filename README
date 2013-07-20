@@ -4,10 +4,10 @@ other libraries I'm using
 - jquery 1.10
 - gl-matrix 2.1.0
 - jquery.cookie 1.3.1
-- mediawiki.api
-- purl 2.2.1
+- wikipedia api mediawiki.api
+- jquery purl 2.2.1
 - webgl-debug.js
-- lua.vm.js
+- emscripten lua.vm.js
 
 considerations:
 	- draw object: to combine ArrayBuffers, optionally ElementArrayBuffers (to switch from drawArrays to drawElements), mode (geometry), optional offset, optional count, and optional vertex buffer source for implicit "count"
