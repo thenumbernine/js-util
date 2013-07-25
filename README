@@ -10,9 +10,6 @@ other libraries I'm using
 - emscripten lua.vm.js
 
 considerations:
-	- draw object: to combine ArrayBuffers, optionally ElementArrayBuffers (to switch from drawArrays to drawElements), mode (geometry), optional offset, optional count, and optional vertex buffer source for implicit "count"
-		this would do the function of drawing, but would have no view of the shader and therefore no ability to bind the vertex attribute (hence why vertex array would be optional) 
-	- separating the fluff of SceneObject from the vertex array / element array / mode (make a Geometry / Draw class?)
 	- targetMat, mvMat, projMat are all convenient but not always used/useful
 	- likewise, 'static'... should it be asserted by the presence of pos/angle?  should it always be true/false unless specified otherwise?
 	- speaking of defaults, should parent auto-attach to root, or only when specified?

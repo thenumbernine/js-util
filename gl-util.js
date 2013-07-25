@@ -396,7 +396,12 @@ GL = new function() {
 	});
 	GL.Texture = Texture;
 
-	//args match Texture2D.setArgs
+	/*
+	args match Texture2D.setArgs
+	with the exception of:
+		onload : called when the image loads, after the data is set to the texture
+		onerror : called if the image errors
+	*/
 	var Texture2D = makeClass({
 		super : Texture,
 		setData : function(args) {
@@ -411,6 +416,7 @@ GL = new function() {
 					
 					if (args.onload) args.onload.call(thiz);
 				};
+				image.onerror = args.onerror;
 				image.src = args.url;
 			} else {
 				if (args.data === undefined) args.data = null;
@@ -442,12 +448,14 @@ GL = new function() {
 			//NOTICE this method only works for ArrayBufferView.  maybe that should be my test
 			//console.log('setting image target',target,'level',level,'internalFormat',internalFormat,'width',width,'height',height,'border',border,'format',format,'type',type,'data',args.data);
 			if (width === undefined && height === undefined) {
+				//assume it's an image
 				gl.texImage2D(target, level, internalFormat, format, type, args.data);
 			} else {
 				if (typeof(args.data) != 'function') {
+					//assume it's a buffer
 					gl.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
 				} else {
-					//builtin procedural generation
+					//procedural generation
 					var i = 0;
 					var data = new Uint8Array(width * height * 4);
 					format = gl.RGBA;
@@ -571,6 +579,7 @@ GL = new function() {
 			}
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
 			gl.bufferData(gl.ARRAY_BUFFER, data, usage);
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
 			this.count = data.length / this.dim;
 			if (keep) this.data = data;
 		},
@@ -582,6 +591,7 @@ GL = new function() {
 			}
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
 			gl.bufferSubData(gl.ARRAY_BUFFER, offset, data);
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
 		}
 	});
 	this.ArrayBuffer = ArrayBuffer;
@@ -602,6 +612,7 @@ GL = new function() {
 			}
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
 			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			this.count = data.length;
 		},
 		updateData : function(data, offset) {
@@ -611,6 +622,7 @@ GL = new function() {
 			}
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
 			gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset, data);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 		}
 	});
 	this.ElementArrayBuffer = ElementArrayBuffer;
@@ -828,6 +840,7 @@ end
 					count = this.indexes.count;
 				}
 				gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			} else {
 				if (count === undefined && this.vertexes !== undefined) {
 					count = this.vertexes.count;
