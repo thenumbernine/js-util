@@ -154,6 +154,7 @@ args are passed on to executeLuaVMFileSet plus ...
 	packages : (optional) auto-populates files and tests
 */
 var EmbeddedLuaInterpreter = makeClass({
+	HISTORY_MAX : 100,
 	init : function(args) {
 		var thiz = this;
 
@@ -211,6 +212,8 @@ var EmbeddedLuaInterpreter = makeClass({
 			}
 		}).appendTo(this.container);
 
+		this.history = [];
+		this.historyIndex = this.history.length;
 		this.inputGo = $('<button>', {
 			text : 'GO!'
 		}).appendTo(this.container);
@@ -246,7 +249,11 @@ var EmbeddedLuaInterpreter = makeClass({
 
 		//hook up input
 		var processInput = function(s) {
-			thiz.executeAndPrint(thiz.input.val());
+			var cmd = thiz.input.val();
+			thiz.history.push(cmd);
+			while (thiz.history.length > thiz.HISTORY_MAX) thiz.history.shift();
+			thiz.historyIndex = thiz.history.length;
+			thiz.executeAndPrint(cmd);
 			thiz.input.val('');
 		};
 		this.inputGo.click(processInput);
@@ -255,6 +262,23 @@ var EmbeddedLuaInterpreter = makeClass({
 				e.preventDefault();
 				processInput();
 			}
+		});
+		this.input.keydown(function(e) {
+			if (e.keyCode == 38) {	//up
+				console.log('up');
+				thiz.historyIndex--;
+				if (thiz.historyIndex < 0) thiz.historyIndex = 0;
+				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
+					thiz.input.val(thiz.history[thiz.historyIndex]);
+				}
+			} else if (e.keyCode == 40) {	//down
+				console.log('down');
+				thiz.historyIndex++;
+				if (thiz.historyIndex > thiz.history.length) thiz.historyIndex = thiz.history.length;
+				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
+					thiz.input.val(thiz.history[thiz.historyIndex]);
+				}
+			} 
 		});
 
 		//provide test buttons
@@ -280,6 +304,7 @@ var EmbeddedLuaInterpreter = makeClass({
 	},
 	executeAndPrint : function(s) {
 		Module.print('> '+s);
+		//todo whatever lua interpreter does for multi lines and printing return values
 		Lua.execute(s);
 	},
 	printOutAndErr : function(s) {
