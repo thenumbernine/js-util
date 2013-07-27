@@ -8,7 +8,8 @@ Mouse3D = makeClass({
 		releaseObj: default window 
 		mouseup
 		mousedown
-		move : function(dx,dy) which match mouse.deltaX, mouse.deltaY
+		move : function(dx,dy)  for click-and-drag  which match mouse.deltaX, mouse.deltaY
+		passiveMove : function(dx,dy)  for simple movement
 		zoom : function(dz)
 		click : function(event)
 		touchclickstart
@@ -40,7 +41,7 @@ Mouse3D = makeClass({
 		var thiz = this;
 		this.pressObj = args.pressObj !== undefined ? args.pressObj : window;
 		this.releaseObj = args.releaseObj !== undefined ? args.releaseObj : window;
-		var callbackNames = ['mouseup','mousedown','move','zoom','click','touchclickstart','touchclickend'];
+		var callbackNames = ['mouseup','mousedown','move','passiveMove','zoom','click','touchclickstart','touchclickend'];
 		$.each(callbackNames, function(_,callbackName) {
 			if (args[callbackName] !== undefined) {
 				thiz[callbackName] = args[callbackName];
@@ -65,6 +66,7 @@ Mouse3D = makeClass({
 			if (thiz.zoom) thiz.zoom(zoomChange);
 		});
 		$(this.pressObj).bind('click', function(e) {
+			//TODO also check l-infinite distance?  or total distance while mousedown travelled?
 			if (thiz.click) thiz.click(e);
 		});
 
@@ -159,6 +161,8 @@ Mouse3D = makeClass({
 			} else {
 				if (this.move) this.move(this.deltaX, this.deltaY);
 			}
+		} else {
+			if (this.passiveMove) this.passiveMove(this.deltaX, this.deltaY);
 		}
 	},
 	getTouchPts : function(e, pts) {

@@ -92,25 +92,25 @@ GL = new function() {
 		aspectRatio, fovY, zNear, zFar
 	*/
 	this.updateProjection = function() {
-		var aspectRatio = GL.canvas.width / GL.canvas.height;
-		if (GL.view.ortho) {
-			var fovY = GL.view.fovY;
-			mat4.ortho(GL.projMat,
+		var aspectRatio = this.canvas.width / this.canvas.height;
+		if (this.view.ortho) {
+			var fovY = this.view.fovY;
+			mat4.ortho(this.projMat,
 				-aspectRatio * fovY,
 				aspectRatio * fovY,
 				-fovY,
 				fovY,
-				GL.view.zNear,
-				GL.view.zFar);
+				this.view.zNear,
+				this.view.zFar);
 		} else {
-			var tanFovY = Math.tan(GL.view.fovY * Math.PI / 360);
-			mat4.frustum(GL.projMat, 
-				-aspectRatio * tanFovY * GL.view.zNear, 
-				aspectRatio * tanFovY * GL.view.zNear, 
-				-tanFovY * GL.view.zNear, 
-				tanFovY * GL.view.zNear, 
-				GL.view.zNear, 
-				GL.view.zFar);
+			var tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
+			mat4.frustum(this.projMat, 
+				-aspectRatio * tanFovY * this.view.zNear, 
+				aspectRatio * tanFovY * this.view.zNear, 
+				-tanFovY * this.view.zNear, 
+				tanFovY * this.view.zNear, 
+				this.view.zNear, 
+				this.view.zFar);
 		}
 	};
 
@@ -120,7 +120,7 @@ GL = new function() {
 	  or of whether the canvas resize callback fired before or after it did)
 	*/
 	this.resize = function() {
-		gl.viewport(0, 0, GL.canvas.width, GL.canvas.height);
+		gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 		this.updateProjection();
 		
 		
@@ -296,7 +296,7 @@ GL = new function() {
 		setUniform : function() {
 			var name = arguments[0];
 			var info = this.uniforms[name];
-			if (!info) return;	//throw?  but if a uniform isn't used it'll be removed, and its info will return null ... is this an error?
+			if (info === undefined) return;	//throw?  but if a uniform isn't used it'll be removed, and its info will return null ... is this an error?
 			var value = arguments[1];
 			var isArray = typeof(value) == 'object';	//$.isArray(value);
 			var setters = info.setters;
@@ -326,7 +326,11 @@ GL = new function() {
 		},
 		setAttr : function(name, buffer) {
 			var info = this.attrs[name];
-			if (info === undefined) return;
+			if (info === undefined) {
+				//console.log("didn't enable attr "+name);
+				return;
+			}
+			//console.log("enabling attr "+name);
 			gl.enableVertexAttribArray(info.loc);
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer.obj);
 			gl.vertexAttribPointer(info.loc, buffer.dim, gl.FLOAT, false, 0, 0);
@@ -336,9 +340,13 @@ GL = new function() {
 				this.removeAttr(k);
 			}
 		},
-		removeAttr : function(attr) {
+		removeAttr : function(name) {
 			var info = this.attrs[name];
-			if (info === undefined) return;
+			if (info === undefined) {
+				//console.log("didn't disable attr "+name);
+				return;
+			}
+			//console.log("disabling attr "+name);
 			gl.disableVertexAttribArray(info.loc);
 		}
 	});
@@ -847,7 +855,6 @@ end
 				}
 				gl.drawArrays(mode, offset, count);
 			}
-	
 		}
 	});
 	this.Geometry = Geometry;
@@ -943,7 +950,8 @@ end
 		
 			//default uniforms?
 			// don't create & use these if no pos & angle is provided?
-			if (this.shader)
+			//or will we always want 
+			//if (this.shader)
 			{
 				if (!this.uniforms) this.uniforms = {};
 				if (this.uniforms.projMat === undefined) this.uniforms.projMat = GL.projMat;
@@ -1049,29 +1057,33 @@ end
 
 	var viewAngleInv = quat.create();
 	var viewPosInv = vec3.create();
+	this.setupMatrices = function() {
+		quat.conjugate(viewAngleInv, this.view.angle);
+		mat4.fromQuat(this.mvMat, viewAngleInv);
+		vec3.negate(viewPosInv, this.view.pos);
+		mat4.translate(this.mvMat, this.mvMat, viewPosInv);
+	};
+
 	var frames = 0;
 	var lastTime = Date.now();
 	this.draw = function() {	//callback, so 'this' isn't reliable
-		if (GL.onfps) {
+		if (this.onfps) {
 			frames++;
 			thisTime = Date.now();
 			if (thisTime - lastTime > 1000) {
-				GL.onfps(frames * 1000 / (thisTime - lastTime));
+				this.onfps(frames * 1000 / (thisTime - lastTime));
 				frames = 0;
 				lastTime = thisTime;	
 			}
 		}
 
-		quat.conjugate(viewAngleInv, GL.view.angle);
-		mat4.fromQuat(GL.mvMat, viewAngleInv);
-		vec3.negate(viewPosInv, GL.view.pos);
-		mat4.translate(GL.mvMat, GL.mvMat, viewPosInv);
-	
+		this.setupMatrices();
+
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	
-		if (!GL.root.hidden) GL.root.draw();
+		if (!this.root.hidden) this.root.draw();
 
-		if (GL.ondraw) GL.ondraw();
+		if (this.ondraw) this.ondraw();
 	
 		//work around canvas alpha crap
 		gl.colorMask(false,false,false,true);
