@@ -134,21 +134,23 @@ GL = new function() {
 	var Shader = makeClass({
 		/*
 		args:
-			use one of the following:
+			(appended in this order)
 			code = shader code
 			id = the id of the DOM element containing the shader code
 		*/
 		init : function(args) {
-			var code;
+			var code = '';
+			if (args.code) {
+				if (code === undefined) code = '';
+				code += args.code;
+			}
 			if (args.id) {
+				if (code === undefined) code = '';
 				var src = $('#'+args.id);
 				//assert(src.attr('type') == this.domType);
-				code = src.text();
+				code += src.text();
 			}
-			if (args.code) {
-				code = args.code;
-			}
-			if (!code) throw "expected code or id";
+			if (code === undefined) throw "expected code or id";
 
 			this.obj = gl.createShader(this.shaderType);
 			gl.shaderSource(this.obj, code);
@@ -232,11 +234,11 @@ GL = new function() {
 		init : function(args) {
 			var thiz = this;
 			this.vertexShader = args.vertexShader;
-			if (!this.vertexShader) this.vertexShader = new VertexShader({id:args.vertexCodeID, code:args.vertexCode});
+			if (!this.vertexShader) this.vertexShader = new GL.VertexShader({id:args.vertexCodeID, code:args.vertexCode});
 			if (!this.vertexShader) throw "expected vertexShader or vertexCode or vertexCodeID";
 
 			this.fragmentShader = args.fragmentShader;
-			if (!this.fragmentShader) this.fragmentShader = new FragmentShader({id:args.fragmentCodeID, code:args.fragmentCode});
+			if (!this.fragmentShader) this.fragmentShader = new GL.FragmentShader({id:args.fragmentCodeID, code:args.fragmentCode});
 			if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
 
 			this.obj = gl.createProgram();
@@ -1064,6 +1066,13 @@ end
 		mat4.translate(this.mvMat, this.mvMat, viewPosInv);
 	};
 
+	this.clearAlpha = function() {
+		//work around canvas alpha crap
+		gl.colorMask(false,false,false,true);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.colorMask(true,true,true,true);
+	};
+
 	var frames = 0;
 	var lastTime = Date.now();
 	this.draw = function() {	//callback, so 'this' isn't reliable
@@ -1084,11 +1093,8 @@ end
 		if (!this.root.hidden) this.root.draw();
 
 		if (this.ondraw) this.ondraw();
-	
-		//work around canvas alpha crap
-		gl.colorMask(false,false,false,true);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.colorMask(true,true,true,true);
+
+		this.clearAlpha();
 	}
 };
 

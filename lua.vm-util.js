@@ -23,6 +23,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/notebook.lua', dest:'symmath/notebook.lua'}
 		],
 		tests : [
+			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua', name:'Units of Measurement'},
 			{url:'/symbolic-lua/src/tests/polar_geodesic.lua', dest:'symmath/tests/polar_geodesic.lua',  name:'Polar Geodesic'},
 			{url:'/symbolic-lua/src/tests/schwarzschild.lua', dest:'symmath/tests/schwarzschild.lua',  name:'Schwarzschild Geodesic'},
 			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua',  name:'Alcubierre Warp Bubble Geodesic'},
