@@ -1,19 +1,19 @@
-var integrate = {}
+var integrate = {};
 
 integrate.euler = function(t,x,dt,f) {
 	return x.add(f(t,x).mul(dt));	//x = x + f(t, x) * dt
-}
+};
 
 integrate.midpoint = function(t,x,dt,f) {
 	var k = f(t, x).mul(dt);
 	return x.add(f(t + dt * .5, x.add(k.mul(.5))).mul(dt));
-}
+};
 
 integrate.heun = function(t,x,dt,f) {
 	var fAtX = f(t, x);
 	var xTilde = x.add(fAtX, dt);
 	return x.add(fAtX.add(f(t + dt, xTilde)).mul(dt * .5));
-}
+};
 
 integrate.rk2alpha = function(t,x,dt,f,args) {
 	var fAtX = f(t, x);
@@ -21,7 +21,7 @@ integrate.rk2alpha = function(t,x,dt,f,args) {
 	var alpha = args.alpha !== undefined ? args.alpha : .5;		// alpha = .5 <=> midpoint, alpha = 1 <=> Heun
 	var frac = 1 / (2 * alpha);
 	return x.add(fAtX.mul(1 - frac).add(f(t + alpha * dt, x.add(k.mul(alpha))).mul(frac)).mul(dt));
-}
+};
 
 integrate.rk4 = function(t,x,dt,f) {
 	var k1 = f(t, x).mul(dt);
@@ -30,7 +30,7 @@ integrate.rk4 = function(t,x,dt,f) {
 	var k4 = f(t + dt, x.add(k3)).mul(dt);
 	x = x.add(k1.add(k2.mul(2)).add(k3.mul(2)).add(k4).mul(1 / 6));
 	return x
-}
+};
 
 /*
 function integrate.rkf45(t,x,dt,f,args)
@@ -71,13 +71,13 @@ end
 */
 
 integrate.methods = {
-	euler = integrate.euler,
-	midpoint = integrate.midpoint,
-	heun = integrate.heun,
-	rk2alpha = integrate.rk2Alpha,
-	rk4 = integrate.rk4,
-	rkf45 = integrate.rkf45,
-}
+	euler : integrate.euler,
+	midpoint : integrate.midpoint,
+	heun : integrate.heun,
+	rk2alpha : integrate.rk2Alpha,
+	rk4 : integrate.rk4
+	//rkf45 : integrate.rkf45,
+};
 
 /*
 arguments:
@@ -114,5 +114,5 @@ integrate.run = function(t, x, dt, f, methodName, args) {
 	
 	// Minkowski: post-integration, re-normalize velocity:
 	//x.u[0] = math.sqrt(x.u[1] * x.u[1] + 1)	
-}
+};
 
