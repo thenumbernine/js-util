@@ -572,7 +572,9 @@ GL = new function() {
 	var ArrayBuffer = makeClass({
 		/*
 		args:
-			data = either a Float32Array object, or a constructor for a Float32Array object
+			one of the two:
+				data = either a Float32Array object, or a constructor for a Float32Array object
+				count = how many vertexes to create
 			usage = gl.bufferData usage
 			dim = dimension / # elements per vector in data. only used for attrs and calculating length. default 3
 			keep = optional, set to retain data in .data
@@ -581,7 +583,15 @@ GL = new function() {
 			if (args === undefined) args = {};
 			this.obj = gl.createBuffer();
 			this.dim = args.dim !== undefined ? args.dim : 3;
-			this.setData(args.data, args.usage || gl.STATIC_DRAW, args.keep);
+			var data = args.data;
+			if (data === undefined) {
+				if (args.count !== undefined) {
+					data = new Float32Array(this.dim * args.count);
+				} else {
+					throw "expected 'data' or 'count'";
+				}
+			}
+			this.setData(data, args.usage || gl.STATIC_DRAW, args.keep);
 		},
 		setData : function(data, usage, keep) {
 			if (data.constructor != Float32Array) {
