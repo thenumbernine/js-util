@@ -74,6 +74,22 @@ GL = new function() {
 			t : gl.TEXTURE_WRAP_T
 		};
 
+		//detect precision used
+
+		this.fragmentPrecision = 'precision mediump float;\n';
+		this.vertexPrecision = '';
+
+		var vtxhigh = gl.getShaderPrecisionFormat(gl.VERTEX_SHADER, gl.HIGH_FLOAT)
+		if (vtxhigh.rangeMin !== 0 && vtxhigh.rangeMax !== 0 && vtxhigh.precision !== 0) {
+			this.vertexPrecision = 'precision highp float;\n';
+		}
+		var fraghigh = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
+		if (fraghigh.rangeMin !== 0 && fraghigh.rangeMax !== 0 && fraghigh.precision !== 0) {
+			this.fragmentPrecision = 'precision highp float;\n';
+		}
+
+
+
 		//do some common gl inits
 		//remove these as seen fit
 	
@@ -135,7 +151,7 @@ GL = new function() {
 		/*
 		args:
 			(appended in this order)
-			code = shader code
+			code = shader code,
 			id = the id of the DOM element containing the shader code
 		*/
 		init : function(args) {
@@ -224,21 +240,43 @@ GL = new function() {
 			vertexShader = the VertexShader object to link with
 			vertexCode = the vertex shader code
 			vertexCodeID = the id of the DOM element containing the vertex shader code
+			vertexPrecision = set to 'best' for generating the best possible precision
 				one of the following:
 			fragmentShader = the VertexShader object to link with
 			fragmentCode = the fragment shader code
 			fragmentCodeID = the id of the DOM element containing the fragment shader code
+			fragmentPrecision = set to 'best' for generating the best possible precision
 				and any of the following:
 			uniforms = a key-value map containing initial values of any uniforms
 		*/
 		init : function(args) {
 			var thiz = this;
 			this.vertexShader = args.vertexShader;
-			if (!this.vertexShader) this.vertexShader = new GL.VertexShader({id:args.vertexCodeID, code:args.vertexCode});
+			if (!this.vertexShader) {
+				var vertexCode = args.vertexCode;
+				if (args.vertexPrecision === 'best') {
+					if (vertexCode === undefined) vertexCode = '';
+					vertexCode = GL.vertexPrecision + vertexCode;
+				}
+				this.vertexShader = new GL.VertexShader({
+					id : args.vertexCodeID,
+					code : vertexCode
+				});
+			}
 			if (!this.vertexShader) throw "expected vertexShader or vertexCode or vertexCodeID";
 
 			this.fragmentShader = args.fragmentShader;
-			if (!this.fragmentShader) this.fragmentShader = new GL.FragmentShader({id:args.fragmentCodeID, code:args.fragmentCode});
+			if (!this.fragmentShader) {
+				var fragmentCode = args.fragmentCode;
+				if (args.fragmentPrecision === 'best') {
+					if (fragmentCode === undefined) fragmentCode = '';
+					fragmentCode = GL.fragmentPrecision + fragmentCode;
+				}
+				this.fragmentShader = new GL.FragmentShader({
+					id : args.fragmentCodeID,
+					code : fragmentCode
+				});
+			}
 			if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
 
 			this.obj = gl.createProgram();
