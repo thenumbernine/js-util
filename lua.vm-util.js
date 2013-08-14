@@ -25,7 +25,8 @@ var luaVmPackageInfos = {
 		tests : [
 			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua', name:'Units of Measurement'},
 			{url:'/symbolic-lua/src/tests/polar_geodesic.lua', dest:'symmath/tests/polar_geodesic.lua',  name:'Polar Geodesic'},
-			{url:'/symbolic-lua/src/tests/schwarzschild.lua', dest:'symmath/tests/schwarzschild.lua',  name:'Schwarzschild Geodesic'},
+			{url:'/symbolic-lua/src/tests/schwarzschild_cartesian.lua', dest:'symmath/tests/schwarzschild_cartesian.lua',  name:'Schwarzschild Cartesian Metric'},
+			{url:'/symbolic-lua/src/tests/schwarzschild_spheric.lua', dest:'symmath/tests/schwarzschild_spheric.lua',  name:'Schwarzschild Spheric Metric'},
 			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua',  name:'Alcubierre Warp Bubble Geodesic'},
 			{url:'/symbolic-lua/src/tests/metric.lua', dest:'symmath/tests/metric.lua',  name:'Metric Test'},
 			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua',  name:'Gravitation by M.T.W. Ch.16 Prob.1'},
