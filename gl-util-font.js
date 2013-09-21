@@ -19,7 +19,7 @@ GL.oninit.push(function(gl) {
 			for (var i = 0, y = 0; y < lettersPerSize; y++) {
 				for (var x = 0; x < lettersPerSize; x++, i++) {
 					var ch = String.fromCharCode(i);
-					c2d.fillRect(ch, x*fontSize, (y+1+yOffset)*fontSize);
+					c2d.fillRect(ch, x*fontSize, (y+1+yOffset)*fontSize, fontSize, fontSize);
 				}
 			}
 
