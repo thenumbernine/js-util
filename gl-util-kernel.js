@@ -60,7 +60,9 @@ varyingCode,
 			KernelShader.super.call(this, {
 				vertexCodeID : args.vertexCodeID,
 				vertexCode : args.vertexCode !== undefined ? args.vertexCode : vertexCode,
+				vertexPrecision : args.vertexPrecision,
 				fragmentCode : fragmentCodePrefix + code,
+				fragmentPrecision : args.fragmentPrecision,
 				uniforms : uniforms
 			});
 		}

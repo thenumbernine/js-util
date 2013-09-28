@@ -942,6 +942,7 @@ end
 				this.blend = args.blend;
 				this.useDepth = args.useDepth;
 
+				//TODO this should be bool-cast, and should probably be after the implicit assignment
 				if ('static' in args) this.static = args.static;
 				if (args.pos) {
 					this.pos = vec3.clone(args.pos);
