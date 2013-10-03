@@ -1032,9 +1032,10 @@ end
 			}
 
 			//TODO push attrib anyone?
-			
-			if (this.blend) {
-				gl.blendFunc.apply(gl, this.blend);
+		
+			var blend = this.blend || (args && args.blend);
+			if (blend) {
+				gl.blendFunc.apply(gl, blend);
 				gl.enable(gl.BLEND);
 			}
 
@@ -1083,7 +1084,7 @@ end
 			if (args && args.texs) unbindTextureSet(args.texs);
 			if (this.texs) unbindTextureSet(this.texs);
 	
-			if (this.blend) {
+			if (blend !== undefined) {
 				gl.disable(gl.BLEND);
 			}
 		},

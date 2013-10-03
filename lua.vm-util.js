@@ -30,6 +30,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua',  name:'Alcubierre Warp Bubble Geodesic'},
 			{url:'/symbolic-lua/src/tests/metric.lua', dest:'symmath/tests/metric.lua',  name:'Metric Test'},
 			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua',  name:'Gravitation by M.T.W. Ch.16 Prob.1'},
+			{url:'/symbolic-lua/src/tests/linearized_euler_hydrodynamic_equations.lua', dest:'symmath/tests/linearized_euler_hydrodynamic_equations.lua',  name:'Gravitation by M.T.W. Ch.16 Prob.1'},
 		 	{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua',  name:'Validation Test (broken)'}
 		]
 	},

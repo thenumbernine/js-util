@@ -63,7 +63,7 @@ Mouse3D = makeClass({
 		$(this.pressObj).bind('mousewheel', function(e) {
 			e.preventDefault();
 			var zoomChange = e.originalEvent.wheelDelta;
-			if (thiz.zoom) thiz.zoom(zoomChange);
+			if (thiz.zoom) thiz.zoom(zoomChange, 'wheel');
 		});
 		$(this.pressObj).bind('click', function(e) {
 			//TODO also check l-infinite distance?  or total distance while mousedown travelled?
@@ -91,7 +91,7 @@ Mouse3D = makeClass({
 						var zoomChange = thiz.calcDist(thiz.newZoomTouchPts) - thiz.calcDist(thiz.zoomTouchPts);
 						if (zoomChange != 0) {
 							if (thiz.zoom) {
-								thiz.zoom(10 * zoomChange);
+								thiz.zoom(10 * zoomChange, 'pinch');
 								thiz.zoomTouchPts[0][0] = thiz.newZoomTouchPts[0][0];
 								thiz.zoomTouchPts[0][1] = thiz.newZoomTouchPts[0][1];
 								thiz.zoomTouchPts[1][0] = thiz.newZoomTouchPts[1][0];
@@ -157,7 +157,7 @@ Mouse3D = makeClass({
 		if (this.isDown) {
 			this.isDragging = true;
 			if (e.shiftKey) {
-				if (this.zoom) this.zoom(-100 * this.deltaY);
+				if (this.zoom) this.zoom(-100 * this.deltaY, 'shift');
 			} else {
 				if (this.move) this.move(this.deltaX, this.deltaY);
 			}
