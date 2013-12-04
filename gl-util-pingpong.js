@@ -5,11 +5,15 @@ GL.oninit.push(function(gl) {
 		width : framebuffer width (optional)
 		height : framebuffer height (optional)
 		numBuffers : number of textures to buffer
+		fbo : (optional) framebuffer.  If none is provided then one will be created.
 		rest of args are passed on to the textures
 	*/
 	var PingPong = function(args) {
 		this.history = [];
-		this.fbo = new GL.Framebuffer({width:args.width, height:args.height});
+		this.fbo = args.fbo;
+		if (this.fbo === undefined) {
+			this.fbo = new GL.Framebuffer({width:args.width, height:args.height});
+		}
 		this.width = args.width;
 		this.height = args.height;
 		this.index = 0;	//history index

@@ -56,7 +56,9 @@ GL = new function() {
 		this.gl = gl;	
 	
 		//gather extensions
+		gl.getExtension('OES_element_index_uint');
 		gl.getExtension('OES_texture_float');
+		gl.getExtension('OES_texture_float_linear');
 
 		$.each(gl.getSupportedExtensions(), function(_,ext){
 			console.log(ext);
@@ -323,10 +325,19 @@ GL = new function() {
 
 			gl.useProgram(null);
 		},
+		use : function() {
+			gl.useProgram(this.obj);
+			return this;
+		},
+		useNone : function() {
+			gl.useProgram(null);
+			return this;
+		},
 		setUniforms : function(uniforms) {
 			for (k in uniforms) {
 				this.setUniform(k, uniforms[k]);
 			}
+			return this;
 		},
 		/*
 		type-detecting uniform setting
@@ -428,12 +439,15 @@ GL = new function() {
 			if (args.magFilter) gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, args.magFilter);
 			if (args.minFilter) gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, args.minFilter);
 			if (args.wrap) {
-				for (var k in args.wrap) {
-					gl.texParameteri(this.target, wrapMap[k] || k, args.wrap[k]);
-				}
+				this.setWrap(args.wrap);
 			}
 			this.setData(args);
 			return this;
+		},
+		setWrap : function(args) {
+			for (var k in args) {
+				gl.texParameteri(this.target, wrapMap[k] || k, args[k]);
+			}
 		},
 		//typically overwritten. default calls setImage if args.data is provided
 		setData : function(args) {
@@ -493,6 +507,14 @@ GL = new function() {
 			var width = args.width;
 			var height = args.height;
 			var border = args.border !== undefined ? args.border : 0;
+			
+			//store?  WebGL has no getTexParameteri(gl.TEXTURE_WIDTH) ...
+			this.internalFormat = internalFormat;
+			this.format = format;
+			this.type = type;
+			this.width = width;
+			this.height = height;
+			
 			//NOTICE this method only works for ArrayBufferView.  maybe that should be my test
 			//console.log('setting image target',target,'level',level,'internalFormat',internalFormat,'width',width,'height',height,'border',border,'format',format,'type',type,'data',args.data);
 			if (width === undefined && height === undefined) {
@@ -505,18 +527,34 @@ GL = new function() {
 				} else {
 					//procedural generation
 					var i = 0;
-					var data = new Uint8Array(width * height * 4);
+					
+					//TODO get number of channels for format, rather than overriding it...
 					format = gl.RGBA;
-					type = gl.UNSIGNED_BYTE;	//though floats would be nice ...
+					var channels = 4;
+
+					var scale = undefined;
+					var data = undefined;
+					if (type == gl.UNSIGNED_BYTE) {
+						data = new Uint8Array(width * height * channels);
+						scale = 255;
+					} else if (type == gl.FLOAT) {
+						data = new Float32Array(width * height * channels);
+						scale = 1;
+					}
+			
 					for (var y = 0; y < height; ++y) {
 						for (var x = 0; x < width; ++x) {
 							var c = args.data(x,y);
 							for (var ch = 0; ch < 4; ++ch) {
-								data[i] = c[ch] * 255;
+								var d = c[ch];
+								if (d === undefined) d = 0;
+								d *= scale;
+								data[i] = d;
 								++i;
 							}
 						}
 					}
+window.lastCallbackGeneratedWebGLTextureData = data;
 					gl.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
 				}
 			}
@@ -665,9 +703,13 @@ GL = new function() {
 			this.setData(args.data, args.usage || gl.STATIC_DRAW);
 		},
 		setData : function(data, usage) {
-			if (data.constructor != Uint16Array) {
+			if (data.constructor != Uint16Array && 
+				data.constructor != Uint32Array) 
+			{
 				data = new Uint16Array(data);
 			}
+			this.type = data.constructor == Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+			
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
 			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -798,6 +840,14 @@ end
 			this.unbind();
 		},
 
+		/*
+		args:
+			viewport
+			shader
+			uniforms
+			texs
+			callback
+		*/
 		draw : function(args) {
 			var oldvp;
 			if (args.viewport) {
@@ -897,7 +947,7 @@ end
 				if (count === undefined) {
 					count = this.indexes.count;
 				}
-				gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
+				gl.drawElements(mode, count, this.indexes.type, offset);
 				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			} else {
 				if (count === undefined && this.vertexes !== undefined) {

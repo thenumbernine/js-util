@@ -1,36 +1,36 @@
 //https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/indexOf
 //because IE sucks
 if (!Array.prototype.indexOf) {
-    Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
-        "use strict";
-        if (this == null) {
-            throw new TypeError();
-        }
-        var t = Object(this);
-        var len = t.length >>> 0;
-        if (len === 0) {
-            return -1;
-        }
-        var n = 0;
-        if (arguments.length > 1) {
-            n = Number(arguments[1]);
-            if (n != n) { // shortcut for verifying if it's NaN
-                n = 0;
-            } else if (n != 0 && n != Infinity && n != -Infinity) {
-                n = (n > 0 || -1) * Math.floor(Math.abs(n));
-            }
-        }
-        if (n >= len) {
-            return -1;
-        }
-        var k = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
-        for (; k < len; k++) {
-            if (k in t && t[k] === searchElement) {
-                return k;
-            }
-        }
-        return -1;
-    }
+	Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
+		"use strict";
+		if (this == null) {
+			throw new TypeError();
+		}
+		var t = Object(this);
+		var len = t.length >>> 0;
+		if (len === 0) {
+			return -1;
+		}
+		var n = 0;
+		if (arguments.length > 1) {
+			n = Number(arguments[1]);
+			if (n != n) { // shortcut for verifying if it's NaN
+				n = 0;
+			} else if (n != 0 && n != Infinity && n != -Infinity) {
+				n = (n > 0 || -1) * Math.floor(Math.abs(n));
+			}
+		}
+		if (n >= len) {
+			return -1;
+		}
+		var k = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
+		for (; k < len; k++) {
+			if (k in t && t[k] === searchElement) {
+				return k;
+			}
+		}
+		return -1;
+	}
 }
 
 //http://stackoverflow.com/questions/3954438/remove-item-from-array-by-value
@@ -53,9 +53,42 @@ Array.prototype.min = function(){
 	return Math.min.apply( Math, this);
 };
 
+//http://www.xenoveritas.org/comment/1689
 Array.prototype.clone = function() {
 	return this.slice(0);
 };
+
+Array.prototype.findWithComparator = function(obj, comparator) {
+	for (var i = 0; i < this.length; i++) {
+		if (comparator(this[i], obj)) return i;
+	}
+	return -1;
+}
+
+Array.prototype.addUnique = function(obj) {
+	if (this.indexOf(obj) == -1) this.push(obj);
+}
+
+//http://www.tutorialspoint.com/javascript/array_map.htm
+//if (!Array.prototype.map)
+{
+	Array.prototype.map = function(fun /*, thisp*/) {
+		var len = this.length;
+		if (typeof fun != "function") {
+			throw new TypeError();
+		}
+
+		var res = new Array(len);
+		var thisp = arguments[1];
+		for (var i = 0; i < len; i++) {
+			if (i in this) {
+				res[i] = fun.call(thisp, this[i], i, this);
+			}
+		}
+
+		return res;
+	};
+}
 
 (function($){
 	//http://stackoverflow.com/questions/2700000/how-to-disable-text-selection-using-jquery
@@ -395,5 +428,12 @@ function pathToParts(path) {
 	}
 
 	return parts;
+}
+
+//provide a function with a mult-line comment
+//this returns the comment as a string
+//http://tomasz.janczuk.org/2013/05/multi-line-strings-in-javascript-and.html
+function mlstr(f) {
+	return f.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
 }
 
