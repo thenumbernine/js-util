@@ -57,6 +57,7 @@ GL = new function() {
 	
 		//gather extensions
 		gl.getExtension('OES_element_index_uint');
+		gl.getExtension('OES_standard_derivatives');
 		gl.getExtension('OES_texture_float');
 		gl.getExtension('OES_texture_float_linear');
 

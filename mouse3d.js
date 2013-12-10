@@ -65,6 +65,13 @@ Mouse3D = makeClass({
 			var zoomChange = e.originalEvent.wheelDelta;
 			if (thiz.zoom) thiz.zoom(zoomChange, 'wheel');
 		});
+		//special case for Firefox 25:
+		//http://www.javascriptkit.com/javatutors/onmousewheel.shtml
+		$(this.pressObj).bind('DOMMouseScroll', function(e) {
+			e.preventDefault();
+			var zoomChange = e.originalEvent.detail;
+			if (thiz.zoom) thiz.zoom(zoomChange * -120, 'wheel');
+		});
 		$(this.pressObj).bind('click', function(e) {
 			//TODO also check l-infinite distance?  or total distance while mousedown travelled?
 			if (thiz.click) thiz.click(e);
