@@ -8,6 +8,7 @@ other libraries I'm using
 - jquery purl 2.2.1
 - webgl-debug.js
 - emscripten lua.vm.js
+- numeric javascript 1.2.6
 
 considerations:
 	- targetMat, mvMat, projMat are all convenient but not always used/useful
