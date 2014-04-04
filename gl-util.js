@@ -36,10 +36,19 @@ GL = new function() {
 		for (var i = 0; i < webGLNames.length; i++) {
 			try {
 				gl = canvas.getContext(webGLNames[i], {
-					//this is supposed to save me from having to write 1's in the dest alpha channel
-					//to keep the dest image from being invisible
-					//but it is buggy in firefox and safari
+					/*
+					this is supposed to save me from having to write 1's in the dest alpha channel
+					to keep the dest image from being invisible
+					but it is buggy in firefox and safari
+					*/
 					premultipliedAlpha : false,
+
+					/*
+					this is supposed to slow things down
+					but it is also supposed to allow folks to take screenshots ...
+					*/
+					//preserveDrawingBuffer : args.preserveDrawingBuffer,
+					
 					alpha : false
 				});
 			} catch (e) {}
@@ -104,7 +113,56 @@ GL = new function() {
 		});
 
 		return gl;
-	}
+	};
+
+	//might require preserveDrawingBuffer ...
+	this.screenshot = function() {
+		/* download ... as a fixed-filename that can't be given an extension ... */
+		var data = this.canvas.toDataURL('image/png');
+		document.location.href = data.replace('image/png', 'image/octet');
+		/**/
+	
+		/* download as a specified filename (by encoding in anchor element and simulating click) * /
+		var mimeType = 'image/octet';
+		var filename = 'download.png';
+		var data = this.canvas.toDataURL(mimeType);
+window.downloadData = data;
+		var blob = new Blob([data], {type: mimeType});
+
+		var downloadAnchor = document.createElement('a');
+window.downloadAnchor = downloadAnchor;
+		downloadAnchor.download = filename; 
+		downloadAnchor.href = window.URL.createObjectURL(blob);
+		downloadAnchor.textContent = 'Download Ready';
+
+		downloadAnchor.dataset.downloadurl = [
+			mimeType, 
+			downloadAnchor.download, 
+			downloadAnchor.href].join(':');
+		downloadAnchor.dataset.disabled = false;
+
+		document.body.appendChild(downloadAnchor);
+
+		downloadAnchor.onclick = function(e) {
+			if ('disabled' in this.dataset) {
+				return false;
+			}
+
+			downloadAnchor.textContent = '';
+			downloadAnchor.dataset.disabled = true;
+
+			// Need a small delay for the revokeObjectURL to work properly.
+			setTimeout(function() {
+				window.URL.revokeObjectURL(downloadAnchor.href);
+				//document.body.removeChild(downloadAnchor);
+			}, 1500);
+		};
+
+		setTimeout(function() {
+			$(downloadAnchor).trigger('click');
+		}, 1000);
+	*/
+	};
 
 	/*
 	must be manually called when any view projection matrix values change:
@@ -707,7 +765,11 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			if (data.constructor != Uint16Array && 
 				data.constructor != Uint32Array) 
 			{
-				data = new Uint16Array(data);
+				//in case of uint, default to uint
+				// otherwise default to ushort
+				var type = Uint16Array;
+				if (gl.getExtension('OES_element_index_uint')) type = Uint32Array;
+				data = new type(data);
 			}
 			this.type = data.constructor == Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
 			
