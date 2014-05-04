@@ -303,7 +303,7 @@ window.downloadAnchor = downloadAnchor;
 			vertexCodeID = the id of the DOM element containing the vertex shader code
 			vertexPrecision = set to 'best' for generating the best possible precision
 				one of the following:
-			fragmentShader = the VertexShader object to link with
+			fragmentShader = the FragmentShader object to link with
 			fragmentCode = the fragment shader code
 			fragmentCodeID = the id of the DOM element containing the fragment shader code
 			fragmentPrecision = set to 'best' for generating the best possible precision
@@ -1258,6 +1258,45 @@ end
 		if (this.ondraw) this.ondraw();
 
 		this.clearAlpha();
-	}
+	};
+
+	this.mouseDir = function(dir,xf,yf) {
+		
+		//basis: [0] = right, [1] = up, [2] = backwards
+		var x = vec3.create(); vec3.quatXAxis(x, GL.view.angle);
+		var y = vec3.create(); vec3.quatYAxis(y, GL.view.angle);
+		var z = vec3.create(); vec3.quatZAxis(z, GL.view.angle);
+		var aspectRatio = this.canvas.width / this.canvas.height;
+		var mxf = xf * 2 - 1;
+		var myf = 1 - yf * 2;
+		var tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
+		var px = this.view.pos[0];
+		var py = this.view.pos[1];
+		var pz = this.view.pos[2];
+		dir[0] = -z[0] + tanFovY * (aspectRatio * mxf * x[0] + myf * y[0]);
+		dir[1] = -z[1] + tanFovY * (aspectRatio * mxf * x[1] + myf * y[1]);
+		dir[2] = -z[2] + tanFovY * (aspectRatio * mxf * x[2] + myf * y[2]);
+	};
+};
+
+vec3.quatXAxis = function(res, q) {
+	var x = q[0], y = q[1], z = q[2], w = q[3];
+	res[0] = 1 - 2 * (y * y + z * z); 
+	res[1] = 2 * (x * y + z * w); 
+	res[2] = 2 * (x * z - w * y); 
+};
+
+vec3.quatYAxis = function(res, q) {
+	var x = q[0], y = q[1], z = q[2], w = q[3];
+	res[0] = 2 * (x * y - w * z);
+	res[1] = 1 - 2 * (x * x + z * z);
+	res[2] = 2 * (y * z + w * x);
+};
+
+vec3.quatZAxis = function(res, q) {
+	var x = q[0], y = q[1], z = q[2], w = q[3];
+	res[0] = 2 * (x * z + w * y); 
+	res[1] = 2 * (y * z - w * x); 
+	res[2] = 1 - 2 * (x * x + y * y); 
 };
 
