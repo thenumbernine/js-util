@@ -754,7 +754,7 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 	var ElementArrayBuffer = makeClass({
 		/*
 		args:
-			data = either a Float32Array object, or a constructor for a Float32Array object
+			data = either a Uint16Array object, or a constructor for a Uint16Array object
 		*/
 		init : function(args) {
 			if (args === undefined) args = {};
