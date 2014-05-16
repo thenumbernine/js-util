@@ -190,8 +190,8 @@ var EmbeddedLuaInterpreter = makeClass({
 
 		//setup Module global for lua.vm.js
 		window.Module = {
-			print : function(s) { thiz.printOutAndErr(s); },
-			printErr : function(s) { thiz.printOutAndErr(s); },
+			print : function(s) { thiz.print(s); },
+			printErr : function(s) { thiz.printErr(s); },
 			stdin : function() {} 
 		};
 		
@@ -230,9 +230,9 @@ var EmbeddedLuaInterpreter = makeClass({
 		}).appendTo(this.container);
 		$('<br>').appendTo(this.container);
 
-		var launchButton = $('<button>', {text:'Launch'}).appendTo(this.parentContainer);
-		launchButton.click(function() {
-			launchButton.hide();
+		this.launchButton = $('<button>', {text:'Launch'}).appendTo(this.parentContainer);
+		this.launchButton.click(function() {
+			thiz.launchButton.hide();
 			thiz.container.show();
 
 			args.onexec = function(url, dest) {
@@ -246,6 +246,8 @@ var EmbeddedLuaInterpreter = makeClass({
 			};
 			executeLuaVMFileSet(args);
 		});
+
+		if (args.autoLaunch) this.launchButton.click();
 	},
 	doneLoadingFilesystem : function() {
 		var thiz = this;
@@ -309,6 +311,12 @@ var EmbeddedLuaInterpreter = makeClass({
 		Module.print('> '+s);
 		//todo whatever lua interpreter does for multi lines and printing return values
 		Lua.execute(s);
+	},
+	print : function(s) {
+		this.printOutAndErr(s);
+	},
+	printErr : function(s) {
+		this.printOutAndErr(s);
 	},
 	printOutAndErr : function(s) {
 		if (this.outputBuffer !== '') this.outputBuffer += '\n';

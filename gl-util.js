@@ -488,6 +488,7 @@ window.downloadAnchor = downloadAnchor;
 			minFilter: texParameter TEXTURE_MIN_FILTER
 			generateMipmap: specifies to call generateMipmap after loading the texture data
 			url: url of image to load
+			wrap : wrap info
 			onload: any onload callback to be used with url
 		*/
 		setArgs : function(args) {
