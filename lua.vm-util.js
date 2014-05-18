@@ -20,6 +20,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/init.lua', dest:'symmath/init.lua'},
 			{url:'/symbolic-lua/src/symmath.lua', dest:'symmath/symmath.lua'},
 			{url:'/symbolic-lua/src/tensor.lua', dest:'symmath/tensor.lua'},
+			{url:'/symbolic-lua/src/tostring.lua', dest:'symmath/tostring.lua'},
 			{url:'/symbolic-lua/src/notebook.lua', dest:'symmath/notebook.lua'}
 		],
 		tests : [
