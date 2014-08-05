@@ -4,7 +4,7 @@ GL.oninit.push(function(gl) {
 	if (!this.unitQuad) throw "require gl-util-unitquad.js before gl-util-kernel.js";
 
 	var KernelShader = makeClass({
-		super : this.ShaderProgram,
+		super : GL.ShaderProgram,
 		/*
 		args:
 			code : the fragment code
@@ -67,5 +67,5 @@ varyingCode,
 			});
 		}
 	});
-	this.KernelShader = KernelShader;
+	GL.KernelShader = KernelShader;
 });
