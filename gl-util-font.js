@@ -1,15 +1,16 @@
 if (!GL) throw "require gl-util.js before gl-util-font.js";
 
-GL.oninit.push(function(gl) {
-	if (!this.unitQuad) throw "require gl-util-unitquad.js before gl-util-font.js";
-	
+GL.oninit.push(function() {	
+	var renderer = this;
+
 	var fontSize = 16;
 	var charSubtexSize = 16;
 	var lettersPerSize = 16;
 
 	var letterMat = mat4.create();
 	var Font = makeClass({
-		init : function() {
+		init : function(args) {
+			this.context = assert(args.context);
 			var c = $('<canvas>').get(0);
 			c.width = 256;
 			c.height = 256;
@@ -55,48 +56,54 @@ GL.oninit.push(function(gl) {
 			}
 
 			this.tex = new GL.Texture2D({
+				context : this.context,
 				flipY : true,
 				data : c,
-				minFilter : gl.NEAREST,
-				magFilter : gl.LINEAR
+				minFilter : this.context.NEAREST,
+				magFilter : this.context.LINEAR
 			});
+		
+			this.shader = new GL.ShaderProgram({
+				context : this.context,
+				vertexCode : mlstr(function(){/*
+attribute vec2 vertex;
+varying vec2 vertexv;
+uniform vec4 ortho;
+uniform vec2 offset;
+uniform vec2 scale;
+void main() {
+	vertexv = vertex;
+	vec2 vtx = vertex;
+	vtx += offset;
+	vtx *= scale;
+	vtx -= .5;
+	vtx -= ortho.xz;
+	vtx /= ortho.yw - ortho.xz;
+	vtx *= 2.;
+	vtx -= 1.;
+	gl_Position = vec4(vtx, 0., 1.);
+}
+*/}),
+				fragmentCode : mlstr(function(){/*
+precision mediump float;
+varying vec2 vertexv;
+uniform vec2 texMinLoc;
+uniform vec2 texMaxLoc;
+uniform sampler2D tex;
+void main() {
+	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);
+}
+*/}),
+				uniforms : {
+					tex : 0
+				}
+			});
+	
 		},
-		shader : new GL.ShaderProgram({
-			vertexCode : [
-'attribute vec2 vertex;',
-'varying vec2 vertexv;',
-'uniform vec4 ortho;',	//xyzw = xmin, xmax, ymin, ymax
-'uniform vec2 offset;',
-'uniform vec2 scale;',
-'void main() {',
-'	vertexv = vertex;',
-'	vec2 vtx = vertex;',
-'	vtx += offset;',
-'	vtx *= scale;',
-'	vtx -= .5;',
-'	vtx -= ortho.xz;',
-'	vtx /= ortho.yw - ortho.xz;',
-'	vtx *= 2.;',
-'	vtx -= 1.;',
-'	gl_Position = vec4(vtx, 0., 1.);',
-'}'].join('\n'),
-			fragmentCode : [
-'precision mediump float;',
-'varying vec2 vertexv;',
-'uniform vec2 texMinLoc;',
-'uniform vec2 texMaxLoc;',
-'uniform sampler2D tex;',
-'void main() {',
-'	gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);',
-'}'].join('\n'),
-			uniforms : {
-				tex : 0
-			}
-		}),
 		ortho : function(xmin, xmax, ymin, ymax) {
-			gl.useProgram(this.shader.obj);
-			gl.uniform4f(this.shader.uniforms.ortho.loc, xmin, xmax, ymin, ymax);
-			gl.useProgram(null);
+			this.context.useProgram(this.shader.obj);
+			this.context.uniform4f(this.shader.uniforms.ortho.loc, xmin, xmax, ymin, ymax);
+			this.context.useProgram(null);
 		},
 		draw : function(posX, posY, fontSizeX, fontSizeY, text, sizeX, sizeY, colorR, colorG, colorB, colorA, dontRender, singleLine) {
 			var cursorX = 0;
@@ -104,7 +111,7 @@ GL.oninit.push(function(gl) {
 			var maxx = 0;
 
 			if (!dontRender) {
-				gl.bindTexture(gl.TEXTURE_2D, this.tex.obj);
+				this.context.bindTexture(this.context.TEXTURE_2D, this.tex.obj);
 			}
 			var lastCharWasSpace = true;
 			var a = 0;
@@ -160,7 +167,8 @@ GL.oninit.push(function(gl) {
 						var tx = charIndex%lettersPerSize;
 						var ty = (charIndex-tx)/lettersPerSize;
 
-						GL.unitQuad.draw({
+						if (!renderer.unitQuad) throw "require gl-util-unitquad.js";
+						renderer.unitQuad.draw({
 							shader : this.shader,
 							uniforms : {
 								texMinLoc : [tx+startWidth/lettersPerSize, ty],
@@ -183,11 +191,11 @@ GL.oninit.push(function(gl) {
 			}
 			
 			if (!dontRender) {
-				gl.bindTexture(gl.TEXTURE_2D, null);
+				this.context.bindTexture(this.context.TEXTURE_2D, null);
 			}
 			
 			return [maxx, cursorY + fontSizeY];
 		}
 	});
-	this.Font = Font;
+	GL.Font = Font;
 });

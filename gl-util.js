@@ -21,12 +21,9 @@ GL - main namespace of it all
 */
 GL = new function() { 
 	var GL = this;	//for internal access
-	var gl;
 
 	/*
-	on-init callbacks.  useful for initializing modules with this.
-	TODO divide this between on-scene-init and on-first-init
-	at the moment it is init-once
+	on-init callbacks for each created CanvasRenderer.
 	*/
 	this.oninit = [];
 
@@ -42,36 +39,28 @@ GL = new function() {
 		if (args === undefined) args = {};
 		args.canvas = canvas;
 		
-		var canvasRenderer = new GL.CanvasRenderer(args);
-		this.canvasRenderer = canvasRenderer;
-		
-		gl = this.canvasRenderer.gl;
-		
-		//TODO sort me out
-		//this has to be done after all else inits
-		//but run the init-once code
-		var thiz = this;
-		$.each(this.oninit, function(k,v) {
-			v.call(thiz, gl);
-		});
+		this.canvasRenderer = new GL.CanvasRenderer(args);
 	};
-	
-	//static initialization for the GL namespace
-	//initialize variables based on gl context enums
+
+	/*
+	static initialization for the GL namespace
+	initialize variables based on gl context enums
+	this should be done per-context
+	*/
 	this.staticInitd = false;
-	this.staticInit = function(gl) {
+	this.staticInit = function(context) {
 		//only need to do this once
 		if (this.staticInitd) return;
 		this.staticInitd = true;
 	
-		this.VertexShader.prototype.shaderType = gl.VERTEX_SHADER;
-		this.FragmentShader.prototype.shaderType = gl.FRAGMENT_SHADER;
-		this.Texture2D.prototype.target = gl.TEXTURE_2D;
-		this.TextureCube.prototype.target = gl.TEXTURE_CUBE_MAP;
+		this.VertexShader.prototype.shaderType = context.VERTEX_SHADER;
+		this.FragmentShader.prototype.shaderType = context.FRAGMENT_SHADER;
+		this.Texture2D.prototype.target = context.TEXTURE_2D;
+		this.TextureCube.prototype.target = context.TEXTURE_CUBE_MAP;
 
 		this.wrapMap = {
-			s : gl.TEXTURE_WRAP_S,
-			t : gl.TEXTURE_WRAP_T
+			s : context.TEXTURE_WRAP_S,
+			t : context.TEXTURE_WRAP_T
 		};
 
 		//detect precision used
@@ -79,26 +68,26 @@ GL = new function() {
 		this.fragmentPrecision = 'precision mediump float;\n';
 		this.vertexPrecision = '';
 
-		var vtxhigh = gl.getShaderPrecisionFormat(gl.VERTEX_SHADER, gl.HIGH_FLOAT)
+		var vtxhigh = context.getShaderPrecisionFormat(context.VERTEX_SHADER, context.HIGH_FLOAT)
 		if (vtxhigh.rangeMin !== 0 && vtxhigh.rangeMax !== 0 && vtxhigh.precision !== 0) {
 			this.vertexPrecision = 'precision highp float;\n';
 		}
-		var fraghigh = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
+		var fraghigh = context.getShaderPrecisionFormat(context.FRAGMENT_SHADER, context.HIGH_FLOAT)
 		if (fraghigh.rangeMin !== 0 && fraghigh.rangeMax !== 0 && fraghigh.precision !== 0) {
 			this.fragmentPrecision = 'precision highp float;\n';
 		}
-
-//fixme.  static init needs GL.gl
-GL.gl = gl;
 	};
 
 	/*
 	view object, for matrix deduction
 	*/
 	var View = makeClass({
-		init : function(){
-//backwards compat
-GL.view = this;
+		/*
+		args:
+			renderer
+		*/
+		init : function(args) {
+			this.renderer = assert(args.renderer);
 			this.zNear = 1;
 			this.zFar = 2000;
 			this.fovY = 90;	// corresponding with 1:1 x:z
@@ -110,16 +99,16 @@ GL.view = this;
 	this.View = View;
 
 	var Scene = makeClass({
+		/*
+		args:
+			renderer
+		*/
 		init : function(args) {
-//backwards compat
-GL.scene = this;
+			this.renderer = assert(args.renderer);
 			
 			//traditional gl matrices
 			this.projMat = mat4.create();
 			this.mvMat = mat4.create();
-//backwards compat
-GL.projMat = this.projMat;
-GL.mvMat = this.mvMat;
 		
 			this.root = new GL.SceneObject({
 				scene : this,
@@ -131,9 +120,9 @@ GL.mvMat = this.mvMat;
 			var viewAngleInv = quat.create();
 			var viewPosInv = vec3.create();
 			return function() {
-				quat.conjugate(viewAngleInv, GL.view.angle);
+				quat.conjugate(viewAngleInv, this.renderer.view.angle);
 				mat4.fromQuat(this.mvMat, viewAngleInv);
-				vec3.negate(viewPosInv, GL.view.pos);
+				vec3.negate(viewPosInv, this.renderer.view.pos);
 				mat4.translate(this.mvMat, this.mvMat, viewPosInv);
 			};
 		})()
@@ -141,6 +130,9 @@ GL.mvMat = this.mvMat;
 	this.Scene = Scene;
 
 	/*
+	this combines the GL context, render target, and viewport responsabilities
+	so maybe it should be split up later
+	
 	create a new scene with associated canvas and view
 	args:
 		canvas = which canvas to use (required)
@@ -171,47 +163,52 @@ GL.mvMat = this.mvMat;
 			
 			if (canvasArgs.alpha === undefined) canvasArgs.alpha = false;
 
-			gl = undefined;
+			var context = undefined;
 			for (var i = 0; i < GL.webGLNames.length; i++) {
 				try {
-					console.log('trying to init gl context name', GL.webGLNames[i]);
-					gl = this.canvas.getContext(GL.webGLNames[i], canvasArgs);
+					console.log('trying to init gl context of type', GL.webGLNames[i]);
+					context = this.canvas.getContext(GL.webGLNames[i], canvasArgs);
 				} catch (e) {
 					console.log('failed with exception', e);
 				}
-				if (gl) break;
+				if (context) break;
 			}
-			if (gl === undefined) {
+			if (context === undefined) {
 				throw "Couldn't initialize WebGL =(";
 			}
 		
 			if (args && args.debug) {
-				gl = WebGLDebugUtils.makeDebugContext(gl);	
+				context = WebGLDebugUtils.makeDebugContext(context);	
 			}
 
-			this.gl = gl;
-		
-			//gather extensions
-			gl.getExtension('OES_element_index_uint');
-			gl.getExtension('OES_standard_derivatives');
-			gl.getExtension('OES_texture_float');
-			gl.getExtension('OES_texture_float_linear');
+			this.context = context;
 
-			$.each(gl.getSupportedExtensions(), function(_,ext){
+			//gather extensions
+			context.getExtension('OES_element_index_uint');
+			context.getExtension('OES_standard_derivatives');
+			context.getExtension('OES_texture_float');
+			context.getExtension('OES_texture_float_linear');
+
+			$.each(context.getSupportedExtensions(), function(_,ext){
 				console.log(ext);
 			});
 		
-			//init this?
-			gl.clearColor(0,0,0,1);
+			//init
+			context.clearColor(0,0,0,1);
 
 			//initialize variables based on the gl context object constants:
-			GL.staticInit(gl);
+			GL.staticInit(context);
 
 			//camera
-			this.view = new GL.View();
+			this.view = new GL.View({renderer:this});
 
 			//scenegraph
-			this.scene = new GL.Scene();
+			this.scene = new GL.Scene({renderer:this});
+	
+			var thiz = this;
+			$.each(GL.oninit, function(k,v) {
+				v.call(thiz);
+			});
 		},
 
 		draw : (function(){
@@ -233,7 +230,7 @@ GL.mvMat = this.mvMat;
 				this.scene.setupMatrices();
 
 				//TODO modular?
-				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT);
 			
 				if (!this.scene.root.hidden) this.scene.root.draw();
 
@@ -246,9 +243,9 @@ GL.mvMat = this.mvMat;
 
 		clearAlpha : function() {
 			//work around canvas alpha crap
-			gl.colorMask(false,false,false,true);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-			gl.colorMask(true,true,true,true);
+			this.context.colorMask(false,false,false,true);
+			this.context.clear(this.context.COLOR_BUFFER_BIT);
+			this.context.colorMask(true,true,true,true);
 		},
 
 		/*
@@ -257,7 +254,7 @@ GL.mvMat = this.mvMat;
 		  or of whether the canvas resize callback fired before or after it did)
 		*/
 		resize : function() {
-			gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+			this.context.viewport(0, 0, this.canvas.width, this.canvas.height);
 			this.updateProjection();
 			
 			//auto draw on resize?
@@ -275,16 +272,16 @@ GL.mvMat = this.mvMat;
 		*/
 		mouseDir : function(dir,xf,yf) {
 			//basis: [0] = right, [1] = up, [2] = backwards
-			var x = vec3.create(); vec3.quatXAxis(x, GL.view.angle);
-			var y = vec3.create(); vec3.quatYAxis(y, GL.view.angle);
-			var z = vec3.create(); vec3.quatZAxis(z, GL.view.angle);
+			var x = vec3.create(); vec3.quatXAxis(x, this.view.angle);
+			var y = vec3.create(); vec3.quatYAxis(y, this.view.angle);
+			var z = vec3.create(); vec3.quatZAxis(z, this.view.angle);
 			var aspectRatio = this.canvas.width / this.canvas.height;
 			var mxf = xf * 2 - 1;
 			var myf = 1 - yf * 2;
-			var tanFovY = Math.tan(GL.view.fovY * Math.PI / 360);
-			var px = GL.view.pos[0];
-			var py = GL.view.pos[1];
-			var pz = GL.view.pos[2];
+			var tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
+			var px = this.view.pos[0];
+			var py = this.view.pos[1];
+			var pz = this.view.pos[2];
 			dir[0] = -z[0] + tanFovY * (aspectRatio * mxf * x[0] + myf * y[0]);
 			dir[1] = -z[1] + tanFovY * (aspectRatio * mxf * x[1] + myf * y[1]);
 			dir[2] = -z[2] + tanFovY * (aspectRatio * mxf * x[2] + myf * y[2]);
@@ -372,11 +369,14 @@ GL.mvMat = this.mvMat;
 	var Shader = makeClass({
 		/*
 		args:
+			context
 			(appended in this order)
 			code = shader code,
 			id = the id of the DOM element containing the shader code
 		*/
 		init : function(args) {
+			this.context = assert(args.context);
+			
 			var code = '';
 			if (args.code) {
 				if (code === undefined) code = '';
@@ -390,15 +390,15 @@ GL.mvMat = this.mvMat;
 			}
 			if (code === undefined) throw "expected code or id";
 
-			this.obj = gl.createShader(this.shaderType);
-			gl.shaderSource(this.obj, code);
-			gl.compileShader(this.obj);
-			if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) {
+			this.obj = this.context.createShader(this.shaderType);
+			this.context.shaderSource(this.obj, code);
+			this.context.compileShader(this.obj);
+			if (!this.context.getShaderParameter(this.obj, this.context.COMPILE_STATUS)) {
 				//stupid grep for tablet aLogCat
 				$.each(code.split('\n'), function(i,line) {
 					console.log(i+': '+line);
 				});
-				throw gl.getShaderInfoLog(this.obj);
+				throw this.context.getShaderInfoLog(this.obj);
 			}
 		}
 	});
@@ -422,42 +422,43 @@ GL.mvMat = this.mvMat;
 	//0: used when multiple primitive values are passed
 	//1: used when an array is passed
 	//2: used when an array is passed as a matrix
-	var getUniformSettersForGLType = function(gltype) {
+	var getUniformSettersForGLType = function(context, gltype) {
 		switch (gltype) {
-		case gl.FLOAT: 
-			return {arg:gl.uniform1f, count:1};
-		case gl.INT:
-		case gl.BOOL:
-		case gl.SAMPLER_2D:
-		case gl.SAMPLER_CUBE: 
-			return {arg:gl.uniform1i, count:1};
-		case gl.FLOAT_VEC2: 
-			return {arg:gl.uniform2f, count:2, vec:gl.uniform2fv};
-		case gl.INT_VEC2:
-		case gl.BOOL_VEC2:
-			return {arg:gl.uniform2i, count:2, vec:gl.uniform2iv};
-		case gl.FLOAT_VEC3: 
-			return {arg:gl.uniform3f, count:3, vec:gl.uniform3fv};
-		case gl.INT_VEC3:
-		case gl.BOOL_VEC3:
-			return {arg:gl.uniform3i, count:3, vec:gl.uniform3iv};
-		case gl.FLOAT_VEC4: 
-			return {arg:gl.uniform4f, count:4, vec:gl.uniform4fv};
-		case gl.INT_VEC4:
-		case gl.BOOL_VEC4:
-			return {arg:gl.uniform4i, count:4, vec:gl.uniform4iv};
-		case gl.FLOAT_MAT2:
-			return {mat:gl.uniformMatrix2fv};
-		case gl.FLOAT_MAT3:
-			return {mat:gl.uniformMatrix3fv};
-		case gl.FLOAT_MAT4:
-			return {mat:gl.uniformMatrix4fv};
+		case context.FLOAT: 
+			return {arg:context.uniform1f, count:1};
+		case context.INT:
+		case context.BOOL:
+		case context.SAMPLER_2D:
+		case context.SAMPLER_CUBE: 
+			return {arg:context.uniform1i, count:1};
+		case context.FLOAT_VEC2: 
+			return {arg:context.uniform2f, count:2, vec:context.uniform2fv};
+		case context.INT_VEC2:
+		case context.BOOL_VEC2:
+			return {arg:context.uniform2i, count:2, vec:context.uniform2iv};
+		case context.FLOAT_VEC3: 
+			return {arg:context.uniform3f, count:3, vec:context.uniform3fv};
+		case context.INT_VEC3:
+		case context.BOOL_VEC3:
+			return {arg:context.uniform3i, count:3, vec:context.uniform3iv};
+		case context.FLOAT_VEC4: 
+			return {arg:context.uniform4f, count:4, vec:context.uniform4fv};
+		case context.INT_VEC4:
+		case context.BOOL_VEC4:
+			return {arg:context.uniform4i, count:4, vec:context.uniform4iv};
+		case context.FLOAT_MAT2:
+			return {mat:context.uniformMatrix2fv};
+		case context.FLOAT_MAT3:
+			return {mat:context.uniformMatrix3fv};
+		case context.FLOAT_MAT4:
+			return {mat:context.uniformMatrix4fv};
 		}
 	};
 
 	var ShaderProgram = makeClass({
 		/*
 		args:
+			context
 				one of the following:
 			vertexShader = the VertexShader object to link with
 			vertexCode = the vertex shader code
@@ -473,6 +474,7 @@ GL.mvMat = this.mvMat;
 		*/
 		init : function(args) {
 			var thiz = this;
+			this.context = assert(args.context);
 			this.vertexShader = args.vertexShader;
 			if (!this.vertexShader) {
 				var vertexCode = args.vertexCode;
@@ -481,6 +483,7 @@ GL.mvMat = this.mvMat;
 					vertexCode = GL.vertexPrecision + vertexCode;
 				}
 				this.vertexShader = new GL.VertexShader({
+					context : this.context,
 					id : args.vertexCodeID,
 					code : vertexCode
 				});
@@ -495,19 +498,20 @@ GL.mvMat = this.mvMat;
 					fragmentCode = GL.fragmentPrecision + fragmentCode;
 				}
 				this.fragmentShader = new GL.FragmentShader({
+					context : this.context,
 					id : args.fragmentCodeID,
 					code : fragmentCode
 				});
 			}
 			if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
 
-			this.obj = gl.createProgram();
-			gl.attachShader(this.obj, this.vertexShader.obj);
-			gl.attachShader(this.obj, this.fragmentShader.obj);
+			this.obj = this.context.createProgram();
+			this.context.attachShader(this.obj, this.vertexShader.obj);
+			this.context.attachShader(this.obj, this.fragmentShader.obj);
 			
-			gl.linkProgram(this.obj);
-			if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
-				//throw 'Link Error: '+gl.getShaderInfoLog(this.obj);	
+			this.context.linkProgram(this.obj);
+			if (!this.context.getProgramParameter(this.obj, this.context.LINK_STATUS)) {
+				//throw 'Link Error: '+this.context.getShaderInfoLog(this.obj);	
 				console.log('vertex code:');
 				$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
 					console.log(i+': '+line);
@@ -519,23 +523,23 @@ GL.mvMat = this.mvMat;
 				throw "Could not initialize shaders";
 			}
 			
-			gl.useProgram(this.obj);
+			this.context.useProgram(this.obj);
 			
 			this.uniforms = {};
-			var maxUniforms = gl.getProgramParameter(this.obj, gl.ACTIVE_UNIFORMS);
+			var maxUniforms = this.context.getProgramParameter(this.obj, this.context.ACTIVE_UNIFORMS);
 			for (var i = 0; i < maxUniforms; i++) {
-				var info = gl.getActiveUniform(this.obj, i);
-				info.loc = gl.getUniformLocation(this.obj, info.name);
-				info.setters = getUniformSettersForGLType(info.type);
+				var info = this.context.getActiveUniform(this.obj, i);
+				info.loc = this.context.getUniformLocation(this.obj, info.name);
+				info.setters = getUniformSettersForGLType(this.context, info.type);
 				this.uniforms[i] = info;
 				this.uniforms[info.name] = info;
 			}
 
 			this.attrs = {};
-			var maxAttrs = gl.getProgramParameter(this.obj, gl.ACTIVE_ATTRIBUTES);
+			var maxAttrs = this.context.getProgramParameter(this.obj, this.context.ACTIVE_ATTRIBUTES);
 			for (var i = 0; i < maxAttrs; i++) {
-				var info = gl.getActiveAttrib(this.obj, i);
-				info.loc = gl.getAttribLocation(this.obj, info.name);
+				var info = this.context.getActiveAttrib(this.obj, i);
+				info.loc = this.context.getAttribLocation(this.obj, info.name);
 				this.attrs[info.name] = info;
 			}
 
@@ -543,14 +547,14 @@ GL.mvMat = this.mvMat;
 				this.setUniforms(args.uniforms);
 			}
 
-			gl.useProgram(null);
+			this.context.useProgram(null);
 		},
 		use : function() {
-			gl.useProgram(this.obj);
+			this.context.useProgram(this.obj);
 			return this;
 		},
 		useNone : function() {
-			gl.useProgram(null);
+			this.context.useProgram(null);
 			return this;
 		},
 		setUniforms : function(uniforms) {
@@ -579,12 +583,12 @@ GL.mvMat = this.mvMat;
 				if (arguments.length < setters.count) {
 					throw 'setUniform('+name+') needed '+setters.count+' arguments';
 				}
-				setter.apply(gl, arguments);
+				setter.apply(this.context, arguments);
 			} else {
 				if (setters.vec) {
-					setters.vec.call(gl, loc, value);
+					setters.vec.call(this.context, loc, value);
 				} else if (setters.mat) {
-					setters.mat.call(gl, loc, false, value);
+					setters.mat.call(this.context, loc, false, value);
 				} else {
 					throw "failed to find array setter for uniform "+name;
 				}
@@ -602,9 +606,9 @@ GL.mvMat = this.mvMat;
 				return;
 			}
 			//console.log("enabling attr "+name);
-			gl.enableVertexAttribArray(info.loc);
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer.obj);
-			gl.vertexAttribPointer(info.loc, buffer.dim, gl.FLOAT, false, 0, 0);
+			this.context.enableVertexAttribArray(info.loc);
+			this.context.bindBuffer(this.context.ARRAY_BUFFER, buffer.obj);
+			this.context.vertexAttribPointer(info.loc, buffer.dim, this.context.FLOAT, false, 0, 0);
 		},
 		removeAttrs : function(attrs) {
 			for (k in attrs) {
@@ -618,27 +622,33 @@ GL.mvMat = this.mvMat;
 				return;
 			}
 			//console.log("disabling attr "+name);
-			gl.disableVertexAttribArray(info.loc);
+			this.context.disableVertexAttribArray(info.loc);
 		}
 	});
 	this.ShaderProgram = ShaderProgram;
 
 	var Texture = makeClass({
+		/*
+		args:
+			context
+			everything else handled by setArgs
+		*/
 		init : function(args) {
-			this.obj = gl.createTexture();
-			gl.bindTexture(this.target, this.obj);
+			this.context = assert(args.context);
+			this.obj = this.context.createTexture();
+			this.context.bindTexture(this.target, this.obj);
 			if (args !== undefined) this.setArgs(args);
-			gl.bindTexture(this.target, null);
+			this.context.bindTexture(this.target, null);
 		},
 		//target provided upon init 
 		bind : function(unit) { 
-			if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
-			gl.bindTexture(this.target, this.obj);
+			if (unit !== undefined) this.context.activeTexture(this.context.TEXTURE0 + unit);
+			this.context.bindTexture(this.target, this.obj);
 			return this;
 		},
 		unbind : function(unit) { 
-			if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
-			gl.bindTexture(this.target, null); 
+			if (unit !== undefined) this.context.activeTexture(this.context.TEXTURE0 + unit);
+			this.context.bindTexture(this.target, null); 
 			return this;
 		},
 		/*
@@ -654,11 +664,11 @@ GL.mvMat = this.mvMat;
 		*/
 		setArgs : function(args) {
 			var target = this.target;
-			if (args.flipY === true) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-			else if (args.flipY === false) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-			if (!args.dontPremultiplyAlpha) gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-			if (args.magFilter) gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, args.magFilter);
-			if (args.minFilter) gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, args.minFilter);
+			if (args.flipY === true) this.context.pixelStorei(this.context.UNPACK_FLIP_Y_WEBGL, true);
+			else if (args.flipY === false) this.context.pixelStorei(this.context.UNPACK_FLIP_Y_WEBGL, false);
+			if (!args.dontPremultiplyAlpha) this.context.pixelStorei(this.context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+			if (args.magFilter) this.context.texParameteri(target, this.context.TEXTURE_MAG_FILTER, args.magFilter);
+			if (args.minFilter) this.context.texParameteri(target, this.context.TEXTURE_MIN_FILTER, args.minFilter);
 			if (args.wrap) {
 				this.setWrap(args.wrap);
 			}
@@ -667,7 +677,7 @@ GL.mvMat = this.mvMat;
 		},
 		setWrap : function(args) {
 			for (var k in args) {
-				gl.texParameteri(this.target, GL.wrapMap[k] || k, args[k]);
+				this.context.texParameteri(this.target, GL.wrapMap[k] || k, args[k]);
 			}
 		},
 		//typically overwritten. default calls setImage if args.data is provided
@@ -693,9 +703,9 @@ GL.mvMat = this.mvMat;
 				var thiz = this;
 				image.onload = function() {
 					args.data = image;
-					gl.bindTexture(thiz.target, thiz.obj);
+					thiz.context.bindTexture(thiz.target, thiz.obj);
 					thiz.setImage(args);
-					gl.bindTexture(thiz.target, null);
+					thiz.context.bindTexture(thiz.target, null);
 					
 					if (args.onload) args.onload.call(thiz);
 				};
@@ -722,14 +732,14 @@ GL.mvMat = this.mvMat;
 		setImage : function(args) {
 			var target = args.target !== undefined ? args.target : this.target;
 			var level = args.level !== undefined ? args.level : 0;
-			var internalFormat = args.internalFormat !== undefined ? args.internalFormat : gl.RGBA;
-			var format = args.format !== undefined ? args.format : gl.RGBA;
-			var type = args.type !== undefined ? args.type : gl.UNSIGNED_BYTE;
+			var internalFormat = args.internalFormat !== undefined ? args.internalFormat : this.context.RGBA;
+			var format = args.format !== undefined ? args.format : this.context.RGBA;
+			var type = args.type !== undefined ? args.type : this.context.UNSIGNED_BYTE;
 			var width = args.width;
 			var height = args.height;
 			var border = args.border !== undefined ? args.border : 0;
 			
-			//store?  WebGL has no getTexParameteri(gl.TEXTURE_WIDTH) ...
+			//store?  WebGL has no getTexParameteri(this.context.TEXTURE_WIDTH) ...
 			this.internalFormat = internalFormat;
 			this.format = format;
 			this.type = type;
@@ -740,25 +750,25 @@ GL.mvMat = this.mvMat;
 			//console.log('setting image target',target,'level',level,'internalFormat',internalFormat,'width',width,'height',height,'border',border,'format',format,'type',type,'data',args.data);
 			if (width === undefined && height === undefined) {
 				//assume it's an image
-				gl.texImage2D(target, level, internalFormat, format, type, args.data);
+				this.context.texImage2D(target, level, internalFormat, format, type, args.data);
 			} else {
 				if (typeof(args.data) != 'function') {
 					//assume it's a buffer
-					gl.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
+					this.context.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
 				} else {
 					//procedural generation
 					var i = 0;
 					
 					//TODO get number of channels for format, rather than overriding it...
-					format = gl.RGBA;
+					format = this.context.RGBA;
 					var channels = 4;
 
 					var scale = undefined;
 					var data = undefined;
-					if (type == gl.UNSIGNED_BYTE) {
+					if (type == this.context.UNSIGNED_BYTE) {
 						data = new Uint8Array(width * height * channels);
 						scale = 255;
-					} else if (type == gl.FLOAT) {
+					} else if (type == this.context.FLOAT) {
 						data = new Float32Array(width * height * channels);
 						scale = 1;
 					}
@@ -776,11 +786,11 @@ GL.mvMat = this.mvMat;
 						}
 					}
 window.lastCallbackGeneratedWebGLTextureData = data;
-					gl.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
+					this.context.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
 				}
 			}
 			if (args.generateMipmap) {
-				gl.generateMipmap(this.target);
+				this.context.generateMipmap(this.target);
 			}
 		}
 	});
@@ -789,7 +799,7 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 	var TextureCube = makeClass({
 		super : Texture,
 		getTargetForSide : function(side) {	//static
-			return gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+			return this.context.TEXTURE_CUBE_MAP_POSITIVE_X + side;
 		},
 		setArgs : function(args) {
 			Texture.prototype.setArgs.call(this, args);
@@ -804,9 +814,9 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 					image.onload = function() {
 						args.data = image;
 						args.target = thiz.getTargetForSide(side);
-						gl.bindTexture(thiz.target, thiz.obj);
+						thiz.context.bindTexture(thiz.target, thiz.obj);
 						Texture2D.prototype.setImage.call(thiz, args);
-						gl.bindTexture(thiz.target, null);
+						thiz.context.bindTexture(thiz.target, null);
 					
 						if (args.onload) args.onload.call(thiz,side,url,image);
 					
@@ -815,9 +825,9 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 						loadedCount++;
 						if (loadedCount == 6) {
 							if (generateMipmap) {
-								gl.bindTexture(gl.TEXTURE_CUBE_MAP, thiz.obj);
-								gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-								gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+								thiz.context.bindTexture(thiz.context.TEXTURE_CUBE_MAP, thiz.obj);
+								thiz.context.generateMipmap(thiz.context.TEXTURE_CUBE_MAP);
+								thiz.context.bindTexture(thiz.context.TEXTURE_CUBE_MAP, null);
 							}
 							if (args.done) args.done.call(thiz);
 						}
@@ -833,7 +843,7 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			var generateMipmap = args.generateMipmap;
 			args.generateMipmap = undefined;
 	
-			gl.bindTexture(this.target, this.obj);
+			this.context.bindTexture(this.target, this.obj);
 			var isArray = typeof(args.data) == 'object';	//$.isArray(value);
 			//console.log('isArray?',isArray);
 			if (isArray && args.data.length >= 6) {
@@ -857,10 +867,10 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			
 			if (generateMipmap) {
 				//console.log('generating mipmaps of data-driven cubemap');
-				gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+				this.context.generateMipmap(this.context.TEXTURE_CUBE_MAP);
 			}
 			
-			gl.bindTexture(this.target, null);
+			this.context.bindTexture(this.target, null);
 	
 		}
 	});
@@ -869,6 +879,7 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 	var ArrayBuffer = makeClass({
 		/*
 		args:
+			context
 			one of the two:
 				data = either a Float32Array object, or a constructor for a Float32Array object
 				count = how many vertexes to create
@@ -877,9 +888,9 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			keep = optional, default true, set to false to not retain data in .data
 		*/
 		init : function(args) {
-			if (args === undefined) args = {};
+			this.context = assert(args.context);
 			if (args.keep === undefined) args.keep = true;
-			this.obj = gl.createBuffer();
+			this.obj = this.context.createBuffer();
 			this.dim = args.dim !== undefined ? args.dim : 3;
 			var data = args.data;
 			if (data === undefined) {
@@ -889,15 +900,15 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 					throw "expected 'data' or 'count'";
 				}
 			}
-			this.setData(data, args.usage || gl.STATIC_DRAW, args.keep);
+			this.setData(data, args.usage || this.context.STATIC_DRAW, args.keep);
 		},
 		setData : function(data, usage, keep) {
 			if (data.constructor != Float32Array) {
 				data = new Float32Array(data);
 			}
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
-			gl.bufferData(gl.ARRAY_BUFFER, data, usage);
-			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+			this.context.bindBuffer(this.context.ARRAY_BUFFER, this.obj);
+			this.context.bufferData(this.context.ARRAY_BUFFER, data, usage);
+			this.context.bindBuffer(this.context.ARRAY_BUFFER, null);
 			this.count = data.length / this.dim;
 			if (keep) this.data = data;
 		},
@@ -907,9 +918,9 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			if (data.constructor != Float32Array) {
 				data = new Float32Array(data);
 			}
-			gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
-			gl.bufferSubData(gl.ARRAY_BUFFER, offset, data);
-			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+			this.context.bindBuffer(this.context.ARRAY_BUFFER, this.obj);
+			this.context.bufferSubData(this.context.ARRAY_BUFFER, offset, data);
+			this.context.bindBuffer(this.context.ARRAY_BUFFER, null);
 		}
 	});
 	this.ArrayBuffer = ArrayBuffer;
@@ -917,12 +928,13 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 	var ElementArrayBuffer = makeClass({
 		/*
 		args:
+			context
 			data = either a Uint16Array object, or a constructor for a Uint16Array object
 		*/
 		init : function(args) {
-			if (args === undefined) args = {};
-			this.obj = gl.createBuffer();
-			this.setData(args.data, args.usage || gl.STATIC_DRAW);
+			this.context = assert(args.context);
+			this.obj = this.context.createBuffer();
+			this.setData(args.data, args.usage || this.context.STATIC_DRAW);
 		},
 		setData : function(data, usage) {
 			if (data.constructor != Uint16Array && 
@@ -931,14 +943,14 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 				//in case of uint, default to uint
 				// otherwise default to ushort
 				var type = Uint16Array;
-				if (gl.getExtension('OES_element_index_uint')) type = Uint32Array;
+				if (this.context.getExtension('OES_element_index_uint')) type = Uint32Array;
 				data = new type(data);
 			}
-			this.type = data.constructor == Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+			this.type = data.constructor == Uint32Array ? this.context.UNSIGNED_INT : this.context.UNSIGNED_SHORT;
 			
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
-			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+			this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, this.obj);
+			this.context.bufferData(this.context.ELEMENT_ARRAY_BUFFER, data, usage);
+			this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, null);
 			this.count = data.length;
 		},
 		updateData : function(data, offset) {
@@ -946,9 +958,9 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			if (data.constructor != Uint16Array) {
 				data = new Uint16Array(data);
 			}
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
-			gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset, data);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+			this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, this.obj);
+			this.context.bufferSubData(this.context.ELEMENT_ARRAY_BUFFER, offset, data);
+			this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, null);
 		}
 	});
 	this.ElementArrayBuffer = ElementArrayBuffer;
@@ -956,29 +968,31 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 	var Framebuffer = makeClass({
 		/*
 		args:
+			context
 			width : framebuffer width.  required with depth.
 			height : framebuffer height.  required with depth.
 			useDepth : set to create a depth renderbuffer for this framebuffer.
 		*/
 		init : function(args) {
-			this.width = args !== undefined ? args.width : undefined;
-			this.height = args !== undefined ? args.height : undefined;
-			this.obj = gl.createFramebuffer();
-			gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
+			this.context = assert(args.context);
+			this.width = args.width;
+			this.height = args.height;
+			this.obj = this.context.createFramebuffer();
+			this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.obj);
 			if (args !== undefined && args.useDepth) {
-				this.depthObj = gl.createRenderbuffer();
-				gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthObj);
-				gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-				gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthObj);
-				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+				this.depthObj = this.context.createRenderbuffer();
+				this.context.bindRenderbuffer(this.context.RENDERBUFFER, this.depthObj);
+				this.context.renderbufferStorage(this.context.RENDERBUFFER, this.context.DEPTH_COMPONENT16, this.width, this.height);
+				this.context.framebufferRenderbuffer(this.context.FRAMEBUFFER, this.context.DEPTH_ATTACHMENT, this.context.RENDERBUFFER, this.depthObj);
+				this.context.bindRenderbuffer(this.context.RENDERBUFFER, null);
 			}
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			this.context.bindFramebuffer(this.context.FRAMEBUFFER, null);
 		},
 		bind : function() {
-			gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
+			this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.obj);
 		},
 		unbind : function() {
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			this.context.bindFramebuffer(this.context.FRAMEBUFFER, null);
 		},
 		fboErrors : [
 			'FRAMEBUFFER_INCOMPLETE_ATTACHMENT',
@@ -987,11 +1001,11 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 			'FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT'
 		],
 		check : function() {
-			var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-			if (status != gl.FRAMEBUFFER_COMPLETE) {
+			var status = this.context.checkFramebufferStatus(this.context.FRAMEBUFFER);
+			if (status != this.context.FRAMEBUFFER_COMPLETE) {
 				var errstr = 'glCheckFramebufferStatus status=' + status;
 				$.each(this.fboErrors, function(i,fboError) {
-					if (gl[fboError] == status) {
+					if (this.context[fboError] == status) {
 						errstr += ' error=' + fboError;
 						return true;	//break;
 					}
@@ -1001,24 +1015,24 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 		},
 		setColorAttachmentTex2D : function(index, tex, target, level) {
 			if (index === undefined) index = 0;
-			if (target === undefined) target = gl.TEXTURE_2D;
+			if (target === undefined) target = this.context.TEXTURE_2D;
 			if (level === undefined) level = 0;
 			this.bind();
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
+			this.context.framebufferTexture2D(this.context.FRAMEBUFFER, this.context.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
 			this.unbind();
 		},
 		setColorAttachmentTexCubeMapSide : function(index, tex, side, level) {
 			if (side === undefined) side = index;
 			if (level === undefined) level = 0;
 			this.bind();
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, GL.TextureCube.prototype.getTargetForSide(side), tex, level);
+			this.context.framebufferTexture2D(this.context.FRAMEBUFFER, this.context.COLOR_ATTACHMENT0 + index, GL.TextureCube.prototype.getTargetForSide(side), tex, level);
 			this.unbind();
 		},
 /* WebGL only supports one color attachment at a time ...
 		setColorAttachmentTexCubeMap : function(tex, level) {
 			this.bind();
 			for (var i = 0; i < 6; i++) {
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, GL.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
+				this.context.framebufferTexture2D(this.context.FRAMEBUFFER, this.context.COLOR_ATTACHMENT0 + i, GL.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
 			}
 			this.unbind();
 		},
@@ -1028,7 +1042,7 @@ function FBO:setColorAttachmentTex3D(index, tex, slice, target, level)
 	if not tonumber(slice) then error("unable to convert slice to number: " ..tostring(slice)) end
 	slice = tonumber(slice)
 	self:bind()
-	gl.glFramebufferTexture3D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0 + index, target or gl.GL_TEXTURE_3D, tex, level or 0, slice)
+	this.context.glFramebufferTexture3D(this.context.GL_FRAMEBUFFER, this.context.GL_COLOR_ATTACHMENT0 + index, target or this.context.GL_TEXTURE_3D, tex, level or 0, slice)
 	self:unbind()
 end
 */
@@ -1078,8 +1092,8 @@ end
 			var oldvp;
 			if (args.viewport) {
 				var vp = args.viewport;
-				var oldvp = gl.getParameter(gl.VIEWPORT);
-				gl.viewport.apply(gl, args.viewport);
+				var oldvp = this.context.getParameter(this.context.VIEWPORT);
+				this.context.viewport.apply(this.context, args.viewport);
 			}
 			//if (args.resetProjection) throw 'not supported in webgl';
 			
@@ -1088,14 +1102,14 @@ end
 			//the fbo itself doesn't necessarily need one, nor does it store uniforms
 			//so args.shader, args.uniforms, and args.texs might be moot here
 			if (args.shader) {
-				gl.useProgram(args.shader.obj);
+				this.context.useProgram(args.shader.obj);
 				if (args.uniforms) {
 					if (args.uniforms) {
 						args.shader.setUniforms(args.uniforms);
 					}
 				}
 			}
-			if (args.texs) bindTextureSet(args.texs);
+			if (args.texs) bindTextureSet(this.context, args.texs);
 
 			//if (args.color) throw 'color not supported in webgl';
 			//if (args.dest) throw 'multiple color attachments not supported in webgl';
@@ -1105,46 +1119,47 @@ end
 			// why not just merge it in here?
 			this.drawToCallback(args.callback/* || drawScreenQuad, args.colorAttachment || 0*/);
 			
-			if (args.texs) unbindTextureSet(args.texs);
+			if (args.texs) unbindTextureSet(this.context, args.texs);
 			if (args.shader) {
-				gl.useProgram(null);
+				this.context.useProgram(null);
 			}
 
 			if (args.viewport) {
-				gl.viewport.apply(gl, oldvp);
+				this.context.viewport.apply(this.context, oldvp);
 			}
 		}
 	});
 	this.Framebuffer = Framebuffer;
 
-	var bindTextureSet = function(texs) {
+	var bindTextureSet = function(context, texs) {
 		for (var k in texs) {
 			if (texs.hasOwnProperty(k)) {
-				gl.activeTexture(gl.TEXTURE0 + parseInt(k));
+				context.activeTexture(context.TEXTURE0 + parseInt(k));
 				var tex = texs[k];
 				if (tex) {	//because java can enumerate through undefined values
-					gl.bindTexture(tex.target, tex.obj);
+					context.bindTexture(tex.target, tex.obj);
 				}
 			}
 		}
-		gl.activeTexture(gl.TEXTURE0);
+		context.activeTexture(context.TEXTURE0);
 	};
-	var unbindTextureSet = function(texs) {
+	var unbindTextureSet = function(context, texs) {
 		for (var k in texs) {
 			if (texs.hasOwnProperty(k)) {
-				gl.activeTexture(gl.TEXTURE0 + parseInt(k));
+				context.activeTexture(context.TEXTURE0 + parseInt(k));
 				var tex = texs[k];
 				if (tex) {	//because java can enumerate through undefined values
-					gl.bindTexture(tex.target, null);
+					context.bindTexture(tex.target, null);
 				}
 			}
 		}
-		gl.activeTexture(gl.TEXTURE0);
+		context.activeTexture(context.TEXTURE0);
 	};
 
 	var Geometry = makeClass({
 		/*
 		args:
+			context
 			mode
 			count (optional).  required unless 'indexes' or 'vertexes' is provided.
 			indexes (optional).  specifies to use drawElements instead of drawArrays
@@ -1152,6 +1167,7 @@ end
 			offset (optional).
 		*/
 		init : function(args) {
+			this.context = args.context;
 			this.mode = args.mode;
 			this.count = args.count;
 			this.indexes = args.indexes;
@@ -1169,17 +1185,17 @@ end
 				if (args.offset !== undefined) offset = args.offset;
 			}
 			if (this.indexes !== undefined) {
-				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
+				this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
 				if (count === undefined) {
 					count = this.indexes.count;
 				}
-				gl.drawElements(mode, count, this.indexes.type, offset);
-				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+				this.context.drawElements(mode, count, this.indexes.type, offset);
+				this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, null);
 			} else {
 				if (count === undefined && this.vertexes !== undefined) {
 					count = this.vertexes.count;
 				}
-				gl.drawArrays(mode, offset, count);
+				this.context.drawArrays(mode, offset, count);
 			}
 		}
 	});
@@ -1189,7 +1205,8 @@ end
 		/*
 		args:
 			scene
-			
+			context (optional if scene is provided)
+
 			geometry
 				-or-
 			mode
@@ -1214,6 +1231,7 @@ end
 		init : function(args) {
 			if (args) {
 				this.scene = args.scene;
+				this.context = args.context;
 				this.shader = args.shader;
 				this.uniforms = args.uniforms;
 				this.attrs = args.attrs;
@@ -1236,6 +1254,7 @@ end
 					this.geometry = args.geometry;
 				} else {
 					this.geometry = new GL.Geometry({
+						context : this.context || this.scene.renderer.context,
 						mode : args.mode,
 						count : args.count,
 						offset : args.offset,
@@ -1245,9 +1264,8 @@ end
 				}
 			}
 
-			if (this.scene === undefined) {
-				this.scene = GL.scene;	//use default scene if none provided
-			}
+			if (this.scene === undefined) throw 'expected scene';
+			if (this.context === undefined) this.context = this.scene.renderer.context;
 
 			if (!this.static) {
 				if (this.pos === undefined) {
@@ -1318,24 +1336,24 @@ end
 		
 			var blend = this.blend || (args && args.blend);
 			if (blend) {
-				gl.blendFunc.apply(gl, blend);
-				gl.enable(gl.BLEND);
+				this.context.blendFunc.apply(this.context, blend);
+				this.context.enable(this.context.BLEND);
 			}
 
 			if (this.useDepth === true) {
-				gl.enable(gl.DEPTH_TEST);
+				this.context.enable(this.context.DEPTH_TEST);
 			} else if (this.useDepth === false) {
-				gl.disable(gl.DEPTH_TEST);
+				this.context.disable(this.context.DEPTH_TEST);
 			}
 
-			if (this.texs) bindTextureSet(this.texs);
-			if (args && args.texs) bindTextureSet(args.texs);
+			if (this.texs) bindTextureSet(this.context, this.texs);
+			if (args && args.texs) bindTextureSet(this.context, args.texs);
 
 			var shader = this.shader;
 			if (args && args.shader) shader = args.shader;
 			
 			if (shader) {
-				gl.useProgram(shader.obj);
+				this.context.useProgram(shader.obj);
 
 				if (this.uniforms) shader.setUniforms(this.uniforms);
 				if (args && args.uniforms) shader.setUniforms(args.uniforms);
@@ -1361,14 +1379,14 @@ end
 				if (this.attrs) shader.removeAttrs(this.attrs);
 				if (args && args.attrs) shader.removeAttrs(args.attrs);
 				
-				gl.useProgram(null);
+				this.context.useProgram(null);
 			}
 			
-			if (args && args.texs) unbindTextureSet(args.texs);
-			if (this.texs) unbindTextureSet(this.texs);
+			if (args && args.texs) unbindTextureSet(this.context, args.texs);
+			if (this.texs) unbindTextureSet(this.context, this.texs);
 	
 			if (blend !== undefined) {
-				gl.disable(gl.BLEND);
+				this.context.disable(this.context.BLEND);
 			}
 		},
 		remove : function() {

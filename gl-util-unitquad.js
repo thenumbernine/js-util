@@ -5,9 +5,7 @@ pretty simple
 
 if (!GL) throw "require gl-util.js before gl-util-unitquad.js";
 
-GL.oninit.push(function(gl) {
-	this.unitQuad = {};
-
+GL.oninit.push(function() {	//'this' is the CanvasRenderer 
 	//2D tri strip front facing unit quad
 	this.unitQuadVertexes = new Float32Array([
 		0,0,
@@ -17,18 +15,20 @@ GL.oninit.push(function(gl) {
 	]);
 
 	this.unitQuadVertexBuffer = new GL.ArrayBuffer({
+		context : this.context,
 		dim : 2,
 		data : this.unitQuadVertexes,
 		keep : true
 	});
 
 	this.unitQuadGeom = new GL.Geometry({
-		mode : gl.TRIANGLE_STRIP,
+		mode : this.context.TRIANGLE_STRIP,
 		vertexes : this.unitQuadVertexBuffer
 	});
 
 	this.unitQuad = new GL.SceneObject({
-		mode : gl.TRIANGLE_STRIP,
+		scene : this.scene,
+		mode : this.context.TRIANGLE_STRIP,
 		attrs : {
 			vertex : this.unitQuadVertexBuffer
 		},
