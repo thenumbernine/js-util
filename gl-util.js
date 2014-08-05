@@ -44,36 +44,9 @@ GL = new function() {
 		
 		var canvasRenderer = new GL.CanvasRenderer(args);
 		this.canvasRenderer = canvasRenderer;
-		this.draw = function() {
-			return canvasRenderer.draw.apply(canvasRenderer, arguments);
-		};
-		this.clearAlpha = function() {
-			return canvasRenderer.clearAlpha.apply(canvasRenderer, arguments);
-		};
-		this.resize = function() {
-			return canvasRenderer.resize.apply(canvasRenderer, arguments);
-		};
-		this.mouseDir = function() {
-			return canvasRenderer.mouseDir.apply(canvasRenderer, arguments);
-		};
-		this.updateProjection = function() {
-			return canvasRenderer.updateProjection.apply(canvasRenderer, arguments);
-		};
-		this.screenshot = function() {
-			return canvasRenderer.screenshot.apply(canvasRenderer, arguments);
-		};
-		this.gl = canvasRenderer.gl;
-		this.canvas = canvasRenderer.canvas;
 		
-		var scene = GL.scene;
-		this.setupMatrices = function() {
-			return scene.setupMatrices.apply(scene, arguments);
-		};
-		this.root = scene.root;
+		gl = this.canvasRenderer.gl;
 		
-		gl = this.gl;
-		
-	
 		//TODO sort me out
 		//this has to be done after all else inits
 		//but run the init-once code
@@ -81,9 +54,6 @@ GL = new function() {
 		$.each(this.oninit, function(k,v) {
 			v.call(thiz, gl);
 		});
-	
-		
-		return gl;
 	};
 	
 	//static initialization for the GL namespace
