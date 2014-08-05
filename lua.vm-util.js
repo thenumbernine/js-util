@@ -148,7 +148,7 @@ function executeLuaVMFileSet(args) {
 a commonly used one
 specify the files you want and let it go at it
 args are passed on to executeLuaVMFileSet plus ...
-	id : id of the parent container for all this to go
+	id : (optional) id of the parent container for all this to go
 	tests : list of buttons to provide the user at the bottom of the container.  each member of the array contains the following:
 		url : where to find the file
 		dest : where in the filesystem to find it
@@ -198,9 +198,12 @@ var EmbeddedLuaInterpreter = makeClass({
 		
 		this.done = args.done;	//store for later
 
-		this.parentContainer = $('#'+args.id);
+		this.parentContainer = $('#'+args.id).get(0);
 
-		this.container = $('<div>').appendTo(this.parentContainer);
+		this.container = $('<div>');
+		if (this.parentContainer !== undefined) {
+			this.container.appendTo(this.parentContainer);
+		}
 		this.container.hide();
 
 		$('<div>', {html:'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>'}).appendTo(this.container);
@@ -231,7 +234,10 @@ var EmbeddedLuaInterpreter = makeClass({
 		}).appendTo(this.container);
 		$('<br>').appendTo(this.container);
 
-		this.launchButton = $('<button>', {text:'Launch'}).appendTo(this.parentContainer);
+		this.launchButton = $('<button>', {text:'Launch'});
+		if (this.parentContainer !== undefined) {
+			this.launchButton.appendTo(this.parentContainer);
+		}
 		this.launchButton.click(function() {
 			thiz.launchButton.hide();
 			thiz.container.show();
@@ -250,35 +256,35 @@ var EmbeddedLuaInterpreter = makeClass({
 
 		if (args.autoLaunch) this.launchButton.click();
 	},
+	processInput : function() {
+		var cmd = this.input.val();
+		this.history.push(cmd);
+		while (this.history.length > this.HISTORY_MAX) this.history.shift();
+		this.historyIndex = this.history.length;
+		this.executeAndPrint(cmd);
+		this.input.val('');
+	},
 	doneLoadingFilesystem : function() {
 		var thiz = this;
 
 		//hook up input
-		var processInput = function(s) {
-			var cmd = thiz.input.val();
-			thiz.history.push(cmd);
-			while (thiz.history.length > thiz.HISTORY_MAX) thiz.history.shift();
-			thiz.historyIndex = thiz.history.length;
-			thiz.executeAndPrint(cmd);
-			thiz.input.val('');
-		};
-		this.inputGo.click(processInput);
+		this.inputGo.click(function() {
+			thiz.processInput();
+		});
 		this.input.keypress(function(e) {
 			if (e.which == 13) {
 				e.preventDefault();
-				processInput();
+				thiz.processInput();
 			}
 		});
 		this.input.keydown(function(e) {
 			if (e.keyCode == 38) {	//up
-				console.log('up');
 				thiz.historyIndex--;
 				if (thiz.historyIndex < 0) thiz.historyIndex = 0;
 				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
 					thiz.input.val(thiz.history[thiz.historyIndex]);
 				}
 			} else if (e.keyCode == 40) {	//down
-				console.log('down');
 				thiz.historyIndex++;
 				if (thiz.historyIndex > thiz.history.length) thiz.historyIndex = thiz.history.length;
 				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
@@ -289,20 +295,21 @@ var EmbeddedLuaInterpreter = makeClass({
 
 		//provide test buttons
 		if (this.tests) {
+			this.testContainer = $('<div>').appendTo(this.container);
 			$.each(this.tests, function(_,info) {
 				$('<a>', {
 					href:info.url, 
 					text:'[View]', 
 					target:'_blank',
 					css : {'padding-right' : '10px'}
-				}).appendTo(thiz.container);
+				}).appendTo(thiz.testContainer);
 				$('<button>', {
 					text:info.name, 
 					click:function() { 
 						thiz.executeAndPrint("dofile '"+info.dest+"'");
 					}
-				}).appendTo(thiz.container);
-				$('<br>').appendTo(thiz.container);
+				}).appendTo(thiz.testContainer);
+				$('<br>').appendTo(thiz.testContainer);
 			});
 		}
 

@@ -14,7 +14,8 @@ Mouse3D = makeClass({
 		click : function(event)
 		touchclickstart
 		touchclickend
-	
+		preventDefault - explicit set to false or all defaults will be prevented
+
 	params:
 		lastX
 		lastY
@@ -37,6 +38,7 @@ Mouse3D = makeClass({
 		this.isTouchDown = false;
 		this.zoomTouchPts = [[0,0],[0,0]];
 		this.newZoomTouchPts = [[0,0],[0,0]];
+		this.preventDefault = !(args.preventDefault === false);
 		
 		var thiz = this;
 		this.pressObj = args.pressObj !== undefined ? args.pressObj : window;
@@ -49,26 +51,26 @@ Mouse3D = makeClass({
 		});
 
 		$(this.pressObj).bind('mousedown', function(e) {
-			e.preventDefault();
+			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseDown(e);
 		});
 		$(this.releaseObj).bind('mouseup', function(e) {
-			e.preventDefault();
+			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseUp(e);
 		});
 		$(this.pressObj).bind('mousemove', function(e) {
-			e.preventDefault();
+			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseMove(e);
 		});
 		$(this.pressObj).bind('mousewheel', function(e) {
-			e.preventDefault();
+			if (thiz.preventDeafult) e.preventDefault();
 			var zoomChange = e.originalEvent.wheelDelta;
 			if (thiz.zoom) thiz.zoom(zoomChange, 'wheel');
 		});
 		//special case for Firefox 25:
 		//http://www.javascriptkit.com/javatutors/onmousewheel.shtml
 		$(this.pressObj).bind('DOMMouseScroll', function(e) {
-			e.preventDefault();
+			if (thiz.preventDefault) e.preventDefault();
 			var zoomChange = e.originalEvent.detail;
 			if (thiz.zoom) thiz.zoom(zoomChange * -120, 'wheel');
 		});
@@ -80,12 +82,12 @@ Mouse3D = makeClass({
 		$(this.pressObj)
 			.bind('touchstart', function(e) { 	
 				thiz.isTouchDown = false;
-				e.preventDefault();
+				if (thiz.preventDefault) e.preventDefault();
 				thiz.doMouseDown(e.originalEvent.changedTouches[0]);
 				if (thiz.touchclickstart) thiz.touchclickstart();
 			})
 			.bind('touchmove', function(e) {
-				e.preventDefault();
+				if (thiz.preventDefault) e.preventDefault();
 				if (e.originalEvent.touches.length >= 2) {
 					//do a pinch zoom
 					if (!thiz.isTouchDown) {
@@ -117,7 +119,7 @@ Mouse3D = makeClass({
 			})
 			.bind('touchend touchcancel', function(e) {
 				thiz.isTouchDown = false;
-				e.preventDefault();
+				if (thiz.preventDefault) e.preventDefault();
 				var touch = e.originalEvent.changedTouches[0];
 				var upPosX = touch.pageX;
 				var upPosY = touch.pageY;

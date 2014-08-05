@@ -9,7 +9,6 @@ user-provided arguments:
 GL = new function() { 
 	var GL = this;	//for internal access
 	var gl;
-	var wrapMap;
 
 	//view object, for matrix deduction
 	this.view = {
@@ -26,35 +25,54 @@ GL = new function() {
 	this.mvMat = mat4.create();
 
 	//on-init callbacks.  useful for initializing modules with this.
+	//TODO divide this between on-scene-init and on-first-init
+	//at the moment it is init-once
 	this.oninit = [];
 
-	this.init = function(canvas, args) {
-		//get gl context
-		this.canvas = canvas;
+	//what webgl names to search through
+	GL.webGLNames = ['webgl', 'experimental-webgl'];
+	
+	/*
+	create a new scene with associated canvas and view
+	args:
+		canvas = which canvas to use (required)
+		canvasArgs = canvas.getContext arguments, including:
+			premultipliedAlpha (default false)
+			alpha (default false)
+	*/
+	this.Scene = function(args) {
+		if (args.canvas === undefined) throw 'expected canvas';
+		this.canvas = args.canvas;
 
-		var webGLNames = ['webgl', 'experimental-webgl'];
-		for (var i = 0; i < webGLNames.length; i++) {
+		var canvasArgs = args.canvasArgs;
+		if (canvasArgs === undefined) canvasArgs = {};
+		
+		/*
+		this is supposed to save me from having to write 1's in the dest alpha channel
+		to keep the dest image from being invisible
+		but it is buggy in firefox and safari
+		*/
+		if (canvasArgs.premultipliedAlpha === undefined) canvasArgs.premultipliedAlpha = false;
+		
+		/*
+		this is supposed to slow things down
+		but it is also supposed to allow folks to take screenshots ...
+		*/
+		//args.preserveDrawingBuffer
+		
+		if (canvasArgs.alpha === undefined) canvasArgs.alpha = false;
+
+		gl = undefined;
+		for (var i = 0; i < GL.webGLNames.length; i++) {
 			try {
-				gl = canvas.getContext(webGLNames[i], {
-					/*
-					this is supposed to save me from having to write 1's in the dest alpha channel
-					to keep the dest image from being invisible
-					but it is buggy in firefox and safari
-					*/
-					premultipliedAlpha : false,
-
-					/*
-					this is supposed to slow things down
-					but it is also supposed to allow folks to take screenshots ...
-					*/
-					//preserveDrawingBuffer : args.preserveDrawingBuffer,
-					
-					alpha : false
-				});
-			} catch (e) {}
+				console.log('trying to init gl context name', GL.webGLNames[i]);
+				gl = this.canvas.getContext(GL.webGLNames[i], canvasArgs);
+			} catch (e) {
+				console.log('failed with exception', e);
+			}
 			if (gl) break;
 		}
-		if (!gl) {
+		if (gl === undefined) {
 			throw "Couldn't initialize WebGL =(";
 		}
 	
@@ -62,7 +80,7 @@ GL = new function() {
 			gl = WebGLDebugUtils.makeDebugContext(gl);	
 		}
 
-		this.gl = gl;	
+		this.gl = gl;
 	
 		//gather extensions
 		gl.getExtension('OES_element_index_uint');
@@ -73,15 +91,28 @@ GL = new function() {
 		$.each(gl.getSupportedExtensions(), function(_,ext){
 			console.log(ext);
 		});
+	
+		//init this?
+		gl.clearColor(0,0,0,1);
 
-		//now that gl exists, add all those function prototypes that needed it ...
-		
+		//initialize variables based on the gl context object constants:
+		GL.staticInit(gl);
+	};
+
+	//static initialization for the GL namespace
+	//initialize variables based on gl context enums
+	this.staticInitd = false;
+	this.staticInit = function(gl) {
+		//only need to do this once
+		if (this.staticInitd) return;
+		this.staticInitd = true;
+	
 		this.VertexShader.prototype.shaderType = gl.VERTEX_SHADER;
 		this.FragmentShader.prototype.shaderType = gl.FRAGMENT_SHADER;
 		this.Texture2D.prototype.target = gl.TEXTURE_2D;
 		this.TextureCube.prototype.target = gl.TEXTURE_CUBE_MAP;
 
-		wrapMap = {
+		this.wrapMap = {
 			s : gl.TEXTURE_WRAP_S,
 			t : gl.TEXTURE_WRAP_T
 		};
@@ -100,18 +131,23 @@ GL = new function() {
 			this.fragmentPrecision = 'precision highp float;\n';
 		}
 
+//fixme.  static init needs GL.gl
+GL.gl = gl;
 
-
-		//do some common gl inits
-		//remove these as seen fit
-	
-		gl.clearColor(0,0,0,1);
-
+		//run the init-once code
 		var thiz = this;
 		$.each(this.oninit, function(k,v) {
 			v.call(thiz, gl);
 		});
+	};
 
+	this.init = function(canvas, args) {
+		if (args === undefined) args = {};
+		args.canvas = canvas;
+		this.scene = new GL.Scene(args);
+		gl = this.scene.gl;
+		this.gl = gl;
+		this.canvas = this.scene.canvas;
 		return gl;
 	};
 
@@ -506,7 +542,7 @@ window.downloadAnchor = downloadAnchor;
 		},
 		setWrap : function(args) {
 			for (var k in args) {
-				gl.texParameteri(this.target, wrapMap[k] || k, args[k]);
+				gl.texParameteri(this.target, GL.wrapMap[k] || k, args[k]);
 			}
 		},
 		//typically overwritten. default calls setImage if args.data is provided
@@ -713,10 +749,11 @@ window.lastCallbackGeneratedWebGLTextureData = data;
 				count = how many vertexes to create
 			usage = gl.bufferData usage
 			dim = dimension / # elements per vector in data. only used for attrs and calculating length. default 3
-			keep = optional, set to retain data in .data
+			keep = optional, default true, set to false to not retain data in .data
 		*/
 		init : function(args) {
 			if (args === undefined) args = {};
+			if (args.keep === undefined) args.keep = true;
 			this.obj = gl.createBuffer();
 			this.dim = args.dim !== undefined ? args.dim : 3;
 			var data = args.data;
