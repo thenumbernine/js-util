@@ -1,104 +1,91 @@
 /*
-allowed to manipulate:
-	root
-	oninit
-user-provided arguments:
-	onfps
-	ondraw
+WebGL helper classes
+
+current setup
+GL - main namespace of it all
+	CanvasRenderer - holds a webgl-capable canvas.  TODO, for FBO's sake, call this RenderTarget and subclass CanvasRenderTarget and FBORenderTarget.
+		also holds the View associated with this canvasRenderer
+		also holds the Scene associated with this canvasRenderer
+	View - holds the camera info / how to render the canvasRenderer
+	Scene - holds all SceneGraph objects, including root.  
+		currently also holds the mvMat associated with the View and projMat associated with the CanvasRenderer.
+	SceneObject - holds information pertaining to an object in the scene
+		Geometry
+		Texture is one of the following:
+			Texture1D
+			Texture2D
+			TextureCube
+		Shader
+
+	Framebuffer
 */
 GL = new function() { 
 	var GL = this;	//for internal access
 	var gl;
 
-	//view object, for matrix deduction
-	this.view = {
-		zNear : 1,
-		zFar : 2000,
-		fovY : 90,	// corresponding with 1:1 x:z
-		ortho : false,
-		pos : vec3.create(),
-		angle : quat.create()
-	};
-
-	//traditional gl matrices
-	this.projMat = mat4.create();
-	this.mvMat = mat4.create();
-
-	//on-init callbacks.  useful for initializing modules with this.
-	//TODO divide this between on-scene-init and on-first-init
-	//at the moment it is init-once
+	/*
+	on-init callbacks.  useful for initializing modules with this.
+	TODO divide this between on-scene-init and on-first-init
+	at the moment it is init-once
+	*/
 	this.oninit = [];
 
 	//what webgl names to search through
 	GL.webGLNames = ['webgl', 'experimental-webgl'];
-	
+
 	/*
-	create a new scene with associated canvas and view
-	args:
-		canvas = which canvas to use (required)
-		canvasArgs = canvas.getContext arguments, including:
-			premultipliedAlpha (default false)
-			alpha (default false)
+	general init for a single scene.
+	relic of old single-scene system.
+	now initializes a single scene and replaces all the former global variables.
 	*/
-	this.Scene = function(args) {
-		if (args.canvas === undefined) throw 'expected canvas';
-		this.canvas = args.canvas;
-
-		var canvasArgs = args.canvasArgs;
-		if (canvasArgs === undefined) canvasArgs = {};
+	this.init = function(canvas, args) {
+		if (args === undefined) args = {};
+		args.canvas = canvas;
 		
-		/*
-		this is supposed to save me from having to write 1's in the dest alpha channel
-		to keep the dest image from being invisible
-		but it is buggy in firefox and safari
-		*/
-		if (canvasArgs.premultipliedAlpha === undefined) canvasArgs.premultipliedAlpha = false;
+		var canvasRenderer = new GL.CanvasRenderer(args);
+		this.canvasRenderer = canvasRenderer;
+		this.draw = function() {
+			return canvasRenderer.draw.apply(canvasRenderer, arguments);
+		};
+		this.clearAlpha = function() {
+			return canvasRenderer.clearAlpha.apply(canvasRenderer, arguments);
+		};
+		this.resize = function() {
+			return canvasRenderer.resize.apply(canvasRenderer, arguments);
+		};
+		this.mouseDir = function() {
+			return canvasRenderer.mouseDir.apply(canvasRenderer, arguments);
+		};
+		this.updateProjection = function() {
+			return canvasRenderer.updateProjection.apply(canvasRenderer, arguments);
+		};
+		this.screenshot = function() {
+			return canvasRenderer.screenshot.apply(canvasRenderer, arguments);
+		};
+		this.gl = canvasRenderer.gl;
+		this.canvas = canvasRenderer.canvas;
 		
-		/*
-		this is supposed to slow things down
-		but it is also supposed to allow folks to take screenshots ...
-		*/
-		//args.preserveDrawingBuffer
+		var scene = GL.scene;
+		this.setupMatrices = function() {
+			return scene.setupMatrices.apply(scene, arguments);
+		};
+		this.root = scene.root;
 		
-		if (canvasArgs.alpha === undefined) canvasArgs.alpha = false;
-
-		gl = undefined;
-		for (var i = 0; i < GL.webGLNames.length; i++) {
-			try {
-				console.log('trying to init gl context name', GL.webGLNames[i]);
-				gl = this.canvas.getContext(GL.webGLNames[i], canvasArgs);
-			} catch (e) {
-				console.log('failed with exception', e);
-			}
-			if (gl) break;
-		}
-		if (gl === undefined) {
-			throw "Couldn't initialize WebGL =(";
-		}
+		gl = this.gl;
+		
 	
-		if (args && args.debug) {
-			gl = WebGLDebugUtils.makeDebugContext(gl);	
-		}
-
-		this.gl = gl;
-	
-		//gather extensions
-		gl.getExtension('OES_element_index_uint');
-		gl.getExtension('OES_standard_derivatives');
-		gl.getExtension('OES_texture_float');
-		gl.getExtension('OES_texture_float_linear');
-
-		$.each(gl.getSupportedExtensions(), function(_,ext){
-			console.log(ext);
+		//TODO sort me out
+		//this has to be done after all else inits
+		//but run the init-once code
+		var thiz = this;
+		$.each(this.oninit, function(k,v) {
+			v.call(thiz, gl);
 		});
 	
-		//init this?
-		gl.clearColor(0,0,0,1);
-
-		//initialize variables based on the gl context object constants:
-		GL.staticInit(gl);
+		
+		return gl;
 	};
-
+	
 	//static initialization for the GL namespace
 	//initialize variables based on gl context enums
 	this.staticInitd = false;
@@ -133,116 +120,284 @@ GL = new function() {
 
 //fixme.  static init needs GL.gl
 GL.gl = gl;
-
-		//run the init-once code
-		var thiz = this;
-		$.each(this.oninit, function(k,v) {
-			v.call(thiz, gl);
-		});
 	};
 
-	this.init = function(canvas, args) {
-		if (args === undefined) args = {};
-		args.canvas = canvas;
-		this.scene = new GL.Scene(args);
-		gl = this.scene.gl;
-		this.gl = gl;
-		this.canvas = this.scene.canvas;
-		return gl;
-	};
+	/*
+	view object, for matrix deduction
+	*/
+	var View = makeClass({
+		init : function(){
+//backwards compat
+GL.view = this;
+			this.zNear = 1;
+			this.zFar = 2000;
+			this.fovY = 90;	// corresponding with 1:1 x:z
+			this.ortho = false;
+			this.pos = vec3.create();
+			this.angle = quat.create();
+		}
+	});
+	this.View = View;
 
-	//might require preserveDrawingBuffer ...
-	this.screenshot = function() {
-		/* download ... as a fixed-filename that can't be given an extension ... */
-		var data = this.canvas.toDataURL('image/png');
-		document.location.href = data.replace('image/png', 'image/octet');
-		/**/
-	
-		/* download as a specified filename (by encoding in anchor element and simulating click) * /
-		var mimeType = 'image/octet';
-		var filename = 'download.png';
-		var data = this.canvas.toDataURL(mimeType);
-window.downloadData = data;
-		var blob = new Blob([data], {type: mimeType});
+	var Scene = makeClass({
+		init : function(args) {
+//backwards compat
+GL.scene = this;
+			
+			//traditional gl matrices
+			this.projMat = mat4.create();
+			this.mvMat = mat4.create();
+//backwards compat
+GL.projMat = this.projMat;
+GL.mvMat = this.mvMat;
+		
+			this.root = new GL.SceneObject({
+				scene : this,
+				parent : undefined 
+			});
+		},
 
-		var downloadAnchor = document.createElement('a');
-window.downloadAnchor = downloadAnchor;
-		downloadAnchor.download = filename; 
-		downloadAnchor.href = window.URL.createObjectURL(blob);
-		downloadAnchor.textContent = 'Download Ready';
+		setupMatrices : (function(){
+			var viewAngleInv = quat.create();
+			var viewPosInv = vec3.create();
+			return function() {
+				quat.conjugate(viewAngleInv, GL.view.angle);
+				mat4.fromQuat(this.mvMat, viewAngleInv);
+				vec3.negate(viewPosInv, GL.view.pos);
+				mat4.translate(this.mvMat, this.mvMat, viewPosInv);
+			};
+		})()
+	});
+	this.Scene = Scene;
 
-		downloadAnchor.dataset.downloadurl = [
-			mimeType, 
-			downloadAnchor.download, 
-			downloadAnchor.href].join(':');
-		downloadAnchor.dataset.disabled = false;
+	/*
+	create a new scene with associated canvas and view
+	args:
+		canvas = which canvas to use (required)
+		canvasArgs = canvas.getContext arguments, including:
+			premultipliedAlpha (default false)
+			alpha (default false)
+	*/
+	var CanvasRenderer = makeClass({
+		init : function(args) {
+			if (args.canvas === undefined) throw 'expected canvas';
+			this.canvas = args.canvas;
 
-		document.body.appendChild(downloadAnchor);
+			var canvasArgs = args.canvasArgs;
+			if (canvasArgs === undefined) canvasArgs = {};
+			
+			/*
+			this is supposed to save me from having to write 1's in the dest alpha channel
+			to keep the dest image from being invisible
+			but it is buggy in firefox and safari
+			*/
+			if (canvasArgs.premultipliedAlpha === undefined) canvasArgs.premultipliedAlpha = false;
+			
+			/*
+			this is supposed to slow things down
+			but it is also supposed to allow folks to take screenshots ...
+			*/
+			//args.preserveDrawingBuffer
+			
+			if (canvasArgs.alpha === undefined) canvasArgs.alpha = false;
 
-		downloadAnchor.onclick = function(e) {
-			if ('disabled' in this.dataset) {
-				return false;
+			gl = undefined;
+			for (var i = 0; i < GL.webGLNames.length; i++) {
+				try {
+					console.log('trying to init gl context name', GL.webGLNames[i]);
+					gl = this.canvas.getContext(GL.webGLNames[i], canvasArgs);
+				} catch (e) {
+					console.log('failed with exception', e);
+				}
+				if (gl) break;
+			}
+			if (gl === undefined) {
+				throw "Couldn't initialize WebGL =(";
+			}
+		
+			if (args && args.debug) {
+				gl = WebGLDebugUtils.makeDebugContext(gl);	
 			}
 
-			downloadAnchor.textContent = '';
-			downloadAnchor.dataset.disabled = true;
+			this.gl = gl;
+		
+			//gather extensions
+			gl.getExtension('OES_element_index_uint');
+			gl.getExtension('OES_standard_derivatives');
+			gl.getExtension('OES_texture_float');
+			gl.getExtension('OES_texture_float_linear');
 
-			// Need a small delay for the revokeObjectURL to work properly.
+			$.each(gl.getSupportedExtensions(), function(_,ext){
+				console.log(ext);
+			});
+		
+			//init this?
+			gl.clearColor(0,0,0,1);
+
+			//initialize variables based on the gl context object constants:
+			GL.staticInit(gl);
+
+			//camera
+			this.view = new GL.View();
+
+			//scenegraph
+			this.scene = new GL.Scene();
+		},
+
+		draw : (function(){
+			var frames = 0;
+			var lastTime = Date.now();
+			return function() {	//callback, so 'this' isn't reliable
+				if (GL.onfps || this.onfps) {	//TODO get rid of GL.onfps 
+					frames++;
+					thisTime = Date.now();
+					if (thisTime - lastTime > 1000) {
+						var fps = frames * 1000 / (thisTime - lastTime);
+						if (GL.onfps) GL.onfps(fps);
+						if (this.onfps) this.onfps(fps);
+						frames = 0;
+						lastTime = thisTime;	
+					}
+				}
+
+				this.scene.setupMatrices();
+
+				//TODO modular?
+				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			
+				if (!this.scene.root.hidden) this.scene.root.draw();
+
+				if (GL.ondraw) GL.ondraw();	//TODO get rid of GL.ondraw
+				if (this.ondraw) this.ondraw();
+
+				this.clearAlpha();
+			};
+		}()),
+
+		clearAlpha : function() {
+			//work around canvas alpha crap
+			gl.colorMask(false,false,false,true);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			gl.colorMask(true,true,true,true);
+		},
+
+		/*
+		must be called manually 
+		 (because it makes no assumptions of what the canvas should be resized to
+		  or of whether the canvas resize callback fired before or after it did)
+		*/
+		resize : function() {
+			gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+			this.updateProjection();
+			
+			//auto draw on resize?
+			//flag?
+			//or leave it up to the caller?
+			if (this.dontDrawOnResize) return;
+			this.draw();
+		},
+
+
+		/*
+		dir = unit direction result
+		xf = fraction x coordinte
+		fy = fraction y coordinate
+		*/
+		mouseDir : function(dir,xf,yf) {
+			//basis: [0] = right, [1] = up, [2] = backwards
+			var x = vec3.create(); vec3.quatXAxis(x, GL.view.angle);
+			var y = vec3.create(); vec3.quatYAxis(y, GL.view.angle);
+			var z = vec3.create(); vec3.quatZAxis(z, GL.view.angle);
+			var aspectRatio = this.canvas.width / this.canvas.height;
+			var mxf = xf * 2 - 1;
+			var myf = 1 - yf * 2;
+			var tanFovY = Math.tan(GL.view.fovY * Math.PI / 360);
+			var px = GL.view.pos[0];
+			var py = GL.view.pos[1];
+			var pz = GL.view.pos[2];
+			dir[0] = -z[0] + tanFovY * (aspectRatio * mxf * x[0] + myf * y[0]);
+			dir[1] = -z[1] + tanFovY * (aspectRatio * mxf * x[1] + myf * y[1]);
+			dir[2] = -z[2] + tanFovY * (aspectRatio * mxf * x[2] + myf * y[2]);
+		},
+
+		/*
+		must be manually called when any view projection matrix values change:
+			aspectRatio, fovY, zNear, zFar
+		*/
+		updateProjection : function() {
+			var projMat = this.scene.projMat;
+			var aspectRatio = this.canvas.width / this.canvas.height;
+			if (this.view.ortho) {
+				var fovY = this.view.fovY;
+				mat4.ortho(projMat,
+					-aspectRatio * fovY,
+					aspectRatio * fovY,
+					-fovY,
+					fovY,
+					this.view.zNear,
+					this.view.zFar);
+			} else {
+				var tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
+				mat4.frustum(projMat, 
+					-aspectRatio * tanFovY * this.view.zNear, 
+					aspectRatio * tanFovY * this.view.zNear, 
+					-tanFovY * this.view.zNear, 
+					tanFovY * this.view.zNear, 
+					this.view.zNear, 
+					this.view.zFar);
+			}
+		},
+
+		//might require preserveDrawingBuffer ...
+		screenshot : function() {
+			/* download ... as a fixed-filename that can't be given an extension ... */
+			var data = this.canvas.toDataURL('image/png');
+			document.location.href = data.replace('image/png', 'image/octet');
+			/**/
+		
+			/* download as a specified filename (by encoding in anchor element and simulating click) * /
+			var mimeType = 'image/octet';
+			var filename = 'download.png';
+			var data = this.canvas.toDataURL(mimeType);
+	window.downloadData = data;
+			var blob = new Blob([data], {type: mimeType});
+
+			var downloadAnchor = document.createElement('a');
+	window.downloadAnchor = downloadAnchor;
+			downloadAnchor.download = filename; 
+			downloadAnchor.href = window.URL.createObjectURL(blob);
+			downloadAnchor.textContent = 'Download Ready';
+
+			downloadAnchor.dataset.downloadurl = [
+				mimeType, 
+				downloadAnchor.download, 
+				downloadAnchor.href].join(':');
+			downloadAnchor.dataset.disabled = false;
+
+			document.body.appendChild(downloadAnchor);
+
+			downloadAnchor.onclick = function(e) {
+				if ('disabled' in this.dataset) {
+					return false;
+				}
+
+				downloadAnchor.textContent = '';
+				downloadAnchor.dataset.disabled = true;
+
+				// Need a small delay for the revokeObjectURL to work properly.
+				setTimeout(function() {
+					window.URL.revokeObjectURL(downloadAnchor.href);
+					//document.body.removeChild(downloadAnchor);
+				}, 1500);
+			};
+
 			setTimeout(function() {
-				window.URL.revokeObjectURL(downloadAnchor.href);
-				//document.body.removeChild(downloadAnchor);
-			}, 1500);
-		};
-
-		setTimeout(function() {
-			$(downloadAnchor).trigger('click');
-		}, 1000);
-	*/
-	};
-
-	/*
-	must be manually called when any view projection matrix values change:
-		aspectRatio, fovY, zNear, zFar
-	*/
-	this.updateProjection = function() {
-		var aspectRatio = this.canvas.width / this.canvas.height;
-		if (this.view.ortho) {
-			var fovY = this.view.fovY;
-			mat4.ortho(this.projMat,
-				-aspectRatio * fovY,
-				aspectRatio * fovY,
-				-fovY,
-				fovY,
-				this.view.zNear,
-				this.view.zFar);
-		} else {
-			var tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
-			mat4.frustum(this.projMat, 
-				-aspectRatio * tanFovY * this.view.zNear, 
-				aspectRatio * tanFovY * this.view.zNear, 
-				-tanFovY * this.view.zNear, 
-				tanFovY * this.view.zNear, 
-				this.view.zNear, 
-				this.view.zFar);
+				$(downloadAnchor).trigger('click');
+			}, 1000);
+		*/
 		}
-	};
-
-	/*
-	must be called manually 
-	 (because it makes no assumptions of what the canvas should be resized to
-	  or of whether the canvas resize callback fired before or after it did)
-	*/
-	this.resize = function() {
-		gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-		this.updateProjection();
-		
-		
-		//auto draw on resize?
-		//flag?
-		//or leave it up to the caller?
-		if (this.dontDrawOnResize) return;
-		this.draw();
-	};
+	});
+	this.CanvasRenderer = CanvasRenderer;
 
 	var Shader = makeClass({
 		/*
@@ -1063,6 +1218,8 @@ end
 	var SceneObject = makeClass({
 		/*
 		args:
+			scene
+			
 			geometry
 				-or-
 			mode
@@ -1086,6 +1243,7 @@ end
 		*/
 		init : function(args) {
 			if (args) {
+				this.scene = args.scene;
 				this.shader = args.shader;
 				this.uniforms = args.uniforms;
 				this.attrs = args.attrs;
@@ -1117,6 +1275,10 @@ end
 				}
 			}
 
+			if (this.scene === undefined) {
+				this.scene = GL.scene;	//use default scene if none provided
+			}
+
 			if (!this.static) {
 				if (this.pos === undefined) {
 					this.pos = vec3.create();
@@ -1132,7 +1294,7 @@ end
 			if (args && 'parent' in args) {
 				this.parent = args.parent;
 			} else {
-				this.parent = GL.root;
+				this.parent = this.scene.root;
 			}
 			if (this.parent) {
 				this.parent.children.push(this);
@@ -1142,7 +1304,7 @@ end
 				if (this.parent) {
 					this.targetMat = this.parent.targetMat;
 				} else {
-					this.targetMat = GL.mvMat;
+					this.targetMat = this.scene.mvMat;
 				}
 			} else {
 				this.localMat = mat4.create();
@@ -1156,7 +1318,7 @@ end
 			//if (this.shader)
 			{
 				if (!this.uniforms) this.uniforms = {};
-				if (this.uniforms.projMat === undefined) this.uniforms.projMat = GL.projMat;
+				if (this.uniforms.projMat === undefined) this.uniforms.projMat = this.scene.projMat;
 				if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
 			}
 		},
@@ -1178,7 +1340,7 @@ end
 				if (this.parent) {
 					mat4.multiply(this.mvMat, this.parent.targetMat, this.localMat);
 				} else {
-					mat4.multiply(this.mvMat, GL.mvMat, this.localMat);
+					mat4.multiply(this.mvMat, this.scene.mvMat, this.localMat);
 				}
 			}
 
@@ -1256,65 +1418,6 @@ end
 		}
 	});
 	this.SceneObject = SceneObject;
-	this.root = new SceneObject();
-
-	var viewAngleInv = quat.create();
-	var viewPosInv = vec3.create();
-	this.setupMatrices = function() {
-		quat.conjugate(viewAngleInv, this.view.angle);
-		mat4.fromQuat(this.mvMat, viewAngleInv);
-		vec3.negate(viewPosInv, this.view.pos);
-		mat4.translate(this.mvMat, this.mvMat, viewPosInv);
-	};
-
-	this.clearAlpha = function() {
-		//work around canvas alpha crap
-		gl.colorMask(false,false,false,true);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.colorMask(true,true,true,true);
-	};
-
-	var frames = 0;
-	var lastTime = Date.now();
-	this.draw = function() {	//callback, so 'this' isn't reliable
-		if (this.onfps) {
-			frames++;
-			thisTime = Date.now();
-			if (thisTime - lastTime > 1000) {
-				this.onfps(frames * 1000 / (thisTime - lastTime));
-				frames = 0;
-				lastTime = thisTime;	
-			}
-		}
-
-		this.setupMatrices();
-
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	
-		if (!this.root.hidden) this.root.draw();
-
-		if (this.ondraw) this.ondraw();
-
-		this.clearAlpha();
-	};
-
-	this.mouseDir = function(dir,xf,yf) {
-		
-		//basis: [0] = right, [1] = up, [2] = backwards
-		var x = vec3.create(); vec3.quatXAxis(x, GL.view.angle);
-		var y = vec3.create(); vec3.quatYAxis(y, GL.view.angle);
-		var z = vec3.create(); vec3.quatZAxis(z, GL.view.angle);
-		var aspectRatio = this.canvas.width / this.canvas.height;
-		var mxf = xf * 2 - 1;
-		var myf = 1 - yf * 2;
-		var tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
-		var px = this.view.pos[0];
-		var py = this.view.pos[1];
-		var pz = this.view.pos[2];
-		dir[0] = -z[0] + tanFovY * (aspectRatio * mxf * x[0] + myf * y[0]);
-		dir[1] = -z[1] + tanFovY * (aspectRatio * mxf * x[1] + myf * y[1]);
-		dir[2] = -z[2] + tanFovY * (aspectRatio * mxf * x[2] + myf * y[2]);
-	};
 };
 
 vec3.quatXAxis = function(res, q) {
