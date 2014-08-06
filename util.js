@@ -192,6 +192,7 @@ function makeClass(args) {
 	classFunc.prototype.isa = function(classObj) {
 		return isa(this.init, classObj);
 	}
+	classFunc.isClass = true;
 
 	return classFunc;
 }

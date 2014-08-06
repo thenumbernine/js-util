@@ -3,9 +3,11 @@ used by gl-util-font and gl-util-kernel
 pretty simple
 */
 
-if (!GL) throw "require gl-util.js before gl-util-unitquad.js";
+if (!GLUtil) throw "require gl-util.js before gl-util-unitquad.js";
 
-GL.oninit.push(function() {	//'this' is the CanvasRenderer 
+GLUtil.prototype.oninit.push(function() {
+	var glutil = this;
+
 	//2D tri strip front facing unit quad
 	this.unitQuadVertexes = new Float32Array([
 		0,0,
@@ -14,20 +16,18 @@ GL.oninit.push(function() {	//'this' is the CanvasRenderer
 		1,1
 	]);
 
-	this.unitQuadVertexBuffer = new GL.ArrayBuffer({
-		context : this.context,
+	this.unitQuadVertexBuffer = new this.ArrayBuffer({
 		dim : 2,
 		data : this.unitQuadVertexes,
 		keep : true
 	});
 
-	this.unitQuadGeom = new GL.Geometry({
+	this.unitQuadGeom = new this.Geometry({
 		mode : this.context.TRIANGLE_STRIP,
 		vertexes : this.unitQuadVertexBuffer
 	});
 
-	this.unitQuad = new GL.SceneObject({
-		scene : this.scene,
+	this.unitQuad = new this.SceneObject({
 		mode : this.context.TRIANGLE_STRIP,
 		attrs : {
 			vertex : this.unitQuadVertexBuffer

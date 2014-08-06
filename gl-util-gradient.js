@@ -1,17 +1,19 @@
-if (!GL) throw "require gl-util.js before gl-util-font.js";
+if (!GLUtil) throw "require gl-util.js before gl-util-font.js";
 
-GL.oninit.push(function() {
+GLUtil.prototype.oninit.push(function() {
+	var glutil = this;
+	
 	/*
 	args:
-		context
+		context (optional)
 		width
 		colors
 		dontRepeat
 	*/
 	var GradientTexture = makeClass({
-		super : GL.Texture2D,
+		super : glutil.Texture2D,
 		init : function(args) {
-			this.context = assert(args.context);
+			this.context = args.context || glutil.context;
 			var width = args.width;
 			var colors = args.colors;
 			var data = new Uint8Array(width * 3);
@@ -30,7 +32,7 @@ GL.oninit.push(function() {
 					data[k+3*i] = 255*(colors[ip][k] * g + colors[iq][k] * f);
 				}
 			}
-			GL.Texture2D.call(this, {
+			glutil.Texture2D.call(this, {
 				context : this.context,
 				width : width,
 				height : 1,
@@ -43,10 +45,10 @@ GL.oninit.push(function() {
 			});
 		}
 	});
-	GL.GradientTexture = GradientTexture;
+	this.GradientTexture = GradientTexture;
 
 	var HSVTexture = makeClass({
-		super : GL.Texture2D,
+		super : glutil.Texture2D,
 		init : function(width) {
 			GradientTexture.call(this, {
 				width : width,
@@ -61,5 +63,5 @@ GL.oninit.push(function() {
 			});
 		}
 	});
-	GL.HSVTexture = HSVTexture;
+	this.HSVTexture = HSVTexture;
 });

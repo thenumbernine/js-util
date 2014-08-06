@@ -1,5 +1,5 @@
-if (!GL) throw "require gl-util.js before gl-util-pingpong.js";
-GL.oninit.push(function(gl) {
+if (!GLUtil) throw "require gl-util.js before gl-util-pingpong.js";
+GLUtil.prototype.oninit.push(function(gl) {
 	/*
 	args:
 		width : framebuffer width (optional)

@@ -1,7 +1,7 @@
-if (!GL) throw "require gl-util.js before gl-util-font.js";
+if (!GLUtil) throw "require gl-util.js before gl-util-font.js";
 
-GL.oninit.push(function() {	
-	var renderer = this;
+GLUtil.prototype.oninit.push(function() {	
+	var glutil = this;
 
 	var fontSize = 16;
 	var charSubtexSize = 16;
@@ -10,7 +10,7 @@ GL.oninit.push(function() {
 	var letterMat = mat4.create();
 	var Font = makeClass({
 		init : function(args) {
-			this.context = assert(args.context);
+			this.context = (args && args.context) || glutil.context;
 			var c = $('<canvas>').get(0);
 			c.width = 256;
 			c.height = 256;
@@ -55,16 +55,14 @@ GL.oninit.push(function() {
 				}
 			}
 
-			this.tex = new GL.Texture2D({
-				context : this.context,
+			this.tex = new glutil.Texture2D({
 				flipY : true,
 				data : c,
 				minFilter : this.context.NEAREST,
 				magFilter : this.context.LINEAR
 			});
 		
-			this.shader = new GL.ShaderProgram({
-				context : this.context,
+			this.shader = new glutil.ShaderProgram({
 				vertexCode : mlstr(function(){/*
 attribute vec2 vertex;
 varying vec2 vertexv;
@@ -167,8 +165,8 @@ void main() {
 						var tx = charIndex%lettersPerSize;
 						var ty = (charIndex-tx)/lettersPerSize;
 
-						if (!renderer.unitQuad) throw "require gl-util-unitquad.js";
-						renderer.unitQuad.draw({
+						if (!glutil.unitQuad) throw "require gl-util-unitquad.js";
+						glutil.unitQuad.draw({
 							shader : this.shader,
 							uniforms : {
 								texMinLoc : [tx+startWidth/lettersPerSize, ty],
@@ -197,5 +195,5 @@ void main() {
 			return [maxx, cursorY + fontSizeY];
 		}
 	});
-	GL.Font = Font;
+	glutil.Font = Font;
 });

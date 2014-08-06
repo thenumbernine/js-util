@@ -1,10 +1,12 @@
-if (!GL) throw "require gl-util.js before gl-util-kernel.js";
+if (!GLUtil) throw "require gl-util.js before gl-util-kernel.js";
 
-GL.oninit.push(function(gl) {
+GLUtil.prototype.oninit.push(function(gl) {
+	var glutil = this;
+
 	if (!this.unitQuad) throw "require gl-util-unitquad.js before gl-util-kernel.js";
 
 	var KernelShader = makeClass({
-		super : GL.ShaderProgram,
+		super : glutil.ShaderProgram,
 		/*
 		args:
 			code : the fragment code
@@ -67,5 +69,5 @@ varyingCode,
 			});
 		}
 	});
-	GL.KernelShader = KernelShader;
+	glutil.KernelShader = KernelShader;
 });
