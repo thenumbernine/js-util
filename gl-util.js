@@ -88,19 +88,16 @@ GLUtil = makeClass(new function(){
 		this.context = context;
 
 		//gather extensions
-		this.context.getExtension('OES_element_index_uint');
-		this.context.getExtension('OES_standard_derivatives');
-		this.context.getExtension('OES_texture_float');
-		this.context.getExtension('OES_texture_float_linear');
-
-		//init
-		this.context.clearColor(0,0,0,1);
+		context.getExtension('OES_element_index_uint');
+		context.getExtension('OES_standard_derivatives');
+		context.getExtension('OES_texture_float');
+		context.getExtension('OES_texture_float_linear');
 
 		//initialize variables based on the gl context object constants:
 
 		this.wrapMap = {
-			s : this.context.TEXTURE_WRAP_S,
-			t : this.context.TEXTURE_WRAP_T
+			s : context.TEXTURE_WRAP_S,
+			t : context.TEXTURE_WRAP_T
 		};
 
 		//detect precision used
@@ -108,11 +105,11 @@ GLUtil = makeClass(new function(){
 		this.fragmentPrecision = 'precision mediump float;\n';
 		this.vertexPrecision = '';
 
-		var vtxhigh = this.context.getShaderPrecisionFormat(this.context.VERTEX_SHADER, this.context.HIGH_FLOAT)
+		var vtxhigh = context.getShaderPrecisionFormat(context.VERTEX_SHADER, context.HIGH_FLOAT)
 		if (vtxhigh.rangeMin !== 0 && vtxhigh.rangeMax !== 0 && vtxhigh.precision !== 0) {
 			this.vertexPrecision = 'precision highp float;\n';
 		}
-		var fraghigh = this.context.getShaderPrecisionFormat(this.context.FRAGMENT_SHADER, this.context.HIGH_FLOAT)
+		var fraghigh = context.getShaderPrecisionFormat(context.FRAGMENT_SHADER, context.HIGH_FLOAT)
 		if (fraghigh.rangeMin !== 0 && fraghigh.rangeMax !== 0 && fraghigh.precision !== 0) {
 			this.fragmentPrecision = 'precision highp float;\n';
 		}
@@ -130,29 +127,31 @@ GLUtil = makeClass(new function(){
 		var View = makeClass({
 			/*
 			args:
-				glutil (optional)
+				zNear (optional)
+				zFar
+				fovY
+				ortho
+				pos
+				angle
 			*/
 			init : function(args) {
-				this.glutil = (args && args.glutil) || glutil;
-				this.zNear = 1;
-				this.zFar = 2000;
-				this.fovY = 90;	// corresponding with 1:1 x:z
-				this.ortho = false;
+				this.zNear = (args && args.zNear) || 1;
+				this.zFar = (args && args.zFar) || 2000;
+				this.fovY = (args && args.fovY) || 90;	// corresponding with 1:1 x:z
+				this.ortho = (args && args.ortho) || false;
 				this.pos = vec3.create();
 				this.angle = quat.create();
+				if (args) {
+					if (args.pos !== undefined) vec3.copy(this.pos, args.pos);
+					if (args.angle !== undefined) quat.copy(this.angle, args.angle);
+				}
 			}
 		});
 		this.View = View;
 
 		var SceneObject;
 		var Scene = makeClass({
-			/*
-			args:
-				glutil (optional)
-			*/
-			init : function(args) {
-				this.glutil = (args && args.glutil) || glutil;
-				
+			init : function() {
 				//traditional gl matrices
 				this.projMat = mat4.create();
 				this.mvMat = mat4.create();
@@ -167,9 +166,9 @@ GLUtil = makeClass(new function(){
 				var viewAngleInv = quat.create();
 				var viewPosInv = vec3.create();
 				return function() {
-					quat.conjugate(viewAngleInv, this.glutil.view.angle);
+					quat.conjugate(viewAngleInv, glutil.view.angle);
 					mat4.fromQuat(this.mvMat, viewAngleInv);
-					vec3.negate(viewPosInv, this.glutil.view.pos);
+					vec3.negate(viewPosInv, glutil.view.pos);
 					mat4.translate(this.mvMat, this.mvMat, viewPosInv);
 				};
 			})()
@@ -179,14 +178,11 @@ GLUtil = makeClass(new function(){
 		var Shader = makeClass({
 			/*
 			args:
-				context (optional)
 				(appended in this order)
 				code = shader code,
 				id = the id of the DOM element containing the shader code
 			*/
 			init : function(args) {
-				this.context = args.context || context;
-				
 				var code = '';
 				if (args.code) {
 					if (code === undefined) code = '';
@@ -195,20 +191,19 @@ GLUtil = makeClass(new function(){
 				if (args.id) {
 					if (code === undefined) code = '';
 					var src = $('#'+args.id);
-					//assertEquals(src.attr('type'), this.domType);
 					code += src.text();
 				}
 				if (code === undefined) throw "expected code or id";
 
-				this.obj = this.context.createShader(this.shaderType);
-				this.context.shaderSource(this.obj, code);
-				this.context.compileShader(this.obj);
-				if (!this.context.getShaderParameter(this.obj, this.context.COMPILE_STATUS)) {
+				this.obj = context.createShader(this.shaderType);
+				context.shaderSource(this.obj, code);
+				context.compileShader(this.obj);
+				if (!context.getShaderParameter(this.obj, context.COMPILE_STATUS)) {
 					//stupid grep for tablet aLogCat
 					$.each(code.split('\n'), function(i,line) {
 						console.log(i+': '+line);
 					});
-					throw this.context.getShaderInfoLog(this.obj);
+					throw context.getShaderInfoLog(this.obj);
 				}
 			}
 		});
@@ -216,14 +211,12 @@ GLUtil = makeClass(new function(){
 
 		var VertexShader = makeClass({
 			super : Shader,
-			domType : 'x-shader/x-vertex',
 			shaderType : context.VERTEX_SHADER
 		});
 		this.VertexShader = VertexShader;
 
 		var FragmentShader = makeClass({
 			super : Shader,
-			domType : 'x-shader/x-fragment',
 			shaderType : context.FRAGMENT_SHADER
 		});
 		this.FragmentShader = FragmentShader;
@@ -268,33 +261,29 @@ GLUtil = makeClass(new function(){
 		var ShaderProgram = makeClass({
 			/*
 			args:
-				glutil (optional)
-				context (optional)
 					one of the following:
 				vertexShader = the VertexShader object to link with
 				vertexCode = the vertex shader code
 				vertexCodeID = the id of the DOM element containing the vertex shader code
-				vertexPrecision = set to 'best' for generating the best possible precision
 					one of the following:
 				fragmentShader = the FragmentShader object to link with
 				fragmentCode = the fragment shader code
 				fragmentCodeID = the id of the DOM element containing the fragment shader code
-				fragmentPrecision = set to 'best' for generating the best possible precision
 					and any of the following:
+				vertexPrecision = set to 'best' for generating the best possible precision
+				fragmentPrecision = set to 'best' for generating the best possible precision
 				uniforms = a key-value map containing initial values of any uniforms
 			*/
 			init : function(args) {
 				var thiz = this;
-				this.glutil = (args && args.glutil) || glutil;
-				this.context = (args && args.context) || context;
 				this.vertexShader = args.vertexShader;
 				if (!this.vertexShader) {
 					var vertexCode = args.vertexCode;
 					if (args.vertexPrecision === 'best') {
 						if (vertexCode === undefined) vertexCode = '';
-						vertexCode = this.glutil.vertexPrecision + vertexCode;
+						vertexCode = glutil.vertexPrecision + vertexCode;
 					}
-					this.vertexShader = new this.glutil.VertexShader({
+					this.vertexShader = new glutil.VertexShader({
 						id : args.vertexCodeID,
 						code : vertexCode
 					});
@@ -306,22 +295,22 @@ GLUtil = makeClass(new function(){
 					var fragmentCode = args.fragmentCode;
 					if (args.fragmentPrecision === 'best') {
 						if (fragmentCode === undefined) fragmentCode = '';
-						fragmentCode = this.glutil.fragmentPrecision + fragmentCode;
+						fragmentCode = glutil.fragmentPrecision + fragmentCode;
 					}
-					this.fragmentShader = new this.glutil.FragmentShader({
+					this.fragmentShader = new glutil.FragmentShader({
 						id : args.fragmentCodeID,
 						code : fragmentCode
 					});
 				}
 				if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
 
-				this.obj = this.context.createProgram();
-				this.context.attachShader(this.obj, this.vertexShader.obj);
-				this.context.attachShader(this.obj, this.fragmentShader.obj);
+				this.obj = context.createProgram();
+				context.attachShader(this.obj, this.vertexShader.obj);
+				context.attachShader(this.obj, this.fragmentShader.obj);
 				
-				this.context.linkProgram(this.obj);
-				if (!this.context.getProgramParameter(this.obj, this.context.LINK_STATUS)) {
-					//throw 'Link Error: '+this.context.getShaderInfoLog(this.obj);	
+				context.linkProgram(this.obj);
+				if (!context.getProgramParameter(this.obj, context.LINK_STATUS)) {
+					//throw 'Link Error: '+context.getShaderInfoLog(this.obj);	
 					console.log('vertex code:');
 					$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
 						console.log(i+': '+line);
@@ -333,23 +322,23 @@ GLUtil = makeClass(new function(){
 					throw "Could not initialize shaders";
 				}
 				
-				this.context.useProgram(this.obj);
+				context.useProgram(this.obj);
 				
 				this.uniforms = {};
-				var maxUniforms = this.context.getProgramParameter(this.obj, this.context.ACTIVE_UNIFORMS);
+				var maxUniforms = context.getProgramParameter(this.obj, context.ACTIVE_UNIFORMS);
 				for (var i = 0; i < maxUniforms; i++) {
-					var info = this.context.getActiveUniform(this.obj, i);
-					info.loc = this.context.getUniformLocation(this.obj, info.name);
-					info.setters = getUniformSettersForGLType(this.context, info.type);
+					var info = context.getActiveUniform(this.obj, i);
+					info.loc = context.getUniformLocation(this.obj, info.name);
+					info.setters = getUniformSettersForGLType(context, info.type);
 					this.uniforms[i] = info;
 					this.uniforms[info.name] = info;
 				}
 
 				this.attrs = {};
-				var maxAttrs = this.context.getProgramParameter(this.obj, this.context.ACTIVE_ATTRIBUTES);
+				var maxAttrs = context.getProgramParameter(this.obj, context.ACTIVE_ATTRIBUTES);
 				for (var i = 0; i < maxAttrs; i++) {
-					var info = this.context.getActiveAttrib(this.obj, i);
-					info.loc = this.context.getAttribLocation(this.obj, info.name);
+					var info = context.getActiveAttrib(this.obj, i);
+					info.loc = context.getAttribLocation(this.obj, info.name);
 					this.attrs[info.name] = info;
 				}
 
@@ -357,14 +346,14 @@ GLUtil = makeClass(new function(){
 					this.setUniforms(args.uniforms);
 				}
 
-				this.context.useProgram(null);
+				context.useProgram(null);
 			},
 			use : function() {
-				this.context.useProgram(this.obj);
+				context.useProgram(this.obj);
 				return this;
 			},
 			useNone : function() {
-				this.context.useProgram(null);
+				context.useProgram(null);
 				return this;
 			},
 			setUniforms : function(uniforms) {
@@ -393,12 +382,12 @@ GLUtil = makeClass(new function(){
 					if (arguments.length < setters.count) {
 						throw 'setUniform('+name+') needed '+setters.count+' arguments';
 					}
-					setter.apply(this.context, arguments);
+					setter.apply(context, arguments);
 				} else {
 					if (setters.vec) {
-						setters.vec.call(this.context, loc, value);
+						setters.vec.call(context, loc, value);
 					} else if (setters.mat) {
-						setters.mat.call(this.context, loc, false, value);
+						setters.mat.call(context, loc, false, value);
 					} else {
 						throw "failed to find array setter for uniform "+name;
 					}
@@ -416,9 +405,9 @@ GLUtil = makeClass(new function(){
 					return;
 				}
 				//console.log("enabling attr "+name);
-				this.context.enableVertexAttribArray(info.loc);
-				this.context.bindBuffer(this.context.ARRAY_BUFFER, buffer.obj);
-				this.context.vertexAttribPointer(info.loc, buffer.dim, this.context.FLOAT, false, 0, 0);
+				context.enableVertexAttribArray(info.loc);
+				context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
+				context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
 			},
 			removeAttrs : function(attrs) {
 				for (k in attrs) {
@@ -432,7 +421,7 @@ GLUtil = makeClass(new function(){
 					return;
 				}
 				//console.log("disabling attr "+name);
-				this.context.disableVertexAttribArray(info.loc);
+				context.disableVertexAttribArray(info.loc);
 			}
 		});
 		this.ShaderProgram = ShaderProgram;
@@ -445,22 +434,20 @@ GLUtil = makeClass(new function(){
 				everything else handled by setArgs
 			*/
 			init : function(args) {
-				this.glutil = (args && args.glutil) || glutil;
-				this.context = (args && args.context) || context;
-				this.obj = this.context.createTexture();
-				this.context.bindTexture(this.target, this.obj);
+				this.obj = context.createTexture();
+				context.bindTexture(this.target, this.obj);
 				if (args !== undefined) this.setArgs(args);
-				this.context.bindTexture(this.target, null);
+				context.bindTexture(this.target, null);
 			},
 			//target provided upon init 
 			bind : function(unit) { 
-				if (unit !== undefined) this.context.activeTexture(this.context.TEXTURE0 + unit);
-				this.context.bindTexture(this.target, this.obj);
+				if (unit !== undefined) context.activeTexture(context.TEXTURE0 + unit);
+				context.bindTexture(this.target, this.obj);
 				return this;
 			},
 			unbind : function(unit) { 
-				if (unit !== undefined) this.context.activeTexture(this.context.TEXTURE0 + unit);
-				this.context.bindTexture(this.target, null); 
+				if (unit !== undefined) context.activeTexture(context.TEXTURE0 + unit);
+				context.bindTexture(this.target, null); 
 				return this;
 			},
 			/*
@@ -476,11 +463,11 @@ GLUtil = makeClass(new function(){
 			*/
 			setArgs : function(args) {
 				var target = this.target;
-				if (args.flipY === true) this.context.pixelStorei(this.context.UNPACK_FLIP_Y_WEBGL, true);
-				else if (args.flipY === false) this.context.pixelStorei(this.context.UNPACK_FLIP_Y_WEBGL, false);
-				if (!args.dontPremultiplyAlpha) this.context.pixelStorei(this.context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-				if (args.magFilter) this.context.texParameteri(target, this.context.TEXTURE_MAG_FILTER, args.magFilter);
-				if (args.minFilter) this.context.texParameteri(target, this.context.TEXTURE_MIN_FILTER, args.minFilter);
+				if (args.flipY === true) context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, true);
+				else if (args.flipY === false) context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, false);
+				if (!args.dontPremultiplyAlpha) context.pixelStorei(context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+				if (args.magFilter) context.texParameteri(target, context.TEXTURE_MAG_FILTER, args.magFilter);
+				if (args.minFilter) context.texParameteri(target, context.TEXTURE_MIN_FILTER, args.minFilter);
 				if (args.wrap) {
 					this.setWrap(args.wrap);
 				}
@@ -489,7 +476,7 @@ GLUtil = makeClass(new function(){
 			},
 			setWrap : function(args) {
 				for (var k in args) {
-					this.context.texParameteri(this.target, this.glutil.wrapMap[k] || k, args[k]);
+					context.texParameteri(this.target, glutil.wrapMap[k] || k, args[k]);
 				}
 			},
 			//typically overwritten. default calls setImage if args.data is provided
@@ -516,9 +503,9 @@ GLUtil = makeClass(new function(){
 					var thiz = this;
 					image.onload = function() {
 						args.data = image;
-						thiz.context.bindTexture(thiz.target, thiz.obj);
+						context.bindTexture(thiz.target, thiz.obj);
 						thiz.setImage(args);
-						thiz.context.bindTexture(thiz.target, null);
+						context.bindTexture(thiz.target, null);
 						
 						if (args.onload) args.onload.call(thiz);
 					};
@@ -545,14 +532,14 @@ GLUtil = makeClass(new function(){
 			setImage : function(args) {
 				var target = args.target !== undefined ? args.target : this.target;
 				var level = args.level !== undefined ? args.level : 0;
-				var internalFormat = args.internalFormat !== undefined ? args.internalFormat : this.context.RGBA;
-				var format = args.format !== undefined ? args.format : this.context.RGBA;
-				var type = args.type !== undefined ? args.type : this.context.UNSIGNED_BYTE;
+				var internalFormat = args.internalFormat !== undefined ? args.internalFormat : context.RGBA;
+				var format = args.format !== undefined ? args.format : context.RGBA;
+				var type = args.type !== undefined ? args.type : context.UNSIGNED_BYTE;
 				var width = args.width;
 				var height = args.height;
 				var border = args.border !== undefined ? args.border : 0;
 				
-				//store?  WebGL has no getTexParameteri(this.context.TEXTURE_WIDTH) ...
+				//store?  WebGL has no getTexParameteri(context.TEXTURE_WIDTH) ...
 				this.internalFormat = internalFormat;
 				this.format = format;
 				this.type = type;
@@ -563,25 +550,25 @@ GLUtil = makeClass(new function(){
 				//console.log('setting image target',target,'level',level,'internalFormat',internalFormat,'width',width,'height',height,'border',border,'format',format,'type',type,'data',args.data);
 				if (width === undefined && height === undefined) {
 					//assume it's an image
-					this.context.texImage2D(target, level, internalFormat, format, type, args.data);
+					context.texImage2D(target, level, internalFormat, format, type, args.data);
 				} else {
 					if (typeof(args.data) != 'function') {
 						//assume it's a buffer
-						this.context.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
+						context.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
 					} else {
 						//procedural generation
 						var i = 0;
 						
 						//TODO get number of channels for format, rather than overriding it...
-						format = this.context.RGBA;
+						format = context.RGBA;
 						var channels = 4;
 
 						var scale = undefined;
 						var data = undefined;
-						if (type == this.context.UNSIGNED_BYTE) {
+						if (type == context.UNSIGNED_BYTE) {
 							data = new Uint8Array(width * height * channels);
 							scale = 255;
-						} else if (type == this.context.FLOAT) {
+						} else if (type == context.FLOAT) {
 							data = new Float32Array(width * height * channels);
 							scale = 1;
 						}
@@ -598,12 +585,11 @@ GLUtil = makeClass(new function(){
 								}
 							}
 						}
-	window.lastCallbackGeneratedWebGLTextureData = data;
-						this.context.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
+						context.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
 					}
 				}
 				if (args.generateMipmap) {
-					this.context.generateMipmap(this.target);
+					context.generateMipmap(this.target);
 				}
 			}
 		});
@@ -613,7 +599,7 @@ GLUtil = makeClass(new function(){
 			super : Texture,
 			target : context.TEXTURE_CUBE_MAP,
 			getTargetForSide : function(side) {	//static
-				return this.context.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+				return context.TEXTURE_CUBE_MAP_POSITIVE_X + side;
 			},
 			setArgs : function(args) {
 				Texture.prototype.setArgs.call(this, args);
@@ -628,9 +614,9 @@ GLUtil = makeClass(new function(){
 						image.onload = function() {
 							args.data = image;
 							args.target = thiz.getTargetForSide(side);
-							thiz.context.bindTexture(thiz.target, thiz.obj);
+							context.bindTexture(thiz.target, thiz.obj);
 							Texture2D.prototype.setImage.call(thiz, args);
-							thiz.context.bindTexture(thiz.target, null);
+							context.bindTexture(thiz.target, null);
 						
 							if (args.onload) args.onload.call(thiz,side,url,image);
 						
@@ -639,9 +625,9 @@ GLUtil = makeClass(new function(){
 							loadedCount++;
 							if (loadedCount == 6) {
 								if (generateMipmap) {
-									thiz.context.bindTexture(thiz.context.TEXTURE_CUBE_MAP, thiz.obj);
-									thiz.context.generateMipmap(thiz.context.TEXTURE_CUBE_MAP);
-									thiz.context.bindTexture(thiz.context.TEXTURE_CUBE_MAP, null);
+									context.bindTexture(context.TEXTURE_CUBE_MAP, thiz.obj);
+									context.generateMipmap(context.TEXTURE_CUBE_MAP);
+									context.bindTexture(context.TEXTURE_CUBE_MAP, null);
 								}
 								if (args.done) args.done.call(thiz);
 							}
@@ -657,7 +643,7 @@ GLUtil = makeClass(new function(){
 				var generateMipmap = args.generateMipmap;
 				args.generateMipmap = undefined;
 		
-				this.context.bindTexture(this.target, this.obj);
+				context.bindTexture(this.target, this.obj);
 				var isArray = typeof(args.data) == 'object';	//$.isArray(value);
 				//console.log('isArray?',isArray);
 				if (isArray && args.data.length >= 6) {
@@ -681,10 +667,10 @@ GLUtil = makeClass(new function(){
 				
 				if (generateMipmap) {
 					//console.log('generating mipmaps of data-driven cubemap');
-					this.context.generateMipmap(this.context.TEXTURE_CUBE_MAP);
+					context.generateMipmap(context.TEXTURE_CUBE_MAP);
 				}
 				
-				this.context.bindTexture(this.target, null);
+				context.bindTexture(this.target, null);
 		
 			}
 		});
@@ -702,9 +688,8 @@ GLUtil = makeClass(new function(){
 				keep = optional, default true, set to false to not retain data in .data
 			*/
 			init : function(args) {
-				this.context = (args && args.context) || context;
 				if (args.keep === undefined) args.keep = true;
-				this.obj = this.context.createBuffer();
+				this.obj = context.createBuffer();
 				this.dim = args.dim !== undefined ? args.dim : 3;
 				var data = args.data;
 				if (data === undefined) {
@@ -714,15 +699,15 @@ GLUtil = makeClass(new function(){
 						throw "expected 'data' or 'count'";
 					}
 				}
-				this.setData(data, args.usage || this.context.STATIC_DRAW, args.keep);
+				this.setData(data, args.usage || context.STATIC_DRAW, args.keep);
 			},
 			setData : function(data, usage, keep) {
 				if (data.constructor != Float32Array) {
 					data = new Float32Array(data);
 				}
-				this.context.bindBuffer(this.context.ARRAY_BUFFER, this.obj);
-				this.context.bufferData(this.context.ARRAY_BUFFER, data, usage);
-				this.context.bindBuffer(this.context.ARRAY_BUFFER, null);
+				context.bindBuffer(context.ARRAY_BUFFER, this.obj);
+				context.bufferData(context.ARRAY_BUFFER, data, usage);
+				context.bindBuffer(context.ARRAY_BUFFER, null);
 				this.count = data.length / this.dim;
 				if (keep) this.data = data;
 			},
@@ -732,9 +717,9 @@ GLUtil = makeClass(new function(){
 				if (data.constructor != Float32Array) {
 					data = new Float32Array(data);
 				}
-				this.context.bindBuffer(this.context.ARRAY_BUFFER, this.obj);
-				this.context.bufferSubData(this.context.ARRAY_BUFFER, offset, data);
-				this.context.bindBuffer(this.context.ARRAY_BUFFER, null);
+				context.bindBuffer(context.ARRAY_BUFFER, this.obj);
+				context.bufferSubData(context.ARRAY_BUFFER, offset, data);
+				context.bindBuffer(context.ARRAY_BUFFER, null);
 			}
 		});
 		this.ArrayBuffer = ArrayBuffer;
@@ -746,9 +731,8 @@ GLUtil = makeClass(new function(){
 				data = either a Uint16Array object, or a constructor for a Uint16Array object
 			*/
 			init : function(args) {
-				this.context = (args && args.context) || context;
-				this.obj = this.context.createBuffer();
-				this.setData(args.data, args.usage || this.context.STATIC_DRAW);
+				this.obj = context.createBuffer();
+				this.setData(args.data, args.usage || context.STATIC_DRAW);
 			},
 			setData : function(data, usage) {
 				if (data.constructor != Uint16Array && 
@@ -757,14 +741,14 @@ GLUtil = makeClass(new function(){
 					//in case of uint, default to uint
 					// otherwise default to ushort
 					var type = Uint16Array;
-					if (this.context.getExtension('OES_element_index_uint')) type = Uint32Array;
+					if (context.getExtension('OES_element_index_uint')) type = Uint32Array;
 					data = new type(data);
 				}
-				this.type = data.constructor == Uint32Array ? this.context.UNSIGNED_INT : this.context.UNSIGNED_SHORT;
+				this.type = data.constructor == Uint32Array ? context.UNSIGNED_INT : context.UNSIGNED_SHORT;
 				
-				this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, this.obj);
-				this.context.bufferData(this.context.ELEMENT_ARRAY_BUFFER, data, usage);
-				this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, null);
+				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.obj);
+				context.bufferData(context.ELEMENT_ARRAY_BUFFER, data, usage);
+				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
 				this.count = data.length;
 			},
 			updateData : function(data, offset) {
@@ -772,9 +756,9 @@ GLUtil = makeClass(new function(){
 				if (data.constructor != Uint16Array) {
 					data = new Uint16Array(data);
 				}
-				this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, this.obj);
-				this.context.bufferSubData(this.context.ELEMENT_ARRAY_BUFFER, offset, data);
-				this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, null);
+				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.obj);
+				context.bufferSubData(context.ELEMENT_ARRAY_BUFFER, offset, data);
+				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
 			}
 		});
 		this.ElementArrayBuffer = ElementArrayBuffer;
@@ -788,25 +772,24 @@ GLUtil = makeClass(new function(){
 				useDepth : set to create a depth renderbuffer for this framebuffer.
 			*/
 			init : function(args) {
-				this.context = (args && args.context) || context;
 				this.width = args && args.width;
 				this.height = args && args.height;
-				this.obj = this.context.createFramebuffer();
-				this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.obj);
+				this.obj = context.createFramebuffer();
+				context.bindFramebuffer(context.FRAMEBUFFER, this.obj);
 				if (args !== undefined && args.useDepth) {
-					this.depthObj = this.context.createRenderbuffer();
-					this.context.bindRenderbuffer(this.context.RENDERBUFFER, this.depthObj);
-					this.context.renderbufferStorage(this.context.RENDERBUFFER, this.context.DEPTH_COMPONENT16, this.width, this.height);
-					this.context.framebufferRenderbuffer(this.context.FRAMEBUFFER, this.context.DEPTH_ATTACHMENT, this.context.RENDERBUFFER, this.depthObj);
-					this.context.bindRenderbuffer(this.context.RENDERBUFFER, null);
+					this.depthObj = context.createRenderbuffer();
+					context.bindRenderbuffer(context.RENDERBUFFER, this.depthObj);
+					context.renderbufferStorage(context.RENDERBUFFER, context.DEPTH_COMPONENT16, this.width, this.height);
+					context.framebufferRenderbuffer(context.FRAMEBUFFER, context.DEPTH_ATTACHMENT, context.RENDERBUFFER, this.depthObj);
+					context.bindRenderbuffer(context.RENDERBUFFER, null);
 				}
-				this.context.bindFramebuffer(this.context.FRAMEBUFFER, null);
+				context.bindFramebuffer(context.FRAMEBUFFER, null);
 			},
 			bind : function() {
-				this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.obj);
+				context.bindFramebuffer(context.FRAMEBUFFER, this.obj);
 			},
 			unbind : function() {
-				this.context.bindFramebuffer(this.context.FRAMEBUFFER, null);
+				context.bindFramebuffer(context.FRAMEBUFFER, null);
 			},
 			fboErrors : [
 				'FRAMEBUFFER_INCOMPLETE_ATTACHMENT',
@@ -815,11 +798,11 @@ GLUtil = makeClass(new function(){
 				'FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT'
 			],
 			check : function() {
-				var status = this.context.checkFramebufferStatus(this.context.FRAMEBUFFER);
-				if (status != this.context.FRAMEBUFFER_COMPLETE) {
+				var status = context.checkFramebufferStatus(context.FRAMEBUFFER);
+				if (status != context.FRAMEBUFFER_COMPLETE) {
 					var errstr = 'glCheckFramebufferStatus status=' + status;
 					$.each(this.fboErrors, function(i,fboError) {
-						if (this.context[fboError] == status) {
+						if (context[fboError] == status) {
 							errstr += ' error=' + fboError;
 							return true;	//break;
 						}
@@ -829,24 +812,24 @@ GLUtil = makeClass(new function(){
 			},
 			setColorAttachmentTex2D : function(index, tex, target, level) {
 				if (index === undefined) index = 0;
-				if (target === undefined) target = this.context.TEXTURE_2D;
+				if (target === undefined) target = context.TEXTURE_2D;
 				if (level === undefined) level = 0;
 				this.bind();
-				this.context.framebufferTexture2D(this.context.FRAMEBUFFER, this.context.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
+				context.framebufferTexture2D(context.FRAMEBUFFER, context.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
 				this.unbind();
 			},
 			setColorAttachmentTexCubeMapSide : function(index, tex, side, level) {
 				if (side === undefined) side = index;
 				if (level === undefined) level = 0;
 				this.bind();
-				this.context.framebufferTexture2D(this.context.FRAMEBUFFER, this.context.COLOR_ATTACHMENT0 + index, this.TextureCube.prototype.getTargetForSide(side), tex, level);
+				context.framebufferTexture2D(context.FRAMEBUFFER, context.COLOR_ATTACHMENT0 + index, this.TextureCube.prototype.getTargetForSide(side), tex, level);
 				this.unbind();
 			},
 	/* WebGL only supports one color attachment at a time ...
 			setColorAttachmentTexCubeMap : function(tex, level) {
 				this.bind();
 				for (var i = 0; i < 6; i++) {
-					this.context.framebufferTexture2D(this.context.FRAMEBUFFER, this.context.COLOR_ATTACHMENT0 + i, this.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
+					context.framebufferTexture2D(context.FRAMEBUFFER, context.COLOR_ATTACHMENT0 + i, this.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
 				}
 				this.unbind();
 			},
@@ -856,7 +839,7 @@ GLUtil = makeClass(new function(){
 		if not tonumber(slice) then error("unable to convert slice to number: " ..tostring(slice)) end
 		slice = tonumber(slice)
 		self:bind()
-		this.context.glFramebufferTexture3D(this.context.GL_FRAMEBUFFER, this.context.GL_COLOR_ATTACHMENT0 + index, target or this.context.GL_TEXTURE_3D, tex, level or 0, slice)
+		context.glFramebufferTexture3D(context.GL_FRAMEBUFFER, context.GL_COLOR_ATTACHMENT0 + index, target or context.GL_TEXTURE_3D, tex, level or 0, slice)
 		self:unbind()
 	end
 	*/
@@ -906,8 +889,8 @@ GLUtil = makeClass(new function(){
 				var oldvp;
 				if (args.viewport) {
 					var vp = args.viewport;
-					var oldvp = this.context.getParameter(this.context.VIEWPORT);
-					this.context.viewport.apply(this.context, args.viewport);
+					var oldvp = context.getParameter(context.VIEWPORT);
+					context.viewport.apply(context, args.viewport);
 				}
 				//if (args.resetProjection) throw 'not supported in webgl';
 				
@@ -916,14 +899,14 @@ GLUtil = makeClass(new function(){
 				//the fbo itself doesn't necessarily need one, nor does it store uniforms
 				//so args.shader, args.uniforms, and args.texs might be moot here
 				if (args.shader) {
-					this.context.useProgram(args.shader.obj);
+					context.useProgram(args.shader.obj);
 					if (args.uniforms) {
 						if (args.uniforms) {
 							args.shader.setUniforms(args.uniforms);
 						}
 					}
 				}
-				if (args.texs) bindTextureSet(this.context, args.texs);
+				if (args.texs) bindTextureSet(context, args.texs);
 
 				//if (args.color) throw 'color not supported in webgl';
 				//if (args.dest) throw 'multiple color attachments not supported in webgl';
@@ -933,13 +916,13 @@ GLUtil = makeClass(new function(){
 				// why not just merge it in here?
 				this.drawToCallback(args.callback/* || drawScreenQuad, args.colorAttachment || 0*/);
 				
-				if (args.texs) unbindTextureSet(this.context, args.texs);
+				if (args.texs) unbindTextureSet(context, args.texs);
 				if (args.shader) {
-					this.context.useProgram(null);
+					context.useProgram(null);
 				}
 
 				if (args.viewport) {
-					this.context.viewport.apply(this.context, oldvp);
+					context.viewport.apply(context, oldvp);
 				}
 			}
 		});
@@ -973,15 +956,13 @@ GLUtil = makeClass(new function(){
 		var Geometry = makeClass({
 			/*
 			args:
-				context
 				mode
 				count (optional).  required unless 'indexes' or 'vertexes' is provided.
 				indexes (optional).  specifies to use drawElements instead of drawArrays
 				vertexes (optional).  solely used for providing 'count' when 'indexes' and 'count' is not used.
-				offset (optional).
+				offset (optional).  default 0
 			*/
 			init : function(args) {
-				this.context = args.context || context;
 				this.mode = args.mode;
 				this.count = args.count;
 				this.indexes = args.indexes;
@@ -999,17 +980,17 @@ GLUtil = makeClass(new function(){
 					if (args.offset !== undefined) offset = args.offset;
 				}
 				if (this.indexes !== undefined) {
-					this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
+					context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
 					if (count === undefined) {
 						count = this.indexes.count;
 					}
-					this.context.drawElements(mode, count, this.indexes.type, offset);
-					this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, null);
+					context.drawElements(mode, count, this.indexes.type, offset);
+					context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
 				} else {
 					if (count === undefined && this.vertexes !== undefined) {
 						count = this.vertexes.count;
 					}
-					this.context.drawArrays(mode, offset, count);
+					context.drawArrays(mode, offset, count);
 				}
 			}
 		});
@@ -1044,8 +1025,6 @@ GLUtil = makeClass(new function(){
 			*/
 			init : function(args) {
 				if (!args) args = {};
-				this.glutil = args.glutil || glutil;
-				this.context = args.context || context;
 				this.scene = args.scene || glutil.scene;
 				
 				this.shader = args.shader;
@@ -1069,8 +1048,7 @@ GLUtil = makeClass(new function(){
 				if (args.geometry !== undefined) {
 					this.geometry = args.geometry;
 				} else {
-					this.geometry = new this.glutil.Geometry({
-						context : this.context || this.scene.context.context,
+					this.geometry = new glutil.Geometry({
 						mode : args.mode,
 						count : args.count,
 						offset : args.offset,
@@ -1148,24 +1126,24 @@ GLUtil = makeClass(new function(){
 			
 				var blend = this.blend || (args && args.blend);
 				if (blend) {
-					this.context.blendFunc.apply(this.context, blend);
-					this.context.enable(this.context.BLEND);
+					context.blendFunc.apply(context, blend);
+					context.enable(context.BLEND);
 				}
 
 				if (this.useDepth === true) {
-					this.context.enable(this.context.DEPTH_TEST);
+					context.enable(context.DEPTH_TEST);
 				} else if (this.useDepth === false) {
-					this.context.disable(this.context.DEPTH_TEST);
+					context.disable(context.DEPTH_TEST);
 				}
 
-				if (this.texs) bindTextureSet(this.context, this.texs);
-				if (args && args.texs) bindTextureSet(this.context, args.texs);
+				if (this.texs) bindTextureSet(context, this.texs);
+				if (args && args.texs) bindTextureSet(context, args.texs);
 
 				var shader = this.shader;
 				if (args && args.shader) shader = args.shader;
 				
 				if (shader) {
-					this.context.useProgram(shader.obj);
+					context.useProgram(shader.obj);
 
 					if (this.uniforms) shader.setUniforms(this.uniforms);
 					if (args && args.uniforms) shader.setUniforms(args.uniforms);
@@ -1191,14 +1169,14 @@ GLUtil = makeClass(new function(){
 					if (this.attrs) shader.removeAttrs(this.attrs);
 					if (args && args.attrs) shader.removeAttrs(args.attrs);
 					
-					this.context.useProgram(null);
+					context.useProgram(null);
 				}
 				
-				if (args && args.texs) unbindTextureSet(this.context, args.texs);
-				if (this.texs) unbindTextureSet(this.context, this.texs);
+				if (args && args.texs) unbindTextureSet(context, args.texs);
+				if (this.texs) unbindTextureSet(context, this.texs);
 		
 				if (blend !== undefined) {
-					this.context.disable(this.context.BLEND);
+					context.disable(context.BLEND);
 				}
 			},
 			remove : function() {
