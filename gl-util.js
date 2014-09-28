@@ -433,13 +433,19 @@ GLUtil = makeClass(new function(){
 				//console.log("enabling attr "+name);
 				context.enableVertexAttribArray(info.loc);
 				// array buffer object, assume packed
-				if (buffer.__proto__ == ArrayBuffer.prototype) {
+				if (buffer.__proto__ === ArrayBuffer.prototype) {
 					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
+					//console.log('vertexAttribPointer from obj', info.loc, buffer.dim, context.FLOAT, false, 0, 0);
 					context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
 				//table object, try to derive values
 				} else {
+					buffer = assert(buffer.buffer);
+					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
+					//console.log('vertexAttribPointer from obj', info.loc, buffer.dim, context.FLOAT, false, 0, 0);
+					context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
+					/*
 					var attrInfo = buffer;
-					var buffer = assert(attrInfo.buffer);
+					buffer = assert(attrInfo.buffer);
 					var size = attrInfo.size !== undefined ? attrInfo.size : buffer.dim;
 					//TODO make underlying type modular, and store as a parameter of the buffer
 					var type = context.FLOAT;
@@ -447,7 +453,9 @@ GLUtil = makeClass(new function(){
 					var offset = attrInfo.offset !== undefined ? attrInfo.offset : 0;
 					var stride = attrInfo.stride !== undefined ? attrInfo.stride : 0;
 					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
+					console.log('vertexAttribPointer from wrapper', info.loc, size, type, normalized, stride, offset);
 					context.vertexAttribPointer(info.loc, size, type, normalized, stride, offset);
+					*/
 				}
 			},
 			removeAttrs : function(attrs) {
@@ -887,7 +895,7 @@ GLUtil = makeClass(new function(){
 			//general, object-based type-deducing
 			setColorAttachment : function(index, tex) {
 				if (typeof(tex) == 'object') {
-					if (tex.__proto__ == Texture2D.prototype) {
+					if (tex.__proto__ === Texture2D.prototype) {
 						//javascript splice won't work, so array-clone it first or whatever needs to be done
 						this.setColorAttachmentTex2D(index, tex.obj, arguments.splice(2));
 					// cube map? side or all at once?
@@ -994,13 +1002,14 @@ GLUtil = makeClass(new function(){
 			context.activeTexture(context.TEXTURE0);
 		};
 
+		var Attribute;
 		var Geometry = makeClass({
 			/*
 			args:
 				mode
 				count (optional).  required unless 'indexes' or 'vertexes' is provided.
 				indexes (optional).  specifies to use drawElements instead of drawArrays
-				vertexes (optional).  solely used for providing 'count' when 'indexes' and 'count' is not used.
+				vertexes (optional).  either Attribute (holding ArrayBuffer) or ArrayBuffer.  solely used for providing 'count' when 'indexes' and 'count' is not used.
 				offset (optional).  default 0
 			*/
 			init : function(args) {
@@ -1029,7 +1038,11 @@ GLUtil = makeClass(new function(){
 					context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
 				} else {
 					if (count === undefined && this.vertexes !== undefined) {
-						count = this.vertexes.count;
+						if (this.vertexes.__proto__ !== Attribute.prototype) {
+							count = this.vertexes.count;
+						} else {
+							count = this.vertexes.buffer.count;
+						}
 					}
 					context.drawArrays(mode, offset, count);
 				}
@@ -1037,11 +1050,41 @@ GLUtil = makeClass(new function(){
 		});
 		this.Geometry = Geometry;
 
+		Attribute = makeClass({
+			/*
+			args:
+				buffer = ArrayBuffer object
+				size = dimension of the buffer, default buffer.dim
+				type = type of the buffer, default context.FLOAT (soon to be buffer.type)
+				normalize = whether to normalize the buffer 
+				stride = stride of the buffer, default 0
+				offset = offset of the buffer, default 0
+			if args is a ArrayBuffer then it is treated as the buffer argument
+			*/
+			init : function(args) {
+				if (args.__proto__ == ArrayBuffer.prototype) {
+					this.buffer = args;
+					this.size = this.buffer.dim;
+					this.type = context.FLOAT;
+					this.normalize = false;
+					this.stride = 0;
+					this.offset = 0;
+				} else {
+					this.buffer = assertExists(args, 'buffer');
+					this.size = args.size !== undefined ? args.size : this.buffer.dim;
+					this.type = args.type !== undefined ? args.type : context.FLOAT;	//TODO this.buffer.type
+					this.normalize = args.normalize !== undefined ? args.normalize : false;
+					this.stride = args.stride !== undefined ? args.stride : 0;
+					this.offset = args.offset !== undefined ? args.offset : 0;
+				}
+			}
+		});
+		this.Attribute = Attribute;
+
 		SceneObject = makeClass({
 			/*
 			args:
 				scene
-				context (optional if scene is provided)
 
 				geometry
 					-or-
@@ -1053,7 +1096,10 @@ GLUtil = makeClass(new function(){
 				shader
 				uniforms
 				attrs:
-					vertex:	vertex buffer used to override 'count'
+					[attributeName] = glutil.Attribute object, or semblance of an Attribute object, or an ArrayBuffer.
+									I was considering migrating this all to Attribute objects before I considered how many dereferences into the attrs table there are.  (Any time dynamic data is updated.)
+									So until I switch everything over, I'll just code this, Shader.setAttr, and Geometry.draw to handle both.  Old code will run the same.  New code will run the new way.
+					vertex = vertex attribute buffer.  used to override 'count'
 				texs
 
 				scenegraph / questionable vars:
@@ -1070,7 +1116,16 @@ GLUtil = makeClass(new function(){
 				
 				this.shader = args.shader;
 				this.uniforms = args.uniforms || {};
-				this.attrs = args.attrs;
+				if (args.attrs) {
+					this.attrs = {};
+					for (var k in args.attrs) {
+						var v = args.attrs[k];
+						if (v.buffer !== undefined) {
+							v = new Attribute(v);
+						}
+						this.attrs[k] = v;
+					}
+				}
 				this.texs = args.texs;
 				this.blend = args.blend;
 				this.useDepth = args.useDepth;
