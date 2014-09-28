@@ -284,6 +284,7 @@ GLUtil = makeClass(new function(){
 			}
 		};
 
+		var ArrayBuffer;
 		var ShaderProgram = makeClass({
 			/*
 			args:
@@ -426,26 +427,16 @@ GLUtil = makeClass(new function(){
 			},
 			setAttr : function(name, buffer) {
 				var info = this.attrs[name];
-				if (info === undefined) {
-					//console.log("didn't enable attr "+name);
-					return;
-				}
-				//console.log("enabling attr "+name);
+				if (info === undefined) return;
 				context.enableVertexAttribArray(info.loc);
 				// array buffer object, assume packed
 				if (buffer.__proto__ === ArrayBuffer.prototype) {
 					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
-					//console.log('vertexAttribPointer from obj', info.loc, buffer.dim, context.FLOAT, false, 0, 0);
 					context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
 				//table object, try to derive values
 				} else {
-					buffer = assert(buffer.buffer);
-					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
-					//console.log('vertexAttribPointer from obj', info.loc, buffer.dim, context.FLOAT, false, 0, 0);
-					context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
-					/*
 					var attrInfo = buffer;
-					buffer = assert(attrInfo.buffer);
+					buffer = assertExists(attrInfo, 'buffer');
 					var size = attrInfo.size !== undefined ? attrInfo.size : buffer.dim;
 					//TODO make underlying type modular, and store as a parameter of the buffer
 					var type = context.FLOAT;
@@ -453,9 +444,7 @@ GLUtil = makeClass(new function(){
 					var offset = attrInfo.offset !== undefined ? attrInfo.offset : 0;
 					var stride = attrInfo.stride !== undefined ? attrInfo.stride : 0;
 					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
-					console.log('vertexAttribPointer from wrapper', info.loc, size, type, normalized, stride, offset);
 					context.vertexAttribPointer(info.loc, size, type, normalized, stride, offset);
-					*/
 				}
 			},
 			removeAttrs : function(attrs) {
@@ -465,11 +454,7 @@ GLUtil = makeClass(new function(){
 			},
 			removeAttr : function(name) {
 				var info = this.attrs[name];
-				if (info === undefined) {
-					//console.log("didn't disable attr "+name);
-					return;
-				}
-				//console.log("disabling attr "+name);
+				if (info === undefined) return;
 				context.disableVertexAttribArray(info.loc);
 			}
 		});
@@ -725,7 +710,7 @@ GLUtil = makeClass(new function(){
 		});
 		this.TextureCube = TextureCube;
 
-		var ArrayBuffer = makeClass({
+		ArrayBuffer = makeClass({
 			/*
 			args:
 				context (optional)
