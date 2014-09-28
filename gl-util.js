@@ -432,8 +432,23 @@ GLUtil = makeClass(new function(){
 				}
 				//console.log("enabling attr "+name);
 				context.enableVertexAttribArray(info.loc);
-				context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
-				context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
+				// array buffer object, assume packed
+				if (buffer.__proto__ == ArrayBuffer.prototype) {
+					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
+					context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
+				//table object, try to derive values
+				} else {
+					var attrInfo = buffer;
+					var buffer = assert(attrInfo.buffer);
+					var size = attrInfo.size !== undefined ? attrInfo.size : buffer.dim;
+					//TODO make underlying type modular, and store as a parameter of the buffer
+					var type = context.FLOAT;
+					var normalized = attrInfo.normalized !== undefined ? attrInfo.normalized : false;
+					var offset = attrInfo.offset !== undefined ? attrInfo.offset : 0;
+					var stride = attrInfo.stride !== undefined ? attrInfo.stride : 0;
+					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
+					context.vertexAttribPointer(info.loc, size, type, normalized, stride, offset);
+				}
 			},
 			removeAttrs : function(attrs) {
 				for (k in attrs) {
