@@ -38,16 +38,38 @@ GLUtil = makeClass(new function(){
 	
 	create a new scene with associated canvas and view
 	args:
-		canvas = which canvas to use (required)
+		one of these:
+			canvas = which canvas to use
+			fullscreen = whether to create our own fullscreen canvas 
 		canvasArgs = canvas.getContext arguments, including:
 			premultipliedAlpha (default false)
 			alpha (default false)
 	*/
 	this.init = function(args) {
 		var glutil = this;
-		
-		if (args.canvas === undefined) throw 'expected canvas';
+	
 		this.canvas = args.canvas;
+		if (args.fullscreen) {
+			window.scrollTo(0,1);
+			if (this.canvas === undefined) {
+				this.canvas = $('<canvas>').prependTo(document.body).get(0);
+			}
+		
+			$(this.canvas).css({
+				left : 0,
+				top : 0,
+				position : 'absolute'
+			});
+			var resize = function() {
+				glutil.canvas.width = window.innerWidth;
+				glutil.canvas.height = window.innerHeight;
+				glutil.resize();
+			};
+			$(window).bind('resize', resize);
+			//also call resize after init is done
+			setTimeout(resize, 0);
+		}
+		if (this.canvas === undefined) throw 'expected canvas or fullscreen';
 
 		var canvasArgs = args.canvasArgs;
 		if (canvasArgs === undefined) canvasArgs = {};
@@ -81,7 +103,7 @@ GLUtil = makeClass(new function(){
 			throw "Couldn't initialize WebGL =(";
 		}
 	
-		if (args && args.debug) {
+		if (args !== undefined && args.debug) {
 			context = WebGLDebugUtils.makeDebugContext(context);	
 		}
 
@@ -135,13 +157,17 @@ GLUtil = makeClass(new function(){
 				angle
 			*/
 			init : function(args) {
-				this.zNear = (args && args.zNear) || 1;
-				this.zFar = (args && args.zFar) || 2000;
-				this.fovY = (args && args.fovY) || 90;	// corresponding with 1:1 x:z
-				this.ortho = (args && args.ortho) || false;
+				this.zNear = 1;
+				this.zFar = 2000;
+				this.fovY = 90;	// corresponding with 1:1 x:z
+				this.ortho = false;
 				this.pos = vec3.create();
 				this.angle = quat.create();
-				if (args) {
+				if (args !== undefined) {
+					if (args.zNear !== undefined) this.zNear = args.zNear;
+					if (args.zFar !== undefined) this.zFar = args.zFar;
+					if (args.fovY !== undefined) this.fovY = args.fovY;
+					if (args.ortho !== undefined) this.ortho == args.ortho;
 					if (args.pos !== undefined) vec3.copy(this.pos, args.pos);
 					if (args.angle !== undefined) quat.copy(this.angle, args.angle);
 				}
@@ -184,11 +210,11 @@ GLUtil = makeClass(new function(){
 			*/
 			init : function(args) {
 				var code = '';
-				if (args.code) {
+				if (args !== undefined && args.code !== undefined) {
 					if (code === undefined) code = '';
 					code += args.code;
 				}
-				if (args.id) {
+				if (args !== undefined && args.id !== undefined) {
 					if (code === undefined) code = '';
 					var src = $('#'+args.id);
 					code += src.text();
@@ -277,29 +303,29 @@ GLUtil = makeClass(new function(){
 			init : function(args) {
 				var thiz = this;
 				this.vertexShader = args.vertexShader;
-				if (!this.vertexShader) {
+				if (this.vertexShader === undefined) {
 					var vertexCode = args.vertexCode;
 					if (args.vertexPrecision === 'best') {
 						if (vertexCode === undefined) vertexCode = '';
 						vertexCode = glutil.vertexPrecision + vertexCode;
 					}
 					this.vertexShader = new glutil.VertexShader({
-						id : args.vertexCodeID,
-						code : vertexCode
+						code : vertexCode,
+						id : args.vertexCodeID
 					});
 				}
 				if (!this.vertexShader) throw "expected vertexShader or vertexCode or vertexCodeID";
 
 				this.fragmentShader = args.fragmentShader;
-				if (!this.fragmentShader) {
+				if (this.fragmentShader === undefined) {
 					var fragmentCode = args.fragmentCode;
 					if (args.fragmentPrecision === 'best') {
 						if (fragmentCode === undefined) fragmentCode = '';
 						fragmentCode = glutil.fragmentPrecision + fragmentCode;
 					}
 					this.fragmentShader = new glutil.FragmentShader({
-						id : args.fragmentCodeID,
-						code : fragmentCode
+						code : fragmentCode,
+						id : args.fragmentCodeID
 					});
 				}
 				if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
@@ -342,7 +368,7 @@ GLUtil = makeClass(new function(){
 					this.attrs[info.name] = info;
 				}
 
-				if (args.uniforms) {
+				if (args.uniforms !== undefined) {
 					this.setUniforms(args.uniforms);
 				}
 
@@ -1028,7 +1054,7 @@ GLUtil = makeClass(new function(){
 				this.scene = args.scene || glutil.scene;
 				
 				this.shader = args.shader;
-				this.uniforms = args.uniforms;
+				this.uniforms = args.uniforms || {};
 				this.attrs = args.attrs;
 				this.texs = args.texs;
 				this.blend = args.blend;
@@ -1090,15 +1116,8 @@ GLUtil = makeClass(new function(){
 					this.targetMat = this.mvMat;
 				}
 			
-				//default uniforms?
-				// don't create & use these if no pos & angle is provided?
-				//or will we always want 
-				//if (this.shader)
-				{
-					if (!this.uniforms) this.uniforms = {};
-					if (this.uniforms.projMat === undefined) this.uniforms.projMat = this.scene.projMat;
-					if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
-				}
+				if (this.uniforms.projMat === undefined) this.uniforms.projMat = this.scene.projMat;
+				if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
 			},
 			static : true,
 			/*
