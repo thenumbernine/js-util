@@ -541,7 +541,7 @@ GLUtil = makeClass(new function(){
 						thiz.setImage(args);
 						context.bindTexture(thiz.target, null);
 						
-						if (args.onload) args.onload.call(thiz);
+						if (args.onload) args.onload.call(thiz, args.url, image);
 					};
 					image.onerror = args.onerror;
 					image.src = args.url;

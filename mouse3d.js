@@ -120,9 +120,9 @@ Mouse3D = makeClass({
 			.bind('touchend touchcancel', function(e) {
 				thiz.isTouchDown = false;
 				if (thiz.preventDefault) e.preventDefault();
-				var touch = e.originalEvent.changedTouches[0];
-				var upPosX = touch.pageX;
-				var upPosY = touch.pageY;
+				//var touch = e.originalEvent.changedTouches[0];
+				var upPosX = thiz.lastX;//touch.pageX;
+				var upPosY = thiz.lastY;//touch.pageY;
 				thiz.deltaX = upPosX - thiz.downX;
 				thiz.deltaY = upPosY - thiz.downY;
 				thiz.xf = upPosX / window.innerWidth;
