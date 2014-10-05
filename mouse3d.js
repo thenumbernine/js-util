@@ -100,7 +100,7 @@ Mouse3D = makeClass({
 						var zoomChange = thiz.calcDist(thiz.newZoomTouchPts) - thiz.calcDist(thiz.zoomTouchPts);
 						if (zoomChange != 0) {
 							if (thiz.zoom) {
-								thiz.zoom(10 * zoomChange, 'pinch');
+								thiz.zoom(100 * zoomChange, 'pinch');
 								thiz.zoomTouchPts[0][0] = thiz.newZoomTouchPts[0][0];
 								thiz.zoomTouchPts[0][1] = thiz.newZoomTouchPts[0][1];
 								thiz.zoomTouchPts[1][0] = thiz.newZoomTouchPts[1][0];
