@@ -435,6 +435,8 @@ function pathToParts(path) {
 //this returns the comment as a string
 //http://tomasz.janczuk.org/2013/05/multi-line-strings-in-javascript-and.html
 function mlstr(f) {
-	return f.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+	return f.toString()
+		.replace(/^[^\/]+\/\*!?/, '')
+		.replace(/\*\/[^\/]+$/, '');
 }
 
