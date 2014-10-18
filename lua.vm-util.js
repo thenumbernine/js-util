@@ -351,27 +351,36 @@ var EmbeddedLuaInterpreter = makeClass({
 		if (this.tests) {
 			this.testContainer = $('<div>').appendTo(this.container);
 			$.each(this.tests, function(_,info) {
-				$('<a>', {
-					href:info.url, 
-					text:'[View]', 
-					target:'_blank',
-					css : {'padding-right' : '10px'}
-				}).appendTo(thiz.testContainer);
-				$('<button>', {
-					text:info.name, 
-					click:function() { 
-						thiz.executeAndPrint("dofile '"+info.dest+"'");
-					}
-				}).appendTo(thiz.testContainer);
-				$('<br>').appendTo(thiz.testContainer);
+				var div = thiz.createDivForTestRow(info);
+				div.appendTo(thiz.testContainer);
 			});
 		}
 
 		if (this.done) this.done();
 	},
+	createDivForTestRow : function(info) {
+		var thiz = this;
+		var div = $('<div>');
+		$('<a>', {
+			href:info.url, 
+			text:'[View]', 
+			target:'_blank',
+			css : {'margin-right' : '10px'}
+		}).appendTo(div);
+		$('<button>', {
+			text:info.name, 
+			click:function() { 
+				thiz.executeAndPrint("dofile '"+info.dest+"'");
+			}
+		}).appendTo(div);
+		return div;
+	},
 	executeAndPrint : function(s) {
 		Module.print('> '+s);
-		//todo whatever lua interpreter does for multi lines and printing return values
+		//TODO get this to run on a Worker
+		// Workers can't generate output, so they'll have to pass output as messages
+		// and that might mean putting all of LuaInterpreter in a Worker and generating all html via messages ...
+		//   lots of restructuring
 		Lua.execute(s);
 	},
 	print : function(s) {
