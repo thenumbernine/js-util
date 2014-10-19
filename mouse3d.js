@@ -139,7 +139,6 @@ Mouse3D = makeClass({
 				}
 			})
 			.bind('touchend touchcancel', function(e) {
-				thiz.isTouchDown = false;
 				if (thiz.preventDefault) e.preventDefault();
 				//var touch = e.originalEvent.targetTouches[0];
 				var upPosX = thiz.lastX;//touch.pageX;
