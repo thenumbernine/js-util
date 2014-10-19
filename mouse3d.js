@@ -50,23 +50,33 @@ Mouse3D = makeClass({
 			}
 		});
 
-		$(this.pressObj).bind('mousedown', function(e) {
+		//keep this member around for unbinding in the event of finding touch events are used
+		//therefore don't expect 'this' to be referenced correctly
+		this.mousedownCallback = function(e) {
 			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseDown(e);
-		});
-		$(this.releaseObj).bind('mouseup', function(e) {
+		};
+		$(this.pressObj).bind('mousedown', this.mousedownCallback);
+	
+		this.mouseupCallback = function(e) {
 			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseUp(e);
-		});
-		$(this.pressObj).bind('mousemove', function(e) {
+		};
+		$(this.releaseObj).bind('mouseup', this.mouseupCallback);
+		
+		this.mousemoveCallback = function(e) {
 			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseMove(e);
-		});
-		$(this.pressObj).bind('mousewheel', function(e) {
+		};
+		$(this.pressObj).bind('mousemove', this.mousemoveCallback);
+		
+		this.mousewheelCallback = function(e) {
 			if (thiz.preventDeafult) e.preventDefault();
 			var zoomChange = e.originalEvent.wheelDelta;
 			if (thiz.zoom) thiz.zoom(zoomChange, 'wheel');
-		});
+		};
+		$(this.pressObj).bind('mousewheel', this.mousewheelCallback);
+		
 		//special case for Firefox 25:
 		//http://www.javascriptkit.com/javatutors/onmousewheel.shtml
 		$(this.pressObj).bind('DOMMouseScroll', function(e) {
@@ -74,13 +84,24 @@ Mouse3D = makeClass({
 			var zoomChange = e.originalEvent.detail;
 			if (thiz.zoom) thiz.zoom(zoomChange * -120, 'wheel');
 		});
-		$(this.pressObj).bind('click', function(e) {
+		
+		this.clickCallback = function(e) {
 			//TODO also check l-infinite distance?  or total distance while mousedown travelled?
 			if (thiz.click) thiz.click(e);
-		});
+		};
+		$(this.pressObj).bind('click', this.clickCallback);
+
+		var unbindMouse = function() {
+			$(thiz.pressObj).unbind('mousedown', thiz.mousedownCallback);
+			$(thiz.releaseObj).unbind('mouseup', thiz.mouseupCallback);
+			$(thiz.pressObj).unbind('mousemove', thiz.mousemoveCallback);
+			$(thiz.pressObj).unbind('mousewheel', thiz.mousewheelCallback);
+			$(thiz.pressObj).unbind('click', thiz.clickCallback);
+		};
 
 		$(this.pressObj)
 			.bind('touchstart', function(e) { 	
+				unbindMouse();
 				thiz.isTouchDown = false;
 				if (thiz.preventDefault) e.preventDefault();
 				thiz.doMouseDown(e.originalEvent.targetTouches[0]);
