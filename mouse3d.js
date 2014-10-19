@@ -83,7 +83,7 @@ Mouse3D = makeClass({
 			.bind('touchstart', function(e) { 	
 				thiz.isTouchDown = false;
 				if (thiz.preventDefault) e.preventDefault();
-				thiz.doMouseDown(e.originalEvent.changedTouches[0]);
+				thiz.doMouseDown(e.originalEvent.targetTouches[0]);
 				if (thiz.touchclickstart) thiz.touchclickstart();
 			})
 			.bind('touchmove', function(e) {
@@ -114,13 +114,13 @@ Mouse3D = makeClass({
 					//thiz.isTouchDown = false;
 				}
 				if (!thiz.isTouchDown) {	//only rotate if we haven't begun zooming
-					thiz.doMouseMove(e.originalEvent.changedTouches[0]);
+					thiz.doMouseMove(e.originalEvent.targetTouches[0]);
 				}
 			})
 			.bind('touchend touchcancel', function(e) {
 				thiz.isTouchDown = false;
 				if (thiz.preventDefault) e.preventDefault();
-				//var touch = e.originalEvent.changedTouches[0];
+				//var touch = e.originalEvent.targetTouches[0];
 				var upPosX = thiz.lastX;//touch.pageX;
 				var upPosY = thiz.lastY;//touch.pageY;
 				thiz.deltaX = upPosX - thiz.downX;
@@ -145,6 +145,8 @@ Mouse3D = makeClass({
 		this.yf = e.pageY / window.innerHeight;
 		this.downX = this.lastX;
 		this.downY = this.lastY;
+		this.deltaX = 0;
+		this.deltaY = 0;
 
 		if (this.mousedown) this.mousedown(e);
 	},
