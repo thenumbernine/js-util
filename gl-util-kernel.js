@@ -10,6 +10,7 @@ GLUtil.prototype.oninit.push(function(gl) {
 		/*
 		args:
 			code : the fragment code
+			varying : name of varying variable.  default 'pos'
 			vertexCode : (optional) vertex code
 			uniforms : { uniformName : uniformType }
 					: { uniformName : [uniformType, initialValue] }
@@ -18,13 +19,16 @@ GLUtil.prototype.oninit.push(function(gl) {
 			precision : (optional) mediump (default), highp, etc
 		*/
 		init : function(args) {
+			var varyingVar = args.varying !== undefined ? args.varying : 'pos';
+			
+			
 			var varyingCode = [
-'varying vec2 pos;'].join('\n');
+'varying vec2 '+varyingVar+';'].join('\n');
 			var vertexCode = [
 varyingCode,
 'attribute vec2 vertex;',
 'void main() {',
-'	pos = vertex.xy;',
+'	'+varyingVar+' = vertex.xy;',
 '	gl_Position = vec4(vertex.xy * 2. - 1., 0., 1.);',
 '}'].join('\n');
 			var precision = 'mediump';
