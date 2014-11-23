@@ -65,6 +65,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/tidy.lua', dest:'symmath/tidy.lua'},
 			{url:'/symbolic-lua/src/tostring/JavaScript.lua', dest:'symmath/tostring/JavaScript.lua'},
 			{url:'/symbolic-lua/src/tostring/LaTeX.lua', dest:'symmath/tostring/LaTeX.lua'},
+			{url:'/symbolic-lua/src/tostring/Language.lua', dest:'symmath/tostring/Language.lua'},
 			{url:'/symbolic-lua/src/tostring/Lua.lua', dest:'symmath/tostring/Lua.lua'},
 			{url:'/symbolic-lua/src/tostring/MathJax.lua', dest:'symmath/tostring/MathJax.lua'},
 			{url:'/symbolic-lua/src/tostring/MultiLine.lua', dest:'symmath/tostring/MultiLine.lua'},
