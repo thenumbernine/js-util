@@ -31,6 +31,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/divOp.lua', dest:'symmath/divOp.lua'},
 			{url:'/symbolic-lua/src/equals.lua', dest:'symmath/equals.lua'},
 			{url:'/symbolic-lua/src/EquationOp.lua', dest:'symmath/EquationOp.lua'},
+			{url:'/symbolic-lua/src/eval.lua', dest:'symmath/eval.lua'},
 			{url:'/symbolic-lua/src/exp.lua', dest:'symmath/exp.lua'},
 			{url:'/symbolic-lua/src/expand.lua', dest:'symmath/expand.lua'},
 			{url:'/symbolic-lua/src/Expression.lua', dest:'symmath/Expression.lua'},
@@ -159,7 +160,7 @@ function executeLuaVMFileSet(args) {
 	}
 	new FileSetLoader({
 		//TODO don't store them here
-		//just pull from https://raw.github.com/thenumbernine/stupid-text-rpg/master/
+		//just pull from their remote location / github repo
 		files : files,
 		//wait til all are loaded, then insert them in order
 		//this way we run the lua.vm.js before writing to the filesystems (since the filesystem is created by lua.vm.js)
@@ -278,6 +279,12 @@ var EmbeddedLuaInterpreter = makeClass({
 		}).appendTo(this.container);
 
 		this.history = [];
+		//load history from cookies
+		for (var i=0;;++i) {
+			var line = getCookie('lua-history-'+i);
+			if (line === null) break;
+			this.history.push(line);
+		}
 		this.historyIndex = this.history.length;
 		this.inputGo = $('<button>', {
 			text : 'GO!'
@@ -319,6 +326,15 @@ var EmbeddedLuaInterpreter = makeClass({
 		this.history.push(cmd);
 		while (this.history.length > this.HISTORY_MAX) this.history.shift();
 		this.historyIndex = this.history.length;
+		
+		//store history in cookies...
+		var i=0;
+		while (i<this.history.length) {
+			setCookie('lua-history-'+i, this.history[i]);
+			++i;
+		}
+		clearCookie('lua-history-'+i);
+		
 		this.executeAndPrint(cmd);
 		this.input.val('');
 	},
@@ -385,7 +401,8 @@ var EmbeddedLuaInterpreter = makeClass({
 		// Workers can't generate output, so they'll have to pass output as messages
 		// and that might mean putting all of LuaInterpreter in a Worker and generating all html via messages ...
 		//   lots of restructuring
-		Lua.execute(s);
+		//TODO this catches all errors except syntax errors. TODO some loadstring tricks to solve that
+		Lua.execute('xpcall(function() '+s+' end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
 	},
 	print : function(s) {
 		this.printOutAndErr(s);
