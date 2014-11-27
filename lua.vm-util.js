@@ -402,7 +402,7 @@ var EmbeddedLuaInterpreter = makeClass({
 		// and that might mean putting all of LuaInterpreter in a Worker and generating all html via messages ...
 		//   lots of restructuring
 		//TODO this catches all errors except syntax errors. TODO some loadstring tricks to solve that
-		Lua.execute('xpcall(function() '+s+' end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
+		Lua.execute('xpcall(function() '+s+'\n end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
 	},
 	print : function(s) {
 		this.printOutAndErr(s);
