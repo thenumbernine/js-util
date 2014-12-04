@@ -28,6 +28,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/cos.lua', dest:'symmath/cos.lua'},
 			{url:'/symbolic-lua/src/cosh.lua', dest:'symmath/cosh.lua'},
 			{url:'/symbolic-lua/src/Derivative.lua', dest:'symmath/Derivative.lua'},
+			{url:'/symbolic-lua/src/determinant.lua', dest:'symmath/determinant.lua'},
 			{url:'/symbolic-lua/src/divOp.lua', dest:'symmath/divOp.lua'},
 			{url:'/symbolic-lua/src/equals.lua', dest:'symmath/equals.lua'},
 			{url:'/symbolic-lua/src/EquationOp.lua', dest:'symmath/EquationOp.lua'},
