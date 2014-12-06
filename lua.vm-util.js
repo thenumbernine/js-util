@@ -49,7 +49,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/matrix/identity.lua', dest:'symmath/matrix/identity.lua'},
 			{url:'/symbolic-lua/src/matrix/inverse.lua', dest:'symmath/matrix/inverse.lua'},
 			{url:'/symbolic-lua/src/matrix/transpose.lua', dest:'symmath/matrix/transpose.lua'},
-			{url:'/symbolic-lua/src/matrix.lua', dest:'symmath/matrix.lua'},
+			{url:'/symbolic-lua/src/Matrix.lua', dest:'symmath/Matrix.lua'},
 			{url:'/symbolic-lua/src/modOp.lua', dest:'symmath/modOp.lua'},
 			{url:'/symbolic-lua/src/mulOp.lua', dest:'symmath/mulOp.lua'},
 			{url:'/symbolic-lua/src/nodeCommutativeEqual.lua', dest:'symmath/nodeCommutativeEqual.lua'},
