@@ -90,23 +90,23 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/Vector.lua', dest:'symmath/Vector.lua'}
 		],
 		tests : [
-			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua'},
+			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua', name:'Alcubierre Warp Bubble Geodesic'},
 			//{url:'/symbolic-lua/src/tests/flrw.lua', dest:'symmath/tests/flrw.lua'},
-			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua'},
+			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua', name:'Gravitation by M.T.W. Ch.16 Prob.1'},
 			//{url:'/symbolic-lua/src/tests/integration.lua', dest:'symmath/tests/integration.lua'},
 			//{url:'/symbolic-lua/src/tests/kaluza-klein.lua', dest:'symmath/tests/kaluza-klein.lua'},
-			{url:'/symbolic-lua/src/tests/kerr_cartesian.lua', dest:'symmath/tests/kerr_cartesian.lua'},
-			{url:'/symbolic-lua/src/tests/linearized_euler_hydrodynamic_equations.lua', dest:'symmath/tests/linearized_euler_hydrodynamic_equations.lua'},
-			{url:'/symbolic-lua/src/tests/matrix.lua', dest:'symmath/tests/matrix.lua'},
-			{url:'/symbolic-lua/src/tests/metric.lua', dest:'symmath/tests/metric.lua'},
-			{url:'/symbolic-lua/src/tests/mhd_symmetrization.lua', dest:'symmath/tests/mhd_symmetrization.lua'},
-			{url:'/symbolic-lua/src/tests/newunits.lua', dest:'symmath/tests/newunits.lua'},
-			{url:'/symbolic-lua/src/tests/polar_geodesic.lua', dest:'symmath/tests/polar_geodesic.lua'},
-			{url:'/symbolic-lua/src/tests/schwarzschild_cartesian.lua', dest:'symmath/tests/schwarzschild_cartesian.lua'},
-			{url:'/symbolic-lua/src/tests/schwarzschild_spherical.lua', dest:'symmath/tests/schwarzschild_spherical.lua'},
-			{url:'/symbolic-lua/src/tests/spherical_geodesic.lua', dest:'symmath/tests/spherical_geodesic.lua'},
-			{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua'},
-			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua'}
+			{url:'/symbolic-lua/src/tests/kerr_cartesian.lua', dest:'symmath/tests/kerr_cartesian.lua', name:'Kerr Cartesian Metric'},
+			{url:'/symbolic-lua/src/tests/linearized_euler_hydrodynamic_equations.lua', dest:'symmath/tests/linearized_euler_hydrodynamic_equations.lua', name:'Linearizing Euler Hydrodynamic Equations'},
+			{url:'/symbolic-lua/src/tests/matrix.lua', dest:'symmath/tests/matrix.lua', name:'Matrix Test'},
+			{url:'/symbolic-lua/src/tests/metric.lua', dest:'symmath/tests/metric.lua', name:'Metric Test'},
+			{url:'/symbolic-lua/src/tests/mhd_symmetrization.lua', dest:'symmath/tests/mhd_symmetrization.lua', name:'Linearizing MHD Equations'},
+			{url:'/symbolic-lua/src/tests/newunits.lua', dest:'symmath/tests/newunits.lua', name:'Units of Measurement (using equations)'},
+			{url:'/symbolic-lua/src/tests/polar_geodesic.lua', dest:'symmath/tests/polar_geodesic.lua', name:'Polar Geodesic'},
+			{url:'/symbolic-lua/src/tests/schwarzschild_cartesian.lua', dest:'symmath/tests/schwarzschild_cartesian.lua', name:'Schwarzschild Cartesian Metric'},
+			{url:'/symbolic-lua/src/tests/schwarzschild_spherical.lua', dest:'symmath/tests/schwarzschild_spherical.lua', name:'Schwarzschild Spherical Metric'},
+			{url:'/symbolic-lua/src/tests/spherical_geodesic.lua', dest:'symmath/tests/spherical_geodesic.lua', name:'Spherical Geodesic'},
+			{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua', name:'validation test'},
+			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua', name:'Units of Measurement'}
 		]
 	},
 	tensor : {
