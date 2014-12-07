@@ -54,6 +54,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/mulOp.lua', dest:'symmath/mulOp.lua'},
 			{url:'/symbolic-lua/src/nodeCommutativeEqual.lua', dest:'symmath/nodeCommutativeEqual.lua'},
 			{url:'/symbolic-lua/src/notebook.lua', dest:'symmath/notebook.lua'},
+			{url:'/symbolic-lua/src/polyCoeffs.lua', dest:'symmath/polyCoeffs.lua'},
 			{url:'/symbolic-lua/src/powOp.lua', dest:'symmath/powOp.lua'},
 			{url:'/symbolic-lua/src/prune.lua', dest:'symmath/prune.lua'},
 			{url:'/symbolic-lua/src/replace.lua', dest:'symmath/replace.lua'},
@@ -61,6 +62,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/sin.lua', dest:'symmath/sin.lua'},
 			{url:'/symbolic-lua/src/singleton/Eval.lua', dest:'symmath/singleton/Eval.lua'},
 			{url:'/symbolic-lua/src/singleton/Expand.lua', dest:'symmath/singleton/Expand.lua'},
+			{url:'/symbolic-lua/src/singleton/ExpandPolynomial.lua', dest:'symmath/singleton/ExpandPolynomial.lua'},
 			{url:'/symbolic-lua/src/singleton/Factor.lua', dest:'symmath/singleton/Factor.lua'},
 			{url:'/symbolic-lua/src/singleton/Prune.lua', dest:'symmath/singleton/Prune.lua'},
 			{url:'/symbolic-lua/src/singleton/Tidy.lua', dest:'symmath/singleton/Tidy.lua'},
@@ -93,7 +95,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua'},
 			//{url:'/symbolic-lua/src/tests/flrw.lua', dest:'symmath/tests/flrw.lua'},
 			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua'},
-			//{url:'/symbolic-lua/src/tests/integration.lua', dest:'symmath/tests/integration.lua'},
+			//{url:'/symbolic-lua/src/tests/numeric_integration.lua', dest:'symmath/tests/numeric_integration.lua'},
 			//{url:'/symbolic-lua/src/tests/kaluza-klein.lua', dest:'symmath/tests/kaluza-klein.lua'},
 			{url:'/symbolic-lua/src/tests/kerr_cartesian.lua', dest:'symmath/tests/kerr_cartesian.lua'},
 			{url:'/symbolic-lua/src/tests/linearized_euler_hydrodynamic_equations.lua', dest:'symmath/tests/linearized_euler_hydrodynamic_equations.lua'},
@@ -105,6 +107,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/tests/schwarzschild_cartesian.lua', dest:'symmath/tests/schwarzschild_cartesian.lua'},
 			{url:'/symbolic-lua/src/tests/schwarzschild_spherical.lua', dest:'symmath/tests/schwarzschild_spherical.lua'},
 			{url:'/symbolic-lua/src/tests/spherical_geodesic.lua', dest:'symmath/tests/spherical_geodesic.lua'},
+			{url:'/symbolic-lua/src/tests/spring_force.lua', dest:'symmath/tests/spring_force.lua'},
 			{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua'},
 			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua'}
 		]
