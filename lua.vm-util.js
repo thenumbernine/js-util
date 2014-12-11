@@ -56,6 +56,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/notebook.lua', dest:'symmath/notebook.lua'},
 			{url:'/symbolic-lua/src/polyCoeffs.lua', dest:'symmath/polyCoeffs.lua'},
 			{url:'/symbolic-lua/src/powOp.lua', dest:'symmath/powOp.lua'},
+			{url:'/symbolic-lua/src/primeFactors.lua', dest:'symmath/primeFactors.lua'},
 			{url:'/symbolic-lua/src/prune.lua', dest:'symmath/prune.lua'},
 			{url:'/symbolic-lua/src/replace.lua', dest:'symmath/replace.lua'},
 			{url:'/symbolic-lua/src/simplify.lua', dest:'symmath/simplify.lua'},
