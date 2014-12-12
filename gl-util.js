@@ -227,7 +227,7 @@ GLUtil = makeClass(new function(){
 				if (!context.getShaderParameter(this.obj, context.COMPILE_STATUS)) {
 					//stupid grep for tablet aLogCat
 					$.each(code.split('\n'), function(i,line) {
-						console.log(i+': '+line);
+						console.log((i+1)+': '+line);
 					});
 					throw context.getShaderInfoLog(this.obj);
 				}
@@ -340,11 +340,11 @@ GLUtil = makeClass(new function(){
 					//throw 'Link Error: '+context.getShaderInfoLog(this.obj);	
 					console.log('vertex code:');
 					$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
-						console.log(i+': '+line);
+						console.log((i+1)+': '+line);
 					});
 					console.log('fragment code:');
 					$.each((args.fragmentCode || $('#'+args.fragmentCodeID).text()).split('\n'), function(i,line) {
-						console.log(i+': '+line);
+						console.log((i+1)+': '+line);
 					});
 					throw "Could not initialize shaders";
 				}
