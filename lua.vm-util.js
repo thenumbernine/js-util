@@ -310,12 +310,15 @@ var EmbeddedLuaInterpreter = makeClass({
 		}).appendTo(this.container);
 
 		this.input = $('<input>', {
+			type:'email',	
 			css : {
 				width : '80em',
 				border : '1px solid black',
 				'font-family' : 'Courier'
 			}
 		}).appendTo(this.container);
+		this.input.attr('autocomplete', 'off');		
+		this.input.attr('autocorrect', 'off');		
 		$('<br>').appendTo(this.container);
 
 		this.launchButton = $('<button>', {text:'Launch'});
@@ -421,6 +424,7 @@ var EmbeddedLuaInterpreter = makeClass({
 		// and that might mean putting all of LuaInterpreter in a Worker and generating all html via messages ...
 		//   lots of restructuring
 		//TODO this catches all errors except syntax errors. TODO some loadstring tricks to solve that
+		//TODO print non-nil results im[licitly?	
 		Lua.execute('xpcall(function() '+s+'\n end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
 	},
 	print : function(s) {
