@@ -108,7 +108,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/tests/schwarzschild_cartesian.lua', dest:'symmath/tests/schwarzschild_cartesian.lua', name:'Schwarzschild Cartesian Metric'},
 			{url:'/symbolic-lua/src/tests/schwarzschild_spherical.lua', dest:'symmath/tests/schwarzschild_spherical.lua', name:'Schwarzschild Spherical Metric'},
 			{url:'/symbolic-lua/src/tests/spherical_geodesic.lua', dest:'symmath/tests/spherical_geodesic.lua', name:'Spherical Geodesic'},
-			//{url:'/symbolic-lua/src/tests/spring_force.lua', dest:'symmath/tests/spring_force.lua'},
+			{url:'/symbolic-lua/src/tests/spring_force.lua', dest:'symmath/tests/spring_force.lua', name:'Numerical Spring Force Simulation'},
 			{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua', name:'validation test'},
 			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua', name:'Units of Measurement'}
 		]
