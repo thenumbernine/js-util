@@ -417,15 +417,12 @@ var EmbeddedLuaInterpreter = makeClass({
 		}).appendTo(div);
 		return div;
 	},
+	execute : function(s) {
+		Lua.execute('xpcall(function() '+s+'\n end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
+	},
 	executeAndPrint : function(s) {
 		Module.print('> '+s);
-		//TODO get this to run on a Worker
-		// Workers can't generate output, so they'll have to pass output as messages
-		// and that might mean putting all of LuaInterpreter in a Worker and generating all html via messages ...
-		//   lots of restructuring
-		//TODO this catches all errors except syntax errors. TODO some loadstring tricks to solve that
-		//TODO print non-nil results im[licitly?	
-		Lua.execute('xpcall(function() '+s+'\n end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
+		this.execute(s);
 	},
 	print : function(s) {
 		this.printOutAndErr(s);
