@@ -73,7 +73,10 @@ Mouse3D = makeClass({
 		this.mousewheelCallback = function(e) {
 			if (thiz.preventDeafult) e.preventDefault();
 			var zoomChange = e.originalEvent.wheelDelta;
-			if (thiz.zoom) thiz.zoom(zoomChange, 'wheel');
+			if (thiz.zoom) {
+				thiz.zoom(zoomChange, 'wheel');
+				e.preventDefault();
+			}
 		};
 		$(this.pressObj).bind('mousewheel', this.mousewheelCallback);
 		

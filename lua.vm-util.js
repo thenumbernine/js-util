@@ -92,7 +92,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/Variable.lua', dest:'symmath/Variable.lua'},
 			{url:'/symbolic-lua/src/Vector.lua', dest:'symmath/Vector.lua'}
 		],
-		tests : [
+		/*tests : [
 			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua', name:'Alcubierre Warp Bubble Geodesic'},
 			//{url:'/symbolic-lua/src/tests/flrw.lua', dest:'symmath/tests/flrw.lua'},
 			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua', name:'Gravitation by M.T.W. Ch.16 Prob.1'},
@@ -111,7 +111,7 @@ var luaVmPackageInfos = {
 			//{url:'/symbolic-lua/src/tests/spring_force.lua', dest:'symmath/tests/spring_force.lua'},
 			{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua', name:'validation test'},
 			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua', name:'Units of Measurement'}
-		]
+		]*/
 	},
 	tensor : {
 		files : [
