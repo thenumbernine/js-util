@@ -7,18 +7,25 @@ var luaVmPackageInfos = {
 	ext : {
 		files : [
 			{url:'/lua-ext/class.lua', dest:'ext/class.lua'},
+			{url:'/lua-ext/env.lua', dest:'ext/env.lua'},
+			{url:'/lua-ext/file.lua', dest:'ext/file.lua'},
 			{url:'/lua-ext/init.lua', dest:'ext/init.lua'},
 			{url:'/lua-ext/io.lua', dest:'ext/io.lua'},
 			{url:'/lua-ext/math.lua', dest:'ext/math.lua'},
-			{url:'/lua-ext/serialize.lua', dest:'ext/serialize.lua'},
+			{url:'/lua-ext/meta.lua', dest:'ext/meta.lua'},
+			{url:'/lua-ext/original.lua', dest:'ext/original.lua'},
+			{url:'/lua-ext/range.lua', dest:'ext/range.lua'},
+			{url:'/lua-ext/reload.lua', dest:'ext/reload.lua'},
 			{url:'/lua-ext/string.lua', dest:'ext/string.lua'},
-			{url:'/lua-ext/table.lua', dest:'ext/table.lua'}
+			{url:'/lua-ext/table.lua', dest:'ext/table.lua'},
+			{url:'/lua-ext/tolua.lua', dest:'ext/tolua.lua'}
 		]
 	},
 	symmath : {
 		files : [
 			{url:'/symbolic-lua/src/acos.lua', dest:'symmath/acos.lua'},
 			{url:'/symbolic-lua/src/addOp.lua', dest:'symmath/addOp.lua'},
+			{url:'/symbolic-lua/src/Array.lua', dest:'symmath/Array.lua'},
 			{url:'/symbolic-lua/src/asin.lua', dest:'symmath/asin.lua'},
 			{url:'/symbolic-lua/src/atan.lua', dest:'symmath/atan.lua'},
 			{url:'/symbolic-lua/src/atan2.lua', dest:'symmath/atan2.lua'},
@@ -40,6 +47,7 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/greaterThan.lua', dest:'symmath/greaterThan.lua'},
 			{url:'/symbolic-lua/src/greaterThanOrEquals.lua', dest:'symmath/greaterThanOrEquals.lua'},
 			{url:'/symbolic-lua/src/init.lua', dest:'symmath/init.lua'},
+			{url:'/symbolic-lua/src/Integral.lua', dest:'symmath/Integral.lua'},
 			{url:'/symbolic-lua/src/Invalid.lua', dest:'symmath/Invalid.lua'},
 			{url:'/symbolic-lua/src/lessThan.lua', dest:'symmath/lessThan.lua'},
 			{url:'/symbolic-lua/src/lessThanOrEquals.lua', dest:'symmath/lessThanOrEquals.lua'},
@@ -72,10 +80,13 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/solve.lua', dest:'symmath/solve.lua'},
 			{url:'/symbolic-lua/src/sqrt.lua', dest:'symmath/sqrt.lua'},
 			{url:'/symbolic-lua/src/subOp.lua', dest:'symmath/subOp.lua'},
+			{url:'/symbolic-lua/src/Sum.lua', dest:'symmath/Sum.lua'},
 			{url:'/symbolic-lua/src/symmath.lua', dest:'symmath/symmath.lua'},
 			{url:'/symbolic-lua/src/tableCommutativeEqual.lua', dest:'symmath/tableCommutativeEqual.lua'},
 			{url:'/symbolic-lua/src/tan.lua', dest:'symmath/tan.lua'},
 			{url:'/symbolic-lua/src/tanh.lua', dest:'symmath/tanh.lua'},
+			{url:'/symbolic-lua/src/tensor/TensorCoordBasis.lua', dest:'symmath/tensor/TensorCoordBasis.lua'},
+			{url:'/symbolic-lua/src/tensor/TensorIndex.lua', dest:'symmath/tensor/TensorIndex.lua'},
 			{url:'/symbolic-lua/src/Tensor.lua', dest:'symmath/Tensor.lua'},
 			{url:'/symbolic-lua/src/tensorhelp.lua', dest:'symmath/tensorhelp.lua'},
 			{url:'/symbolic-lua/src/tidy.lua', dest:'symmath/tidy.lua'},
@@ -92,26 +103,31 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/Variable.lua', dest:'symmath/Variable.lua'},
 			{url:'/symbolic-lua/src/Vector.lua', dest:'symmath/Vector.lua'}
 		],
-		/*tests : [
-			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua', name:'Alcubierre Warp Bubble Geodesic'},
-			//{url:'/symbolic-lua/src/tests/flrw.lua', dest:'symmath/tests/flrw.lua'},
+		tests : [
+			{url:'/symbolic-lua/src/tests/adm_bona_masso_eigenvectors_inverse.lua', dest:'symmath/tests/adm_bona_masso_eigenvectors_inverse.lua', name:'ADM Bona-Masso Eigenvectors'},
+			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua', name:'Alcubierre Warp Bubble Geodesic - old API'},
+			{url:'/symbolic-lua/src/tests/alcubierre_new.lua', dest:'symmath/tests/alcubierre_new.lua', name:'Alcubierre Warp Bubble Geodesic'},
+			{url:'/symbolic-lua/src/tests/flrw.lua', dest:'symmath/tests/flrw.lua', name:'FLRW equations'},
 			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua', name:'Gravitation by M.T.W. Ch.16 Prob.1'},
-			//{url:'/symbolic-lua/src/tests/kaluza-klein.lua', dest:'symmath/tests/kaluza-klein.lua'},
+			{url:'/symbolic-lua/src/tests/kaluza-klein.lua', dest:'symmath/tests/kaluza-klein.lua', name:'Kaluza-Klein Equations'},
 			{url:'/symbolic-lua/src/tests/kerr_cartesian.lua', dest:'symmath/tests/kerr_cartesian.lua', name:'Kerr Cartesian Metric'},
 			{url:'/symbolic-lua/src/tests/linearized_euler_hydrodynamic_equations.lua', dest:'symmath/tests/linearized_euler_hydrodynamic_equations.lua', name:'Linearizing Euler Hydrodynamic Equations'},
 			{url:'/symbolic-lua/src/tests/matrix.lua', dest:'symmath/tests/matrix.lua', name:'Matrix Test'},
 			{url:'/symbolic-lua/src/tests/metric.lua', dest:'symmath/tests/metric.lua', name:'Metric Test'},
+			{url:'/symbolic-lua/src/tests/mhd_inverse.lua', dest:'symmath/tests/mhd_inverse.lua', name:'mhd_inverse'},
 			{url:'/symbolic-lua/src/tests/mhd_symmetrization.lua', dest:'symmath/tests/mhd_symmetrization.lua', name:'Linearizing MHD Equations'},
-			{url:'/symbolic-lua/src/tests/newunits.lua', dest:'symmath/tests/newunits.lua', name:'Units of Measurement (using equations)'},
-			//{url:'/symbolic-lua/src/tests/numeric_integration.lua', dest:'symmath/tests/numeric_integration.lua'},
+			{url:'/symbolic-lua/src/tests/natural_units.lua', dest:'symmath/tests/natural_units.lua', name:'natural_units'},
+			//{url:'/symbolic-lua/src/tests/numeric_integration.lua', dest:'symmath/tests/numeric_integration.lua', name:'numeric_integration'},
 			{url:'/symbolic-lua/src/tests/polar_geodesic.lua', dest:'symmath/tests/polar_geodesic.lua', name:'Polar Geodesic'},
 			{url:'/symbolic-lua/src/tests/schwarzschild_cartesian.lua', dest:'symmath/tests/schwarzschild_cartesian.lua', name:'Schwarzschild Cartesian Metric'},
 			{url:'/symbolic-lua/src/tests/schwarzschild_spherical.lua', dest:'symmath/tests/schwarzschild_spherical.lua', name:'Schwarzschild Spherical Metric'},
+			{url:'/symbolic-lua/src/tests/spacetime_embedding_radius.lua', dest:'symmath/tests/spacetime_embedding_radius.lua', name:'Spacetime Embedding Radius'},
 			{url:'/symbolic-lua/src/tests/spherical_geodesic.lua', dest:'symmath/tests/spherical_geodesic.lua', name:'Spherical Geodesic'},
 			{url:'/symbolic-lua/src/tests/spring_force.lua', dest:'symmath/tests/spring_force.lua', name:'Numerical Spring Force Simulation'},
+			{url:'/symbolic-lua/src/tests/tensor-usecase.lua', dest:'symmath/tests/tensor-usecase.lua', name: 'Tensor Use Case'},
 			{url:'/symbolic-lua/src/tests/test.lua', dest:'symmath/tests/test.lua', name:'validation test'},
-			{url:'/symbolic-lua/src/tests/units.lua', dest:'symmath/tests/units.lua', name:'Units of Measurement'}
-		]*/
+			{url:'/symbolic-lua/src/tests/toy_1plus1_spacetime.lua', dest:'symmath/tests/toy_1plus1_spacetime.lua', name:'Toy 1+1 Spacetime'}
+		]
 	},
 	tensor : {
 		files : [

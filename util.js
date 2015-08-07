@@ -121,14 +121,14 @@ Array.prototype.addUnique = function(obj) {
 				//this is calling done twice ?
 				if (update) update(1 - checklist.length / totalLength, $(this).attr('src'));
 				if (checklist.length == 0 && done !== undefined) {
-					console.log('empty list load calling done');
+					//console.log('empty list load calling done');
 					done();
 				}
 			}).error(function() {
 				checklist.remove($(this).attr('src'));
 				if (error) error(1 - checklist.length / totalLength, $(this).attr('src'));
 				if (checklist.length == 0 && done !== undefined) {
-					console.log('empty list error calling done');
+					//console.log('empty list error calling done');
 					done();
 				}
 			});
