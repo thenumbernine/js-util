@@ -105,8 +105,7 @@ var luaVmPackageInfos = {
 		],
 		tests : [
 			{url:'/symbolic-lua/src/tests/adm_bona_masso_eigenvectors_inverse.lua', dest:'symmath/tests/adm_bona_masso_eigenvectors_inverse.lua', name:'ADM Bona-Masso Eigenvectors'},
-			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua', name:'Alcubierre Warp Bubble Geodesic - old API'},
-			{url:'/symbolic-lua/src/tests/alcubierre_new.lua', dest:'symmath/tests/alcubierre_new.lua', name:'Alcubierre Warp Bubble Geodesic'},
+			{url:'/symbolic-lua/src/tests/alcubierre.lua', dest:'symmath/tests/alcubierre.lua', name:'Alcubierre Warp Bubble Geodesic'},
 			{url:'/symbolic-lua/src/tests/flrw.lua', dest:'symmath/tests/flrw.lua', name:'FLRW equations'},
 			{url:'/symbolic-lua/src/tests/gravitation_16_1.lua', dest:'symmath/tests/gravitation_16_1.lua', name:'Gravitation by M.T.W. Ch.16 Prob.1'},
 			{url:'/symbolic-lua/src/tests/kaluza-klein.lua', dest:'symmath/tests/kaluza-klein.lua', name:'Kaluza-Klein Equations'},
