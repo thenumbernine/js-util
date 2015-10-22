@@ -1295,7 +1295,7 @@ GLUtil = makeClass(new function(){
 	this.draw = function() {
 		if (this.onfps) {
 			frames++;
-			thisTime = Date.now();
+			var thisTime = Date.now();
 			if (thisTime - lastTime > 1000) {
 				var fps = frames * 1000 / (thisTime - lastTime);
 				if (this.onfps) this.onfps(fps);
