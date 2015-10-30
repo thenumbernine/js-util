@@ -131,11 +131,13 @@ var luaVmPackageInfos = {
 	},
 	tensor : {
 		files : [
-			{url:'/tensor-calculator/src/tensor.lua', dest:'tensor/tensor.lua'},
-			{url:'/tensor-calculator/src/init.lua', dest:'tensor/init.lua'},
 			{url:'/tensor-calculator/src/delta.lua', dest:'tensor/delta.lua'},
+			{url:'/tensor-calculator/src/index.lua', dest:'tensor/index.lua'},
+			{url:'/tensor-calculator/src/layer.lua', dest:'tensor/layer.lua'},
+			{url:'/tensor-calculator/src/matrix.lua', dest:'tensor/matrix.lua'},
 			{url:'/tensor-calculator/src/notebook.lua', dest:'tensor/notebook.lua'},
-			{url:'/tensor-calculator/src/matrix.lua', dest:'tensor/matrix.lua'}
+			{url:'/tensor-calculator/src/representation.lua', dest:'tensor/representation.lua'},
+			{url:'/tensor-calculator/src/tensor.lua', dest:'tensor/tensor.lua'}
 		],
 		tests : [
 			{url:'/tensor-calculator/src/tests/metric.lua', dest:'tensor/tests/metric.lua', name:'Metric'},
