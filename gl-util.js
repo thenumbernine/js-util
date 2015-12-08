@@ -497,6 +497,7 @@ GLUtil = makeClass(new function(){
 			*/
 			setArgs : function(args) {
 				var target = this.target;
+				if (args.alignment) context.pixelStorei(context.UNPACK_ALIGNMENT, args.alignment);
 				if (args.flipY === true) context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, true);
 				else if (args.flipY === false) context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, false);
 				if (!args.dontPremultiplyAlpha) context.pixelStorei(context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -512,6 +513,7 @@ GLUtil = makeClass(new function(){
 				for (var k in args) {
 					context.texParameteri(this.target, glutil.wrapMap[k] || k, args[k]);
 				}
+				return this;
 			},
 			//typically overwritten. default calls setImage if args.data is provided
 			setData : function(args) {
@@ -1004,6 +1006,12 @@ GLUtil = makeClass(new function(){
 				this.vertexes = args.vertexes;
 				this.offset = args.offset !== undefined ? args.offset : 0;
 			},
+			/*
+			args:
+				mode : overrides mode
+				count : overrides count
+				offset : overrides offset
+			*/
 			draw : function(args) {
 				var mode = this.mode;
 				var count = this.count;
@@ -1174,7 +1182,21 @@ GLUtil = makeClass(new function(){
 				if (this.uniforms.projMat === undefined) this.uniforms.projMat = this.scene.projMat;
 				if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
 			},
-			static : true,
+		
+			static : true, //default
+			
+			setupMatrices : function() {
+				//TODO make matrix stuff optional?
+				if (!this.static) {
+					mat4.fromRotationTranslation(this.localMat, this.angle, this.pos);
+					if (this.parent) {
+						mat4.multiply(this.mvMat, this.parent.targetMat, this.localMat);
+					} else {
+						mat4.multiply(this.mvMat, this.scene.mvMat, this.localMat);
+					}
+				}
+			},
+			
 			/*
 			args: all optional and all overrides for args of constructor and shader constructor
 				shader
@@ -1185,16 +1207,7 @@ GLUtil = makeClass(new function(){
 				offset
 			*/
 			draw : function(args) {
-			
-				//TODO make matrix stuff optional?
-				if (!this.static) {
-					mat4.fromRotationTranslation(this.localMat, this.angle, this.pos);
-					if (this.parent) {
-						mat4.multiply(this.mvMat, this.parent.targetMat, this.localMat);
-					} else {
-						mat4.multiply(this.mvMat, this.scene.mvMat, this.localMat);
-					}
-				}
+				this.setupMatrices();
 
 				//TODO push attrib anyone?
 			
@@ -1253,16 +1266,19 @@ GLUtil = makeClass(new function(){
 					context.disable(context.BLEND);
 				}
 			},
+			
 			remove : function() {
 				if (!this.parent) return;
 				this.parent.children.remove(this);
 				this.parent = undefined;
 			},
+			
 			appendTo : function(parent) {
 				this.remove();
 				this.parent = parent;
 				this.parent.children.push(this);
 			},
+			
 			prependTo : function(parent) {
 				this.remove();
 				this.parent = parent;
@@ -1270,9 +1286,6 @@ GLUtil = makeClass(new function(){
 			}
 		});
 		this.SceneObject = SceneObject;
-
-
-
 
 
 		//create objects:
