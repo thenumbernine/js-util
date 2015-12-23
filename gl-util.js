@@ -1262,7 +1262,7 @@ GLUtil = makeClass(new function(){
 				if (args && args.texs) unbindTextureSet(context, args.texs);
 				if (this.texs) unbindTextureSet(context, this.texs);
 		
-				if (blend !== undefined) {
+				if (blend) {
 					context.disable(context.BLEND);
 				}
 			},
