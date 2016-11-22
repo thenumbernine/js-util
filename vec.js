@@ -85,6 +85,7 @@ function makevec(n) {
 }
 var vec2 = makevec(2);
 var vec3 = makevec(3);
+var vec4 = makevec(4);
 
 
 function box2() {
@@ -151,5 +152,3 @@ box2.prototype = {
 		}
 	}
 }
-
-
