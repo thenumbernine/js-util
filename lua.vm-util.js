@@ -1,6 +1,8 @@
-// some helper functions for using lua.vm.js
-// I want this to turn into an in-page filesystem + lua interpreter
-//assumes lua.vm.js and util.js are already loaded 
+/*
+Some helper functions for using lua.vm.js
+I want this to turn into an in-page filesystem + lua interpreter.
+This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it shouldn't do that.
+*/
 
 
 var luaVmPackageInfos = {
@@ -59,7 +61,6 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/factorLinearSystem.lua', dest:'symmath/factorLinearSystem.lua'},
 			{url:'/symbolic-lua/src/greaterThan.lua', dest:'symmath/greaterThan.lua'},
 			{url:'/symbolic-lua/src/greaterThanOrEquals.lua', dest:'symmath/greaterThanOrEquals.lua'},
-			{url:'/symbolic-lua/src/js/embedded.js', dest:'symmath/js/embedded.js'},
 			{url:'/symbolic-lua/src/lessThan.lua', dest:'symmath/lessThan.lua'},
 			{url:'/symbolic-lua/src/lessThanOrEquals.lua', dest:'symmath/lessThanOrEquals.lua'},
 			{url:'/symbolic-lua/src/log.lua', dest:'symmath/log.lua'},
@@ -202,18 +203,6 @@ function executeLuaVMFileSet(args) {
 			}
 		});
 	}
-	if (args.ext) {
-		var extFiles = [
-		];
-		for (var i = 0; i < extFiles.length; ++i) {
-			var extFile = extFiles[i];
-			extFiles[i] = {
-				url : '/lua-ext/' + extFile,
-				dest : 'ext/' + extFile
-			};
-		}
-		files = files.concat(extFiles);
-	}
 	new FileSetLoader({
 		//TODO don't store them here
 		//just pull from their remote location / github repo
@@ -234,22 +223,30 @@ function executeLuaVMFileSet(args) {
 					
 					//first load the vm...
 					if (file.dest.substring(file.dest.length-3) == '.js') {
+console.log('executing javascript file',file.dest);
+						
 						//this will run in-place.  I always thought it sucked that Lua loadstring() didn't run in place, now I see why it's a good idea.  consistency of scope.
-						//eval(result);
+						/*
+						eval(result);
+						*/
 						var s = document.createElement("script");
 						s.type = "text/javascript";
 						s.innerHTML = result;
 						$("head").append(s);
+						
 					} else if (file.dest.substring(file.dest.length-4) == '.lua') {
+console.log('loading data file',file.dest);
 						var parts = pathToParts(file.dest);
 						if (parts.dir != '.') {
 							try { 	//how do you detect if a path is already created?
 								FS.createPath('/', parts.dir, true, true);
-							} catch (e) {}
+							} catch (e) {
+								console.log('failed to create path', parts.dir, e);
+							}
 						}
 						FS.createDataFile(parts.dir, parts.file, result, true, false);
 					} else {
-						throw "don't know what to do with "+file.dest;
+						throw "got a non-lua file "+file.dest;
 					}
 							
 				},
@@ -304,13 +301,16 @@ var EmbeddedLuaInterpreter = makeClass({
 			args.files = args.files.concat(args.tests);
 		}
 
-		//setup Module global for lua.vm.js
+//setup Module global for lua.vm.js
+//for some reason, on load, lua.vm.js's Module object is no longer reading from the predefined window.Module ...
+//so I'm going to overwrite this after load
+// something tells me it won't have an affect on the Module references in lua.vm.js ...
 		window.Module = {
 			print : function(s) { thiz.print(s); },
 			printErr : function(s) { thiz.printErr(s); },
-			stdin : function() {} 
+			stdin : function() {}
 		};
-		
+
 		this.done = args.done;	//store for later
 
 		this.parentContainer = $('#'+args.id).get(0);
@@ -378,7 +378,10 @@ var EmbeddedLuaInterpreter = makeClass({
 			executeLuaVMFileSet(args);
 		});
 
-		if (args.autoLaunch) this.launchButton.click();
+		if (args.autoLaunch) {
+//TODO re-enable this
+//			this.launchButton.click();
+		}
 	},
 	processInput : function() {
 		var cmd = this.input.val();
@@ -399,6 +402,17 @@ var EmbeddedLuaInterpreter = makeClass({
 	},
 	doneLoadingFilesystem : function() {
 		var thiz = this;
+
+/*
+before I could provide window.Module = { .. default functions ... }
+and lua.vm.js would handle them correctly.
+But now things aren't working so well.
+Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not the lua.vm.js Module.  It used to see the lua.vm.js Module.  wtf happened?  too bad Javascript's scope rules suck.
+*//*
+		Module.print = function(s) { thiz.print(s); };
+		Module.printErr = function(s) { thiz.printErr(s); };
+		Module.stdin = function() {};
+*/
 
 		//hook up input
 		this.inputGo.click(function() {
@@ -447,7 +461,7 @@ var EmbeddedLuaInterpreter = makeClass({
 			css : {'margin-right' : '10px'}
 		}).appendTo(div);
 		$('<button>', {
-			text:info.name, 
+			text:info.name !== undefined ? info.name : info.dest, 
 			click:function() { 
 				thiz.executeAndPrint("dofile '"+info.dest+"'");
 			}
@@ -455,7 +469,13 @@ var EmbeddedLuaInterpreter = makeClass({
 		return div;
 	},
 	execute : function(s) {
-		Lua.execute('xpcall(function() '+s+'\n end, function(err) io.stderr:write(err.."\\n"..debug.traceback()) end)');
+		Lua.execute(mlstr(function(){/*
+xpcall(function()
+	*/}) + s + mlstr(function(){/*
+end, function(err)
+	io.stderr:write(err.."\\n"..debug.traceback()) 
+end)
+*/}));
 	},
 	executeAndPrint : function(s) {
 		Module.print('> '+s);
