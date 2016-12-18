@@ -379,8 +379,7 @@ var EmbeddedLuaInterpreter = makeClass({
 		});
 
 		if (args.autoLaunch) {
-//TODO re-enable this
-//			this.launchButton.click();
+			this.launchButton.click();
 		}
 	},
 	processInput : function() {
