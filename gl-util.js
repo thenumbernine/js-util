@@ -184,7 +184,8 @@ GLUtil = makeClass(new function(){
 			
 				this.root = new SceneObject({
 					scene : this,
-					parent : undefined 
+					parent : undefined,
+					geometry : undefined
 				});
 			},
 
@@ -1134,7 +1135,7 @@ GLUtil = makeClass(new function(){
 					this.static = false;
 				}
 
-				if (args.geometry !== undefined) {
+				if ('geometry' in args) {
 					this.geometry = args.geometry;
 				} else {
 					this.geometry = new glutil.Geometry({
@@ -1238,8 +1239,8 @@ GLUtil = makeClass(new function(){
 					if (this.attrs) shader.setAttrs(this.attrs);
 					if (args && args.attrs) shader.setAttrs(args.attrs);
 				}
-			
-				if (this.geometry !== undefined) {
+				
+				if (this.geometry) {
 					this.geometry.draw(args);
 				}
 				
