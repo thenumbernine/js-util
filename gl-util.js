@@ -1038,7 +1038,9 @@ GLUtil = makeClass(new function(){
 							count = this.vertexes.buffer.count;
 						}
 					}
-					context.drawArrays(mode, offset, count);
+					if (count > 0) {
+						context.drawArrays(mode, offset, count);
+					}
 				}
 			}
 		});
