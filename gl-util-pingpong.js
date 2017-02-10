@@ -1,5 +1,6 @@
 if (!GLUtil) throw "require gl-util.js before gl-util-pingpong.js";
 GLUtil.prototype.oninit.push(function(gl) {
+	var glutil = this; 
 	/*
 	args:
 		width : framebuffer width (optional)
@@ -12,14 +13,14 @@ GLUtil.prototype.oninit.push(function(gl) {
 		this.history = [];
 		this.fbo = args.fbo;
 		if (this.fbo === undefined) {
-			this.fbo = new GL.Framebuffer({width:args.width, height:args.height});
+			this.fbo = new glutil.Framebuffer({width:args.width, height:args.height});
 		}
 		this.width = args.width;
 		this.height = args.height;
 		this.index = 0;	//history index
 		var numBuffers = args.numBuffers !== undefined ? args.numBuffers : 2;
 		for (var i = 0; i < numBuffers; i++) {
-			var tex = new GL.Texture2D(args);
+			var tex = new glutil.Texture2D(args);
 			this.history.push(tex);
 			//the old way set a unique color attachment per texture...
 			//...but webgl can't do that...
@@ -43,6 +44,7 @@ GLUtil.prototype.oninit.push(function(gl) {
 			return this.prev(this.history.length-1);
 		},
 		draw : function(args) {
+			this.fbo.setColorAttachmentTex2D(0, this.current());
 			this.fbo.draw(args);
 		}
 		//clear used a quad ... could use viewport clear I suppose...

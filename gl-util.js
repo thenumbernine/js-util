@@ -883,17 +883,17 @@ GLUtil = makeClass(new function(){
 			//general, object-based type-deducing
 			setColorAttachment : function(index, tex) {
 				if (typeof(tex) == 'object') {
-					if (tex.__proto__ === Texture2D.prototype) {
+					if (tex.constructor === Texture2D) {
 						//javascript splice won't work, so array-clone it first or whatever needs to be done
-						this.setColorAttachmentTex2D(index, tex.obj, arguments.splice(2));
+						this.setColorAttachmentTex2D(index, tex.obj)	//, arguments.splice(2));
 					// cube map? side or all at once?
 					//elseif mt == Tex3D then
 					//	self:setColorAttachmentTex3D(index, tex.id, ...)
+					} else if (tex.constructor == WebGLTexture) {
+						this.setColorAttachmentTex2D(index, tex);	// though this could be a 3d slice or a cube side...
 					} else {
 						throw "Can't deduce how to attach the object.  Try using an explicit attachment method";
 					}
-				} else if (typeof(tex) == 'number') {
-					this.setColorAttachmentTex2D.apply(this, arguments);	// though this could be a 3d slice or a cube side...
 				} else {
 					throw "Can't deduce how to attach the object.  Try using an explicit attachment method";
 				}
