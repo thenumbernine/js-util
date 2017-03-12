@@ -143,9 +143,9 @@ Mouse3D = makeClass({
 			})
 			.bind('touchend touchcancel', function(e) {
 				if (thiz.preventDefault) e.preventDefault();
-				//var touch = e.originalEvent.targetTouches[0];
-				var upPosX = thiz.lastX;//touch.pageX;
-				var upPosY = thiz.lastY;//touch.pageY;
+				var touch = e.originalEvent.changedTouches[0];
+				var upPosX = touch.pageX;
+				var upPosY = touch.pageY;
 				thiz.deltaX = upPosX - thiz.downX;
 				thiz.deltaY = upPosY - thiz.downY;
 				thiz.xf = upPosX / window.innerWidth;
@@ -200,10 +200,10 @@ Mouse3D = makeClass({
 		}
 	},
 	getTouchPts : function(e, pts) {
-		pts[0][0] = e.originalEvent.touches[0].pageX;
-		pts[0][1] = e.originalEvent.touches[0].pageY;
-		pts[1][0] = e.originalEvent.touches[1].pageX;
-		pts[1][1] = e.originalEvent.touches[1].pageY;
+		pts[0][0] = e.originalEvent.changedTouches[0].pageX;
+		pts[0][1] = e.originalEvent.changedTouches[0].pageY;
+		pts[1][0] = e.originalEvent.changedTouches[1].pageX;
+		pts[1][1] = e.originalEvent.changedTouches[1].pageY;
 	},
 	calcDist : function(pts) {
 		var dx = pts[0][0] - pts[1][0];
