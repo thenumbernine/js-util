@@ -108,6 +108,7 @@ Array.prototype.addUnique = function(obj) {
 	};
 
 	//http://stackoverflow.com/questions/476679/preloading-images-with-jquery
+	//with modifications for percentage callback
 	$.fn.preload = function(done, update, error) {
 		var checklist = this.toArray();
 		var totalLength = checklist.length;
@@ -175,6 +176,7 @@ function makeClass(args) {
 	if (args == undefined) args = {};
 	var classname = ('classname' in args) ? args.classname : 'classObj';
 	if (!('init' in args)) {
+		//so how do you get the console to label a variable?
 		if ('super' in args) {
 			args.init = eval('var '+classname+' = function() { args.super.apply(this, arguments); }; '+classname+';');
 		} else {
