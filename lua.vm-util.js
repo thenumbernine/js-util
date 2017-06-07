@@ -42,7 +42,6 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/matrix/diagonal.lua', dest:'symmath/matrix/diagonal.lua'},
 			{url:'/symbolic-lua/src/matrix/determinant.lua', dest:'symmath/matrix/determinant.lua'},
 			{url:'/symbolic-lua/src/matrix/pseudoInverse.lua', dest:'symmath/matrix/pseudoInverse.lua'},
-			{url:'/symbolic-lua/src/js/embedded.js', dest:'symmath/js/embedded.js'},
 			{url:'/symbolic-lua/src/sin.lua', dest:'symmath/sin.lua'},
 			{url:'/symbolic-lua/src/factorLinearSystem.lua', dest:'symmath/factorLinearSystem.lua'},
 			{url:'/symbolic-lua/src/Sum.lua', dest:'symmath/Sum.lua'},
