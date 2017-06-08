@@ -173,6 +173,11 @@ var luaVmPackageInfos = {
 			{url:'/symbolic-lua/src/tests/unit/test.lua', dest:'symmath/tests/unit/test.lua'}
 		]
 	},
+	gnuplot : {
+		files : [
+			{url:'/lua-gnuplot/gnuplot.lua', dest:'gnuplot/gnuplot.lua'}
+		]
+	},
 	tensor : {
 		files : [
 			{url:'/tensor-calculator/src/delta.lua', dest:'tensor/delta.lua'},
