@@ -89,37 +89,37 @@ GLUtil = makeClass(new function(){
 		
 		if (canvasArgs.alpha === undefined) canvasArgs.alpha = false;
 
-		var context = undefined;
+		var gl = undefined;
 		for (var i = 0; i < this.webGLNames.length; i++) {
 			try {
 				//console.log('trying to init gl context of type', this.webGLNames[i]);
-				context = this.canvas.getContext(this.webGLNames[i], canvasArgs);
+				gl = this.canvas.getContext(this.webGLNames[i], canvasArgs);
 			} catch (e) {
 				//console.log('failed with exception', e);
 			}
-			if (context) break;
+			if (gl) break;
 		}
-		if (context === undefined) {
+		if (gl === undefined) {
 			throw "Couldn't initialize WebGL =(";
 		}
 	
 		if (args !== undefined && args.debug) {
-			context = WebGLDebugUtils.makeDebugContext(context);	
+			gl = WebGLDebugUtils.makeDebugContext(gl);	
 		}
 
-		this.context = context;
+		this.context = gl;
 
 		//gather extensions
-		context.getExtension('OES_element_index_uint');
-		context.getExtension('OES_standard_derivatives');
-		context.getExtension('OES_texture_float');
-		context.getExtension('OES_texture_float_linear');
+		gl.getExtension('OES_element_index_uint');
+		gl.getExtension('OES_standard_derivatives');
+		gl.getExtension('OES_texture_float');
+		gl.getExtension('OES_texture_float_linear');
 
 		//initialize variables based on the gl context object constants:
 
 		this.wrapMap = {
-			s : context.TEXTURE_WRAP_S,
-			t : context.TEXTURE_WRAP_T
+			s : gl.TEXTURE_WRAP_S,
+			t : gl.TEXTURE_WRAP_T
 		};
 
 		//detect precision used
@@ -127,11 +127,11 @@ GLUtil = makeClass(new function(){
 		this.fragmentPrecision = 'precision mediump float;\n';
 		this.vertexPrecision = '';
 
-		var vtxhigh = context.getShaderPrecisionFormat(context.VERTEX_SHADER, context.HIGH_FLOAT)
+		var vtxhigh = gl.getShaderPrecisionFormat(gl.VERTEX_SHADER, gl.HIGH_FLOAT)
 		if (vtxhigh.rangeMin !== 0 && vtxhigh.rangeMax !== 0 && vtxhigh.precision !== 0) {
 			this.vertexPrecision = 'precision highp float;\n';
 		}
-		var fraghigh = context.getShaderPrecisionFormat(context.FRAGMENT_SHADER, context.HIGH_FLOAT)
+		var fraghigh = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
 		if (fraghigh.rangeMin !== 0 && fraghigh.rangeMax !== 0 && fraghigh.precision !== 0) {
 			this.fragmentPrecision = 'precision highp float;\n';
 		}
@@ -222,15 +222,15 @@ GLUtil = makeClass(new function(){
 				}
 				if (code === undefined) throw "expected code or id";
 
-				this.obj = context.createShader(this.shaderType);
-				context.shaderSource(this.obj, code);
-				context.compileShader(this.obj);
-				if (!context.getShaderParameter(this.obj, context.COMPILE_STATUS)) {
+				this.obj = gl.createShader(this.shaderType);
+				gl.shaderSource(this.obj, code);
+				gl.compileShader(this.obj);
+				if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) {
 					//stupid grep for tablet aLogCat
 					$.each(code.split('\n'), function(i,line) {
 						console.log((i+1)+': '+line);
 					});
-					throw context.getShaderInfoLog(this.obj);
+					throw gl.getShaderInfoLog(this.obj);
 				}
 			}
 		});
@@ -238,13 +238,13 @@ GLUtil = makeClass(new function(){
 
 		var VertexShader = makeClass({
 			super : Shader,
-			shaderType : context.VERTEX_SHADER
+			shaderType : gl.VERTEX_SHADER
 		});
 		this.VertexShader = VertexShader;
 
 		var FragmentShader = makeClass({
 			super : Shader,
-			shaderType : context.FRAGMENT_SHADER
+			shaderType : gl.FRAGMENT_SHADER
 		});
 		this.FragmentShader = FragmentShader;
 
@@ -252,36 +252,36 @@ GLUtil = makeClass(new function(){
 		//0: used when multiple primitive values are passed
 		//1: used when an array is passed
 		//2: used when an array is passed as a matrix
-		var getUniformSettersForGLType = function(context, gltype) {
+		var getUniformSettersForGLType = function(gl, gltype) {
 			switch (gltype) {
-			case context.FLOAT: 
-				return {arg:context.uniform1f, count:1};
-			case context.INT:
-			case context.BOOL:
-			case context.SAMPLER_2D:
-			case context.SAMPLER_CUBE: 
-				return {arg:context.uniform1i, count:1};
-			case context.FLOAT_VEC2: 
-				return {arg:context.uniform2f, count:2, vec:context.uniform2fv};
-			case context.INT_VEC2:
-			case context.BOOL_VEC2:
-				return {arg:context.uniform2i, count:2, vec:context.uniform2iv};
-			case context.FLOAT_VEC3: 
-				return {arg:context.uniform3f, count:3, vec:context.uniform3fv};
-			case context.INT_VEC3:
-			case context.BOOL_VEC3:
-				return {arg:context.uniform3i, count:3, vec:context.uniform3iv};
-			case context.FLOAT_VEC4: 
-				return {arg:context.uniform4f, count:4, vec:context.uniform4fv};
-			case context.INT_VEC4:
-			case context.BOOL_VEC4:
-				return {arg:context.uniform4i, count:4, vec:context.uniform4iv};
-			case context.FLOAT_MAT2:
-				return {mat:context.uniformMatrix2fv};
-			case context.FLOAT_MAT3:
-				return {mat:context.uniformMatrix3fv};
-			case context.FLOAT_MAT4:
-				return {mat:context.uniformMatrix4fv};
+			case gl.FLOAT: 
+				return {arg:gl.uniform1f, count:1};
+			case gl.INT:
+			case gl.BOOL:
+			case gl.SAMPLER_2D:
+			case gl.SAMPLER_CUBE: 
+				return {arg:gl.uniform1i, count:1};
+			case gl.FLOAT_VEC2: 
+				return {arg:gl.uniform2f, count:2, vec:gl.uniform2fv};
+			case gl.INT_VEC2:
+			case gl.BOOL_VEC2:
+				return {arg:gl.uniform2i, count:2, vec:gl.uniform2iv};
+			case gl.FLOAT_VEC3: 
+				return {arg:gl.uniform3f, count:3, vec:gl.uniform3fv};
+			case gl.INT_VEC3:
+			case gl.BOOL_VEC3:
+				return {arg:gl.uniform3i, count:3, vec:gl.uniform3iv};
+			case gl.FLOAT_VEC4: 
+				return {arg:gl.uniform4f, count:4, vec:gl.uniform4fv};
+			case gl.INT_VEC4:
+			case gl.BOOL_VEC4:
+				return {arg:gl.uniform4i, count:4, vec:gl.uniform4iv};
+			case gl.FLOAT_MAT2:
+				return {mat:gl.uniformMatrix2fv};
+			case gl.FLOAT_MAT3:
+				return {mat:gl.uniformMatrix3fv};
+			case gl.FLOAT_MAT4:
+				return {mat:gl.uniformMatrix4fv};
 			}
 		};
 
@@ -332,13 +332,13 @@ GLUtil = makeClass(new function(){
 				}
 				if (!this.fragmentShader) throw "expected fragmentShader or fragmentCode or fragmentCodeID";
 
-				this.obj = context.createProgram();
-				context.attachShader(this.obj, this.vertexShader.obj);
-				context.attachShader(this.obj, this.fragmentShader.obj);
+				this.obj = gl.createProgram();
+				gl.attachShader(this.obj, this.vertexShader.obj);
+				gl.attachShader(this.obj, this.fragmentShader.obj);
 				
-				context.linkProgram(this.obj);
-				if (!context.getProgramParameter(this.obj, context.LINK_STATUS)) {
-					//throw 'Link Error: '+context.getShaderInfoLog(this.obj);	
+				gl.linkProgram(this.obj);
+				if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
+					//throw 'Link Error: '+gl.getShaderInfoLog(this.obj);	
 					console.log('vertex code:');
 					$.each((args.vertexCode || $('#'+args.vertexCodeID).text()).split('\n'), function(i,line) {
 						console.log((i+1)+': '+line);
@@ -350,23 +350,23 @@ GLUtil = makeClass(new function(){
 					throw "Could not initialize shaders";
 				}
 				
-				context.useProgram(this.obj);
+				gl.useProgram(this.obj);
 				
 				this.uniforms = {};
-				var maxUniforms = context.getProgramParameter(this.obj, context.ACTIVE_UNIFORMS);
+				var maxUniforms = gl.getProgramParameter(this.obj, gl.ACTIVE_UNIFORMS);
 				for (var i = 0; i < maxUniforms; i++) {
-					var info = context.getActiveUniform(this.obj, i);
-					info.loc = context.getUniformLocation(this.obj, info.name);
-					info.setters = getUniformSettersForGLType(context, info.type);
+					var info = gl.getActiveUniform(this.obj, i);
+					info.loc = gl.getUniformLocation(this.obj, info.name);
+					info.setters = getUniformSettersForGLType(gl, info.type);
 					this.uniforms[i] = info;
 					this.uniforms[info.name] = info;
 				}
 
 				this.attrs = {};
-				var maxAttrs = context.getProgramParameter(this.obj, context.ACTIVE_ATTRIBUTES);
+				var maxAttrs = gl.getProgramParameter(this.obj, gl.ACTIVE_ATTRIBUTES);
 				for (var i = 0; i < maxAttrs; i++) {
-					var info = context.getActiveAttrib(this.obj, i);
-					info.loc = context.getAttribLocation(this.obj, info.name);
+					var info = gl.getActiveAttrib(this.obj, i);
+					info.loc = gl.getAttribLocation(this.obj, info.name);
 					this.attrs[info.name] = info;
 				}
 
@@ -374,14 +374,14 @@ GLUtil = makeClass(new function(){
 					this.setUniforms(args.uniforms);
 				}
 
-				context.useProgram(null);
+				gl.useProgram(null);
 			},
 			use : function() {
-				context.useProgram(this.obj);
+				gl.useProgram(this.obj);
 				return this;
 			},
 			useNone : function() {
-				context.useProgram(null);
+				gl.useProgram(null);
 				return this;
 			},
 			setUniforms : function(uniforms) {
@@ -410,12 +410,12 @@ GLUtil = makeClass(new function(){
 					if (arguments.length < setters.count) {
 						throw 'setUniform('+name+') needed '+setters.count+' arguments';
 					}
-					setter.apply(context, arguments);
+					setter.apply(gl, arguments);
 				} else {
 					if (setters.vec) {
-						setters.vec.call(context, loc, value);
+						setters.vec.call(gl, loc, value);
 					} else if (setters.mat) {
-						setters.mat.call(context, loc, false, value);
+						setters.mat.call(gl, loc, false, value);
 					} else {
 						throw "failed to find array setter for uniform "+name;
 					}
@@ -429,23 +429,23 @@ GLUtil = makeClass(new function(){
 			setAttr : function(name, buffer) {
 				var info = this.attrs[name];
 				if (info === undefined) return;
-				context.enableVertexAttribArray(info.loc);
+				gl.enableVertexAttribArray(info.loc);
 				// array buffer object, assume packed
 				if (buffer.__proto__ === ArrayBuffer.prototype) {
-					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
-					context.vertexAttribPointer(info.loc, buffer.dim, context.FLOAT, false, 0, 0);
+					gl.bindBuffer(gl.ARRAY_BUFFER, buffer.obj);
+					gl.vertexAttribPointer(info.loc, buffer.dim, gl.FLOAT, false, 0, 0);
 				//table object, try to derive values
 				} else {
 					var attrInfo = buffer;
 					buffer = assertExists(attrInfo, 'buffer');
 					var size = attrInfo.size !== undefined ? attrInfo.size : buffer.dim;
 					//TODO make underlying type modular, and store as a parameter of the buffer
-					var type = context.FLOAT;
+					var type = gl.FLOAT;
 					var normalized = attrInfo.normalized !== undefined ? attrInfo.normalized : false;
 					var offset = attrInfo.offset !== undefined ? attrInfo.offset : 0;
 					var stride = attrInfo.stride !== undefined ? attrInfo.stride : 0;
-					context.bindBuffer(context.ARRAY_BUFFER, buffer.obj);
-					context.vertexAttribPointer(info.loc, size, type, normalized, stride, offset);
+					gl.bindBuffer(gl.ARRAY_BUFFER, buffer.obj);
+					gl.vertexAttribPointer(info.loc, size, type, normalized, stride, offset);
 				}
 			},
 			removeAttrs : function(attrs) {
@@ -456,7 +456,7 @@ GLUtil = makeClass(new function(){
 			removeAttr : function(name) {
 				var info = this.attrs[name];
 				if (info === undefined) return;
-				context.disableVertexAttribArray(info.loc);
+				gl.disableVertexAttribArray(info.loc);
 			}
 		});
 		this.ShaderProgram = ShaderProgram;
@@ -465,24 +465,23 @@ GLUtil = makeClass(new function(){
 			/*
 			args:
 				glutil (optional)
-				context (optional)
 				everything else handled by setArgs
 			*/
 			init : function(args) {
-				this.obj = context.createTexture();
-				context.bindTexture(this.target, this.obj);
+				this.obj = gl.createTexture();
+				gl.bindTexture(this.target, this.obj);
 				if (args !== undefined) this.setArgs(args);
-				context.bindTexture(this.target, null);
+				gl.bindTexture(this.target, null);
 			},
 			//target provided upon init 
 			bind : function(unit) { 
-				if (unit !== undefined) context.activeTexture(context.TEXTURE0 + unit);
-				context.bindTexture(this.target, this.obj);
+				if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
+				gl.bindTexture(this.target, this.obj);
 				return this;
 			},
 			unbind : function(unit) { 
-				if (unit !== undefined) context.activeTexture(context.TEXTURE0 + unit);
-				context.bindTexture(this.target, null); 
+				if (unit !== undefined) gl.activeTexture(gl.TEXTURE0 + unit);
+				gl.bindTexture(this.target, null); 
 				return this;
 			},
 			/*
@@ -498,12 +497,12 @@ GLUtil = makeClass(new function(){
 			*/
 			setArgs : function(args) {
 				var target = this.target;
-				if (args.alignment) context.pixelStorei(context.UNPACK_ALIGNMENT, args.alignment);
-				if (args.flipY === true) context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, true);
-				else if (args.flipY === false) context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, false);
-				if (!args.dontPremultiplyAlpha) context.pixelStorei(context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-				if (args.magFilter) context.texParameteri(target, context.TEXTURE_MAG_FILTER, args.magFilter);
-				if (args.minFilter) context.texParameteri(target, context.TEXTURE_MIN_FILTER, args.minFilter);
+				if (args.alignment) gl.pixelStorei(gl.UNPACK_ALIGNMENT, args.alignment);
+				if (args.flipY === true) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+				else if (args.flipY === false) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+				if (!args.dontPremultiplyAlpha) gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+				if (args.magFilter) gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, args.magFilter);
+				if (args.minFilter) gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, args.minFilter);
 				if (args.wrap) {
 					this.setWrap(args.wrap);
 				}
@@ -512,7 +511,7 @@ GLUtil = makeClass(new function(){
 			},
 			setWrap : function(args) {
 				for (var k in args) {
-					context.texParameteri(this.target, glutil.wrapMap[k] || k, args[k]);
+					gl.texParameteri(this.target, glutil.wrapMap[k] || k, args[k]);
 				}
 				return this;
 			},
@@ -533,16 +532,16 @@ GLUtil = makeClass(new function(){
 		*/
 		var Texture2D = makeClass({
 			super : Texture,
-			target : context.TEXTURE_2D,
+			target : gl.TEXTURE_2D,
 			setData : function(args) {
 				if (args.url) {
 					var image = new Image();
 					var thiz = this;
 					image.onload = function() {
 						args.data = image;
-						context.bindTexture(thiz.target, thiz.obj);
+						gl.bindTexture(thiz.target, thiz.obj);
 						thiz.setImage(args);
-						context.bindTexture(thiz.target, null);
+						gl.bindTexture(thiz.target, null);
 						
 						if (args.onload) args.onload.call(thiz, args.url, image);
 					};
@@ -569,14 +568,14 @@ GLUtil = makeClass(new function(){
 			setImage : function(args) {
 				var target = args.target !== undefined ? args.target : this.target;
 				var level = args.level !== undefined ? args.level : 0;
-				var internalFormat = args.internalFormat !== undefined ? args.internalFormat : context.RGBA;
-				var format = args.format !== undefined ? args.format : context.RGBA;
-				var type = args.type !== undefined ? args.type : context.UNSIGNED_BYTE;
+				var internalFormat = args.internalFormat !== undefined ? args.internalFormat : gl.RGBA;
+				var format = args.format !== undefined ? args.format : gl.RGBA;
+				var type = args.type !== undefined ? args.type : gl.UNSIGNED_BYTE;
 				var width = args.width;
 				var height = args.height;
 				var border = args.border !== undefined ? args.border : 0;
 				
-				//store?  WebGL has no getTexParameteri(context.TEXTURE_WIDTH) ...
+				//store?  WebGL has no getTexParameteri(gl.TEXTURE_WIDTH) ...
 				this.internalFormat = internalFormat;
 				this.format = format;
 				this.type = type;
@@ -587,25 +586,25 @@ GLUtil = makeClass(new function(){
 				//console.log('setting image target',target,'level',level,'internalFormat',internalFormat,'width',width,'height',height,'border',border,'format',format,'type',type,'data',args.data);
 				if (width === undefined && height === undefined) {
 					//assume it's an image
-					context.texImage2D(target, level, internalFormat, format, type, args.data);
+					gl.texImage2D(target, level, internalFormat, format, type, args.data);
 				} else {
 					if (typeof(args.data) != 'function') {
 						//assume it's a buffer
-						context.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
+						gl.texImage2D(target, level, internalFormat, width, height, border, format, type, args.data);
 					} else {
 						//procedural generation
 						var i = 0;
 						
 						//TODO get number of channels for format, rather than overriding it...
-						format = context.RGBA;
+						format = gl.RGBA;
 						var channels = 4;
 
 						var scale = undefined;
 						var data = undefined;
-						if (type == context.UNSIGNED_BYTE) {
+						if (type == gl.UNSIGNED_BYTE) {
 							data = new Uint8Array(width * height * channels);
 							scale = 255;
-						} else if (type == context.FLOAT) {
+						} else if (type == gl.FLOAT) {
 							data = new Float32Array(width * height * channels);
 							scale = 1;
 						}
@@ -622,11 +621,11 @@ GLUtil = makeClass(new function(){
 								}
 							}
 						}
-						context.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
+						gl.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
 					}
 				}
 				if (args.generateMipmap) {
-					context.generateMipmap(this.target);
+					gl.generateMipmap(this.target);
 				}
 			}
 		});
@@ -634,9 +633,9 @@ GLUtil = makeClass(new function(){
 		
 		var TextureCube = makeClass({
 			super : Texture,
-			target : context.TEXTURE_CUBE_MAP,
+			target : gl.TEXTURE_CUBE_MAP,
 			getTargetForSide : function(side) {	//static
-				return context.TEXTURE_CUBE_MAP_POSITIVE_X + side;
+				return gl.TEXTURE_CUBE_MAP_POSITIVE_X + side;
 			},
 			setArgs : function(args) {
 				Texture.prototype.setArgs.call(this, args);
@@ -651,9 +650,9 @@ GLUtil = makeClass(new function(){
 						image.onload = function() {
 							args.data = image;
 							args.target = thiz.getTargetForSide(side);
-							context.bindTexture(thiz.target, thiz.obj);
+							gl.bindTexture(thiz.target, thiz.obj);
 							Texture2D.prototype.setImage.call(thiz, args);
-							context.bindTexture(thiz.target, null);
+							gl.bindTexture(thiz.target, null);
 						
 							if (args.onload) args.onload.call(thiz,side,url,image);
 						
@@ -662,9 +661,9 @@ GLUtil = makeClass(new function(){
 							loadedCount++;
 							if (loadedCount == 6) {
 								if (generateMipmap) {
-									context.bindTexture(context.TEXTURE_CUBE_MAP, thiz.obj);
-									context.generateMipmap(context.TEXTURE_CUBE_MAP);
-									context.bindTexture(context.TEXTURE_CUBE_MAP, null);
+									gl.bindTexture(gl.TEXTURE_CUBE_MAP, thiz.obj);
+									gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+									gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 								}
 								if (args.done) args.done.call(thiz);
 							}
@@ -680,7 +679,7 @@ GLUtil = makeClass(new function(){
 				var generateMipmap = args.generateMipmap;
 				args.generateMipmap = undefined;
 		
-				context.bindTexture(this.target, this.obj);
+				gl.bindTexture(this.target, this.obj);
 				var isArray = typeof(args.data) == 'object';	//$.isArray(value);
 				//console.log('isArray?',isArray);
 				if (isArray && args.data.length >= 6) {
@@ -704,10 +703,10 @@ GLUtil = makeClass(new function(){
 				
 				if (generateMipmap) {
 					//console.log('generating mipmaps of data-driven cubemap');
-					context.generateMipmap(context.TEXTURE_CUBE_MAP);
+					gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
 				}
 				
-				context.bindTexture(this.target, null);
+				gl.bindTexture(this.target, null);
 		
 			}
 		});
@@ -716,7 +715,6 @@ GLUtil = makeClass(new function(){
 		ArrayBuffer = makeClass({
 			/*
 			args:
-				context (optional)
 				one of the two:
 					data = either a Float32Array object, or a constructor for a Float32Array object
 					count = how many vertexes to create
@@ -726,7 +724,7 @@ GLUtil = makeClass(new function(){
 			*/
 			init : function(args) {
 				if (args.keep === undefined) args.keep = true;
-				this.obj = context.createBuffer();
+				this.obj = gl.createBuffer();
 				this.dim = args.dim !== undefined ? args.dim : 3;
 				var data = args.data;
 				if (data === undefined) {
@@ -736,15 +734,15 @@ GLUtil = makeClass(new function(){
 						throw "expected 'data' or 'count'";
 					}
 				}
-				this.setData(data, args.usage || context.STATIC_DRAW, args.keep);
+				this.setData(data, args.usage || gl.STATIC_DRAW, args.keep);
 			},
 			setData : function(data, usage, keep) {
 				if (data.constructor != Float32Array) {
 					data = new Float32Array(data);
 				}
-				context.bindBuffer(context.ARRAY_BUFFER, this.obj);
-				context.bufferData(context.ARRAY_BUFFER, data, usage);
-				context.bindBuffer(context.ARRAY_BUFFER, null);
+				gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
+				gl.bufferData(gl.ARRAY_BUFFER, data, usage);
+				gl.bindBuffer(gl.ARRAY_BUFFER, null);
 				this.count = data.length / this.dim;
 				if (keep) this.data = data;
 			},
@@ -754,9 +752,9 @@ GLUtil = makeClass(new function(){
 				if (data.constructor != Float32Array) {
 					data = new Float32Array(data);
 				}
-				context.bindBuffer(context.ARRAY_BUFFER, this.obj);
-				context.bufferSubData(context.ARRAY_BUFFER, offset, data);
-				context.bindBuffer(context.ARRAY_BUFFER, null);
+				gl.bindBuffer(gl.ARRAY_BUFFER, this.obj);
+				gl.bufferSubData(gl.ARRAY_BUFFER, offset, data);
+				gl.bindBuffer(gl.ARRAY_BUFFER, null);
 			}
 		});
 		this.ArrayBuffer = ArrayBuffer;
@@ -764,12 +762,11 @@ GLUtil = makeClass(new function(){
 		var ElementArrayBuffer = makeClass({
 			/*
 			args:
-				context
 				data = either a Uint16Array object, or a constructor for a Uint16Array object
 			*/
 			init : function(args) {
-				this.obj = context.createBuffer();
-				this.setData(args.data, args.usage || context.STATIC_DRAW);
+				this.obj = gl.createBuffer();
+				this.setData(args.data, args.usage || gl.STATIC_DRAW);
 			},
 			setData : function(data, usage) {
 				if (data.constructor != Uint16Array && 
@@ -778,14 +775,14 @@ GLUtil = makeClass(new function(){
 					//in case of uint, default to uint
 					// otherwise default to ushort
 					var type = Uint16Array;
-					if (context.getExtension('OES_element_index_uint')) type = Uint32Array;
+					if (gl.getExtension('OES_element_index_uint')) type = Uint32Array;
 					data = new type(data);
 				}
-				this.type = data.constructor == Uint32Array ? context.UNSIGNED_INT : context.UNSIGNED_SHORT;
+				this.type = data.constructor == Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
 				
-				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.obj);
-				context.bufferData(context.ELEMENT_ARRAY_BUFFER, data, usage);
-				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
+				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 				this.count = data.length;
 			},
 			updateData : function(data, offset) {
@@ -793,9 +790,9 @@ GLUtil = makeClass(new function(){
 				if (data.constructor != Uint16Array) {
 					data = new Uint16Array(data);
 				}
-				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.obj);
-				context.bufferSubData(context.ELEMENT_ARRAY_BUFFER, offset, data);
-				context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.obj);
+				gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offset, data);
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			}
 		});
 		this.ElementArrayBuffer = ElementArrayBuffer;
@@ -803,7 +800,6 @@ GLUtil = makeClass(new function(){
 		var Framebuffer = makeClass({
 			/*
 			args:
-				context
 				width : framebuffer width.  required with depth.
 				height : framebuffer height.  required with depth.
 				useDepth : set to create a depth renderbuffer for this framebuffer.
@@ -811,22 +807,22 @@ GLUtil = makeClass(new function(){
 			init : function(args) {
 				this.width = args && args.width;
 				this.height = args && args.height;
-				this.obj = context.createFramebuffer();
-				context.bindFramebuffer(context.FRAMEBUFFER, this.obj);
+				this.obj = gl.createFramebuffer();
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
 				if (args !== undefined && args.useDepth) {
-					this.depthObj = context.createRenderbuffer();
-					context.bindRenderbuffer(context.RENDERBUFFER, this.depthObj);
-					context.renderbufferStorage(context.RENDERBUFFER, context.DEPTH_COMPONENT16, this.width, this.height);
-					context.framebufferRenderbuffer(context.FRAMEBUFFER, context.DEPTH_ATTACHMENT, context.RENDERBUFFER, this.depthObj);
-					context.bindRenderbuffer(context.RENDERBUFFER, null);
+					this.depthObj = gl.createRenderbuffer();
+					gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthObj);
+					gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+					gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthObj);
+					gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				}
-				context.bindFramebuffer(context.FRAMEBUFFER, null);
+				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			},
 			bind : function() {
-				context.bindFramebuffer(context.FRAMEBUFFER, this.obj);
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this.obj);
 			},
 			unbind : function() {
-				context.bindFramebuffer(context.FRAMEBUFFER, null);
+				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			},
 			fboErrors : [
 				'FRAMEBUFFER_INCOMPLETE_ATTACHMENT',
@@ -835,11 +831,11 @@ GLUtil = makeClass(new function(){
 				'FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT'
 			],
 			check : function() {
-				var status = context.checkFramebufferStatus(context.FRAMEBUFFER);
-				if (status != context.FRAMEBUFFER_COMPLETE) {
+				var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+				if (status != gl.FRAMEBUFFER_COMPLETE) {
 					var errstr = 'glCheckFramebufferStatus status=' + status;
 					$.each(this.fboErrors, function(i,fboError) {
-						if (context[fboError] == status) {
+						if (gl[fboError] == status) {
 							errstr += ' error=' + fboError;
 							return true;	//break;
 						}
@@ -849,24 +845,24 @@ GLUtil = makeClass(new function(){
 			},
 			setColorAttachmentTex2D : function(index, tex, target, level) {
 				if (index === undefined) index = 0;
-				if (target === undefined) target = context.TEXTURE_2D;
+				if (target === undefined) target = gl.TEXTURE_2D;
 				if (level === undefined) level = 0;
 				this.bind();
-				context.framebufferTexture2D(context.FRAMEBUFFER, context.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
 				this.unbind();
 			},
 			setColorAttachmentTexCubeMapSide : function(index, tex, side, level) {
 				if (side === undefined) side = index;
 				if (level === undefined) level = 0;
 				this.bind();
-				context.framebufferTexture2D(context.FRAMEBUFFER, context.COLOR_ATTACHMENT0 + index, this.TextureCube.prototype.getTargetForSide(side), tex, level);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, this.TextureCube.prototype.getTargetForSide(side), tex, level);
 				this.unbind();
 			},
 	/* WebGL only supports one color attachment at a time ...
 			setColorAttachmentTexCubeMap : function(tex, level) {
 				this.bind();
 				for (var i = 0; i < 6; i++) {
-					context.framebufferTexture2D(context.FRAMEBUFFER, context.COLOR_ATTACHMENT0 + i, this.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
+					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, this.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
 				}
 				this.unbind();
 			},
@@ -876,7 +872,7 @@ GLUtil = makeClass(new function(){
 		if not tonumber(slice) then error("unable to convert slice to number: " ..tostring(slice)) end
 		slice = tonumber(slice)
 		self:bind()
-		context.glFramebufferTexture3D(context.GL_FRAMEBUFFER, context.GL_COLOR_ATTACHMENT0 + index, target or context.GL_TEXTURE_3D, tex, level or 0, slice)
+		gl.glFramebufferTexture3D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0 + index, target or gl.GL_TEXTURE_3D, tex, level or 0, slice)
 		self:unbind()
 	end
 	*/
@@ -926,8 +922,8 @@ GLUtil = makeClass(new function(){
 				var oldvp;
 				if (args.viewport) {
 					var vp = args.viewport;
-					var oldvp = context.getParameter(context.VIEWPORT);
-					context.viewport.apply(context, args.viewport);
+					var oldvp = gl.getParameter(gl.VIEWPORT);
+					gl.viewport.apply(gl, args.viewport);
 				}
 				//if (args.resetProjection) throw 'not supported in webgl';
 				
@@ -936,14 +932,14 @@ GLUtil = makeClass(new function(){
 				//the fbo itself doesn't necessarily need one, nor does it store uniforms
 				//so args.shader, args.uniforms, and args.texs might be moot here
 				if (args.shader) {
-					context.useProgram(args.shader.obj);
+					gl.useProgram(args.shader.obj);
 					if (args.uniforms) {
 						if (args.uniforms) {
 							args.shader.setUniforms(args.uniforms);
 						}
 					}
 				}
-				if (args.texs) bindTextureSet(context, args.texs);
+				if (args.texs) bindTextureSet(gl, args.texs);
 
 				//if (args.color) throw 'color not supported in webgl';
 				//if (args.dest) throw 'multiple color attachments not supported in webgl';
@@ -953,41 +949,41 @@ GLUtil = makeClass(new function(){
 				// why not just merge it in here?
 				this.drawToCallback(args.callback/* || drawScreenQuad, args.colorAttachment || 0*/);
 				
-				if (args.texs) unbindTextureSet(context, args.texs);
+				if (args.texs) unbindTextureSet(gl, args.texs);
 				if (args.shader) {
-					context.useProgram(null);
+					gl.useProgram(null);
 				}
 
 				if (args.viewport) {
-					context.viewport.apply(context, oldvp);
+					gl.viewport.apply(gl, oldvp);
 				}
 			}
 		});
 		this.Framebuffer = Framebuffer;
 
-		var bindTextureSet = function(context, texs) {
+		var bindTextureSet = function(gl, texs) {
 			for (var k in texs) {
 				if (texs.hasOwnProperty(k)) {
-					context.activeTexture(context.TEXTURE0 + parseInt(k));
+					gl.activeTexture(gl.TEXTURE0 + parseInt(k));
 					var tex = texs[k];
 					if (tex) {	//because java can enumerate through undefined values
-						context.bindTexture(tex.target, tex.obj);
+						gl.bindTexture(tex.target, tex.obj);
 					}
 				}
 			}
-			context.activeTexture(context.TEXTURE0);
+			gl.activeTexture(gl.TEXTURE0);
 		};
-		var unbindTextureSet = function(context, texs) {
+		var unbindTextureSet = function(gl, texs) {
 			for (var k in texs) {
 				if (texs.hasOwnProperty(k)) {
-					context.activeTexture(context.TEXTURE0 + parseInt(k));
+					gl.activeTexture(gl.TEXTURE0 + parseInt(k));
 					var tex = texs[k];
 					if (tex) {	//because java can enumerate through undefined values
-						context.bindTexture(tex.target, null);
+						gl.bindTexture(tex.target, null);
 					}
 				}
 			}
-			context.activeTexture(context.TEXTURE0);
+			gl.activeTexture(gl.TEXTURE0);
 		};
 
 		var Attribute;
@@ -1024,12 +1020,12 @@ GLUtil = makeClass(new function(){
 					if (args.offset !== undefined) offset = args.offset;
 				}
 				if (this.indexes !== undefined) {
-					context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
+					gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexes.obj);
 					if (count === undefined) {
 						count = this.indexes.count;
 					}
-					context.drawElements(mode, count, this.indexes.type, offset);
-					context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, null);
+					gl.drawElements(mode, count, this.indexes.type, offset);
+					gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 				} else {
 					if (count === undefined && this.vertexes !== undefined) {
 						if (this.vertexes.__proto__ !== Attribute.prototype) {
@@ -1039,7 +1035,7 @@ GLUtil = makeClass(new function(){
 						}
 					}
 					if (count > 0) {
-						context.drawArrays(mode, offset, count);
+						gl.drawArrays(mode, offset, count);
 					}
 				}
 			}
@@ -1051,7 +1047,7 @@ GLUtil = makeClass(new function(){
 			args:
 				buffer = ArrayBuffer object
 				size = dimension of the buffer, default buffer.dim
-				type = type of the buffer, default context.FLOAT (soon to be buffer.type)
+				type = type of the buffer, default gl.FLOAT (soon to be buffer.type)
 				normalize = whether to normalize the buffer 
 				stride = stride of the buffer, default 0
 				offset = offset of the buffer, default 0
@@ -1061,14 +1057,14 @@ GLUtil = makeClass(new function(){
 				if (args.__proto__ == ArrayBuffer.prototype) {
 					this.buffer = args;
 					this.size = this.buffer.dim;
-					this.type = context.FLOAT;
+					this.type = gl.FLOAT;
 					this.normalize = false;
 					this.stride = 0;
 					this.offset = 0;
 				} else {
 					this.buffer = assertExists(args, 'buffer');
 					this.size = args.size !== undefined ? args.size : this.buffer.dim;
-					this.type = args.type !== undefined ? args.type : context.FLOAT;	//TODO this.buffer.type
+					this.type = args.type !== undefined ? args.type : gl.FLOAT;	//TODO this.buffer.type
 					this.normalize = args.normalize !== undefined ? args.normalize : false;
 					this.stride = args.stride !== undefined ? args.stride : 0;
 					this.offset = args.offset !== undefined ? args.offset : 0;
@@ -1216,24 +1212,24 @@ GLUtil = makeClass(new function(){
 			
 				var blend = this.blend || (args && args.blend);
 				if (blend) {
-					context.blendFunc.apply(context, blend);
-					context.enable(context.BLEND);
+					gl.blendFunc.apply(gl, blend);
+					gl.enable(gl.BLEND);
 				}
 
 				if (this.useDepth === true) {
-					context.enable(context.DEPTH_TEST);
+					gl.enable(gl.DEPTH_TEST);
 				} else if (this.useDepth === false) {
-					context.disable(context.DEPTH_TEST);
+					gl.disable(gl.DEPTH_TEST);
 				}
 
-				if (this.texs) bindTextureSet(context, this.texs);
-				if (args && args.texs) bindTextureSet(context, args.texs);
+				if (this.texs) bindTextureSet(gl, this.texs);
+				if (args && args.texs) bindTextureSet(gl, args.texs);
 
 				var shader = this.shader;
 				if (args && args.shader) shader = args.shader;
 				
 				if (shader) {
-					context.useProgram(shader.obj);
+					gl.useProgram(shader.obj);
 
 					if (this.uniforms) shader.setUniforms(this.uniforms);
 					if (args && args.uniforms) shader.setUniforms(args.uniforms);
@@ -1259,14 +1255,14 @@ GLUtil = makeClass(new function(){
 					if (this.attrs) shader.removeAttrs(this.attrs);
 					if (args && args.attrs) shader.removeAttrs(args.attrs);
 					
-					context.useProgram(null);
+					gl.useProgram(null);
 				}
 				
-				if (args && args.texs) unbindTextureSet(context, args.texs);
-				if (this.texs) unbindTextureSet(context, this.texs);
+				if (args && args.texs) unbindTextureSet(gl, args.texs);
+				if (this.texs) unbindTextureSet(gl, this.texs);
 		
 				if (blend) {
-					context.disable(context.BLEND);
+					gl.disable(gl.BLEND);
 				}
 			},
 			

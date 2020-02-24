@@ -10,6 +10,7 @@ local lfs = require 'lfs'
 local table = require 'ext.table'
 local file = require 'ext.file'
 local io = require 'ext.io'
+local url = require 'socket.url'
 
 local req = wsapi_request.new(env)
 
@@ -47,7 +48,10 @@ local function addDir(base, src, dst, testdir)
 		if f:sub(-4) == '.lua' 
 		and (not testdir or f:sub(1,6) ~= 'tests/')
 		then
-?>			<?=sep?>{url:'/<?=src?>/<?=f?>', dest:'<?=dst?>/<?=f?>'}
+			local jsfn = src:split'/':mapi(function(part)
+				return url.escape(part)
+			end):concat'/'
+?>			<?=sep?>{url:'/<?=jsfn?>/<?=f?>', dest:'<?=dst?>/<?=f?>'}
 <?
 			sep = ','
 		end
@@ -64,7 +68,10 @@ local function addDir(base, src, dst, testdir)
 			if f:sub(1,1) ~= '.'
 			and f:sub(-4) == '.lua' 
 			then
-?>				<?=sep?>{url:'/<?=testdir?>/<?=f?>', dest:'<?=dst?>/tests/<?=f?>'}
+				local jsfn = (testdir..'/'..f):split'/':mapi(function(part)
+					return url.escape(part)
+				end):concat'/'
+?>				<?=sep?>{url:'/<?=jsfn?>', dest:'<?=dst?>/tests/<?=f?>'}
 <?				sep = ','
 			end
 		end
