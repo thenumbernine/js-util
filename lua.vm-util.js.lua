@@ -7,6 +7,7 @@ This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it 
 <?
 local wsapi_request = require 'wsapi.request'
 local lfs = require 'lfs'
+local string = require 'ext.string'
 local table = require 'ext.table'
 local file = require 'ext.file'
 local io = require 'ext.io'
@@ -48,7 +49,7 @@ local function addDir(base, src, dst, testdir)
 		if f:sub(-4) == '.lua' 
 		and (not testdir or f:sub(1,6) ~= 'tests/')
 		then
-			local jsfn = src:split'/':mapi(function(part)
+			local jsfn = string.split(src, '/'):mapi(function(part)
 				return url.escape(part)
 			end):concat'/'
 ?>			<?=sep?>{url:'/<?=jsfn?>/<?=f?>', dest:'<?=dst?>/<?=f?>'}
@@ -68,7 +69,7 @@ local function addDir(base, src, dst, testdir)
 			if f:sub(1,1) ~= '.'
 			and f:sub(-4) == '.lua' 
 			then
-				local jsfn = (testdir..'/'..f):split'/':mapi(function(part)
+				local jsfn = string.split(testdir..'/'..f, '/'):mapi(function(part)
 					return url.escape(part)
 				end):concat'/'
 ?>				<?=sep?>{url:'/<?=jsfn?>', dest:'<?=dst?>/tests/<?=f?>'}
