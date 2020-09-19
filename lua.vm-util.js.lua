@@ -10,7 +10,7 @@ local lfs = require 'lfs'
 local string = require 'ext.string'
 local table = require 'ext.table'
 local file = require 'ext.file'
-local io = require 'ext.io'
+local os = require 'ext.os'
 local url = require 'socket.url'
 
 local req = wsapi_request.new(env)
@@ -19,7 +19,7 @@ local function rfind(dir, pattern, results)
 	for f in file[dir]() do
 		if f:sub(1,1) ~= '.' then	
 			local path = dir..'/'..f
-			if io.isdir(path) then
+			if os.isdir(path) then
 				rfind(path, pattern, results)
 			else
 				if not pattern or path:match(pattern) then
@@ -32,7 +32,7 @@ end
 
 local function find(dir, pattern)
 	local results = table()
-	if io.isdir(dir) then
+	if os.isdir(dir) then
 		rfind(dir, pattern, results)
 	end
 	return results
