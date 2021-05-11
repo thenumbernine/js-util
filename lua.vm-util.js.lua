@@ -6,20 +6,18 @@ This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it 
 
 <?
 local wsapi_request = require 'wsapi.request'
-local lfs = require 'lfs'
 local string = require 'ext.string'
 local table = require 'ext.table'
-local file = require 'ext.file'
 local os = require 'ext.os'
 local url = require 'socket.url'
 
 local req = wsapi_request.new(env)
 
 local function rfind(dir, pattern, results)
-	for f in file[dir]() do
+	for f in os.listdir(dir) do
 		if f:sub(1,1) ~= '.' then	
 			local path = dir..'/'..f
-			if os.isdir(path) then
+			if os.fileexists(path) and os.isdir(path) then
 				rfind(path, pattern, results)
 			else
 				if not pattern or path:match(pattern) then
@@ -32,7 +30,7 @@ end
 
 local function find(dir, pattern)
 	local results = table()
-	if os.isdir(dir) then
+	if os.fileexists(dir) and os.isdir(dir) then
 		rfind(dir, pattern, results)
 	end
 	return results
@@ -64,16 +62,17 @@ local function addDir(base, src, dst, testdir)
 ?>		,tests : [
 <?		
 		local sep = ''
-		-- TODO use find()
-		for f in lfs.dir(base..'/'..testdir) do
-			if f:sub(1,1) ~= '.'
-			and f:sub(-4) == '.lua' 
-			then
-				local jsfn = string.split(testdir..'/'..f, '/'):mapi(function(part)
-					return url.escape(part)
-				end):concat'/'
+		if os.fileexists(base..'/'..testdir) then
+			for f in os.listdir(base..'/'..testdir) do
+				if f:sub(1,1) ~= '.'
+				and f:sub(-4) == '.lua' 
+				then
+					local jsfn = string.split(testdir..'/'..f, '/'):mapi(function(part)
+						return url.escape(part)
+					end):concat'/'
 ?>				<?=sep?>{url:'/<?=jsfn?>', dest:'<?=dst?>/tests/<?=f?>'}
-<?				sep = ','
+<?					sep = ','
+				end
 			end
 		end
 ?>		]
@@ -243,10 +242,12 @@ var EmbeddedLuaInterpreter = makeClass({
 
 		this.outputBuffer = '';
 		this.output = $('<div>', {
+			text : 'Loading...',
 			css : {
 				width : '80em',
 				height : '24em',
-				border : '1px solid black',
+				//border : '1px solid black',
+				border : '0px',
 				'font-family' : 'Courier',
 				'overflow-y' : 'scroll'
 			}
@@ -366,9 +367,11 @@ Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not
 			});
 		}
 
-		this.executeAndPrint(mlstr(function(){/*
+		this.execute(mlstr(function(){/*
 package.path = package.path .. ';./?/?.lua'
 */}));
+
+		this.print('...Done<br>');
 
 		if (this.done) this.done();
 	},
