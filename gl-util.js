@@ -766,9 +766,9 @@ GLUtil = makeClass(new function(){
 			*/
 			init : function(args) {
 				this.obj = gl.createBuffer();
-				this.setData(args.data, args.usage || gl.STATIC_DRAW);
+				this.setData(args.data, args.usage || gl.STATIC_DRAW, args.keep);
 			},
-			setData : function(data, usage) {
+			setData : function(data, usage, keep) {
 				if (data.constructor != Uint16Array && 
 					data.constructor != Uint32Array) 
 				{
@@ -784,6 +784,10 @@ GLUtil = makeClass(new function(){
 				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
 				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 				this.count = data.length;
+
+				if (keep) {
+					this.data = data;
+				}
 			},
 			updateData : function(data, offset) {
 				if (offset === undefined) offset = 0;
