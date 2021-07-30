@@ -95,7 +95,10 @@ var luaVmPackageInfos = {
 <? addDir(req.doc_root, 'tensor-calculator/src', 'tensor', 'tensor-calculator/src/tests') ?>		
 	},
 	htmlparser : {
-<? addDir(req.doc_root, 'html-beautifier/src', 'htmlparser', 'html-beautifier/src/tests') ?>		
+<? addDir(req.doc_root, 'html-beautifier/src', 'htmlparser', 'html-beautifier/src/tests') ?>
+	},
+	template : {
+<? addDir(req.doc_root, 'template/src', 'template') ?>
 	}
 };
 
