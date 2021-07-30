@@ -86,7 +86,7 @@ var luaVmPackageInfos = {
 <? addDir(req.doc_root, 'lua-ext/src', 'ext') ?>
 	},
 	symmath : {
-<? addDir(req.doc_root, 'symbolic-lua/src', 'symmath', 'symbolic-lua/src/tests') ?>
+<? addDir(req.doc_root, 'symbolic-lua/src/src', 'symmath', 'symbolic-lua/src/tests') ?>
 	},
 	gnuplot : {
 <? addDir(req.doc_root, 'lua-gnuplot/src', 'gnuplot') ?>
@@ -273,8 +273,10 @@ var EmbeddedLuaInterpreter = makeClass({
 				'font-family' : 'Courier'
 			}
 		}).appendTo(this.container);
+		this.input.attr('autocapitalize', 'off');		
 		this.input.attr('autocomplete', 'off');		
 		this.input.attr('autocorrect', 'off');		
+		this.input.attr('spellcheck', 'off');		
 		$('<br>').appendTo(this.container);
 
 		this.launchButton = $('<button>', {text:'Launch'});
@@ -384,12 +386,20 @@ package.path = package.path .. ';./?/?.lua'
 			target:'_blank',
 			css : {'margin-right' : '10px'}
 		}).appendTo(div);
-		$('<button>', {
-			text:info.name !== undefined ? info.name : info.dest, 
+		
+		$('<a>', {
+			href:'#',
+			text:'[Run]',
+			css : {'margin-right' : '10px'},
 			click:function() { 
 				thiz.executeAndPrint("dofile '"+info.dest+"'");
 			}
 		}).appendTo(div);
+		
+		$('<span>', {
+			text:info.name !== undefined ? info.name : info.dest
+		}).appendTo(div);
+	
 		return div;
 	},
 	execute : function(s) {
@@ -422,4 +432,3 @@ package.path = package.path .. ';./?/?.lua'
 		this.output.html(this.outputBuffer = '');
 	}
 });
-
