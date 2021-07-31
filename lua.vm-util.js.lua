@@ -65,7 +65,10 @@ local function addDir(base, src, dst, testdir)
 		if os.fileexists(base..'/'..testdir) then
 			for f in os.listdir(base..'/'..testdir) do
 				if f:sub(1,1) ~= '.'
-				and f:sub(-4) == '.lua' 
+				and (
+					f:sub(-4) == '.lua' 
+					or f:sub(-8) == '.symmath'
+				)
 				then
 					local jsfn = string.split(testdir..'/'..f, '/'):mapi(function(part)
 						return url.escape(part)
@@ -82,11 +85,14 @@ end
 ?>
 
 var luaVmPackageInfos = {
+	dkjson : {
+<? addDir(req.doc_root, 'lua/dkjson', 'dkjson') ?>
+	},
 	ext : {
-<? addDir(req.doc_root, 'lua-ext/src', 'ext') ?>
+<? addDir(req.doc_root, 'lua/ext', 'ext') ?>
 	},
 	symmath : {
-<? addDir(req.doc_root, 'symbolic-lua/src/src', 'symmath', 'symbolic-lua/src/tests') ?>
+<? addDir(req.doc_root, 'symbolic-lua/src/src', 'symmath', 'symbolic-lua/src/src/tests') ?>
 	},
 	gnuplot : {
 <? addDir(req.doc_root, 'lua-gnuplot/src', 'gnuplot') ?>
@@ -154,7 +160,10 @@ console.log('executing javascript file',file.dest);
 						s.innerHTML = result;
 						$("head").append(s);
 						
-					} else if (file.dest.substring(file.dest.length-4) == '.lua') {
+					} else if (
+						file.dest.substring(file.dest.length-4) == '.lua'
+						|| file.dest.substring(file.dest.length-8) == '.symmath'
+					) {
 console.log('loading data file',file.dest);
 						var parts = pathToParts(file.dest);
 						if (parts.dir != '.') {
