@@ -420,7 +420,7 @@ package.path = package.path .. ';./?/?.lua'
 	},
 	printOutAndErr : function(s) {
 		if (this.outputBuffer !== '') this.outputBuffer += '\n';
-		this.outputBuffer += s
+		this.outputBuffer += s;
 		this.output.html(this.outputBuffer
 			.replace(new RegExp('&', 'g'), '&amp;')
 			.replace(new RegExp('<', 'g'), '&lt;')
