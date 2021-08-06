@@ -92,10 +92,10 @@ var luaVmPackageInfos = {
 <? addDir(req.doc_root, 'lua/ext', 'ext') ?>
 	},
 	symmath : {
-<? addDir(req.doc_root, 'symbolic-lua/src/src', 'symmath', 'symbolic-lua/src/src/tests') ?>
+<? addDir(req.doc_root, 'lua/symmath', 'symmath', 'lua/symmath/tests') ?>
 	},
 	gnuplot : {
-<? addDir(req.doc_root, 'lua-gnuplot/src', 'gnuplot') ?>
+<? addDir(req.doc_root, 'lua/gnuplot', 'gnuplot') ?>
 	},
 	tensor : {
 <? addDir(req.doc_root, 'tensor-calculator/src', 'tensor', 'tensor-calculator/src/tests') ?>		
@@ -104,7 +104,7 @@ var luaVmPackageInfos = {
 <? addDir(req.doc_root, 'html-beautifier/src', 'htmlparser', 'html-beautifier/src/tests') ?>
 	},
 	template : {
-<? addDir(req.doc_root, 'template/src', 'template') ?>
+<? addDir(req.doc_root, 'lua/template', 'template') ?>
 	}
 };
 
