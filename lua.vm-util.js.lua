@@ -98,10 +98,10 @@ var luaVmPackageInfos = {
 <? addDir(req.doc_root, 'lua/gnuplot', 'gnuplot') ?>
 	},
 	tensor : {
-<? addDir(req.doc_root, 'tensor-calculator/src', 'tensor', 'tensor-calculator/src/tests') ?>		
+<? addDir(req.doc_root, 'lua/tensor', 'tensor', 'lua/tensor/tests') ?>
 	},
 	htmlparser : {
-<? addDir(req.doc_root, 'html-beautifier/src', 'htmlparser', 'html-beautifier/src/tests') ?>
+<? addDir(req.doc_root, 'lua/htmlparser', 'htmlparser', 'lua/htmlparser/tests') ?>
 	},
 	template : {
 <? addDir(req.doc_root, 'lua/template', 'template') ?>
