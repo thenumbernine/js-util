@@ -95,15 +95,15 @@ Array.prototype.addUnique = function(obj) {
 	$.fn.disableSelection = function() {
 		return this.each(function() {
 			$(this).attr('unselectable', 'on')
-			   .css({
-				   '-moz-user-select':'none',
-				   '-webkit-user-select':'none',
-				   'user-select':'none',
-				   '-ms-user-select':'none'
-			   })
-			   .each(function() {
-				   this.onselectstart = function() { return false; };
-			   });
+				.css({
+					'-moz-user-select':'none',
+					'-webkit-user-select':'none',
+					'user-select':'none',
+					'-ms-user-select':'none'
+				})
+				.each(function() {
+					this.onselectstart = function() { return false; };
+				});
 		});
 	};
 
@@ -140,11 +140,11 @@ Array.prototype.addUnique = function(obj) {
 
 //http://paulirish.com/2011/requestanimationframe-for-smart-animating/
 window.requestAnimFrame = (function(){
-	return window.requestAnimationFrame    || 
-		window.webkitRequestAnimationFrame || 
-		window.mozRequestAnimationFrame    || 
-		window.oRequestAnimationFrame      || 
-		window.msRequestAnimationFrame     || 
+	return window.requestAnimationFrame		|| 
+		window.webkitRequestAnimationFrame	|| 
+		window.mozRequestAnimationFrame		|| 
+		window.oRequestAnimationFrame		|| 
+		window.msRequestAnimationFrame		|| 
 		function(callback) {
 			window.setTimeout(callback, 1000 / 60);
 		};

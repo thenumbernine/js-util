@@ -91,36 +91,41 @@ var vec4 = makevec(4);
 function box2() {
 	switch (arguments.length) {
 	case 0:
-		this.min = new vec2();
-		this.max = new vec2();
+		this.min = new this.vec2();
+		this.max = new this.vec2();
 		break;
 	case 1:
 		var v = arguments[0];
 		if (typeof(v) == 'object') {
 			if ('min' in v && 'max' in v) {
-				this.min = new vec2(v.min);
-				this.max = new vec2(v.max);
+				this.min = new this.vec2(v.min);
+				this.max = new this.vec2(v.max);
 			} else if ('x' in v && 'y' in v) {
-				this.max = new vec2(v);
+				this.max = new this.vec2(v);
 				this.min = this.max.neg();
+			} else {
+				throw "Don't know how to build this box3";
 			}
 		} else {
 			v = parseFloat(v);
-			this.max = new vec2(v, v);
+			this.max = new this.vec2(v, v);
 			this.min = this.max.neg();
 		}
 		break;
+	case 2:
+		this.min = new this.vec2(arguments[0]);
+		this.max = new this.vec2(arguments[1]);
+		break;
 	case 4:
-		this.min = new vec2(arguments[0], arguments[1]);
-		this.max = new vec2(arguments[2], arguments[3]);
+		this.min = new this.vec2(arguments[0], arguments[1]);
+		this.max = new this.vec2(arguments[2], arguments[3]);
 		break;
 	default:
-		this.min = new vec2(arguments[0]);
-		this.max = new vec2(arguments[1]);
-		break;
+		throw "Don't know how to build this box2";
 	}
 }
 box2.prototype = {
+	vec2 : vec2,	//too bad javascript is retarded, or I wouldn't have to store this here
 	toString : function() { return this.min + ':' + this.max; },
 	size : function() { return this.max.sub(this.min); },
 	contains : function(v) {
@@ -149,6 +154,80 @@ box2.prototype = {
 			if (this.max.x < v.x) this.max.x = v.x;
 			if (this.min.y > v.y) this.min.y = v.y;
 			if (this.max.y < v.y) this.max.y = v.y;
+		}
+	}
+}
+
+function box3() {
+	switch (arguments.length) {
+	case 0:
+		this.min = new this.vec3();
+		this.max = new this.vec3();
+		break;
+	case 1:
+		var v = arguments[0];
+		if (typeof(v) == 'object') {
+			if ('min' in v && 'max' in v) {
+				this.min = new this.vec3(v.min);
+				this.max = new this.vec3(v.max);
+			} else if ('x' in v && 'y' in v && 'z' in v) {
+				this.max = new this.vec3(v);
+				this.min = this.max.neg();
+			} else {
+				throw "Don't know how to build this box3";
+			}
+		} else {
+			v = parseFloat(v);
+			this.max = new this.vec3(v, v);
+			this.min = this.max.neg();
+		}
+		break;
+	case 2:
+		this.min = new this.vec3(arguments[0]);
+		this.max = new this.vec3(arguments[1]);
+		break;
+	case 6:
+		this.min = new this.vec3(arguments[0], arguments[1], arguments[2]);
+		this.max = new this.vec3(arguments[3], arguments[4], arguments[5]);
+		break;
+	default:
+		throw "Don't know how to build this box3";
+	}
+}
+box3.prototype = {
+	vec3 : vec3,
+	toString : function() { return this.min + ':' + this.max; },
+	size : function() { return this.max.sub(this.min); },
+	contains : function(v) {
+		if ('min' in v && 'max' in v) {
+			return this.contains(v.min) && this.contains(v.max);
+		} else {
+			return v.x >= this.min.x && v.x <= this.max.x
+				&& v.y >= this.min.y && v.y <= this.max.y
+				&& v.z >= this.min.z && v.z <= this.max.z;
+		}
+	},
+	touches : function(b) {
+		return b.min.x <= this.max.x && this.min.x <= b.max.x
+			&& b.min.y <= this.max.y && this.min.y <= b.max.y
+			&& b.min.z <= this.max.z && this.min.z <= b.max.z;
+	},
+	clamp : function(b) {
+		this.min.clamp(b);
+		this.max.clamp(b);
+		return this;
+	},
+	stretch : function(v) {
+		if ('min' in v && 'max' in v) {
+			this.stretch(v.min);
+			this.stretch(v.max);
+		} else {
+			if (this.min.x > v.x) this.min.x = v.x;
+			if (this.max.x < v.x) this.max.x = v.x;
+			if (this.min.y > v.y) this.min.y = v.y;
+			if (this.max.y < v.y) this.max.y = v.y;
+			if (this.min.z > v.z) this.min.z = v.z;
+			if (this.max.z < v.z) this.max.z = v.z;
 		}
 	}
 }
