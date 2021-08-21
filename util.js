@@ -120,7 +120,13 @@ Array.prototype.addUnique = function(obj) {
 				checklist.remove($(this).attr('src'));
 				//console.log('checklist is',checklist);
 				//this is calling done twice ?
-				if (update) update(1 - checklist.length / totalLength, $(this).attr('src'));
+				if (update) {
+					update(
+						1 - checklist.length / totalLength, 
+						$(this).attr('src'),
+						this
+					);
+				}
 				if (checklist.length == 0 && done !== undefined) {
 					//console.log('empty list load calling done');
 					done();
