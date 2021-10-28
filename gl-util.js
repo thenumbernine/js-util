@@ -1184,6 +1184,9 @@ GLUtil = makeClass(new function(){
 			
 				if (this.uniforms.projMat === undefined) this.uniforms.projMat = this.scene.projMat;
 				if (this.uniforms.mvMat === undefined) this.uniforms.mvMat = this.targetMat;
+				//hack to undo the model part of modelview.  TODO instead separate model and view ...
+				if (this.localMat && this.uniforms.localMat === undefined) this.uniforms.localMat = this.localMat;
+				if (this.uniforms.viewMatInv === undefined) this.uniforms.viewMatInv = this.scene.mvMat;
 			},
 		
 			static : true, //default
