@@ -8,16 +8,16 @@ This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it 
 local wsapi_request = require 'wsapi.request'
 local string = require 'ext.string'
 local table = require 'ext.table'
-local os = require 'ext.os'
+local file = require 'ext.file'
 local url = require 'socket.url'
 
 local req = wsapi_request.new(env)
 
 local function rfind(dir, pattern, results)
-	for f in os.listdir(dir) do
+	for f in file(dir):dir() do
 		if f:sub(1,1) ~= '.' then	
 			local path = dir..'/'..f
-			if os.fileexists(path) and os.isdir(path) then
+			if file(path):exists() and file(path):isdir() then
 				rfind(path, pattern, results)
 			else
 				if not pattern or path:match(pattern) then
@@ -30,7 +30,7 @@ end
 
 local function find(dir, pattern)
 	local results = table()
-	if os.fileexists(dir) and os.isdir(dir) then
+	if file(dir):exists() and file(dir):isdir() then
 		rfind(dir, pattern, results)
 	end
 	return results
@@ -62,8 +62,8 @@ local function addDir(base, src, dst, testdir)
 ?>		,tests : [
 <?		
 		local sep = ''
-		if os.fileexists(base..'/'..testdir) then
-			for f in os.listdir(base..'/'..testdir) do
+		if file(base..'/'..testdir):exists() then
+			for f in file(base..'/'..testdir):dir() do
 				if f:sub(1,1) ~= '.'
 				and (
 					f:sub(-4) == '.lua' 
