@@ -85,6 +85,9 @@ end
 ?>
 
 var luaVmPackageInfos = {
+	complex : {
+<? addDir(req.doc_root, 'lua/complex', 'complex') ?>
+	},
 	dkjson : {
 <? addDir(req.doc_root, 'lua/dkjson', 'dkjson') ?>
 	},
