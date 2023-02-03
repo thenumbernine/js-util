@@ -632,8 +632,14 @@ GLUtil = makeClass(new function(){
 		this.Texture2D = Texture2D;
 
 		var CompressedTexture2D = makeClass({
+			/**/
+			super : Texture2D,
+			/**/
+			/** /
 			super : Texture,
-			setImage : function(args) {
+			target : gl.TEXTURE_2D,
+			/ **/
+			setData : function(args) {
 				var target = args.target !== undefined ? args.target : this.target;
 				var level = args.level !== undefined ? args.level : 0;
 				var internalFormat = args.internalFormat !== undefined ? args.internalFormat : gl.RGBA;
@@ -643,7 +649,7 @@ GLUtil = makeClass(new function(){
 				var height = args.height;
 				var border = args.border !== undefined ? args.border : 0;
 				var data = args.data;
-				gl.compressedTexImage2D(target, level, internalformat, width, height, border, data)
+				gl.compressedTexImage2D(target, level, internalFormat, width, height, border, data)
 			}
 		});
 		this.CompressedTexture2D = CompressedTexture2D;
