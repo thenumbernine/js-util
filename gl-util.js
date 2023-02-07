@@ -385,7 +385,7 @@ GLUtil = makeClass(new function(){
 				return this;
 			},
 			setUniforms : function(uniforms) {
-				for (k in uniforms) {
+				for (var k in uniforms) {
 					this.setUniform(k, uniforms[k]);
 				}
 				return this;
@@ -422,7 +422,7 @@ GLUtil = makeClass(new function(){
 				}
 			},
 			setAttrs : function(attrs) {
-				for (k in attrs) {
+				for (var k in attrs) {
 					this.setAttr(k, attrs[k]);
 				}
 			},
@@ -449,7 +449,7 @@ GLUtil = makeClass(new function(){
 				}
 			},
 			removeAttrs : function(attrs) {
-				for (k in attrs) {
+				for (var k in attrs) {
 					this.removeAttr(k);
 				}
 			},
