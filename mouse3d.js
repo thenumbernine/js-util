@@ -144,8 +144,7 @@ Mouse3D = makeClass({
 			.bind('touchend touchcancel', function(e) {
 				if (thiz.preventDefault) e.preventDefault();
 				var touch = e.originalEvent.changedTouches[0];
-				var upPosX = touch.pageX;
-				var upPosY = touch.pageY;
+				var [upPosX, upPosY] = thiz.getEventXY(touch);
 				thiz.deltaX = upPosX - thiz.downX;
 				thiz.deltaY = upPosY - thiz.downY;
 				thiz.xf = upPosX / window.innerWidth;
@@ -159,13 +158,19 @@ Mouse3D = makeClass({
 			})
 		;
 	},
+
+	//hmm seems there are cases when i need this modular
+	// or I want screenX/ screenY or client 
+	getEventXY : function(e) {
+		return [e.pageX, e.pageY];
+	},
+
 	doMouseDown : function(e) {
 		this.isDragging = false;
 		this.isDown = true;
-		this.lastX = e.pageX;
-		this.lastY = e.pageY;
-		this.xf = e.pageX / window.innerWidth;
-		this.yf = e.pageY / window.innerHeight;
+		[this.lastX, this.lastY] = this.getEventXY(e);
+		this.xf = this.lastX / window.innerWidth;
+		this.yf = this.lastY / window.innerHeight;
 		this.downX = this.lastX;
 		this.downY = this.lastY;
 		this.deltaX = 0;
@@ -178,8 +183,7 @@ Mouse3D = makeClass({
 		if (this.mouseup) this.mouseup();
 	},
 	doMouseMove : function(e) {
-		var thisX = e.pageX;
-		var thisY = e.pageY;
+		var [thisX, thisY] = this.getEventXY(e);
 		this.xf = thisX / window.innerWidth;
 		this.yf = thisY / window.innerHeight;
 
@@ -200,10 +204,12 @@ Mouse3D = makeClass({
 		}
 	},
 	getTouchPts : function(e, pts) {
-		pts[0][0] = e.originalEvent.changedTouches[0].pageX;
-		pts[0][1] = e.originalEvent.changedTouches[0].pageY;
-		pts[1][0] = e.originalEvent.changedTouches[1].pageX;
-		pts[1][1] = e.originalEvent.changedTouches[1].pageY;
+		var [pt0x, pt0y] = this.getEventXY(e.originalEvent.changedTouches[0]);
+		pts[0][0] = pt0x;
+		pts[0][1] = pt0y;
+		var [pt1x, pt1y] = this.getEventXY(e.originalEvent.changedTouches[1]);
+		pts[1][0] = pt1x;
+		pts[1][1] = pt1y;
 	},
 	calcDist : function(pts) {
 		var dx = pts[0][0] - pts[1][0];
