@@ -1,7 +1,7 @@
 //require jquery
 //require util.js
 
-Mouse3D = makeClass({
+class Mouse3D {
 	/*
 	args:
 		pressObj: default window
@@ -30,7 +30,7 @@ Mouse3D = makeClass({
 		newZoomTouchPts
 
 	*/
-	init : function(args) {
+	constructor(args) {
 		this.xf = .5;
 		this.yf = .5;
 		this.isDown = false;
@@ -40,11 +40,10 @@ Mouse3D = makeClass({
 		this.newZoomTouchPts = [[0,0],[0,0]];
 		this.preventDefault = !(args.preventDefault === false);
 		
-		var thiz = this;
+		let thiz = this;
 		this.pressObj = args.pressObj !== undefined ? args.pressObj : window;
 		this.releaseObj = args.releaseObj !== undefined ? args.releaseObj : window;
-		var callbackNames = ['mouseup','mousedown','move','passiveMove','zoom','click','touchclickstart','touchclickend'];
-		$.each(callbackNames, function(_,callbackName) {
+		['mouseup','mousedown','move','passiveMove','zoom','click','touchclickstart','touchclickend'].forEach(callbackName => {
 			if (args[callbackName] !== undefined) {
 				thiz[callbackName] = args[callbackName];
 			}
@@ -52,39 +51,39 @@ Mouse3D = makeClass({
 
 		//keep this member around for unbinding in the event of finding touch events are used
 		//therefore don't expect 'this' to be referenced correctly
-		this.mousedownCallback = function(e) {
+		this.mousedownCallback = e => {
 			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseDown(e);
 		};
-		$(this.pressObj).bind('mousedown', this.mousedownCallback);
+		this.pressObj.addEventListener('mousedown', this.mousedownCallback);
 	
-		this.mouseupCallback = function(e) {
+		this.mouseupCallback = e => {
 			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseUp(e);
 		};
-		$(this.releaseObj).bind('mouseup', this.mouseupCallback);
+		this.releaseObj.addEventListener('mouseup', this.mouseupCallback);
 		
-		this.mousemoveCallback = function(e) {
+		this.mousemoveCallback = e => {
 			if (thiz.preventDefault) e.preventDefault();
 			thiz.doMouseMove(e);
 		};
-		$(this.pressObj).bind('mousemove', this.mousemoveCallback);
+		this.pressObj.addEventListener('mousemove', this.mousemoveCallback);
 		
-		this.mousewheelCallback = function(e) {
+		this.mousewheelCallback = e => {
 			if (thiz.preventDeafult) e.preventDefault();
-			var zoomChange = e.originalEvent.wheelDelta;
+			let zoomChange = e.originalEvent.wheelDelta;
 			if (thiz.zoom) {
 				thiz.zoom(zoomChange, 'wheel');
 				e.preventDefault();
 			}
 		};
-		$(this.pressObj).bind('mousewheel', this.mousewheelCallback);
+		this.pressObj.addEventListener('mousewheel', this.mousewheelCallback);
 		
 		//special case for Firefox 25:
 		//http://www.javascriptkit.com/javatutors/onmousewheel.shtml
-		$(this.pressObj).bind('DOMMouseScroll', function(e) {
+		this.pressObj.addEventListener('DOMMouseScroll', e => {
 			if (thiz.preventDefault) e.preventDefault();
-			var zoomChange = e.originalEvent.detail;
+			let zoomChange = e.originalEvent.detail;
 			if (thiz.zoom) thiz.zoom(zoomChange * -120, 'wheel');
 		});
 		
@@ -92,80 +91,80 @@ Mouse3D = makeClass({
 			//TODO also check l-infinite distance?  or total distance while mousedown travelled?
 			if (thiz.click) thiz.click(e);
 		};
-		$(this.pressObj).bind('click', this.clickCallback);
+		this.pressObj.addEventListener('click', this.clickCallback);
 
-		var unbindMouse = function() {
-			$(thiz.pressObj).unbind('mousedown', thiz.mousedownCallback);
-			$(thiz.releaseObj).unbind('mouseup', thiz.mouseupCallback);
-			$(thiz.pressObj).unbind('mousemove', thiz.mousemoveCallback);
-			$(thiz.pressObj).unbind('mousewheel', thiz.mousewheelCallback);
-			$(thiz.pressObj).unbind('click', thiz.clickCallback);
+		let unbindMouse = function() {
+			thiz.pressObj.removeEventListener('mousedown', thiz.mousedownCallback);
+			thiz.releaseObj.removeEventListener('mouseup', thiz.mouseupCallback);
+			thiz.pressObj.removeEventListener('mousemove', thiz.mousemoveCallback);
+			thiz.pressObj.removeEventListener('mousewheel', thiz.mousewheelCallback);
+			thiz.pressObj.removeEventListener('click', thiz.clickCallback);
 		};
 
-		$(this.pressObj)
-			.bind('touchstart', function(e) { 	
-				unbindMouse();
-				thiz.isTouchDown = false;
-				if (thiz.preventDefault) e.preventDefault();
-				thiz.doMouseDown(e.originalEvent.targetTouches[0]);
-				if (thiz.touchclickstart) thiz.touchclickstart();
-			})
-			.bind('touchmove', function(e) {
-				if (thiz.preventDefault) e.preventDefault();
-				if (e.originalEvent.touches.length >= 2) {
-					//do a pinch zoom
-					if (!thiz.isTouchDown) {
-						//record current events
-						thiz.getTouchPts(e, thiz.zoomTouchPts);
-						thiz.isTouchDown = true;
-					} else {
-						//do zoom based on movement
-						thiz.getTouchPts(e, thiz.newZoomTouchPts);
-						var zoomChange = thiz.calcDist(thiz.newZoomTouchPts) - thiz.calcDist(thiz.zoomTouchPts);
-						if (zoomChange != 0) {
-							if (thiz.zoom) {
-								thiz.zoom(100 * zoomChange, 'pinch');
-								thiz.zoomTouchPts[0][0] = thiz.newZoomTouchPts[0][0];
-								thiz.zoomTouchPts[0][1] = thiz.newZoomTouchPts[0][1];
-								thiz.zoomTouchPts[1][0] = thiz.newZoomTouchPts[1][0];
-								thiz.zoomTouchPts[1][1] = thiz.newZoomTouchPts[1][1];
-							}
+		this.pressObj.addEventListener('touchstart', e => { 	
+			unbindMouse();
+			thiz.isTouchDown = false;
+			if (thiz.preventDefault) e.preventDefault();
+			thiz.doMouseDown(e.originalEvent.targetTouches[0]);
+			if (thiz.touchclickstart) thiz.touchclickstart();
+		});
+		this.pressObj.addEventListener('touchmove', e => {
+			if (thiz.preventDefault) e.preventDefault();
+			if (e.originalEvent.touches.length >= 2) {
+				//do a pinch zoom
+				if (!thiz.isTouchDown) {
+					//record current events
+					thiz.getTouchPts(e, thiz.zoomTouchPts);
+					thiz.isTouchDown = true;
+				} else {
+					//do zoom based on movement
+					thiz.getTouchPts(e, thiz.newZoomTouchPts);
+					let zoomChange = thiz.calcDist(thiz.newZoomTouchPts) - thiz.calcDist(thiz.zoomTouchPts);
+					if (zoomChange != 0) {
+						if (thiz.zoom) {
+							thiz.zoom(100 * zoomChange, 'pinch');
+							thiz.zoomTouchPts[0][0] = thiz.newZoomTouchPts[0][0];
+							thiz.zoomTouchPts[0][1] = thiz.newZoomTouchPts[0][1];
+							thiz.zoomTouchPts[1][0] = thiz.newZoomTouchPts[1][0];
+							thiz.zoomTouchPts[1][1] = thiz.newZoomTouchPts[1][1];
 						}
 					}
-				} else {
-					//don't reset zoom once we've begun touch zooming
-					//until we're finished with the gesture
-					//thiz.isTouchDown = false;
 				}
-				if (!thiz.isTouchDown) {	//only rotate if we haven't begun zooming
-					thiz.doMouseMove(e.originalEvent.targetTouches[0]);
-				}
-			})
-			.bind('touchend touchcancel', function(e) {
-				if (thiz.preventDefault) e.preventDefault();
-				var touch = e.originalEvent.changedTouches[0];
-				var [upPosX, upPosY] = thiz.getEventXY(touch);
-				thiz.deltaX = upPosX - thiz.downX;
-				thiz.deltaY = upPosY - thiz.downY;
-				thiz.xf = upPosX / window.innerWidth;
-				thiz.yf = upPosY / window.innerHeight;
-				var linf = Math.max( Math.abs(thiz.deltaX), Math.abs(thiz.deltaY) );
-				if (linf < 2) {
-					if (thiz.touchclickend) thiz.touchclickend();
-					if (thiz.click) thiz.click(touch);
-				} 
-				thiz.doMouseUp(touch);
-			})
-		;
-	},
+			} else {
+				//don't reset zoom once we've begun touch zooming
+				//until we're finished with the gesture
+				//thiz.isTouchDown = false;
+			}
+			if (!thiz.isTouchDown) {	//only rotate if we haven't begun zooming
+				thiz.doMouseMove(e.originalEvent.targetTouches[0]);
+			}
+		});
+		const touchEndCancel = e => {
+			if (thiz.preventDefault) e.preventDefault();
+			let touch = e.originalEvent.changedTouches[0];
+			let [upPosX, upPosY] = thiz.getEventXY(touch);
+			thiz.deltaX = upPosX - thiz.downX;
+			thiz.deltaY = upPosY - thiz.downY;
+			thiz.xf = upPosX / window.innerWidth;
+			thiz.yf = upPosY / window.innerHeight;
+			let linf = Math.max( Math.abs(thiz.deltaX), Math.abs(thiz.deltaY) );
+			if (linf < 2) {
+				if (thiz.touchclickend) thiz.touchclickend();
+				if (thiz.click) thiz.click(touch);
+			} 
+			thiz.doMouseUp(touch);
+		};
+		this.pressObj.addEventListener('touchend', touchEndCancel);
+		this.pressObj.addEventListener('touchcancel', touchEndCancel);
+	}
 
 	//hmm seems there are cases when i need this modular
 	// or I want screenX/ screenY or client 
-	getEventXY : function(e) {
+	getEventXY(e) {
 		return [e.pageX, e.pageY];
-	},
+	}
 
-	doMouseDown : function(e) {
+	doMouseDown(e) {
 		this.isDragging = false;
 		this.isDown = true;
 		[this.lastX, this.lastY] = this.getEventXY(e);
@@ -177,13 +176,13 @@ Mouse3D = makeClass({
 		this.deltaY = 0;
 
 		if (this.mousedown) this.mousedown(e);
-	},
-	doMouseUp : function(e) {
+	}
+	doMouseUp(e) {
 		this.isDown = false;
 		if (this.mouseup) this.mouseup();
-	},
-	doMouseMove : function(e) {
-		var [thisX, thisY] = this.getEventXY(e);
+	}
+	doMouseMove(e) {
+		let [thisX, thisY] = this.getEventXY(e);
 		this.xf = thisX / window.innerWidth;
 		this.yf = thisY / window.innerHeight;
 
@@ -202,19 +201,20 @@ Mouse3D = makeClass({
 		} else {
 			if (this.passiveMove) this.passiveMove(this.deltaX, this.deltaY);
 		}
-	},
-	getTouchPts : function(e, pts) {
-		var [pt0x, pt0y] = this.getEventXY(e.originalEvent.changedTouches[0]);
+	}
+	getTouchPts(e, pts) {
+		let [pt0x, pt0y] = this.getEventXY(e.originalEvent.changedTouches[0]);
 		pts[0][0] = pt0x;
 		pts[0][1] = pt0y;
-		var [pt1x, pt1y] = this.getEventXY(e.originalEvent.changedTouches[1]);
+		let [pt1x, pt1y] = this.getEventXY(e.originalEvent.changedTouches[1]);
 		pts[1][0] = pt1x;
 		pts[1][1] = pt1y;
-	},
-	calcDist : function(pts) {
-		var dx = pts[0][0] - pts[1][0];
-		var dy = pts[0][1] - pts[1][1];
+	}
+	calcDist(pts) {
+		let dx = pts[0][0] - pts[1][0];
+		let dy = pts[0][1] - pts[1][1];
 		return Math.sqrt(dx*dx + dy*dy);
 	}
-});
+}
 
+export { Mouse3D };

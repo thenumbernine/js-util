@@ -201,9 +201,9 @@ args are passed on to executeLuaVMFileSet plus ...
 		these are automatically added to args.files.   no need to duplicate.
 	packages : (optional) auto-populates files and tests
 */
-var EmbeddedLuaInterpreter = makeClass({
-	HISTORY_MAX : 100,
-	init : function(args) {
+class EmbeddedLuaInterpreter {
+	HISTORY_MAX = 100;
+	constructor(args) {
 		var thiz = this;
 
 		//granted it doesn't make much sense to include tests from one package without including the package itself ...
@@ -317,8 +317,8 @@ var EmbeddedLuaInterpreter = makeClass({
 		if (args.autoLaunch) {
 			this.launchButton.click();
 		}
-	},
-	processInput : function() {
+	}
+	processInput() {
 		var cmd = this.input.val();
 		this.history.push(cmd);
 		while (this.history.length > this.HISTORY_MAX) this.history.shift();
@@ -334,8 +334,8 @@ var EmbeddedLuaInterpreter = makeClass({
 		
 		this.executeAndPrint(cmd);
 		this.input.val('');
-	},
-	doneLoadingFilesystem : function() {
+	}
+	doneLoadingFilesystem() {
 		var thiz = this;
 
 /*
@@ -391,8 +391,8 @@ package.path = package.path .. ';./?/?.lua'
 		this.print('...Done<br>');
 
 		if (this.done) this.done();
-	},
-	createDivForTestRow : function(info) {
+	}
+	createDivForTestRow(info) {
 		var thiz = this;
 		var div = $('<div>');
 		$('<a>', {
@@ -416,21 +416,21 @@ package.path = package.path .. ';./?/?.lua'
 		}).appendTo(div);
 	
 		return div;
-	},
-	execute : function(s) {
+	}
+	execute(s) {
 		Lua.execute(s);
-	},
-	executeAndPrint : function(s) {
+	}
+	executeAndPrint(s) {
 		Module.print('> '+s);
 		this.execute(s);
-	},
-	print : function(s) {
+	}
+	print(s) {
 		this.printOutAndErr(s);
-	},
-	printErr : function(s) {
+	}
+	printErr(s) {
 		this.printOutAndErr(s);
-	},
-	printOutAndErr : function(s) {
+	}
+	printOutAndErr(s) {
 		if (this.outputBuffer !== '') this.outputBuffer += '\n';
 		this.outputBuffer += s;
 		this.output.html(this.outputBuffer
@@ -442,8 +442,10 @@ package.path = package.path .. ';./?/?.lua'
 			.replace(new RegExp(' ', 'g'), '&nbsp;')
 		);
 		this.output.scrollTop(99999999); 
-	},
-	clearOutput : function() {
+	}
+	clearOutput() {
 		this.output.html(this.outputBuffer = '');
 	}
-});
+}
+
+export { EmbeddedLuaInterpreter };

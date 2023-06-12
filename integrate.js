@@ -1,55 +1,55 @@
-var integrate = {};
+let integrate = {};
 
 integrate.euler = function(t,x,dt,f) {
 	return x.add(f(t,x).mul(dt));	//x = x + f(t, x) * dt
 };
 
 integrate.midpoint = function(t,x,dt,f) {
-	var k = f(t, x).mul(dt);
+	let k = f(t, x).mul(dt);
 	return x.add(f(t + dt * .5, x.add(k.mul(.5))).mul(dt));
 };
 
 integrate.heun = function(t,x,dt,f) {
-	var fAtX = f(t, x);
-	var xTilde = x.add(fAtX, dt);
+	let fAtX = f(t, x);
+	let xTilde = x.add(fAtX, dt);
 	return x.add(fAtX.add(f(t + dt, xTilde)).mul(dt * .5));
 };
 
 integrate.rk2alpha = function(t,x,dt,f,args) {
-	var fAtX = f(t, x);
-	var k = fAtX.mul(dt);
-	var alpha = args.alpha !== undefined ? args.alpha : .5;		// alpha = .5 <=> midpoint, alpha = 1 <=> Heun
-	var frac = 1 / (2 * alpha);
+	let fAtX = f(t, x);
+	let k = fAtX.mul(dt);
+	let alpha = args.alpha !== undefined ? args.alpha : .5;		// alpha = .5 <=> midpoint, alpha = 1 <=> Heun
+	let frac = 1 / (2 * alpha);
 	return x.add(fAtX.mul(1 - frac).add(f(t + alpha * dt, x.add(k.mul(alpha))).mul(frac)).mul(dt));
 };
 
 integrate.rk4 = function(t,x,dt,f) {
-	var k1 = f(t, x).mul(dt);
-	var k2 = f(t + dt * .5, x.add(k1.mul(.5))).mul(dt);
-	var k3 = f(t + dt * .5, x.add(k2.mul(.5))).mul(dt);
-	var k4 = f(t + dt, x.add(k3)).mul(dt);
+	let k1 = f(t, x).mul(dt);
+	let k2 = f(t + dt * .5, x.add(k1.mul(.5))).mul(dt);
+	let k3 = f(t + dt * .5, x.add(k2.mul(.5))).mul(dt);
+	let k4 = f(t + dt, x.add(k3)).mul(dt);
 	x = x.add(k1.add(k2.mul(2)).add(k3.mul(2)).add(k4).mul(1 / 6));
 	return x
 };
 
 integrate.rkf45 = function(t,x,dt,f,args) {
-	var accuracy = args !== undefined && (args.accuracy !== undefined && args.accuracy) || 1e-5;
-	var tEndFinal = t + dt;
-	var tEnd = tEndFinal;
-	var norm = args !== undefined && args.norm || Math.abs
-	var maxiterations = args !== undefined && args.iterations || 100
+	let accuracy = args !== undefined && (args.accuracy !== undefined && args.accuracy) || 1e-5;
+	let tEndFinal = t + dt;
+	let tEnd = tEndFinal;
+	let norm = args !== undefined && args.norm || Math.abs
+	let maxiterations = args !== undefined && args.iterations || 100
 	do {
-		var currentDt = tEnd - t;
-		for (var i = 0; i < maxiterations; ++i) {
-			var k1 = f(t, x) * currentDt;
-			var k2 = f(t + currentDt * .25, x + k1 * .25) * currentDt;
-			var k3 = f(t + currentDt * (3/8), x + k1 * (3/32) + k2 * (9/32)) * currentDt;
-			var k4 = f(t + currentDt * (12/13), x + k1 * (1932/2197) - k2 * (7200/2197) + k3 * (7296/2197)) * currentDt;
-			var k5 = f(t + currentDt, x + k1 * (439/216) - k2 * 8 + k3 * (3680/513) - k4 * (845/4104)) * currentDt;
-			var k6 = f(t + currentDt * .5, x - k1 * (8/27) + k2 * 2 - k3 * (3544/2565) + k4 * (1859/4104) - k5 * (11/40)) * currentDt;
-			var xHi = x + k1 * (16/135) + k3 * (6656/12825) + k4 * (28561/56430) - k5 * (9/50) + k6 * (2/55);
-			var xLo = x + k1 * (25/216) + k3 * (1408/2565) + k4 * (2197/4104) - k5 * (1/5);
-			var xErr = xHi - xLo;
+		let currentDt = tEnd - t;
+		for (let i = 0; i < maxiterations; ++i) {
+			let k1 = f(t, x) * currentDt;
+			let k2 = f(t + currentDt * .25, x + k1 * .25) * currentDt;
+			let k3 = f(t + currentDt * (3/8), x + k1 * (3/32) + k2 * (9/32)) * currentDt;
+			let k4 = f(t + currentDt * (12/13), x + k1 * (1932/2197) - k2 * (7200/2197) + k3 * (7296/2197)) * currentDt;
+			let k5 = f(t + currentDt, x + k1 * (439/216) - k2 * 8 + k3 * (3680/513) - k4 * (845/4104)) * currentDt;
+			let k6 = f(t + currentDt * .5, x - k1 * (8/27) + k2 * 2 - k3 * (3544/2565) + k4 * (1859/4104) - k5 * (11/40)) * currentDt;
+			let xHi = x + k1 * (16/135) + k3 * (6656/12825) + k4 * (28561/56430) - k5 * (9/50) + k6 * (2/55);
+			let xLo = x + k1 * (25/216) + k3 * (1408/2565) + k4 * (2197/4104) - k5 * (1/5);
+			let xErr = xHi - xLo;
 			// here's the test: error threshold
 			// depends on calculating a magnitude of x, which depends on normalizing its values (so all contribute equally)
 			xErr = norm(xErr);
@@ -107,10 +107,11 @@ returns:
 */
 integrate.run = function(t, x, dt, f, methodName, args) {
 	if (methodName === undefined) methodName = 'euler';
-	var method = this.methods[methodName];
+	let method = this.methods[methodName];
 	return method(t,x,dt,f,args);
 	
 	// Minkowski: post-integration, re-normalize velocity:
 	//x.u[0] = math.sqrt(x.u[1] * x.u[1] + 1)	
 };
 
+export { integrate };
