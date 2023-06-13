@@ -1,3 +1,5 @@
+import {DOM, show, hide} from './util.js';
+
 /*
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
@@ -15,7 +17,7 @@ local req = wsapi_request.new(env)
 
 local function rfind(dir, pattern, results)
 	for f in file(dir):dir() do
-		if f:sub(1,1) ~= '.' then	
+		if f:sub(1,1) ~= '.' then
 			local path = dir..'/'..f
 			if file(path):exists() and file(path):isdir() then
 				rfind(path, pattern, results)
@@ -44,7 +46,7 @@ local function addDir(base, src, dst, testdir)
 	local sep = ''
 	for _,f in ipairs(find(base..'/'..src)) do
 		local f = f:sub(#base+3+#src)
-		if f:sub(-4) == '.lua' 
+		if f:sub(-4) == '.lua'
 		and (not testdir or f:sub(1,6) ~= 'tests/')
 		then
 			local jsfn = string.split(src, '/'):mapi(function(part)
@@ -60,13 +62,13 @@ local function addDir(base, src, dst, testdir)
 
 	if testdir then
 ?>		,tests : [
-<?		
+<?
 		local sep = ''
 		if file(base..'/'..testdir):exists() then
 			for f in file(base..'/'..testdir):dir() do
 				if f:sub(1,1) ~= '.'
 				and (
-					f:sub(-4) == '.lua' 
+					f:sub(-4) == '.lua'
 					or f:sub(-8) == '.symmath'
 				)
 				then
@@ -84,7 +86,7 @@ local function addDir(base, src, dst, testdir)
 end
 ?>
 
-var luaVmPackageInfos = {
+let luaVmPackageInfos = {
 	complex : {
 <? addDir(req.doc_root, 'lua/complex', 'complex') ?>
 	},
@@ -121,11 +123,11 @@ args:
 	onexec(url, dest) : (optional) per-file on-execute callback
 */
 function executeLuaVMFileSet(args) {
-	var files = args.files.clone();
+	let files = args.files.clone();
 	files.splice(0, 0, '/js/lua.vm.js');
 	if (args.packages) {
-		$.each(args.packages, function(_,packageName) {
-			var packageContent = luaVmPackageInfos[packageName];
+		args.packages.forEach(packageName => {
+			let packageContent = luaVmPackageInfos[packageName];
 			if (packageContent) {
 				if (packageContent.files) files = files.concat(packageContent.files);
 				if (packageContent.tests) files = files.concat(packageContent.tests);
@@ -139,36 +141,37 @@ function executeLuaVMFileSet(args) {
 		//wait til all are loaded, then insert them in order
 		//this way we run the lua.vm.js before writing to the filesystems (since the filesystem is created by lua.vm.js)
 		onload : args.onload,
-		done : function() {	
-			var thiz = this;
+		done : function() {
+			let thiz = this;
 			asyncfor({
 				map	: this.results,
 				callback : function(i,result) {
-					var file = thiz.files[i];
-					
+					let file = thiz.files[i];
+
 					if (args.onexec) {
 						args.onexec(file.url, file.dest);
 					}
-					
+
 					//first load the vm...
 					if (file.dest.substring(file.dest.length-3) == '.js') {
 console.log('executing javascript file',file.dest);
-						
+
 						//this will run in-place.  I always thought it sucked that Lua loadstring() didn't run in place, now I see why it's a good idea.  consistency of scope.
 						/*
 						eval(result);
 						*/
-						var s = document.createElement("script");
-						s.type = "text/javascript";
-						s.innerHTML = result;
-						$("head").append(s);
-						
+						let s = DOM('script', {
+							type : 'text/javascript',
+							innerHTML : result,
+						});
+						document.head.appendChild(s);
+
 					} else if (
 						file.dest.substring(file.dest.length-4) == '.lua'
 						|| file.dest.substring(file.dest.length-8) == '.symmath'
 					) {
 console.log('loading data file',file.dest);
-						var parts = pathToParts(file.dest);
+						let parts = pathToParts(file.dest);
 						if (parts.dir != '.') {
 							try { 	//how do you detect if a path is already created?
 								FS.createPath('/', parts.dir, true, true);
@@ -180,7 +183,7 @@ console.log('loading data file',file.dest);
 					} else {
 						throw "got a non-lua file "+file.dest;
 					}
-							
+
 				},
 				done : args.done
 			});
@@ -197,20 +200,20 @@ args are passed on to executeLuaVMFileSet plus ...
 		url : where to find the file
 		dest : where in the filesystem to find it
 		name : button title
-		
+
 		these are automatically added to args.files.   no need to duplicate.
 	packages : (optional) auto-populates files and tests
 */
 class EmbeddedLuaInterpreter {
 	HISTORY_MAX = 100;
 	constructor(args) {
-		var thiz = this;
+		let thiz = this;
 
 		//granted it doesn't make much sense to include tests from one package without including the package itself ...
 		if (args.packageTests) {
 			if (!args.tests) args.tests = [];
-			$.each(args.packageTests, function(_,packageName) {
-				var packageContent = luaVmPackageInfos[packageName];
+			args.packageTests.forEach(packageName => {
+				let packageContent = luaVmPackageInfos[packageName];
 				if (packageContent) {
 					if (packageContent.tests) args.tests = args.tests.concat(packageContent.tests);
 				}
@@ -219,8 +222,8 @@ class EmbeddedLuaInterpreter {
 		}
 		if (args.packages) {
 			if (!args.files) args.files = [];
-			$.each(args.packages, function(_,packageName) {
-				var packageContent = luaVmPackageInfos[packageName];
+			args.packages.forEach(packageName => {
+				let packageContent = luaVmPackageInfos[packageName];
 				if (packageContent) {
 					if (packageContent.files) args.files = args.files.concat(packageContent.files);
 				}
@@ -245,18 +248,21 @@ class EmbeddedLuaInterpreter {
 
 		this.done = args.done;	//store for later
 
-		this.parentContainer = $('#'+args.id).get(0);
+		this.parentContainer = document.getElementById(args.id);
 
-		this.container = $('<div>');
-		if (this.parentContainer !== undefined) {
-			this.container.appendTo(this.parentContainer);
+		this.container = DOM('div');
+		if (this.parentContainer) {
+			this.parentContainer.appendChild(this.container);
 		}
-		this.container.hide();
+		hide(this.container);
 
-		$('<div>', {html:'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>'}).appendTo(this.container);
+		DOM('div', {
+			innerHTML : 'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>',
+			appendTo : this.container,
+		});
 
 		this.outputBuffer = '';
-		this.output = $('<div>', {
+		this.output = DOM('div', {
 			text : 'Loading...',
 			css : {
 				width : '80em',
@@ -265,42 +271,45 @@ class EmbeddedLuaInterpreter {
 				border : '0px',
 				'font-family' : 'Courier',
 				'overflow-y' : 'scroll'
-			}
-		}).appendTo(this.container);
+			},
+			appendTo : this.container,
+		});
 
 		this.history = [];
 		//load history from cookies
-		for (var i=0;;++i) {
-			var line = getCookie('lua-history-'+i);
+		/*for (let i=0;;++i) {
+			let line = getCookie('lua-history-'+i);
 			if (line === null) break;
 			this.history.push(line);
-		}
+		}*/
 		this.historyIndex = this.history.length;
-		this.inputGo = $('<button>', {
-			text : 'GO!'
-		}).appendTo(this.container);
+		this.inputGo = DOM('button', {
+			text : 'GO!',
+			appendTo : this.container,
+		});
 
-		this.input = $('<input>', {
-			type:'email',	
+		this.input = DOM('input', {
+			type : 'email',
 			css : {
 				width : '80em',
 				border : '1px solid black',
 				'font-family' : 'Courier'
-			}
-		}).appendTo(this.container);
-		this.input.attr('autocapitalize', 'off');		
-		this.input.attr('autocomplete', 'off');		
-		this.input.attr('autocorrect', 'off');		
-		this.input.attr('spellcheck', 'off');		
-		$('<br>').appendTo(this.container);
+			},
+			appendTo : this.container,
+		});
+		this.input.setAttribute('autocapitalize', 'off');
+		this.input.setAttribute('autocomplete', 'off');
+		this.input.setAttribute('autocorrect', 'off');
+		this.input.setAttribute('spellcheck', 'off');
+		DOM('br', {appendTo:this.container});
 
-		this.launchButton = $('<button>', {text:'Launch'});
-		if (this.parentContainer !== undefined) {
-			this.launchButton.appendTo(this.parentContainer);
+		this.launchButton = DOM('button', {text:'Launch'});
+		if (this.parentContainer) {
+			this.parentContainer.appendChild(this.launchButton);
 		}
 		this.launchButton.click(function() {
-			thiz.launchButton.hide();
-			thiz.container.show();
+			hide(thiz.launchButton);
+			show(thiz.container);
 
 			args.onexec = function(url, dest) {
 				//Module.print('loading '+dest+' ...');
@@ -319,24 +328,24 @@ class EmbeddedLuaInterpreter {
 		}
 	}
 	processInput() {
-		var cmd = this.input.val();
+		let cmd = this.input.val();
 		this.history.push(cmd);
 		while (this.history.length > this.HISTORY_MAX) this.history.shift();
 		this.historyIndex = this.history.length;
-		
+
 		//store history in cookies...
-		var i=0;
+		let i=0;
 		while (i<this.history.length) {
 			setCookie('lua-history-'+i, this.history[i]);
 			++i;
 		}
 		clearCookie('lua-history-'+i);
-		
+
 		this.executeAndPrint(cmd);
 		this.input.val('');
 	}
 	doneLoadingFilesystem() {
-		var thiz = this;
+		let thiz = this;
 
 /*
 before I could provide window.Module = { .. default functions ... }
@@ -372,49 +381,52 @@ Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not
 				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
 					thiz.input.val(thiz.history[thiz.historyIndex]);
 				}
-			} 
+			}
 		});
 
 		//provide test buttons
 		if (this.tests) {
-			this.testContainer = $('<div>').appendTo(this.container);
-			$.each(this.tests, function(_,info) {
-				var div = thiz.createDivForTestRow(info);
+			this.testContainer = DOM('div', {appendTo:this.container});
+			this.tests.forEach(info => {
+				let div = thiz.createDivForTestRow(info);
 				div.appendTo(thiz.testContainer);
 			});
 		}
 
-		this.execute(mlstr(function(){/*
+		this.execute(`
 package.path = package.path .. ';./?/?.lua'
-*/}));
+`);
 
 		this.print('...Done<br>');
 
 		if (this.done) this.done();
 	}
 	createDivForTestRow(info) {
-		var thiz = this;
-		var div = $('<div>');
-		$('<a>', {
-			href:info.url, 
-			text:'[View]', 
+		let thiz = this;
+		let div = DOM('div');
+		DOM('a', {
+			href:info.url,
+			text:'[View]',
 			target:'_blank',
-			css : {'margin-right' : '10px'}
-		}).appendTo(div);
-		
-		$('<a>', {
+			css : {'margin-right' : '10px'},
+			appendTo : div,
+		})
+
+		DOM('a', {
 			href:'#',
 			text:'[Run]',
 			css : {'margin-right' : '10px'},
-			click:function() { 
+			click:function() {
 				thiz.executeAndPrint("dofile '"+info.dest+"'");
-			}
-		}).appendTo(div);
-		
-		$('<span>', {
-			text:info.name !== undefined ? info.name : info.dest
-		}).appendTo(div);
-	
+			},
+			appendTo:div,
+		});
+
+		DOM('span', {
+			text:info.name !== undefined ? info.name : info.dest,
+			appendTo:div,
+		});
+
 		return div;
 	}
 	execute(s) {
@@ -441,7 +453,7 @@ package.path = package.path .. ';./?/?.lua'
 			.replace(new RegExp('\n', 'g'), '<br>')
 			.replace(new RegExp(' ', 'g'), '&nbsp;')
 		);
-		this.output.scrollTop(99999999); 
+		this.output.scrollTop(99999999);
 	}
 	clearOutput() {
 		this.output.html(this.outputBuffer = '');
