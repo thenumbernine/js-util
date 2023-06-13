@@ -210,7 +210,7 @@ function hidden(o) {
 // should I give them a separate argument?
 function DOM(tag, args, listeners) {
 	const dom = document.createElement(tag);
-	const reservedFields = {css:1, attrs:1, appendTo:1, prependTo:1, text:1, click:1};
+	const reservedFields = {css:1, attrs:1, appendTo:1, prependTo:1, text:1, click:1, change:1};
 	const reserved = {};
 	if (args) {
 		for (let k in args) {
@@ -245,6 +245,9 @@ function DOM(tag, args, listeners) {
 	}
 	if (reserved.click !== undefined) {
 		dom.addEventListener('click', reserved.click);
+	}
+	if (reserved.change !== undefined) {
+		dom.addEventListener('change', reserved.change);
 	}
 	return dom;
 }

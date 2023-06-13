@@ -71,8 +71,13 @@ class Mouse3D {
 		
 		this.mousewheelCallback = e => {
 			if (thiz.preventDeafult) e.preventDefault();
-			let zoomChange = e.originalEvent.wheelDelta;
-			if (thiz.zoom) {
+			let zoomChange;
+			if (e.wheelDelta !== undefined) {
+				zoomChange = e.wheelDelta;
+			} else if (e.originalEvent && e.originalEvent.wheelDelta !== undefined) {
+				zoomChange = e.originalEvent.wheelDelta;
+			}
+			if (zoomChange !== undefined && thiz.zoom) {
 				thiz.zoom(zoomChange, 'wheel');
 				e.preventDefault();
 			}
