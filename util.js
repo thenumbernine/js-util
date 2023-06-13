@@ -185,7 +185,10 @@ function posmod(x,y) {
 }
 
 function removeFromParent(o) {
-	o.parentNode.remove(o);
+	// sometimes this removes extra stuff
+	//o.parentNode.remove(o);
+	// use this instead:
+	o.parentNode.removeChild(o);
 }
 
 function Text(text) {
