@@ -1,4 +1,4 @@
-import { makeTexture } from './gl-util-Texture.js';
+import {makeTexture} from './gl-util-Texture.js';
 function makeTexture2D(glutil) {
 const gl = glutil.context;
 glutil.import('Texture', makeTexture);
