@@ -460,4 +460,4 @@ package.path = package.path .. ';./?/?.lua'
 	}
 }
 
-export { EmbeddedLuaInterpreter };
+export {EmbeddedLuaInterpreter};

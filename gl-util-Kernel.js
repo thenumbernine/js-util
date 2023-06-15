@@ -20,15 +20,16 @@ class Kernel extends glutil.Program {
 		const varyingCode = [
 'varying vec2 '+varyingVar+';'].join('\n');
 		const vertexCode = [
-varyingCode,
-'attribute vec2 vertex;',
+varyingCode.replace(/varying/g, 'out'),
+'in vec2 vertex;',
 'void main() {',
 '	'+varyingVar+' = vertex.xy;',
 '	gl_Position = vec4(vertex.xy * 2. - 1., 0., 1.);',
 '}'].join('\n');
 		let precision = 'mediump';
 		if (args.precision !== undefined) precision = args.precision;
-		let fragmentCodePrefix = 'precision '+precision+' float;\n' + varyingCode;
+		let fragmentCodePrefix = 'precision '+precision+' float;\n' 
+			+ varyingCode.replace(/varying/g, 'in');
 		const uniforms = {};
 		if (args.uniforms !== undefined) {
 			Object.entries(args.uniforms).each(entry => {
