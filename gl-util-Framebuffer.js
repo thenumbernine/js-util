@@ -142,7 +142,7 @@ end
 				}
 			}
 		}
-		if (args.texs) bindTextureSet(gl, args.texs);
+		if (args.texs) glutil.bindTextureSet(gl, args.texs);
 
 		//if (args.color) throw 'color not supported in webgl';
 		//if (args.dest) throw 'multiple color attachments not supported in webgl';
@@ -152,7 +152,7 @@ end
 		// why not just merge it in here?
 		this.drawToCallback(args.callback/* || drawScreenQuad, args.colorAttachment || 0*/);
 		
-		if (args.texs) unbindTextureSet(gl, args.texs);
+		if (args.texs) glutil.unbindTextureSet(gl, args.texs);
 		if (args.shader) {
 			gl.useProgram(null);
 		}
