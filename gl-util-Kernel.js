@@ -16,20 +16,17 @@ class Kernel extends glutil.Program {
 	*/
 	constructor(args) {
 		const varyingVar = args.varying !== undefined ? args.varying : 'pos';
-		
-		const varyingCode = [
-'varying vec2 '+varyingVar+';'].join('\n');
-		const vertexCode = [
-varyingCode.replace(/varying/g, 'out'),
-'in vec2 vertex;',
-'void main() {',
-'	'+varyingVar+' = vertex.xy;',
-'	gl_Position = vec4(vertex.xy * 2. - 1., 0., 1.);',
-'}'].join('\n');
-		let precision = 'mediump';
-		if (args.precision !== undefined) precision = args.precision;
-		let fragmentCodePrefix = 'precision '+precision+' float;\n' 
-			+ varyingCode.replace(/varying/g, 'in');
+		const varyingCodePrefix = 'varying vec2 '+varyingVar+';\n';
+		const vertexCode =
+varyingCodePrefix.replace(/varying/g, 'out')
++ `
+in vec2 vertex;
+void main() {
+	`+varyingVar+` = vertex.xy;
+	gl_Position = vec4(vertex.xy * 2. - 1., 0., 1.);
+}
+`;
+		let fragmentCodePrefix = '';
 		const uniforms = {};
 		if (args.uniforms !== undefined) {
 			Object.entries(args.uniforms).each(entry => {
@@ -43,29 +40,27 @@ varyingCode.replace(/varying/g, 'out'),
 			});
 		}
 		if (args.texs !== undefined) {
-			for (let i = 0; i < args.texs.length; ++i) {
+			args.texs.forEach((v, i) => {
 				const v = args.texs[i];
 				let name, vartype;
 				if (typeof(v) == 'string') {
-					name = v;
-					vartype = 'sampler2D';
+					[name, vartype] = [v, 'sampler2D'];
 				} else {
-					name = v[0];
-					vartype = v[1];
+					[name, vartype] = v;
 				}
 				fragmentCodePrefix += 'uniform '+vartype+' '+name+';\n';
 				uniforms[name] = i;
-			}
+			});
 		}
-		let code;
-		if (args.code !== undefined) code = args.code;
-		if (args.codeID !== undefined) code = document.getElementById('#'+args.codeID).innerHTML;
+
 		super({
-			vertexCodeID : args.vertexCodeID,
+			vertexPrecision : args.precision,
 			vertexCode : args.vertexCode !== undefined ? args.vertexCode : vertexCode,
-			vertexPrecision : precision,
-			fragmentCode : fragmentCodePrefix + code,
-			//fragmentPrecision : none because I already added the line
+			fragmentPrecision : args.precision,
+			fragmentCode :
+				varyingCodePrefix.replace(/varying/g, 'in')
+				+ fragmentCodePrefix
+				+ (args.code !== undefined ? args.code : ''),
 			uniforms : uniforms,
 		});
 	}
