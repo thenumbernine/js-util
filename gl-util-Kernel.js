@@ -29,8 +29,8 @@ void main() {
 		let fragmentCodePrefix = '';
 		const uniforms = {};
 		if (args.uniforms !== undefined) {
-			Object.entries(args.uniforms).each(entry => {
-				const [uniformName, uniformType] = entry;
+			Object.entries(args.uniforms).forEach(entry => {
+				let [uniformName, uniformType] = entry;
 				if (Array.isArray(uniformType)) {
 					//save initial value
 					uniforms[uniformName] = uniformType[1];
@@ -41,7 +41,6 @@ void main() {
 		}
 		if (args.texs !== undefined) {
 			args.texs.forEach((v, i) => {
-				const v = args.texs[i];
 				let name, vartype;
 				if (typeof(v) == 'string') {
 					[name, vartype] = [v, 'sampler2D'];
