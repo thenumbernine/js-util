@@ -20,9 +20,9 @@ import {makeVertexShader} from './gl-util-VertexShader.js';
 // TODO modifiers for the gl-matrix library ... where to put them ...
 function quatXAxis (res, q) {
 	let x = q[0], y = q[1], z = q[2], w = q[3];
-	res[0] = 1 - 2 * (y * y + z * z); 
-	res[1] = 2 * (x * y + z * w); 
-	res[2] = 2 * (x * z - w * y); 
+	res[0] = 1 - 2 * (y * y + z * z);
+	res[1] = 2 * (x * y + z * w);
+	res[2] = 2 * (x * z - w * y);
 }
 function quatYAxis(res, q) {
 	let x = q[0], y = q[1], z = q[2], w = q[3];
@@ -32,9 +32,9 @@ function quatYAxis(res, q) {
 }
 function quatZAxis(res, q) {
 	let x = q[0], y = q[1], z = q[2], w = q[3];
-	res[0] = 2 * (x * z + w * y); 
-	res[1] = 2 * (y * z - w * x); 
-	res[2] = 1 - 2 * (x * x + y * y); 
+	res[0] = 2 * (x * z + w * y);
+	res[1] = 2 * (y * z - w * x);
+	res[2] = 1 - 2 * (x * x + y * y);
 }
 
 // WebGL helper classes
@@ -45,12 +45,12 @@ class GLUtil {
 	/*
 	this combines the GL context, render target, and viewport responsabilities
 	so maybe it should be split up later
-	
+
 	create a new scene with associated canvas and view
 	args:
 		one of these:
 			canvas = which canvas to use
-			fullscreen = whether to create our own fullscreen canvas 
+			fullscreen = whether to create our own fullscreen canvas
 		canvasArgs = canvas.getContext arguments, including:
 			premultipliedAlpha (default false)
 			alpha (default false)
@@ -58,14 +58,14 @@ class GLUtil {
 	constructor(args) {
 		var thiz = this;
 window.glutil = this;
-	
+
 		this.canvas = args.canvas;
 		if (args.fullscreen) {
 			window.scrollTo(0,1);
 			if (this.canvas === undefined) {
 				this.canvas = DOM('canvas', {prependTo:document.body});
 			}
-		
+
 			merge(this.canvas.style, {
 				left : 0,
 				top : 0,
@@ -84,20 +84,20 @@ window.glutil = this;
 
 		let canvasArgs = args.canvasArgs;
 		if (canvasArgs === undefined) canvasArgs = {};
-		
+
 		/*
 		this is supposed to save me from having to write 1's in the dest alpha channel
 		to keep the dest image from being invisible
 		but it is buggy in firefox and safari
 		*/
 		if (canvasArgs.premultipliedAlpha === undefined) canvasArgs.premultipliedAlpha = false;
-		
+
 		/*
 		this is supposed to slow things down
 		but it is also supposed to allow folks to take screenshots ...
 		*/
 		//args.preserveDrawingBuffer
-		
+
 		if (canvasArgs.alpha === undefined) canvasArgs.alpha = false;
 
 		let gl = undefined;
@@ -115,9 +115,9 @@ window.glutil = this;
 		if (gl === undefined) {
 			throw "Couldn't initialize WebGL =(";
 		}
-	
+
 		if (args !== undefined && args.debug) {
-			gl = WebGLDebugUtils.makeDebugContext(gl);	
+			gl = WebGLDebugUtils.makeDebugContext(gl);
 		}
 
 		this.context = gl;
@@ -127,8 +127,9 @@ window.glutil = this;
 		//gather extensions
 		gl.getExtension('OES_element_index_uint');
 		gl.getExtension('OES_standard_derivatives');
-		gl.getExtension('OES_texture_float');
+		gl.getExtension('OES_texture_float');	//needed for webgl framebuffer+rgba32f
 		gl.getExtension('OES_texture_float_linear');
+		gl.getExtension('EXT_color_buffer_float');	//needed for webgl2 framebuffer+rgba32f
 
 		//initialize variables based on the gl context object constants:
 
@@ -163,7 +164,7 @@ window.glutil = this;
 		// I'm already doing that, so meh.
 		// but in this situation I still need to be sure to always import everything through glutil and not individual classes (whcih don't hae gl initialized yet)
 		//
-		
+
 		// do this after glutil.context is assigned
 		// so that the classes can use gl
 		[
@@ -171,7 +172,7 @@ window.glutil = this;
 			['View', makeView],
 			['Scene', makeScene],
 			['SceneObject', makeSceneObject],
-			
+
 			//classes wrapping GL functionality
 			['ArrayBuffer', makeArrayBuffer],
 			['Attribute', makeAttribute],
@@ -194,7 +195,7 @@ window.glutil = this;
 			//MipmapGenerator
 			//PingPong
 			//UnitQuad
-			
+
 		].forEach(pair => {
 			const [name, fn] = pair;
 			thiz.import(name, fn);
@@ -207,7 +208,7 @@ window.glutil = this;
 
 		//scenegraph
 		this.scene = new glutil.Scene();
-		
+
 		this.frames = 0;
 		this.lastTime = Date.now();
 	}
@@ -232,7 +233,7 @@ window.glutil = this;
 		}
 		gl.activeTexture(gl.TEXTURE0);
 	}
-	
+
 	unbindTextureSet(gl, texs) {
 		for (let k in texs) {
 			if (texs.hasOwnProperty(k)) {
@@ -254,7 +255,7 @@ window.glutil = this;
 				const fps = this.frames * 1000 / (thisTime - this.lastTime);
 				if (this.onfps) this.onfps(fps);
 				this.frames = 0;
-				this.lastTime = thisTime;	
+				this.lastTime = thisTime;
 			}
 		}
 
@@ -262,7 +263,7 @@ window.glutil = this;
 
 		//TODO modular?
 		this.context.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT);
-	
+
 		if (!this.scene.root.hidden) this.scene.root.draw();
 
 		if (this.ondraw) this.ondraw();
@@ -278,14 +279,14 @@ window.glutil = this;
 	}
 
 	/*
-	must be called manually 
+	must be called manually
 	 (because it makes no assumptions of what the canvas should be resized to
 	  or of whether the canvas resize callback fired before or after it did)
 	*/
 	resize() {
 		this.context.viewport(0, 0, this.canvas.width, this.canvas.height);
 		this.updateProjection();
-		
+
 		//auto draw on resize?
 		//flag?
 		//or leave it up to the caller?
@@ -333,12 +334,12 @@ window.glutil = this;
 				this.view.zFar);
 		} else {
 			let tanFovY = Math.tan(this.view.fovY * Math.PI / 360);
-			mat4.frustum(projMat, 
-				-aspectRatio * tanFovY * this.view.zNear, 
-				aspectRatio * tanFovY * this.view.zNear, 
-				-tanFovY * this.view.zNear, 
-				tanFovY * this.view.zNear, 
-				this.view.zNear, 
+			mat4.frustum(projMat,
+				-aspectRatio * tanFovY * this.view.zNear,
+				aspectRatio * tanFovY * this.view.zNear,
+				-tanFovY * this.view.zNear,
+				tanFovY * this.view.zNear,
+				this.view.zNear,
 				this.view.zFar);
 		}
 	}
@@ -349,7 +350,7 @@ window.glutil = this;
 		let data = this.canvas.toDataURL('image/png');
 		document.location.href = data.replace('image/png', 'image/octet');
 		/**/
-	
+
 		/* download as a specified filename (by encoding in anchor element and simulating click) * /
 		let mimeType = 'image/octet';
 		let filename = 'download.png';
@@ -359,13 +360,13 @@ window.downloadData = data;
 
 		let downloadAnchor = document.createElement('a');
 window.downloadAnchor = downloadAnchor;
-		downloadAnchor.download = filename; 
+		downloadAnchor.download = filename;
 		downloadAnchor.href = window.URL.createObjectURL(blob);
 		downloadAnchor.textContent = 'Download Ready';
 
 		downloadAnchor.dataset.downloadurl = [
-			mimeType, 
-			downloadAnchor.download, 
+			mimeType,
+			downloadAnchor.download,
 			downloadAnchor.href].join(':');
 		downloadAnchor.dataset.disabled = false;
 
