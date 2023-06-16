@@ -47,7 +47,9 @@ class PingPong {
 		return this.prev(this.history.length-1);
 	}
 	draw(args) {
-		this.fbo.setColorAttachmentTex2D(0, this.current());
+		this.fbo.bind();
+		this.fbo.setColorAttachmentTex2D(this.current());
+		this.fbo.unbind();
 		this.fbo.draw(args);
 	}
 	//clear used a quad ... could use viewport clear I suppose...

@@ -1,10 +1,12 @@
 import {traceback} from './util.js';
 import {makeTexture2D} from './gl-util-Texture2D.js';
 import {makeTextureCube} from './gl-util-TextureCube.js';
+//import {makeUnitQuad} from './gl-util-UnitQuad.js';
 function makeFramebuffer(glutil) {
 const gl = glutil.context;
 glutil.import('TextureCube', makeTextureCube);
 glutil.import('Texture2D', makeTexture2D);
+//glutil.import('UnitQuad', makeUnitQuad);
 class Framebuffer {
 	/*
 	args:
@@ -47,30 +49,20 @@ class Framebuffer {
 			throw errstr;
 		}
 	}
-	setColorAttachmentTex2D(index, tex, target, level) {
+	setColorAttachmentTex2D(tex, index, target, level) {
 		if (index === undefined) index = 0;
 		if (target === undefined) target = gl.TEXTURE_2D;
 		if (level === undefined) level = 0;
-		this.bind();
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target, tex.obj, level);
-		this.unbind();
+		if (tex instanceof glutil.Texture2D) tex = tex.obj;
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, target, tex, level);
 	}
-	setColorAttachmentTexCubeMapSide(index, tex, side, level) {
+	setColorAttachmentTexCubeMapSide(tex, index, side, level) {
+		if (index === undefined) index = 0;
 		if (side === undefined) side = index;
 		if (level === undefined) level = 0;
-		this.bind();
+		if (tex instanceof glutil.Texture2D) tex = tex.obj;
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, glutil.TextureCube.prototype.getTargetForSide(side), tex, level);
-		this.unbind();
 	}
-/* WebGL only supports one color attachment at a time ...
-	setColorAttachmentTexCubeMap(tex, level) {
-		this.bind();
-		for (let i = 0; i < 6; i++) {
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, glutil.TextureCube.prototype.getTargetForSide(i), tex, level || 0);
-		}
-		this.unbind();
-	},
-*/
 /* only available by extension ...
 function FBO:setColorAttachmentTex3D(index, tex, slice, target, level)
 if not tonumber(slice) then error("unable to convert slice to number: " ..tostring(slice)) end
@@ -81,16 +73,15 @@ self:unbind()
 end
 */
 	//general, object-based type-deducing
-	setColorAttachment(index, tex) {
+	// TODO put index 2nd and make it default to zero
+	setColorAttachment(tex, ...args) {
 		if (typeof(tex) == 'object') {
-			if (tex instanceof glutil.Texture2D) {
+			if (tex instanceof glutil.Texture2D || tex instanceof WebGLTexture) {
 				//javascript splice won't work, so array-clone it first or whatever needs to be done
-				this.setColorAttachmentTex2D(index, tex.obj)	//, arguments.splice(2));
+				this.setColorAttachmentTex2D(tex, ...args)	//, arguments.splice(2));
 			// cube map? side or all at once?
 			//elseif mt == Tex3D then
-			//	self:setColorAttachmentTex3D(index, tex.id, ...)
-			} else if (tex instanceof WebGLTexture) {
-				this.setColorAttachmentTex2D(index, tex);	// though this could be a 3d slice or a cube side...
+			//	this.setColorAttachmentTex3D(tex.id, ...args);
 			} else {
 				throw "Can't deduce how to attach the object.  Try using an explicit attachment method";
 			}
@@ -100,13 +91,14 @@ end
 	}
 	
 	/*
-	if index is a number then it binds the associated color attachment at 'GL_COLOR_ATTACHMENT0+index' and runs the callback
-	if index is a table then it runs through the ipairs,
-		binding the associated color attachment at 'GL_COLOR_ATTACHMENT0+index[side]'
-		and running the callback for each, passing the side as a parameter
+	if dest exists then it sets it via setColorAttachment.
 	*/
-	drawToCallback(callback/*, index*/) {
+	drawToCallback(callback, dest) {
 		this.bind();
+		// TODO ... bleh
+		if (dest !== undefined) {
+			this.setColorAttachment(dest);
+		}
 		this.check();
 		//no need to preserve the previous draw buffer in webgl
 		//simply binding a framebuffer changes the render target to it
@@ -121,6 +113,7 @@ end
 		uniforms
 		texs
 		callback
+		dest = destination texture to set via setColorAttachment
 	*/
 	draw(args) {
 		let oldvp;
@@ -142,15 +135,17 @@ end
 				}
 			}
 		}
-		if (args.texs) glutil.bindTextureSet(gl, args.texs);
-
-		//if (args.color) throw 'color not supported in webgl';
-		//if (args.dest) throw 'multiple color attachments not supported in webgl';
+		if (args.texs) {
+			glutil.bindTextureSet(gl, args.texs);
+		}
 		
 		// no one seems to use fbo:draw... at all...
 		// so why preserve a function that no one uses?
 		// why not just merge it in here?
-		this.drawToCallback(args.callback/* || drawScreenQuad, args.colorAttachment || 0*/);
+		this.drawToCallback(args.callback
+		/*|| (()=>{
+			glutil.UnitQuad.unitQuad.draw();
+		})*/, args.dest);
 		
 		if (args.texs) glutil.unbindTextureSet(gl, args.texs);
 		if (args.shader) {

@@ -1,7 +1,7 @@
-import { makeProgram } from './gl-util-Program.js';
+import {makeProgram} from './gl-util-Program.js';
 function makeKernel(glutil) {
 const gl = glutil.context;
-
+glutil.import('Program', makeProgram);
 class Kernel extends glutil.Program {
 	/*
 	args:

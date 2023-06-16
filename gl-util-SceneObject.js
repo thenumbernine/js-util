@@ -55,6 +55,7 @@ class SceneObject {
 		this.blend = args.blend;
 		this.useDepth = args.useDepth;
 
+		this.static = true; //default
 		//TODO this should be bool-cast, and should probably be after the implicit assignment
 		if ('static' in args) this.static = args.static;
 		if (args.pos) {
@@ -117,8 +118,6 @@ class SceneObject {
 		if (this.localMat && this.uniforms.localMat === undefined) this.uniforms.localMat = this.localMat;
 		if (this.uniforms.viewMatInv === undefined) this.uniforms.viewMatInv = this.scene.mvMat;
 	}
-
-	static = true; //default
 	
 	setupMatrices() {
 		//TODO make matrix stuff optional?

@@ -1,6 +1,7 @@
-import { makeArrayBuffer } from './gl-util-ArrayBuffer.js';
-import { makeGeometry } from './gl-util-Geometry.js';
-import { makeSceneObject } from './gl-util-SceneObject.js';
+import {mat4} from './gl-matrix-3.4.1/index.js';
+import {makeArrayBuffer} from './gl-util-ArrayBuffer.js';
+import {makeGeometry} from './gl-util-Geometry.js';
+import {makeSceneObject} from './gl-util-SceneObject.js';
 /*
 used by gl-util-font and gl-util-kernel
 pretty simple
@@ -36,6 +37,15 @@ let unitQuad = new glutil.SceneObject({
 	},
 	parent : null,
 	static : true,
+	/* hmm struggling with this ...
+	need to rethink the state in SceneObject
+	static : false,	//'true' makes us use scene's mvMat , which isn't initialized yet
+	uniforms : {
+		mvMat : mat4.create(),
+		viewMatInv : mat4.create(),
+		projMat : mat4.create(),
+	},
+	*/
 });
 
 return {
