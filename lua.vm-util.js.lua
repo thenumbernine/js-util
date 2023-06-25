@@ -1,5 +1,4 @@
-import {DOM, show, hide} from './util.js';
-
+import {DOM, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 /*
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
@@ -123,7 +122,7 @@ args:
 	onexec(url, dest) : (optional) per-file on-execute callback
 */
 function executeLuaVMFileSet(args) {
-	let files = args.files.clone();
+	const files = arrayClone.apply(assertExists(args, 'files'));
 	files.splice(0, 0, '/js/lua.vm.js');
 	if (args.packages) {
 		args.packages.forEach(packageName => {
@@ -143,6 +142,7 @@ function executeLuaVMFileSet(args) {
 		onload : args.onload,
 		done : function() {
 			let thiz = this;
+//console.log('results', this.results);
 			asyncfor({
 				map	: this.results,
 				callback : function(i,result) {
@@ -205,9 +205,14 @@ args are passed on to executeLuaVMFileSet plus ...
 	packages : (optional) auto-populates files and tests
 */
 class EmbeddedLuaInterpreter {
-	HISTORY_MAX = 100;
 	constructor(args) {
-		let thiz = this;
+		const thiz = this;
+
+		// assumes lua.vm.js is loaded
+		// daurnimator:
+		//this.lua = new Lua.State();
+		// that other one I lost track of where from:
+		this.lua = Lua;
 
 		//granted it doesn't make much sense to include tests from one package without including the package itself ...
 		if (args.packageTests) {
@@ -307,16 +312,16 @@ class EmbeddedLuaInterpreter {
 		if (this.parentContainer) {
 			this.parentContainer.appendChild(this.launchButton);
 		}
-		this.launchButton.click(function() {
+		this.launchButton.addEventListener('click', e => {
 			hide(thiz.launchButton);
 			show(thiz.container);
 
-			args.onexec = function(url, dest) {
+			args.onexec = (url, dest) => {
 				//Module.print('loading '+dest+' ...');
 			};
-			args.done = function() {
+			args.done = () => {
 				//Module.print('initializing...');
-				setTimeout(function() {
+				setTimeout(() => {
 					thiz.doneLoadingFilesystem();
 				}, 1);
 			};
@@ -324,7 +329,7 @@ class EmbeddedLuaInterpreter {
 		});
 
 		if (args.autoLaunch) {
-			this.launchButton.click();
+			this.launchButton.dispatchEvent(new Event('click'));
 		}
 	}
 	processInput() {
@@ -359,16 +364,16 @@ Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not
 */
 
 		//hook up input
-		this.inputGo.click(function() {
+		this.inputGo.addEventListener('click', e => {
 			thiz.processInput();
 		});
-		this.input.keypress(function(e) {
+		this.input.addEventListener('keypress', e => {
 			if (e.which == 13) {
 				e.preventDefault();
 				thiz.processInput();
 			}
 		});
-		this.input.keydown(function(e) {
+		this.input.addEventListener('keydown', e => {
 			if (e.keyCode == 38) {	//up
 				thiz.historyIndex--;
 				if (thiz.historyIndex < 0) thiz.historyIndex = 0;
@@ -389,7 +394,7 @@ Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not
 			this.testContainer = DOM('div', {appendTo:this.container});
 			this.tests.forEach(info => {
 				let div = thiz.createDivForTestRow(info);
-				div.appendTo(thiz.testContainer);
+				thiz.testContainer.appendChild(div);
 			});
 		}
 
@@ -413,13 +418,13 @@ package.path = package.path .. ';./?/?.lua'
 		})
 
 		DOM('a', {
-			href:'#',
-			text:'[Run]',
+			href : '#',
+			text : '[Run]',
 			css : {'margin-right' : '10px'},
-			click:function() {
+			click : e => {
 				thiz.executeAndPrint("dofile '"+info.dest+"'");
 			},
-			appendTo:div,
+			appendTo : div,
 		});
 
 		DOM('span', {
@@ -430,7 +435,7 @@ package.path = package.path .. ';./?/?.lua'
 		return div;
 	}
 	execute(s) {
-		Lua.execute(s);
+		this.lua.execute(s);
 	}
 	executeAndPrint(s) {
 		Module.print('> '+s);
@@ -445,19 +450,20 @@ package.path = package.path .. ';./?/?.lua'
 	printOutAndErr(s) {
 		if (this.outputBuffer !== '') this.outputBuffer += '\n';
 		this.outputBuffer += s;
-		this.output.html(this.outputBuffer
+		this.output.innerHTML = this.outputBuffer
 			.replace(new RegExp('&', 'g'), '&amp;')
 			.replace(new RegExp('<', 'g'), '&lt;')
 			.replace(new RegExp('>', 'g'), '&gt;')
 			.replace(new RegExp('"', 'g'), '&quot;')
 			.replace(new RegExp('\n', 'g'), '<br>')
 			.replace(new RegExp(' ', 'g'), '&nbsp;')
-		);
-		this.output.scrollTop(99999999);
+		;
+		this.output.scrollTop = 99999999;
 	}
 	clearOutput() {
-		this.output.html(this.outputBuffer = '');
+		this.output.innerHTML = this.outputBuffer = '';
 	}
 }
+EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
 
 export {EmbeddedLuaInterpreter};

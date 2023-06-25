@@ -22,9 +22,8 @@ function arrayMin() {
 }
 
 //http://www.xenoveritas.org/comment/1689
-// expects 'this'
-function arrayClone() {
-	return this.slice(0);
+function arrayClone(ar) {
+	return ar.slice(0);
 }
 
 // expects 'this'
@@ -256,7 +255,7 @@ function DOM(tag, args, listeners) {
 }
 
 function preload(checklist, done, update, error) {
-	checklist = arrayClone.call(checklist);
+	checklist = arrayClone(checklist);
 	const len = checklist.length;
 //console.log('got checklist', checklist, 'len', len);	
 	checklist.forEach(src => {
@@ -336,7 +335,7 @@ class FileSetLoader {
 	constructor(args) {
 		let thiz = this;
 		
-		this.files = args.files.clone();
+		this.files = arrayClone(args.files);
 		for (let i = 0; i < this.files.length; ++i) {
 			let file = this.files[i];
 			if (typeof(file) == 'string') {
@@ -361,16 +360,16 @@ class FileSetLoader {
 		});
 
 		this.results = [];
-		let totals = [];
-		let loadeds = [];
-		let dones = [];
+		const totals = [];
+		const loadeds = [];
+		const dones = [];
 		for (let i = 0; i < this.files.length; ++i) {
 			totals[i] = 0;
 			loadeds[i] = 0;
 			dones[i] = false;
 			this.results[i] = null;
 		}
-		let updateProgress = () => {
+		const updateProgress = () => {
 			let loaded = 0;
 			let total = 0;
 			for (let i = 0; i < thiz.files.length; ++i) {
@@ -380,7 +379,7 @@ class FileSetLoader {
 			thiz.progress.setAttribute('max', total);
 			thiz.progress.setAttribute('value', loaded);
 		};
-		let updateDones = () => {
+		const updateDones = () => {
 			for (let i = 0; i < thiz.files.length; ++i) {
 				if (!dones[i]) return;
 			}
@@ -388,11 +387,29 @@ class FileSetLoader {
 			if (args.done) args.done.call(thiz);
 		};
 		this.files.forEach((file, i) => {
+			/* as fetch ... */	
+			fetch(file.url)
+			.then(response => {
+				if (!response.ok) throw 'not ok';
+				response.text()
+				.then(responseText => {
+					loadeds[i] = totals[i];
+					thiz.results[i] = responseText;
+					updateProgress();
+					dones[i] = true;
+					if (args.onload) {
+						args.onload.call(thiz, file.url, file.dest, this.responseText);
+					}
+					updateDones();
+				});
+			}).catch(e => {
+				console.log(e)
+			});
+			/**/	
+			/* as XMLHttpRequest ...
 			let xhr = new XMLHttpRequest();
-			
 			xhr.open('GET', file.url, true);
-			
-			xhr.onprogress = (e) => {
+			xhr.addEventListener('progress', e => {
 				if (e.total) {
 					totals[i] = e.total;
 					loadeds[i] = e.loaded;
@@ -401,23 +418,59 @@ class FileSetLoader {
 					loadeds[i] = 0;
 				}
 				updateProgress();
-			};
-			
-			xhr.onload = (e) => {
+			});
+			xhr.addEventListener('load', e => {
 				loadeds[i] = totals[i];
 				thiz.results[i] = this.responseText;
 				updateProgress();
 				dones[i] = true;
 				if (args.onload) args.onload.call(thiz, file.url, file.dest, this.responseText);
 				updateDones();
-			};
-
+			});
 			xhr.send();
+			*/
 		});
 	}
 }
 
-
+/*
+args:
+	duration (in ms)
+	callback
+	done
+*/
+function animate(args) {
+	const duration = assertExists(args, 'duration');
+	const callback = assertExists(args, 'callback');
+	const done = args.done;	//TODO promises or something. meh.
+	const startTime = Date.now();
+/* using requestAnimationFrame
+	const update = () => {
+		const percent = (Date.now() - startTime) / duration;
+		if (percent >= 1) {
+			callback(1);
+			if (done) done();
+		} else {
+			callback(percent);
+			requestAnimationFrame(update);
+		}
+	};
+	requestAnimationFrame(update);
+*/
+/* using setTimeout */
+	const update = () => {
+		const percent = (Date.now() - startTime) / duration;
+		if (percent >= 1) {
+			callback(1);
+			if (done) done();
+		} else {
+			callback(percent);
+			setTimeout(update, 0);
+		}
+	};
+	setTimeout(update, 0);
+/**/
+}
 
 export {
 	arrayRemove,
@@ -447,4 +500,5 @@ export {
 	getIDs,
 	preload,
 	FileSetLoader,
+	animate,
 };
