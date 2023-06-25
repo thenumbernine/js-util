@@ -122,7 +122,7 @@ args:
 	onexec(url, dest) : (optional) per-file on-execute callback
 */
 function executeLuaVMFileSet(args) {
-	const files = arrayClone.apply(assertExists(args, 'files'));
+	const files = arrayClone(assertExists(args, 'files'));
 	files.splice(0, 0, '/js/lua.vm.js');
 	if (args.packages) {
 		args.packages.forEach(packageName => {
