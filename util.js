@@ -206,13 +206,21 @@ function hidden(o) {
 	return o.style.display == 'none';
 }
 
+function toggleHidden(o) {
+	if (hidden(o)) {
+		show(o);
+	} else {
+		hide(o);
+	}
+}
+
 // TODO listeners ...
 // should I just intersperse them within args, like jquery does?
 // should I give them a reserved table in args?
 // should I give them a separate argument?
 function DOM(tag, args, listeners) {
 	const dom = document.createElement(tag);
-	const reservedFields = {css:1, attrs:1, appendTo:1, prependTo:1, text:1, click:1, change:1};
+	const reservedFields = {css:1, attrs:1, appendTo:1, prependTo:1, text:1, click:1, change:1, class:1};
 	const reserved = {};
 	if (args) {
 		for (let k in args) {
@@ -250,6 +258,11 @@ function DOM(tag, args, listeners) {
 	}
 	if (reserved.change !== undefined) {
 		dom.addEventListener('change', reserved.change);
+	}
+	if (reserved.class !== undefined) {
+		reserved.class.split(' ').forEach(cl => {
+			dom.classList.add(cl);
+		});
 	}
 	return dom;
 }
@@ -390,7 +403,7 @@ class FileSetLoader {
 			/* as fetch ... */	
 			fetch(file.url)
 			.then(response => {
-				if (!response.ok) throw 'not ok';
+				if (!response.ok) return Promise.reject('not ok');
 				response.text()
 				.then(responseText => {
 					loadeds[i] = totals[i];
@@ -436,7 +449,7 @@ class FileSetLoader {
 /*
 args:
 	duration (in ms)
-	callback
+	callback (TODO how bout 'update' instead?)
 	done
 */
 function animate(args) {
@@ -458,7 +471,9 @@ function animate(args) {
 	requestAnimationFrame(update);
 */
 /* using setTimeout */
+	let stopped;
 	const update = () => {
+		if (stopped) return;
 		const percent = (Date.now() - startTime) / duration;
 		if (percent >= 1) {
 			callback(1);
@@ -470,6 +485,11 @@ function animate(args) {
 	};
 	setTimeout(update, 0);
 /**/
+	return {
+		stop : () => {
+			stopped = true;
+		},
+	};
 }
 
 export {
@@ -497,6 +517,7 @@ export {
 	hide,
 	show,
 	hidden,
+	toggleHidden,
 	getIDs,
 	preload,
 	FileSetLoader,

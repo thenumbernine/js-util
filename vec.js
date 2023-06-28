@@ -1,10 +1,12 @@
+import {assert} from './util.js';
+
 function makevec(n) {
-	let allFields = ['x', 'y', 'z', 'w'];
+	const allFields = ['x', 'y', 'z', 'w'];
 	assert(n <= allFields.length);
-	let fields = allFields.splice(0,n);
-	let repeat = function(str, repl, sep) {
+	const fields = allFields.splice(0,n);
+	const repeat = function(str, repl, sep) {
 		if (sep == undefined) sep = ' ';
-		let res = [];
+		const res = [];
 		
 		let repeatLength;
 		for (let k in repl) {
@@ -83,10 +85,9 @@ vec`+n+`;
 	return eval(s);
 }
 
-let vec2 = makevec(2);
-let vec3 = makevec(3);
-let vec4 = makevec(4);
-
+const vec2 = makevec(2);
+const vec3 = makevec(3);
+const vec4 = makevec(4);
 
 class box2 {
 	constructor(...args) {
@@ -125,7 +126,6 @@ class box2 {
 			throw "Don't know how to build this box2";
 		}
 	}
-	vec2 = vec2;	//too bad javascript is retarded, or I wouldn't have to store this here
 	toString() { return this.min + ':' + this.max; }
 	size() { return this.max.sub(this.min); }
 	contains(v) {
@@ -157,6 +157,7 @@ class box2 {
 		}
 	}
 }
+box2.prototype.vec2 = vec2;	//too bad javascript is retarded, or I wouldn't have to store this here
 
 class box3 {
 	constructor(...args) {
@@ -195,7 +196,6 @@ class box3 {
 			throw "Don't know how to build this box3";
 		}
 	}
-	vec3 = vec3,
 	toString() { return this.min + ':' + this.max; }
 	size() { return this.max.sub(this.min); }
 	contains(v) {
@@ -231,5 +231,6 @@ class box3 {
 		}
 	}
 }
+box3.prototype.vec3 = vec3;
 
-export { vec2, vec3, vec4, box2, box3 };
+export {vec2, vec3, vec4, box2, box3};

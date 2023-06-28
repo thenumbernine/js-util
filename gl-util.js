@@ -435,4 +435,4 @@ GLUtil.prototype.toHalf = (function(){
 	}
 })();
 
-export { GLUtil };
+export {GLUtil, quatXAxis, quatYAxis, quatZAxis};
