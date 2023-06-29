@@ -85,7 +85,7 @@ local function addDir(base, src, dst, testdir)
 end
 ?>
 
-let luaVmPackageInfos = {
+const luaVmPackageInfos = {
 	complex : {
 <? addDir(req.doc_root, 'lua/complex', 'complex') ?>
 	},
@@ -126,7 +126,7 @@ function executeLuaVMFileSet(args) {
 	files.splice(0, 0, '/js/lua.vm.js');
 	if (args.packages) {
 		args.packages.forEach(packageName => {
-			let packageContent = luaVmPackageInfos[packageName];
+			const packageContent = luaVmPackageInfos[packageName];
 			if (packageContent) {
 				if (packageContent.files) files = files.concat(packageContent.files);
 				if (packageContent.tests) files = files.concat(packageContent.tests);
@@ -218,7 +218,7 @@ class EmbeddedLuaInterpreter {
 		if (args.packageTests) {
 			if (!args.tests) args.tests = [];
 			args.packageTests.forEach(packageName => {
-				let packageContent = luaVmPackageInfos[packageName];
+				const packageContent = luaVmPackageInfos[packageName];
 				if (packageContent) {
 					if (packageContent.tests) args.tests = args.tests.concat(packageContent.tests);
 				}
@@ -228,7 +228,7 @@ class EmbeddedLuaInterpreter {
 		if (args.packages) {
 			if (!args.files) args.files = [];
 			args.packages.forEach(packageName => {
-				let packageContent = luaVmPackageInfos[packageName];
+				const packageContent = luaVmPackageInfos[packageName];
 				if (packageContent) {
 					if (packageContent.files) args.files = args.files.concat(packageContent.files);
 				}
@@ -463,7 +463,25 @@ package.path = package.path .. ';./?/?.lua'
 	clearOutput() {
 		this.output.innerHTML = this.outputBuffer = '';
 	}
+
+	/*
+	args:
+		callback = what to execute,
+		output = where to redirect output,
+		error = where to redirect errors
+	*/
+	capture(args) {
+		//now cycle through coordinates, evaluate data points, and get the data back into JS
+		//push module output and redirect to a buffer of my own
+		const oldPrint = this.print;
+		const oldError = this.printErr;
+		if (args.output !== undefined) this.print = args.output;
+		if (args.error !== undefined) this.printErr = args.error;
+		args.callback(this);
+		this.print = oldPrint;
+		this.printErr = oldError;
+	}
 }
 EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
 
-export {EmbeddedLuaInterpreter};
+export {EmbeddedLuaInterpreter, luaVmPackageInfos};
