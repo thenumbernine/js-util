@@ -283,7 +283,7 @@ class EmbeddedLuaInterpreter {
 		this.history = [];
 		//load history from cookies
 		/*for (let i=0;;++i) {
-			let line = getCookie('lua-history-'+i);
+			let line = localStorage.getItem('lua-history-'+i);
 			if (line === null) break;
 			this.history.push(line);
 		}*/
@@ -333,7 +333,7 @@ class EmbeddedLuaInterpreter {
 		}
 	}
 	processInput() {
-		let cmd = this.input.val();
+		let cmd = this.input.value;
 		this.history.push(cmd);
 		while (this.history.length > this.HISTORY_MAX) this.history.shift();
 		this.historyIndex = this.history.length;
@@ -341,13 +341,13 @@ class EmbeddedLuaInterpreter {
 		//store history in cookies...
 		let i=0;
 		while (i<this.history.length) {
-			setCookie('lua-history-'+i, this.history[i]);
+			localStorage.setItem('lua-history-'+i, this.history[i]);
 			++i;
 		}
-		clearCookie('lua-history-'+i);
+		localStorage.removeItem('lua-history-'+i);
 
 		this.executeAndPrint(cmd);
-		this.input.val('');
+		this.input.value = '';
 	}
 	doneLoadingFilesystem() {
 		let thiz = this;
@@ -378,13 +378,13 @@ Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not
 				thiz.historyIndex--;
 				if (thiz.historyIndex < 0) thiz.historyIndex = 0;
 				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
-					thiz.input.val(thiz.history[thiz.historyIndex]);
+					thiz.input.value = thiz.history[thiz.historyIndex];
 				}
 			} else if (e.keyCode == 40) {	//down
 				thiz.historyIndex++;
 				if (thiz.historyIndex > thiz.history.length) thiz.historyIndex = thiz.history.length;
 				if (thiz.historyIndex >= 0 && thiz.historyIndex < thiz.history.length) {
-					thiz.input.val(thiz.history[thiz.historyIndex]);
+					thiz.input.value = thiz.history[thiz.historyIndex];
 				}
 			}
 		});
