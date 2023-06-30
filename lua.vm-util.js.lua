@@ -204,7 +204,6 @@ class EmbeddedLuaInterpreter {
 			thiz.LuaModule = await require('/js/lua.vm.js');
 			window.LuaModule = undefined;
 //console.log('LuaModule', thiz.LuaModule);			
-			thiz.lua = thiz.LuaModule.Lua;
 
 			//granted it doesn't make much sense to include tests from one package without including the package itself ...
 			if (args.packageTests) {
@@ -408,7 +407,12 @@ package.path = package.path .. ';./?/?.lua'
 		return div;
 	}
 	execute(s) {
+		/* seems lua syntax error handling is messed up in lua.vm.js ...
 		this.LuaModule.Lua.execute(s);
+		*/
+		/* until then */
+		this.LuaModule.Lua.execute('assert(load[=====['+s+']=====])()');
+		/* */
 	}
 	executeAndPrint(s) {
 		this.print('> '+s);
