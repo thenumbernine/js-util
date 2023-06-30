@@ -492,6 +492,16 @@ function animate(args) {
 	};
 }
 
+// See: https://lea.verou.me/2020/07/import-non-esm-libraries-in-es-modules,-with-client-side-vanilla-js/
+async function require(path) {
+	let _module = window.module;
+	window.module = {};
+	await import(path);
+	let exports = module.exports;
+	window.module = _module;
+	return exports;
+}
+
 export {
 	arrayRemove,
 	arrayMax,
@@ -522,4 +532,5 @@ export {
 	preload,
 	FileSetLoader,
 	animate,
+	require,
 };

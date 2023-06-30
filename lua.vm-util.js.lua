@@ -1,4 +1,4 @@
-import {DOM, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
+import {DOM, assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts, require} from './util.js';
 /*
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
@@ -122,8 +122,8 @@ args:
 	onexec(url, dest) : (optional) per-file on-execute callback
 */
 function executeLuaVMFileSet(args) {
+	const FS = assertExists(args, 'FS');
 	const files = arrayClone(assertExists(args, 'files'));
-	files.splice(0, 0, '/js/lua.vm.js');
 	if (args.packages) {
 		args.packages.forEach(packageName => {
 			const packageContent = luaVmPackageInfos[packageName];
@@ -137,8 +137,6 @@ function executeLuaVMFileSet(args) {
 		//TODO don't store them here
 		//just pull from their remote location / github repo
 		files : files,
-		//wait til all are loaded, then insert them in order
-		//this way we run the lua.vm.js before writing to the filesystems (since the filesystem is created by lua.vm.js)
 		onload : args.onload,
 		done : function() {
 			let thiz = this;
@@ -152,25 +150,11 @@ function executeLuaVMFileSet(args) {
 						args.onexec(file.url, file.dest);
 					}
 
-					//first load the vm...
-					if (file.dest.substring(file.dest.length-3) == '.js') {
-console.log('executing javascript file',file.dest);
-
-						//this will run in-place.  I always thought it sucked that Lua loadstring() didn't run in place, now I see why it's a good idea.  consistency of scope.
-						/*
-						eval(result);
-						*/
-						let s = DOM('script', {
-							type : 'text/javascript',
-							innerHTML : result,
-						});
-						document.head.appendChild(s);
-
-					} else if (
+					if (
 						file.dest.substring(file.dest.length-4) == '.lua'
 						|| file.dest.substring(file.dest.length-8) == '.symmath'
 					) {
-console.log('loading data file',file.dest);
+//console.log('loading data file',file.dest);
 						let parts = pathToParts(file.dest);
 						if (parts.dir != '.') {
 							try { 	//how do you detect if a path is already created?
@@ -179,7 +163,11 @@ console.log('loading data file',file.dest);
 								console.log('failed to create path', parts.dir, e);
 							}
 						}
-						FS.createDataFile(parts.dir, parts.file, result, true, false);
+						try {
+							FS.createDataFile(parts.dir, parts.file, result, true, false);
+						} catch (e) {
+							console.log("failed to create file", file.dest, e);
+						}
 					} else {
 						throw "got a non-lua file "+file.dest;
 					}
@@ -207,130 +195,126 @@ args are passed on to executeLuaVMFileSet plus ...
 class EmbeddedLuaInterpreter {
 	constructor(args) {
 		const thiz = this;
-
-		// assumes lua.vm.js is loaded
-		// daurnimator:
-		//this.lua = new Lua.State();
-		// that other one I lost track of where from:
-		this.lua = Lua;
-
-		//granted it doesn't make much sense to include tests from one package without including the package itself ...
-		if (args.packageTests) {
-			if (!args.tests) args.tests = [];
-			args.packageTests.forEach(packageName => {
-				const packageContent = luaVmPackageInfos[packageName];
-				if (packageContent) {
-					if (packageContent.tests) args.tests = args.tests.concat(packageContent.tests);
-				}
-			});
-			args.packageTests = undefined;
-		}
-		if (args.packages) {
-			if (!args.files) args.files = [];
-			args.packages.forEach(packageName => {
-				const packageContent = luaVmPackageInfos[packageName];
-				if (packageContent) {
-					if (packageContent.files) args.files = args.files.concat(packageContent.files);
-				}
-			});
-			args.packages = undefined;
-		}
-
-		this.tests = args.tests;
-		if (args.tests !== undefined) {
-			args.files = args.files.concat(args.tests);
-		}
-
-//setup Module global for lua.vm.js
-//for some reason, on load, lua.vm.js's Module object is no longer reading from the predefined window.Module ...
-//so I'm going to overwrite this after load
-// something tells me it won't have an affect on the Module references in lua.vm.js ...
-		window.Module = {
-			print : function(s) { thiz.print(s); },
-			printErr : function(s) { thiz.printErr(s); },
-			stdin : function() {}
-		};
-
-		this.done = args.done;	//store for later
-
-		this.parentContainer = document.getElementById(args.id);
-
-		this.container = DOM('div');
-		if (this.parentContainer) {
-			this.parentContainer.appendChild(this.container);
-		}
-		hide(this.container);
-
-		DOM('div', {
-			innerHTML : 'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>',
-			appendTo : this.container,
-		});
-
-		this.outputBuffer = '';
-		this.output = DOM('div', {
-			text : 'Loading...',
-			css : {
-				width : '80em',
-				height : '24em',
-				//border : '1px solid black',
-				border : '0px',
-				'font-family' : 'Courier',
-				'overflow-y' : 'scroll'
-			},
-			appendTo : this.container,
-		});
-
-		this.history = [];
-		//load history from cookies
-		/*for (let i=0;;++i) {
-			let line = localStorage.getItem('lua-history-'+i);
-			if (line === null) break;
-			this.history.push(line);
-		}*/
-		this.historyIndex = this.history.length;
-		this.inputGo = DOM('button', {
-			text : 'GO!',
-			appendTo : this.container,
-		});
-
-		this.input = DOM('input', {
-			type : 'email',
-			css : {
-				width : '80em',
-				border : '1px solid black',
-				'font-family' : 'Courier'
-			},
-			appendTo : this.container,
-		});
-		this.input.setAttribute('autocapitalize', 'off');
-		this.input.setAttribute('autocomplete', 'off');
-		this.input.setAttribute('autocorrect', 'off');
-		this.input.setAttribute('spellcheck', 'off');
-		DOM('br', {appendTo:this.container});
-
-		this.launchButton = DOM('button', {text:'Launch'});
-		if (this.parentContainer) {
-			this.parentContainer.appendChild(this.launchButton);
-		}
-		this.launchButton.addEventListener('click', e => {
-			hide(thiz.launchButton);
-			show(thiz.container);
-
-			args.onexec = (url, dest) => {
-				//Module.print('loading '+dest+' ...');
+		(async () => {
+			window.LuaModule = {
+				print : s => { thiz.print(s); },
+				printErr : s => { thiz.printErr(s); },
+				stdin : () => {},
 			};
-			args.done = () => {
-				//Module.print('initializing...');
-				setTimeout(() => {
-					thiz.doneLoadingFilesystem();
-				}, 1);
-			};
-			executeLuaVMFileSet(args);
-		});
+			thiz.LuaModule = await require('/js/lua.vm.js');
+			window.LuaModule = undefined;
+//console.log('LuaModule', thiz.LuaModule);			
+			thiz.lua = thiz.LuaModule.Lua;
 
-		if (args.autoLaunch) {
-			this.launchButton.dispatchEvent(new Event('click'));
-		}
+			//granted it doesn't make much sense to include tests from one package without including the package itself ...
+			if (args.packageTests) {
+				if (!args.tests) args.tests = [];
+				args.packageTests.forEach(packageName => {
+					const packageContent = luaVmPackageInfos[packageName];
+					if (packageContent) {
+						if (packageContent.tests) args.tests = args.tests.concat(packageContent.tests);
+					}
+				});
+				args.packageTests = undefined;
+			}
+			if (args.packages) {
+				if (!args.files) args.files = [];
+				args.packages.forEach(packageName => {
+					const packageContent = luaVmPackageInfos[packageName];
+					if (packageContent) {
+						if (packageContent.files) args.files = args.files.concat(packageContent.files);
+					}
+				});
+				args.packages = undefined;
+			}
+
+			thiz.tests = args.tests;
+			if (args.tests !== undefined) {
+				args.files = args.files.concat(args.tests);
+			}
+
+			thiz.done = args.done;	//store for later
+
+			thiz.parentContainer = document.getElementById(args.id);
+
+			thiz.container = DOM('div');
+			if (thiz.parentContainer) {
+				thiz.parentContainer.appendChild(thiz.container);
+			}
+			hide(thiz.container);
+
+			DOM('div', {
+				innerHTML : 'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>',
+				appendTo : thiz.container,
+			});
+
+			thiz.outputBuffer = '';
+			thiz.output = DOM('div', {
+				text : 'Loading...',
+				css : {
+					width : '80em',
+					height : '24em',
+					//border : '1px solid black',
+					border : '0px',
+					'font-family' : 'Courier',
+					'overflow-y' : 'scroll'
+				},
+				appendTo : thiz.container,
+			});
+
+			thiz.history = [];
+			//load history from cookies
+			/*for (let i=0;;++i) {
+				let line = localStorage.getItem('lua-history-'+i);
+				if (line === null) break;
+				thiz.history.push(line);
+			}*/
+			thiz.historyIndex = thiz.history.length;
+			thiz.inputGo = DOM('button', {
+				text : 'GO!',
+				appendTo : thiz.container,
+			});
+
+			thiz.input = DOM('input', {
+				type : 'email',
+				css : {
+					width : '80em',
+					border : '1px solid black',
+					'font-family' : 'Courier'
+				},
+				appendTo : thiz.container,
+			});
+			thiz.input.setAttribute('autocapitalize', 'off');
+			thiz.input.setAttribute('autocomplete', 'off');
+			thiz.input.setAttribute('autocorrect', 'off');
+			thiz.input.setAttribute('spellcheck', 'off');
+			DOM('br', {appendTo:thiz.container});
+
+			thiz.launchButton = DOM('button', {text:'Launch'});
+			if (thiz.parentContainer) {
+				thiz.parentContainer.appendChild(thiz.launchButton);
+			}
+			thiz.launchButton.addEventListener('click', e => {
+				hide(thiz.launchButton);
+				show(thiz.container);
+
+				args.onexec = (url, dest) => {
+					//Module.print('loading '+dest+' ...');
+				};
+				args.done = () => {
+					//Module.print('initializing...');
+					setTimeout(() => {
+						thiz.doneLoadingFilesystem();
+					}, 1);
+				};
+				args.FS = thiz.LuaModule.FS;
+				executeLuaVMFileSet(args);
+			});
+
+			if (args.autoLaunch) {
+				thiz.launchButton.dispatchEvent(new Event('click'));
+			}
+		})();
 	}
 	processInput() {
 		let cmd = this.input.value;
@@ -351,17 +335,6 @@ class EmbeddedLuaInterpreter {
 	}
 	doneLoadingFilesystem() {
 		let thiz = this;
-
-/*
-before I could provide window.Module = { .. default functions ... }
-and lua.vm.js would handle them correctly.
-But now things aren't working so well.
-Lua.execute invokes Module.ccall, but the Module that Lua sees is my Module, not the lua.vm.js Module.  It used to see the lua.vm.js Module.  wtf happened?  too bad Javascript's scope rules suck.
-*//*
-		Module.print = function(s) { thiz.print(s); };
-		Module.printErr = function(s) { thiz.printErr(s); };
-		Module.stdin = function() {};
-*/
 
 		//hook up input
 		this.inputGo.addEventListener('click', e => {
@@ -435,10 +408,10 @@ package.path = package.path .. ';./?/?.lua'
 		return div;
 	}
 	execute(s) {
-		this.lua.execute(s);
+		this.LuaModule.Lua.execute(s);
 	}
 	executeAndPrint(s) {
-		Module.print('> '+s);
+		this.print('> '+s);
 		this.execute(s);
 	}
 	print(s) {
@@ -471,6 +444,8 @@ package.path = package.path .. ';./?/?.lua'
 		error = where to redirect errors
 	*/
 	capture(args) {
+		assert(!this.captured, "already capturing!")
+		this.captured = true;
 		//now cycle through coordinates, evaluate data points, and get the data back into JS
 		//push module output and redirect to a buffer of my own
 		const oldPrint = this.print;
@@ -480,6 +455,7 @@ package.path = package.path .. ';./?/?.lua'
 		args.callback(this);
 		this.print = oldPrint;
 		this.printErr = oldError;
+		this.captured = false;
 	}
 }
 EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
