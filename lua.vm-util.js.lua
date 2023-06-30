@@ -375,7 +375,7 @@ class EmbeddedLuaInterpreter {
 package.path = package.path .. ';./?/?.lua'
 `);
 
-		this.print('...Done<br>');
+		this.print('...Done');
 
 		if (this.done) this.done();
 	}
