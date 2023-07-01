@@ -13,15 +13,17 @@ class Texture2D extends glutil.Texture {
 		if (args.url) {
 			let image = new Image();
 			let thiz = this;
-			image.onload = function() {
+			image.addEventListener('load', e => {
 				args.data = image;
 				gl.bindTexture(thiz.target, thiz.obj);
 				thiz.setImage(args);
 				gl.bindTexture(thiz.target, null);
 				
 				if (args.onload) args.onload.call(thiz, args.url, image);
-			};
-			image.onerror = args.onerror;
+			});
+			image.addEventListener('error', e => { 
+				if (args.onerror) args.onerror.call(thiz, e);
+			});
 			image.src = args.url;
 		} else {
 			if (args.data === undefined) args.data = null;
