@@ -16,7 +16,7 @@ class TextureCube extends glutil.Texture {
 			let thiz = this;
 			args.urls.forEach((url,side) => {
 				const image = new Image();
-				image.onload = () => {
+				image.addEventListener('load', e => {
 //console.log('loaded', url);					
 					args.data = image;
 					args.target = thiz.getTargetForSide(side);
@@ -40,7 +40,7 @@ class TextureCube extends glutil.Texture {
 						}
 						if (args.done) args.done.call(thiz);
 					}
-				};
+				});
 				image.src = url;
 //console.log('loading',url);			
 			});
