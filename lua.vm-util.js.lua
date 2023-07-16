@@ -123,7 +123,7 @@ args:
 */
 function executeLuaVMFileSet(args) {
 	const FS = assertExists(args, 'FS');
-	const files = arrayClone(assertExists(args, 'files'));
+	let files = arrayClone(assertExists(args, 'files'));
 	if (args.packages) {
 		args.packages.forEach(packageName => {
 			const packageContent = luaVmPackageInfos[packageName];
@@ -464,4 +464,8 @@ package.path = package.path .. ';./?/?.lua'
 }
 EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
 
-export {EmbeddedLuaInterpreter, luaVmPackageInfos};
+export {
+	EmbeddedLuaInterpreter,
+	luaVmPackageInfos,
+	executeLuaVMFileSet,
+};
