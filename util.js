@@ -116,7 +116,7 @@ function asyncfor(args) {
 	}
 	let done = args.done;
 	let timeout = args.timeout !== undefined ? args.timeout : 0;
-	if (args.map !== undefined) {	
+	if (args.map !== undefined) {
 		Object.entries(args.map).forEach(entry => {
 			const [k,v] = entry;
 			buffer.push([k,v]);
@@ -270,7 +270,7 @@ function DOM(tag, args, listeners) {
 function preload(checklist, done, update, error) {
 	checklist = arrayClone(checklist);
 	const len = checklist.length;
-//console.log('got checklist', checklist, 'len', len);	
+//console.log('got checklist', checklist, 'len', len);
 	checklist.forEach(src => {
 //console.log('loading',src);
 		const img = DOM('img', {
@@ -284,7 +284,7 @@ function preload(checklist, done, update, error) {
 				//this is calling done twice ?
 				if (update) {
 					update(
-						1 - checklist.length / len, 
+						1 - checklist.length / len,
 						src,
 						img
 					);
@@ -328,7 +328,7 @@ function getIDs() {
 }
 
 //used especially with the lua.vm-utils.js
-//but I could also potentially form it into the loader that universe uses ... 
+//but I could also potentially form it into the loader that universe uses ...
 // it'd just take changing the loading div stuff and change the xmlhttprequest data type
 class FileSetLoader {
 	/*
@@ -336,7 +336,7 @@ class FileSetLoader {
 		files : array of string
 		onload(filename) : (optional) once one file is done
 		done : (optional) once they're all done
-	
+
 	produces:
 		this.files : a copy of the args.files
 			either strings or {url, dest} for remote/local locations
@@ -347,7 +347,7 @@ class FileSetLoader {
 	*/
 	constructor(args) {
 		let thiz = this;
-		
+
 		this.files = arrayClone(args.files);
 		for (let i = 0; i < this.files.length; ++i) {
 			let file = this.files[i];
@@ -355,7 +355,7 @@ class FileSetLoader {
 				this.files[i] = {url:file, dest:file};
 			}
 		}
-		
+
 		this.div = DOM('div', {
 			css : {
 				margin : 'auto',
@@ -400,7 +400,7 @@ class FileSetLoader {
 			if (args.done) args.done.call(thiz);
 		};
 		this.files.forEach((file, i) => {
-			/* as fetch ... */	
+			/* as fetch ... */
 			fetch(file.url)
 			.then(response => {
 				if (!response.ok) return Promise.reject('not ok');
@@ -418,7 +418,7 @@ class FileSetLoader {
 			}).catch(e => {
 				console.log(e)
 			});
-			/**/	
+			/**/
 			/* as XMLHttpRequest ...
 			let xhr = new XMLHttpRequest();
 			xhr.open('GET', file.url, true);
@@ -506,9 +506,27 @@ async function require(path) {
 // too bad ES6 breaks static member access
 // I guess I still have a use for this, even using ES6 classes:
 function makeClass(x) {
-	let cl = class extends x.super {}
+	let cl = x.super
+		? class extends x.super {
+			// looks like if you add 'constructor' as a field to 'cl.prototype' after the 'class' declaration then it just doesn't work, so...
+			// more glue code for shitty ES6 syntax standards
+			constructor(...args) {
+				if (x.constructor) {
+					x.constructor(...args);
+				}
+			}
+		}
+		: class {
+			constructor(...args) {
+				if (x.constructor) {
+					x.constructor(...args);
+				}
+			}
+		};
 	for (let k in x) {
-		if (k != 'super') {
+		if (k != 'super'
+		&& k != 'constructor'
+		) {
 			cl.prototype[k] = x[k];
 		}
 	}
