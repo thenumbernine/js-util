@@ -511,6 +511,7 @@ function makeClass(x) {
 			// looks like if you add 'constructor' as a field to 'cl.prototype' after the 'class' declaration then it just doesn't work, so...
 			// more glue code for shitty ES6 syntax standards
 			constructor(...args) {
+				super(...args);
 				if (x.constructor) {
 					x.constructor(...args);
 				}
