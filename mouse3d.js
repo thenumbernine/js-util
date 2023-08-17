@@ -74,8 +74,8 @@ class Mouse3D {
 			let zoomChange;
 			if (e.wheelDelta !== undefined) {
 				zoomChange = e.wheelDelta;
-			} else if (e.originalEvent && e.originalEvent.wheelDelta !== undefined) {
-				zoomChange = e.originalEvent.wheelDelta;
+			} else if (e.wheelDelta !== undefined) {
+				zoomChange = e.wheelDelta;
 			}
 			if (zoomChange !== undefined && thiz.zoom) {
 				thiz.zoom(zoomChange, 'wheel');
@@ -88,7 +88,7 @@ class Mouse3D {
 		//http://www.javascriptkit.com/javatutors/onmousewheel.shtml
 		this.pressObj.addEventListener('DOMMouseScroll', e => {
 			if (thiz.preventDefault) e.preventDefault();
-			let zoomChange = e.originalEvent.detail;
+			let zoomChange = e.detail;
 			if (thiz.zoom) thiz.zoom(zoomChange * -120, 'wheel');
 		});
 		
@@ -110,12 +110,12 @@ class Mouse3D {
 			unbindMouse();
 			thiz.isTouchDown = false;
 			if (thiz.preventDefault) e.preventDefault();
-			thiz.doMouseDown(e.originalEvent.targetTouches[0]);
+			thiz.doMouseDown(e.targetTouches[0]);
 			if (thiz.touchclickstart) thiz.touchclickstart();
 		});
 		this.pressObj.addEventListener('touchmove', e => {
 			if (thiz.preventDefault) e.preventDefault();
-			if (e.originalEvent.touches.length >= 2) {
+			if (e.touches.length >= 2) {
 				//do a pinch zoom
 				if (!thiz.isTouchDown) {
 					//record current events
@@ -141,12 +141,12 @@ class Mouse3D {
 				//thiz.isTouchDown = false;
 			}
 			if (!thiz.isTouchDown) {	//only rotate if we haven't begun zooming
-				thiz.doMouseMove(e.originalEvent.targetTouches[0]);
+				thiz.doMouseMove(e.targetTouches[0]);
 			}
 		});
 		const touchEndCancel = e => {
 			if (thiz.preventDefault) e.preventDefault();
-			let touch = e.originalEvent.changedTouches[0];
+			let touch = e.changedTouches[0];
 			let [upPosX, upPosY] = thiz.getEventXY(touch);
 			thiz.deltaX = upPosX - thiz.downX;
 			thiz.deltaY = upPosY - thiz.downY;
@@ -208,10 +208,10 @@ class Mouse3D {
 		}
 	}
 	getTouchPts(e, pts) {
-		let [pt0x, pt0y] = this.getEventXY(e.originalEvent.changedTouches[0]);
+		let [pt0x, pt0y] = this.getEventXY(e.changedTouches[0]);
 		pts[0][0] = pt0x;
 		pts[0][1] = pt0y;
-		let [pt1x, pt1y] = this.getEventXY(e.originalEvent.changedTouches[1]);
+		let [pt1x, pt1y] = this.getEventXY(e.changedTouches[1]);
 		pts[1][0] = pt1x;
 		pts[1][1] = pt1y;
 	}
