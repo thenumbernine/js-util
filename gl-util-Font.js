@@ -1,7 +1,8 @@
-import { mat4 } from '/js/gl-matrix-3.4.1/index.js';
-import { makeTexture2D } from './gl-util.Texture2D.js';
-import { makeProgram } from './gl-util-Program.js';
-import { makeUnitQuad } from './gl-util-UnitQuad.js';
+import {DOM} from '/js/util.js';
+import {mat4} from '/js/gl-matrix-3.4.1/index.js';
+import {makeTexture2D} from './gl-util-Texture2D.js';
+import {makeProgram} from './gl-util-Program.js';
+import {makeUnitQuad} from './gl-util-UnitQuad.js';
 function makeFont(glutil) {
 glutil.import('Texture2D', makeTexture2D);
 glutil.import('Program', makeProgram);
@@ -9,29 +10,28 @@ glutil.import('UnitQuad', makeUnitQuad);
 const gl = glutil.context;
 class Font {
 	constructor(args) {
-		this.context = args.context;
-		let c = $('<canvas>').get(0);
+		let c = DOM('canvas');
 		c.width = 256;
 		c.height = 256;
 		let c2d = c.getContext('2d');
-		c2d.font = fontSize+'px Monospace';
+		c2d.font = this.fontSize+'px Monospace';
 		let yOffset = -.25;
-		for (let i = 0, y = 0; y < lettersPerSize; y++) {
-			for (let x = 0; x < lettersPerSize; x++, i++) {
+		for (let i = 0, y = 0; y < this.lettersPerSize; y++) {
+			for (let x = 0; x < this.lettersPerSize; x++, i++) {
 				let ch = String.fromCharCode(i);
-				c2d.fillRect(ch, x*fontSize, (y+1+yOffset)*fontSize, fontSize, fontSize);
+				c2d.fillRect(ch, x*this.fontSize, (y+1+yOffset)*this.fontSize, this.fontSize, this.fontSize);
 			}
 		}
 
 		this.widths = [];
-		for (let i = 0,y = 0; y < lettersPerSize; y++) {
-			for (let x = 0; x < lettersPerSize; x++, i++) {
-				let firstx = charSubtexSize;
+		for (let i = 0,y = 0; y < this.lettersPerSize; y++) {
+			for (let x = 0; x < this.lettersPerSize; x++, i++) {
+				let firstx = this.charSubtexSize;
 				let lastx = -1;
-				let data = c2d.getImageData(x, y, charSubtexSize, charSubtexSize);
-				for (let v = 0; v < charSubtexSize; v++) {
-					for (let u = 0; u < charSubtexSize; u++) {
-						let pixel = data[4*(u+charSubtexSize*v)];
+				let data = c2d.getImageData(x, y, this.charSubtexSize, this.charSubtexSize);
+				for (let v = 0; v < this.charSubtexSize; v++) {
+					for (let u = 0; u < this.charSubtexSize; u++) {
+						let pixel = data[4*(u+this.charSubtexSize*v)];
 						if (pixel != 0) {
 							if (u < firstx) firstx = u;
 							if (u > lastx) lastx = u;
@@ -41,54 +41,55 @@ class Font {
 				firstx--;
 				lastx += 2;
 				if (firstx < 0) firstx = 0;
-				if (lastx > charSubtexSize) lastx = charSubtexSize;
+				if (lastx > this.charSubtexSize) lastx = this.charSubtexSize;
 				if (lastx < firstx) {
 					firstx = 0;
-					lastx = charSubtexSize / 2;
+					lastx = this.charSubtexSize / 2;
 				}
 				this.widths[i] = {
-					start:firstx/charSubtexSize,
-					finish:lastx/charSubtexSize
+					start:firstx/this.charSubtexSize,
+					finish:lastx/this.charSubtexSize
 				};
-				console.log('i '+i+' char '+String.fromCharCode(i)+' start '+firstx+' finish '+lastx);
+//console.log('i '+i+' char '+String.fromCharCode(i)+' start '+firstx+' finish '+lastx);
 			}
 		}
 
 		this.tex = new glutil.Texture2D({
 			flipY : true,
 			data : c,
-			minFilter : this.context.NEAREST,
-			magFilter : this.context.LINEAR
+			minFilter : gl.NEAREST,
+			magFilter : gl.LINEAR
 		});
 	
 		this.shader = new glutil.Program({
 			vertexCode : `
-attribute vec2 vertex;
-varying vec2 vertexv;
+in vec2 vertex;
+out vec2 vertexv;
 uniform vec4 ortho;
 uniform vec2 offset;
 uniform vec2 scale;
 void main() {
-vertexv = vertex;
-vec2 vtx = vertex;
-vtx += offset;
-vtx *= scale;
-vtx -= .5;
-vtx -= ortho.xz;
-vtx /= ortho.yw - ortho.xz;
-vtx *= 2.;
-vtx -= 1.;
-gl_Position = vec4(vtx, 0., 1.);
+	vertexv = vertex;
+	vec2 vtx = vertex;
+	vtx += offset;
+	vtx *= scale;
+	vtx -= .5;
+	vtx -= ortho.xz;
+	vtx /= ortho.yw - ortho.xz;
+	vtx *= 2.;
+	vtx -= 1.;
+	gl_Position = vec4(vtx, 0., 1.);
 }
 `,
 			fragmentCode : `
 precision mediump float;
-varying vec2 vertexv;
+in vec2 vertexv;
+out vec4 fragColor;
 uniform vec2 texMinLoc;
 uniform vec2 texMaxLoc;
 uniform sampler2D tex;
 void main() {
-gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);
+	fragColor = texture(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);
 }
 `,
 			uniforms : {
@@ -96,19 +97,19 @@ gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);
 			}
 		});
 
-	},
-	ortho : function(xmin, xmax, ymin, ymax) {
-		this.context.useProgram(this.shader.obj);
-		this.context.uniform4f(this.shader.uniforms.ortho.loc, xmin, xmax, ymin, ymax);
-		this.context.useProgram(null);
-	},
-	draw : function(posX, posY, fontSizeX, fontSizeY, text, sizeX, sizeY, colorR, colorG, colorB, colorA, dontRender, singleLine) {
+	}
+	ortho(xmin, xmax, ymin, ymax) {
+		gl.useProgram(this.shader.obj);
+		gl.uniform4f(this.shader.uniforms.ortho.loc, xmin, xmax, ymin, ymax);
+		gl.useProgram(null);
+	}
+	draw(posX, posY, fontSizeX, fontSizeY, text, sizeX, sizeY, colorR, colorG, colorB, colorA, dontRender, singleLine) {
 		let cursorX = 0;
 		let cursorY = 0;
 		let maxx = 0;
 
 		if (!dontRender) {
-			this.context.bindTexture(this.context.TEXTURE_2D, this.tex.obj);
+			gl.bindTexture(gl.TEXTURE_2D, this.tex.obj);
 		}
 		let lastCharWasSpace = true;
 		let a = 0;
@@ -161,14 +162,14 @@ gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);
 				if (maxx < lettermaxx) maxx = lettermaxx;
 				
 				if (!dontRender) {
-					let tx = charIndex%lettersPerSize;
-					let ty = (charIndex-tx)/lettersPerSize;
+					let tx = charIndex%this.lettersPerSize;
+					let ty = (charIndex-tx)/this.lettersPerSize;
 
 					glutil.UnitQuad.unitQuad.draw({
 						shader : this.shader,
 						uniforms : {
-							texMinLoc : [tx+startWidth/lettersPerSize, ty],
-							texMaxLoc : [tx+finishWidth/lettersPerSize, ty+1/lettersPerSize],
+							texMinLoc : [tx+startWidth/this.lettersPerSize, ty],
+							texMaxLoc : [tx+finishWidth/this.lettersPerSize, ty+1/this.lettersPerSize],
 							offset : [
 								(-startWidth) * fontSizeX + cursorX + posX,
 								cursorY + posY
@@ -187,7 +188,7 @@ gl_FragColor = texture2D(tex, vertexv * (texMaxLoc - texMinLoc) + texMinLoc);
 		}
 		
 		if (!dontRender) {
-			this.context.bindTexture(this.context.TEXTURE_2D, null);
+			gl.bindTexture(gl.TEXTURE_2D, null);
 		}
 		
 		return [maxx, cursorY + fontSizeY];
@@ -199,4 +200,4 @@ Font.prototype.lettersPerSize = 16;
 Font.prototype.letterMat = mat4.create();
 return Font;
 }
-export { makeFont };
+export {makeFont};
