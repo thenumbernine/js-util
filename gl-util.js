@@ -39,9 +39,6 @@ function quatZAxis(res, q) {
 
 // WebGL helper classes
 class GLUtil {
-	//what webgl names to search through
-	webGLNames = ['webgl2', 'webgl', 'experimental-webgl'];
-
 	/*
 	this combines the GL context, render target, and viewport responsabilities
 	so maybe it should be split up later
@@ -393,6 +390,9 @@ window.downloadAnchor = downloadAnchor;
 	*/
 	}
 }
+
+//what webgl names to search through
+GLUtil.prototype.webGLNames = ['webgl2', 'webgl', 'experimental-webgl'];
 
 //helpful function with generating GLSL code
 GLUtil.prototype.tonumber = function(x) {
