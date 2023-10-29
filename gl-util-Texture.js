@@ -36,7 +36,7 @@ class Texture {
 		done: what to call after all onloads are finished (ex. for cube, when there are multiple images)
 	*/
 	setArgs(args) {
-		let target = this.target;
+		const target = this.target;
 		if (args.alignment) gl.pixelStorei(gl.UNPACK_ALIGNMENT, args.alignment);
 		if (args.flipY === true) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		else if (args.flipY === false) gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);

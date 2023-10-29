@@ -42,7 +42,7 @@ class GradientTexture extends glutil.Texture2D {
 	}
 }
 
-class HSVTexture extends glutil.Texture2D {
+class HSVTexture extends GradientTexture {
 	constructor(width) {
 		super({
 			width : width,
