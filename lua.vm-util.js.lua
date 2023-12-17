@@ -16,6 +16,7 @@ local req = wsapi_request.new(env)
 
 local function rfind(dir, pattern, results)
 	for f in path(dir):dir() do
+		f = f.path
 		if f:sub(1,1) ~= '.' then
 			local pathstr = dir..'/'..f
 			if path(pathstr):exists() and path(pathstr):isdir() then
@@ -65,6 +66,7 @@ local function addDir(base, src, dst, testdir)
 		local sep = ''
 		if path(base..'/'..testdir):exists() then
 			for f in path(base..'/'..testdir):dir() do
+				f = f.path
 				if f:sub(1,1) ~= '.'
 				and (
 					f:sub(-4) == '.lua'
