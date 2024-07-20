@@ -139,7 +139,6 @@ const luaVmPackageInfos = {
 			,{url:'/lua/symmath/clone.lua', dest:'symmath/clone.lua'}
 			,{url:'/lua/symmath/setup.lua', dest:'symmath/setup.lua'}
 			,{url:'/lua/symmath/make_README.lua', dest:'symmath/make_README.lua'}
-			,{url:'/lua/symmath/js/lua.vm-util.js.lua', dest:'symmath/js/lua.vm-util.js.lua'}
 			,{url:'/lua/symmath/polydiv.lua', dest:'symmath/polydiv.lua'}
 			,{url:'/lua/symmath/TotalDerivative.lua', dest:'symmath/TotalDerivative.lua'}
 			,{url:'/lua/symmath/sqrt.lua', dest:'symmath/sqrt.lua'}
