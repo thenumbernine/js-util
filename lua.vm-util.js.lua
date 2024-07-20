@@ -88,6 +88,9 @@ end
 ?>
 
 const luaVmPackageInfos = {
+	bignumber : {
+<? addDir(req.doc_root, 'lua/bignumber', 'bignumber') ?>
+	},
 	complex : {
 <? addDir(req.doc_root, 'lua/complex', 'complex') ?>
 	},
