@@ -217,8 +217,6 @@ const luaVmPackageInfos = {
 				,{url:'/lua/symmath/tests/rotation%20group%2elua', dest:'symmath/tests/rotation group.lua'}
 				,{url:'/lua/symmath/tests/Acoustic%20Black%20Hole%2elua', dest:'symmath/tests/Acoustic Black Hole.lua'}
 				,{url:'/lua/symmath/tests/spacetime%20embedding%20radius%2elua', dest:'symmath/tests/spacetime embedding radius.lua'}
-				,{url:'/lua/symmath/tests/plane%20wave%20Wikipedia%2esymmath', dest:'symmath/tests/plane wave Wikipedia.symmath'}
-				,{url:'/lua/symmath/tests/deriving%20spacetime%20metrics%2esymmath', dest:'symmath/tests/deriving spacetime metrics.symmath'}
 				,{url:'/lua/symmath/tests/SRHD%2elua', dest:'symmath/tests/SRHD.lua'}
 				,{url:'/lua/symmath/tests/Gravitation%2016%2e1%20%2d%20dense%2esymmath', dest:'symmath/tests/Gravitation 16.1 - dense.symmath'}
 				,{url:'/lua/symmath/tests/Schwarzschild%20%2d%20isotropic%2elua', dest:'symmath/tests/Schwarzschild - isotropic.lua'}
@@ -237,7 +235,6 @@ const luaVmPackageInfos = {
 				,{url:'/lua/symmath/tests/metric%20catalog%2elua', dest:'symmath/tests/metric catalog.lua'}
 				,{url:'/lua/symmath/tests/Riemann%20From%20Stress%2dEnergy%2esymmath', dest:'symmath/tests/Riemann From Stress-Energy.symmath'}
 				,{url:'/lua/symmath/tests/ADM%20gravity%20using%20expressions%2elua', dest:'symmath/tests/ADM gravity using expressions.lua'}
-				,{url:'/lua/symmath/tests/cylindrical%20EM%20wave%2esymmath', dest:'symmath/tests/cylindrical EM wave.symmath'}
 				,{url:'/lua/symmath/tests/Z4%20%2d%20flux%20PDE%20noSource%2elua', dest:'symmath/tests/Z4 - flux PDE noSource.lua'}
 				,{url:'/lua/symmath/tests/Shallow%20Water%20equations%20%2d%20flux%20eigenvectors%2elua', dest:'symmath/tests/Shallow Water equations - flux eigenvectors.lua'}
 				,{url:'/lua/symmath/tests/EFE%20discrete%20solution%20%2d%201%2dvar%2elua', dest:'symmath/tests/EFE discrete solution - 1-var.lua'}
@@ -250,7 +247,6 @@ const luaVmPackageInfos = {
 				,{url:'/lua/symmath/tests/Euler%20fluid%20equations%20%2d%20primitive%20form%2elua', dest:'symmath/tests/Euler fluid equations - primitive form.lua'}
 				,{url:'/lua/symmath/tests/wave%20equation%20in%20spacetime%20%2d%20flux%20eigenvectors%2elua', dest:'symmath/tests/wave equation in spacetime - flux eigenvectors.lua'}
 				,{url:'/lua/symmath/tests/tensor%20coordinate%20invariance%2elua', dest:'symmath/tests/tensor coordinate invariance.lua'}
-				,{url:'/lua/symmath/tests/Gravitation%20Ex%2035%2e3%20generalized%2esymmath', dest:'symmath/tests/Gravitation Ex 35.3 generalized.symmath'}
 				,{url:'/lua/symmath/tests/MHD%20%2d%20flux%20eigenvectors%2elua', dest:'symmath/tests/MHD - flux eigenvectors.lua'}
 				,{url:'/lua/symmath/tests/Alcubierre%2elua', dest:'symmath/tests/Alcubierre.lua'}
 				,{url:'/lua/symmath/tests/spinors%20and%20tensor%20charts%2esymmath', dest:'symmath/tests/spinors and tensor charts.symmath'}
@@ -276,23 +272,18 @@ const luaVmPackageInfos = {
 				,{url:'/lua/symmath/tests/Divergence%20Theorem%20in%20curvilinear%20coordinates%2elua', dest:'symmath/tests/Divergence Theorem in curvilinear coordinates.lua'}
 				,{url:'/lua/symmath/tests/Kerr%2dSchild%20%2d%20expression%2elua', dest:'symmath/tests/Kerr-Schild - expression.lua'}
 				,{url:'/lua/symmath/tests/Navier%2dStokes%2dWilcox%20%2d%20flux%20eigenvectors%2elua', dest:'symmath/tests/Navier-Stokes-Wilcox - flux eigenvectors.lua'}
-				,{url:'/lua/symmath/tests/elastic%20plate%2elua', dest:'symmath/tests/elastic plate.lua'}
 				,{url:'/lua/symmath/tests/Gravitation%2016%2e1%20%2d%20expression%2elua', dest:'symmath/tests/Gravitation 16.1 - expression.lua'}
 				,{url:'/lua/symmath/tests/imperial%20units%2elua', dest:'symmath/tests/imperial units.lua'}
 				,{url:'/lua/symmath/tests/MakeTrigLookupTables%2elua', dest:'symmath/tests/MakeTrigLookupTables.lua'}
 				,{url:'/lua/symmath/tests/Z4%20%2d%20compute%20flux%20eigenmodes%20%2d%20withGauge%2esymmath', dest:'symmath/tests/Z4 - compute flux eigenmodes - withGauge.symmath'}
 				,{url:'/lua/symmath/tests/MHD%20symmetrization%2elua', dest:'symmath/tests/MHD symmetrization.lua'}
-				,{url:'/lua/symmath/tests/solve%20cubic%2elua', dest:'symmath/tests/solve cubic.lua'}
 				,{url:'/lua/symmath/tests/wave%20equation%20in%20spacetime%2elua', dest:'symmath/tests/wave equation in spacetime.lua'}
-				,{url:'/lua/symmath/tests/monochromatic%20plane%20wave%20Wikipedia%2esymmath', dest:'symmath/tests/monochromatic plane wave Wikipedia.symmath'}
-				,{url:'/lua/symmath/tests/exp%20metric%2esymmath', dest:'symmath/tests/exp metric.symmath'}
 				,{url:'/lua/symmath/tests/natural%20units%2elua', dest:'symmath/tests/natural units.lua'}
 				,{url:'/lua/symmath/tests/Schwarzschild%20%2d%20spherical%20%2d%20derivation%2elua', dest:'symmath/tests/Schwarzschild - spherical - derivation.lua'}
 				,{url:'/lua/symmath/tests/BSSN%20%2d%20index%2elua', dest:'symmath/tests/BSSN - index.lua'}
 				,{url:'/lua/symmath/tests/worksheet_spherical_metric_using_eqs%2esymmath', dest:'symmath/tests/worksheet_spherical_metric_using_eqs.symmath'}
 				,{url:'/lua/symmath/tests/simple_ag%2elua', dest:'symmath/tests/simple_ag.lua'}
 				,{url:'/lua/symmath/tests/ADM%20metric%2elua', dest:'symmath/tests/ADM metric.lua'}
-				,{url:'/lua/symmath/tests/earth%20surface%20time%20dilation%2esymmath', dest:'symmath/tests/earth surface time dilation.symmath'}
 				,{url:'/lua/symmath/tests/SRHD_1D%2elua', dest:'symmath/tests/SRHD_1D.lua'}
 				,{url:'/lua/symmath/tests/Euler%20fluid%20equations%20%2d%20flux%20eigenvectors%2elua', dest:'symmath/tests/Euler fluid equations - flux eigenvectors.lua'}
 				,{url:'/lua/symmath/tests/plane%20wave%20MTW%2035%2e11%2esymmath', dest:'symmath/tests/plane wave MTW 35.11.symmath'}
@@ -301,7 +292,6 @@ const luaVmPackageInfos = {
 				,{url:'/lua/symmath/tests/ADM%20metric%20%2d%20mixed%2elua', dest:'symmath/tests/ADM metric - mixed.lua'}
 				,{url:'/lua/symmath/tests/speed%20of%20light%20to%20length%20of%20day%2esymmath', dest:'symmath/tests/speed of light to length of day.symmath'}
 				,{url:'/lua/symmath/tests/black%20hole%20brain%2elua', dest:'symmath/tests/black hole brain.lua'}
-				,{url:'/lua/symmath/tests/EM%20Stress%2dEnergy%20Contractions%2esymmath', dest:'symmath/tests/EM Stress-Energy Contractions.symmath'}
 				,{url:'/lua/symmath/tests/Finite%20Difference%20Coefficients%2elua', dest:'symmath/tests/Finite Difference Coefficients.lua'}
 				,{url:'/lua/symmath/tests/ADM%20formalism%2elua', dest:'symmath/tests/ADM formalism.lua'}
 				,{url:'/lua/symmath/tests/Faraday%20tensor%20in%20special%20relativity%2elua', dest:'symmath/tests/Faraday tensor in special relativity.lua'}
@@ -312,10 +302,8 @@ const luaVmPackageInfos = {
 				,{url:'/lua/symmath/tests/Einstein%20field%20equations%20%2d%20expression%2elua', dest:'symmath/tests/Einstein field equations - expression.lua'}
 				,{url:'/lua/symmath/tests/MHD%20inverse%2elua', dest:'symmath/tests/MHD inverse.lua'}
 				,{url:'/lua/symmath/tests/Euler%20Angles%20in%20Higher%20Dimensions%2elua', dest:'symmath/tests/Euler Angles in Higher Dimensions.lua'}
-				,{url:'/lua/symmath/tests/Platonic%20Solids%20%2d%20cache%2elua', dest:'symmath/tests/Platonic Solids - cache.lua'}
 				,{url:'/lua/symmath/tests/Gravitation%2016%2e1%20%2d%20dense%2elua', dest:'symmath/tests/Gravitation 16.1 - dense.lua'}
 				,{url:'/lua/symmath/tests/remove%20beta%20from%20adm%20metric%2elua', dest:'symmath/tests/remove beta from adm metric.lua'}
-				,{url:'/lua/symmath/tests/plane%20wave%20testing%2esymmath', dest:'symmath/tests/plane wave testing.symmath'}
 				,{url:'/lua/symmath/tests/toy%2d1%2b1%20spacetime%2elua', dest:'symmath/tests/toy-1+1 spacetime.lua'}
 				,{url:'/lua/symmath/tests/plane%20wave%20MTW%2035%2e9%2esymmath', dest:'symmath/tests/plane wave MTW 35.9.symmath'}
 				,{url:'/lua/symmath/tests/sum%20of%20two%20metrics%2elua', dest:'symmath/tests/sum of two metrics.lua'}
