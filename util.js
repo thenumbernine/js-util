@@ -373,25 +373,23 @@ class FileSetLoader {
 		});
 
 		this.results = [];
-		const totals = [];
-		const loadeds = [];
 		const dones = [];
 		for (let i = 0; i < this.files.length; ++i) {
-			totals[i] = 0;
-			loadeds[i] = 0;
 			dones[i] = false;
 			this.results[i] = null;
 		}
+
 		const updateProgress = () => {
 			let loaded = 0;
 			let total = 0;
 			for (let i = 0; i < thiz.files.length; ++i) {
-				loaded += loadeds[i];
-				total += totals[i];
+				if (dones[i]) ++loaded;
+				++total;
 			}
 			thiz.progress.setAttribute('max', total);
 			thiz.progress.setAttribute('value', loaded);
 		};
+
 		const updateDones = () => {
 			for (let i = 0; i < thiz.files.length; ++i) {
 				if (!dones[i]) return;
@@ -399,21 +397,21 @@ class FileSetLoader {
 			removeFromParent(thiz.div);
 			if (args.done) args.done.call(thiz);
 		};
+
 		this.files.forEach((file, i) => {
 			fetch(file.url)
 			.then(response => {
 				if (!response.ok) return Promise.reject('not ok');
-				response.text()
-				.then(responseText => {
-					loadeds[i] = totals[i];
-					thiz.results[i] = responseText;
-					updateProgress();
-					dones[i] = true;
-					if (args.onload) {
-						args.onload.call(thiz, file.url, file.dest, this.responseText);
-					}
-					updateDones();
-				});
+				return response.text();
+			})
+			.then(responseText => {
+				thiz.results[i] = responseText;
+				dones[i] = true;
+				updateProgress();
+				if (args.onload) {
+					args.onload.call(thiz, file.url, file.dest, this.responseText);
+				}
+				updateDones();
 			}).catch(e => {
 				console.log(e)
 			});

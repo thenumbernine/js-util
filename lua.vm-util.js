@@ -1,6 +1,11 @@
-// autogen was nice ...
-// does github.io allow any server-side execution?
-// otherwise I'll have to keep regenerating this / make a script to do so
+/*
+This and util.js are old and clunky.
+I have a much smaller and smoother filesystem-loader in glapp-js, but it doesn't come with a DOM progress bar.
+
+autogen was nice ...
+does github.io allow any server-side execution?
+otherwise I'll have to keep regenerating this / make a script to do so
+*/
 
 import {DOM, assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts, require} from './util.js';
 /*
@@ -15,20 +20,24 @@ const luaVmPackageInfos = {};
 
 import { luaPackages } from '/js/lua-packages.js';
 for (let pkgname in luaPackages) {
-	const dst = {files : [], tests : []};
+	const files = [];
+	const tests = [];
 	luaPackages[pkgname].forEach(fileset => {
 		fileset.files.forEach(file => {
 			const entry = {
-				url : fileset.from + '/' + file,
+				url : (fileset.from + '/' + file).replace('+', '%2b'),
 				dest : fileset.to + '/' + file,
 			};
 			if (fileset.from.substr(-6) == '/tests' || fileset.from.indexOf('/tests/') != -1) {
-				dst.tests.push(entry);
+				tests.push(entry);
 			} else {
-				dst.files.push(entry);
+				files.push(entry);
 			}
 		});
 	});
+	const dst = {files : files};
+	luaVmPackageInfos[pkgname] = dst;
+	if (tests.length) dst.tests = tests;
 }
 
 /*
@@ -129,7 +138,9 @@ class EmbeddedLuaInterpreter {
 				args.packageTests.forEach(packageName => {
 					const packageContent = luaVmPackageInfos[packageName];
 					if (packageContent) {
-						if (packageContent.tests) args.tests = args.tests.concat(packageContent.tests);
+						if (packageContent.tests) {
+							args.tests = args.tests.concat(packageContent.tests);
+						}
 					}
 				});
 				args.packageTests = undefined;
@@ -139,7 +150,9 @@ class EmbeddedLuaInterpreter {
 				args.packages.forEach(packageName => {
 					const packageContent = luaVmPackageInfos[packageName];
 					if (packageContent) {
-						if (packageContent.files) args.files = args.files.concat(packageContent.files);
+						if (packageContent.files) {
+							args.files = args.files.concat(packageContent.files);
+						}
 					}
 				});
 				args.packages = undefined;
@@ -211,25 +224,27 @@ class EmbeddedLuaInterpreter {
 			if (thiz.parentContainer) {
 				thiz.parentContainer.appendChild(thiz.launchButton);
 			}
-			thiz.launchButton.addEventListener('click', e => {
+
+			const onLaunch = () => {
 				hide(thiz.launchButton);
 				show(thiz.container);
 
 				args.onexec = (url, dest) => {
-					//Module.print('loading '+dest+' ...');
+//Module.print('loading '+dest+' ...');
 				};
 				args.done = () => {
-					//Module.print('initializing...');
+//Module.print('initializing...');
 					setTimeout(() => {
 						thiz.doneLoadingFilesystem();
 					}, 1);
 				};
 				args.FS = thiz.LuaModule.FS;
 				executeLuaVMFileSet(args);
-			});
+			};
 
+			thiz.launchButton.addEventListener('click', e => { onLaunch(); });
 			if (args.autoLaunch) {
-				thiz.launchButton.dispatchEvent(new Event('click'));
+				onLaunch();
 			}
 		})();
 	}
