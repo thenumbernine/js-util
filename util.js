@@ -392,13 +392,19 @@ class FileSetLoader {
 			thiz.progress.setAttribute('max', total);
 			thiz.progress.setAttribute('value', loaded);
 		};
-		Promise.all(
-			this.files.map((file, i) =>
-				fetch(file.url)
-				.then(response => {
-					if (!response.ok) return Promise.reject('not ok');
-					return response.text()
-				}).then(responseText => {
+		const updateDones = () => {
+			for (let i = 0; i < thiz.files.length; ++i) {
+				if (!dones[i]) return;
+			}
+			removeFromParent(thiz.div);
+			if (args.done) args.done.call(thiz);
+		};
+		this.files.forEach((file, i) => {
+			fetch(file.url)
+			.then(response => {
+				if (!response.ok) return Promise.reject('not ok');
+				response.text()
+				.then(responseText => {
 					loadeds[i] = totals[i];
 					thiz.results[i] = responseText;
 					updateProgress();
@@ -406,17 +412,11 @@ class FileSetLoader {
 					if (args.onload) {
 						args.onload.call(thiz, file.url, file.dest, this.responseText);
 					}
-				})
-			)
-		).then(() => {
-			for (let i = 0; i < thiz.files.length; ++i) {
-				if (!dones[i]) return;
-			}
-			removeFromParent(thiz.div);
-			if (args.done) args.done.call(thiz);
-		})
-		.catch(e => {
-			console.log(e);
+					updateDones();
+				});
+			}).catch(e => {
+				console.log(e)
+			});
 		});
 	}
 }
