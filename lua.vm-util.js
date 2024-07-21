@@ -9,6 +9,7 @@ I want this to turn into an in-page filesystem + lua interpreter.
 This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it shouldn't do that.
 */
 
+// TODO autogen from elsewhere.  dir listing?  rockspec?
 const luaVmPackageInfos = {
 	bignumber : {
 		files : [
