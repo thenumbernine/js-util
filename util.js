@@ -392,20 +392,13 @@ class FileSetLoader {
 			thiz.progress.setAttribute('max', total);
 			thiz.progress.setAttribute('value', loaded);
 		};
-		const updateDones = () => {
-			for (let i = 0; i < thiz.files.length; ++i) {
-				if (!dones[i]) return;
-			}
-			removeFromParent(thiz.div);
-			if (args.done) args.done.call(thiz);
-		};
-		this.files.forEach((file, i) => {
-			/* as fetch ... */
-			fetch(file.url)
-			.then(response => {
-				if (!response.ok) return Promise.reject('not ok');
-				response.text()
-				.then(responseText => {
+		Promise.all(
+			this.files.map((file, i) =>
+				fetch(file.url)
+				.then(response => {
+					if (!response.ok) return Promise.reject('not ok');
+					return response.text()
+				}).then(responseText => {
 					loadeds[i] = totals[i];
 					thiz.results[i] = responseText;
 					updateProgress();
@@ -413,35 +406,17 @@ class FileSetLoader {
 					if (args.onload) {
 						args.onload.call(thiz, file.url, file.dest, this.responseText);
 					}
-					updateDones();
-				});
-			}).catch(e => {
-				console.log(e)
-			});
-			/**/
-			/* as XMLHttpRequest ...
-			let xhr = new XMLHttpRequest();
-			xhr.open('GET', file.url, true);
-			xhr.addEventListener('progress', e => {
-				if (e.total) {
-					totals[i] = e.total;
-					loadeds[i] = e.loaded;
-				} else {
-					totals[i] = 0;
-					loadeds[i] = 0;
-				}
-				updateProgress();
-			});
-			xhr.addEventListener('load', e => {
-				loadeds[i] = totals[i];
-				thiz.results[i] = this.responseText;
-				updateProgress();
-				dones[i] = true;
-				if (args.onload) args.onload.call(thiz, file.url, file.dest, this.responseText);
-				updateDones();
-			});
-			xhr.send();
-			*/
+				})
+			)
+		).then(() => {
+			for (let i = 0; i < thiz.files.length; ++i) {
+				if (!dones[i]) return;
+			}
+			removeFromParent(thiz.div);
+			if (args.done) args.done.call(thiz);
+		})
+		.catch(e => {
+			console.log(e);
 		});
 	}
 }
