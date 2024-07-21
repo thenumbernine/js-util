@@ -22,7 +22,7 @@ for (let pkgname in luaPackages) {
 				url : fileset.from + '/' + file,
 				dest : fileset.to + '/' + file,
 			};
-			if (fileset.from.substr(-6) == '/tests' || fileset.from.find('/tests/') != -1) {
+			if (fileset.from.substr(-6) == '/tests' || fileset.from.indexOf('/tests/') != -1) {
 				dst.tests.push(entry);
 			} else {
 				dst.files.push(entry);
