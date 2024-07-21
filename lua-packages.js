@@ -5,7 +5,10 @@
 // TODO autogen this remotely ... like i did in lua.vm-util.js.lua (NOTICE this matches lua.vm-util.js.*)
 // or TODO autogen this from lua rockspec files?  and allow a GET param to a rockspec?  and in each repo provide rockspec dependencies?
 const luaPackages = {
-	bignumber : [{from : '/lua/bignumber', to : 'bignumber', files : ['bignumber.lua', 'test.lua']}],
+	bignumber : [
+		{from : '/lua/bignumber', to : 'bignumber', files : ['bignumber.lua']},
+		{from : '/lua/bignumber/tests', to : 'bignumber/tests', files : ['test.lua']},
+	],
 	bit : [{from : '/lua/bit', to : 'bit', files : ['bit.lua']}],
 	complex : [{from : '/lua/complex', to : 'complex', files : ['complex.lua']}],
 	dkjson : [{from : '/lua/dkjson', to : 'dkjson', files : ['dkjson.lua']}],
