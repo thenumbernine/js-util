@@ -35,6 +35,8 @@ for _,dirname in ipairs{
 	'modules',
 	'vec-ffi',
 	'matrix',
+	'stat',
+	'csv',
 	'gl',
 	'cl',
 	'image',
@@ -65,6 +67,8 @@ for _,dirname in ipairs{
 	'super_metroid_randomizer',
 	'earth-magnetic-field',
 	'sand-attack',
+	--TODO js/black-hole-skymap's lua version
+	--TODO cpp/Topple's lua version
 } do
 	io.write(dirname..'... ')
 	local rockspec = {}
