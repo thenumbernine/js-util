@@ -118,6 +118,11 @@ const luaPackages = {
 	['earth-magnetic-field'] : [
 		{from : '/lua/earth-magnetic-field', to : 'earth-magnetic-field', files : ['run.lua']},
 	],
+
+	// not in the /lua folder:
+	['black-hole-skymap'] :  [
+		{from : '/black-hole-skymap/lua', to : 'black-hole-skymap', files : ['black-hole-skymap.lua', 'black-hole-skymap-noniterative.lua', 'r_for_rho.lua']},
+	],
 };
 
 export { luaPackages };
