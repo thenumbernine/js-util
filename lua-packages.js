@@ -123,6 +123,9 @@ const luaPackages = {
 	['black-hole-skymap'] :  [
 		{from : '/black-hole-skymap/lua', to : 'black-hole-skymap', files : ['black-hole-skymap.lua', 'black-hole-skymap-noniterative.lua', 'r_for_rho.lua']},
 	],
+	['topple'] :  [
+		{from : '/cpp/Topple', to : 'topple', files : ['plot.lua', 'test.lua', 'topple-glsl.lua', 'topple-gpu-3d-display.lua', 'topple-gpu-display.lua', 'topple-gpu.lua']},
+	],
 };
 
 export { luaPackages };
