@@ -118,7 +118,7 @@ const luaPackages = {
 		{from : '/lua/super_metroid_randomizer', to : 'super_metroid_randomizer', files : ['blob.lua', 'config.lua', 'door.lua', 'doors.lua', 'enemies.lua', 'exprand.lua', 'item-scavenger.lua', 'items.lua', 'lz.lua', 'mapbg.lua', 'md5.lua', 'memorymap.lua', 'palette.lua', 'patches.lua', 'pc.lua', 'plm.lua', 'print-instrs.lua', 'randomizeworld.lua', 'roomblocks.lua', 'room.lua', 'rooms.lua', 'roomstate.lua', 'run.lua', 'sm-code.lua', 'sm-enemies.lua', 'sm-graphics.lua', 'sm-items.lua', 'sm.lua', 'sm-map.lua', 'sm-regions.lua', 'sm-samus.lua', 'smstruct.lua', 'sm-weapons.lua', 'tileset.lua', 'util.lua', 'vis.lua', 'weapons.lua', 'writerange.lua']},
 	],
 	['earth-magnetic-field'] : [
-		{from : '/lua/earth-magnetic-field', to : 'earth-magnetic-field', files : ['run.lua']},
+		{from : '/lua/earth-magnetic-field', to : 'earth-magnetic-field', files : ['run.lua', 'wmm.cof', 'earth.png']},
 	],
 
 	// not in the /lua folder:
