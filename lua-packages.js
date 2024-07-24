@@ -108,6 +108,9 @@ const luaPackages = {
 		{from : '/lua/gui', to : 'gui', files : ['font.lua', 'gui.lua', 'timer.lua', 'widget.lua']},
 		{from : '/lua/gui/widget', to : 'gui/widget', files : ['scrollareabar.lua', 'scrollarea.lua', 'scrollbar.lua', 'scrollcontainer.lua', 'scrolltab.lua', 'textfield.lua', 'text.lua']},
 	],
+	['sphere-grid'] : [
+		{from : '/lua/sphere-grid', to : 'sphere-grid', files : ['run.lua']},
+	],
 	['make'] : [
 		{from : '/lua/make', to : 'make', files : ['clean.lua', 'detect.lua', 'distclean.lua', 'env.lua', 'exec.lua', 'find.lua', 'make.lua', 'run.lua', 'targets.lua', 'writechanged.lua']},
 	],
