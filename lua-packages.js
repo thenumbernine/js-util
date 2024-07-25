@@ -64,7 +64,7 @@ const luaPackages = {
 		{from : '/lua/symmath/tensor', to : 'symmath/tensor', files : ['Chart.lua', 'DenseCache.lua', 'dual.lua', 'Index.lua', 'KronecherDelta.lua', 'LeviCivita.lua', 'Manifold.lua', 'Ref.lua', 'symbols.lua', 'wedge.lua']},
 		{from : '/lua/symmath/visitor', to : 'symmath/visitor', files : ['DistributeDivision.lua', 'Expand.lua', 'ExpandPolynomial.lua', 'FactorDivision.lua', 'Factor.lua', 'Prune.lua', 'Tidy.lua', 'Visitor.lua']},
 	],
-	['geographic-charts'] : [{from : '/lua/geographic-charts', to : 'geographic-charts', files : ['code.lua', 'geographic-charts.lua', 'test.lua', 'earth-color.png']}],
+	['geographic-charts'] : [{from : '/lua/geographic-charts', to : 'geographic-charts', files : ['buildall.lua', 'code.lua', 'geographic-charts.lua', 'test.lua', 'earth-color.png']}],
 	['prime-spiral'] : [{from : '/lua/prime-spiral', to : 'prime-spiral', files : ['run.lua', 'pi']}],
 	['fibonacci-modulo'] : [{from : '/lua/fibonacci-modulo', to : 'fibonacci-modulo', files : ['run.lua', 'fibonacci.lua']}],
 	['lambda-cdm'] : [{from : '/lua/lambda-cdm', to : 'lambda-cdm', files : ['bisect.lua', 'run.lua']}],
