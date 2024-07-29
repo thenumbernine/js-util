@@ -37,7 +37,7 @@ const luaPackages = {
 	],
 	['glapp'] : [
 		{from : '/lua/glapp', to : 'glapp', files : ['glapp.lua', 'mouse.lua', 'orbit.lua', 'view.lua']},
-		{from : '/lua/glapp/tests', to : 'glapp/tests', files : ['compute.lua', 'compute-spirv.lua', 'cubemap.lua', 'events.lua', 'info.lua', 'minimal.lua', 'pointtest.lua', 'test_es_directcalls.lua', 'test_tex.lua', 'test_es.lua', 'test.lua', 'test_vertexattrib.lua', 'src.png']},
+		{from : '/lua/glapp/tests', to : 'glapp/tests', files : ['compute.lua', 'compute-spirv.lua', 'cubemap.lua', 'events.lua', 'info.lua', 'minimal.lua', 'pointtest.lua', 'test_es_directcalls.lua', 'test_tex.lua', 'test_es.lua', 'test.lua', 'test_vertexattrib.lua', 'transformFeedbackTest.lua', 'src.png']},
 	],
 	['imgui'] : [{from : '/lua/imgui', to : 'imgui', files : ['imgui.lua']}],
 	['imguiapp'] : [
