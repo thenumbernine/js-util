@@ -35,8 +35,8 @@ const luaPackages = {
 		{from : '/lua/audio', to : 'audio', files : ['audio.lua', 'buffer.lua', 'currentsystem.lua', 'source.lua']},
 		{from : '/lua/audio/null', to : 'audio/null', files : ['audio.lua', 'buffer.lua', 'source.lua']},
 	],
-	['sdlapp'] : [
-		{from : '/lua/sdlapp', to : 'sdlapp', files : ['assert.lua', 'sdlapp.lua', 'tests/test.lua']},
+	['sdl'] : [
+		{from : '/lua/sdl', to : 'sdl', files : ['app.lua', 'assert.lua', 'sdl.lua', 'tests/test.lua']},
 	],
 	['glapp'] : [
 		{from : '/lua/glapp', to : 'glapp', files : ['glapp.lua', 'mouse.lua', 'orbit.lua', 'view.lua']},

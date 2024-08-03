@@ -42,7 +42,7 @@ for _,dirname in ipairs{
 	'image',
 	'mesh',
 	'audio',
-	'sdlapp',
+	'sdl',
 	'glapp',
 	'imgui',
 	'imguiapp',
