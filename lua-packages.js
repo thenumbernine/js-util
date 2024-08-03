@@ -35,6 +35,9 @@ const luaPackages = {
 		{from : '/lua/audio', to : 'audio', files : ['audio.lua', 'buffer.lua', 'currentsystem.lua', 'source.lua']},
 		{from : '/lua/audio/null', to : 'audio/null', files : ['audio.lua', 'buffer.lua', 'source.lua']},
 	],
+	['sdlapp'] : [
+		{from : '/lua/sdlapp', to : 'sdlapp', files : ['assert.lua', 'sdlapp.lua', 'tests/test.lua']},
+	],
 	['glapp'] : [
 		{from : '/lua/glapp', to : 'glapp', files : ['glapp.lua', 'mouse.lua', 'orbit.lua', 'view.lua']},
 		{from : '/lua/glapp/tests', to : 'glapp/tests', files : ['compute.lua', 'compute-spirv.lua', 'cubemap.lua', 'events.lua', 'info.lua', 'minimal.lua', 'pointtest.lua', 'test_es_directcalls.lua', 'test_tex.lua', 'test_es.lua', 'test.lua', 'test_vertexattrib.lua', 'transformFeedbackTest.lua', 'src.png']},
