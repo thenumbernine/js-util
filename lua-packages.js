@@ -1,6 +1,7 @@
 // packages containing filesystem info, so emscripten-lua modules can pick which ones they want and load batches of files
 
 const luaPackages = {
+	['SphericalHarmonicGraphs'] : [{from : '/lua/SphericalHarmonicGraphs', to : 'SphericalHarmonicGraphs', files : ['associatedlegendre.lua', 'factorial.lua', 'plot_associatedlegendre.lua', 'run.lua', 'sphericalharmonics.lua']}],
 	['audio'] : [
 		{from : '/lua/audio', to : 'audio', files : ['audio.lua', 'buffer.lua', 'currentsystem.lua', 'source.lua']},
 		{from : '/lua/audio/null', to : 'audio/null', files : ['audio.lua', 'buffer.lua', 'source.lua']},
@@ -50,10 +51,14 @@ const luaPackages = {
 		{from : '/lua/imguiapp', to : 'imguiapp', files : ['imguiapp.lua', 'withorbit.lua']},
 		{from : '/lua/imguiapp/tests', to : 'imguiapp/tests', files : ['console.lua', 'demo.lua', 'font.lua']},
 	],
+	['interpreter'] : [{from : '/lua/interpreter', to : 'interpreter', files : ['interpreter.lua']}],
 	['ips'] : [
 		{from : '/lua/ips', to : 'ips', files : ['addheader.lua', 'ips.lua', 'makeips.lua']},
 	],
 	['lambda-cdm'] : [{from : '/lua/lambda-cdm', to : 'lambda-cdm', files : ['bisect.lua', 'run.lua']}],
+	['langfix'] : [
+		{from : '/lua/langfix', to : 'langfix', files : ['run.lua', 'test.rua', 'env.lua', 'langfix.lua']},
+	],
 	['line-integral-convolution'] : [{from : '/lua/line-integral-convolution', to : 'line-integral-convolution', files : ['run.lua']}],
 	['make'] : [
 		{from : '/lua/make', to : 'make', files : ['clean.lua', 'detect.lua', 'distclean.lua', 'env.lua', 'exec.lua', 'find.lua', 'make.lua', 'run.lua', 'targets.lua', 'writechanged.lua']},
@@ -63,20 +68,28 @@ const luaPackages = {
 		{from : '/lua/mesh', to : 'mesh', files : ['chopupboxes2.lua', 'chopupboxes.lua', 'clipcube.lua', 'combine.lua', 'common.lua', 'earcut.lua', 'edgegraph.lua', 'filtermtls.lua', 'mesh.lua', 'objloader.lua', 'resave.lua', 'tilemesh.lua', 'tileview.lua', 'unwrapuvs.lua', 'view.lua']},
 		{from : '/lua/mesh/meshes', to : 'mesh/meshes', files : ['cube.mtl', 'hue.png', 'cube.obj', 'cube-rgb.obj', 'cube-yup-zback.obj', 'cube-zup-xfwd.obj']},
 	],
+	['metric'] : [{from : '/lua/metric', to : 'metric', files : ['run.lua', 'run.lua']}],
 	['modules'] : [{from : '/lua/modules', to : 'modules', files : ['module.lua', 'modules.lua']}],
 	['n-points'] : [{from : '/lua/n-points', to : 'n-points', files : ['run.lua', 'run_orbit.lua']}],
+	['neuralnet'] : [
+		[{from : '/lua/neuralnet', to : 'neuralnet', files : ['activation.lua', 'ann-cpp.lua', 'ann-ffi.lua', 'ann.lua', 'qnn.lua', 'tdnn.lua']},
+		[{from : '/lua/neuralnet/tests', to : 'neuralnet/tests', files : ['accuracy.lua', 'cartpole.lua', 'complex_mul.lua', 'mul.lua', 'performance.lua', 'poker.lua', 'randomwalk.lua', 'sine-glapp.lua', 'sine.lua', 'tictactoe.lua', 'xor.lua']},
+	],
 	['parser'] : [
 		{from : '/lua/parser', to : 'parser', files : ['load_xform.lua', 'parser.lua', 'syntax_5.1.txt', 'syntax_5.2.txt', 'syntax_5.3.txt', 'syntax_5.4.txt', 'syntax_ast_5.1.txt', 'syntax_grammar.txt']},
 		{from : '/lua/parser/base', to : 'parser/base', files : ['ast.lua', 'datareader.lua', 'parser.lua', 'tokenizer.lua']},
 		{from : '/lua/parser/grammar', to : 'parser/grammar', files : ['parser.lua', 'tokenizer.lua']},
 		{from : '/lua/parser/lua', to : 'parser/lua', files : ['ast.lua', 'parser.lua', 'tokenizer.lua']},
-		{from : '/lua/parser/tests', to : 'parser/tests', files : ['flatten.lua', 'lua_to_c.lua', 'lua_to_c_test.lua', 'minify_tests.lua', 'minify_tests.txt', 'parse.lua', 'spantest.lua']},
+		{from : '/lua/parser/tests', to : 'parser/tests', files : ['flatten.lua', 'lua_to_c.lua', 'lua_to_c_test.lua', 'minify_tests.lua', 'minify_tests.txt', 'parse.lua', 'parsemyself.lua', 'spantest.lua', 'strings.lua']},
 	],
 	['plot2d'] : [
 		{from : '/lua/plot2d', to : 'plot2d', files : ['app.lua', 'plot2d.lua', 'run.lua', 'font.png']},
 	],
 	['plot3d'] : [
 		{from : '/lua/plot3d', to : 'plot3d', files : ['plot3d.lua', 'run.lua', 'font.png']},
+	],
+	['pong'] : [
+		{from : '/lua/pong', to : 'pong', files : ['pong.lua', 'ball.png', 'block.png', 'block.wav', 'item.wav', 'player.png', 'player1.wav', 'player2.wav']},
 	],
 	['prime-spiral'] : [{from : '/lua/prime-spiral', to : 'prime-spiral', files : ['run.lua', 'pi']}],
 	['rule110'] : [{from : '/lua/rule110', to : 'rule110', files : ['rule110.lua']}],
@@ -97,10 +110,14 @@ const luaPackages = {
 		{from : '/lua/seashell', to : 'seashell', files : ['eqn.lua', 'run.lua', 'cached-eqns.glsl']},
 		{from : '/lua/seashell/cloudy', to : 'seashell/cloudy', files : ['bluecloud_bk.jpg', 'bluecloud_dn.jpg', 'bluecloud_ft.jpg', 'bluecloud_lf.jpg', 'bluecloud_rt.jpg', 'bluecloud_up.jpg', 'browncloud_bk.jpg', 'browncloud_dn.jpg', 'browncloud_ft.jpg', 'browncloud_lf.jpg', 'browncloud_rt.jpg', 'browncloud_up.jpg', 'graycloud_bk.jpg', 'graycloud_dn.jpg', 'graycloud_ft.jpg', 'graycloud_lf.jpg', 'graycloud_rt.jpg', 'graycloud_up.jpg', 'yellowcloud_bk.jpg', 'yellowcloud_dn.jpg', 'yellowcloud_ft.jpg', 'yellowcloud_lf.jpg', 'yellowcloud_rt.jpg', 'yellowcloud_up.jpg']},
 	],
+	['solver'] : [
+		{from : '/lua/solver', to : 'solver', files : ['backsub.lua', 'bicg.lua', 'bicgstab.lua', 'conjgrad.lua', 'conjres.lua', 'fwdsub.lua', 'gmres.lua', 'jacobi.lua', 'jfnk.lua', 'lup.lua', 'qr_gramschmidt.lua', 'qr_gramschmidt_classic.lua', 'qr_householder.lua', 'solve_lup.lua', 'solve_qr.lua']},
+		{from : '/lua/solver/cl', to : 'solver/cl', files : ['bicgstab.lua', 'conjgrad.lua', 'conjres.lua', 'gmres.lua', 'jfnk.lua', 'solver.lua']},
+		{from : '/lua/solver/tests', to : 'solver/tests', files : ['dense.lua', 'jfnk-cl.lua', 'jfnk-gpu.lua', 'krylov-cl-separate.lua', 'krylov-cl-subbuffer.lua', 'krylov-cl.lua', 'krylov.lua']},
+	],
 	['sphere-grid'] : [
 		{from : '/lua/sphere-grid', to : 'sphere-grid', files : ['run.lua']},
 	],
-	['SphericalHarmonicGraphs'] : [{from : '/lua/SphericalHarmonicGraphs', to : 'SphericalHarmonicGraphs', files : ['associatedlegendre.lua', 'factorial.lua', 'plot_associatedlegendre.lua', 'run.lua', 'sphericalharmonics.lua']}],
 	['stat'] : [{from : '/lua/stat', to : 'stat', files : ['bin.lua', 'set.lua', 'stat.lua']}],
 	['struct'] : [{from : '/lua/struct', to : 'struct', files : ['struct.lua', 'test.lua']}],
 	['super_metroid_randomizer'] : [
@@ -128,10 +145,10 @@ const luaPackages = {
 	['topple'] :  [
 		{from : '/cpp/Topple', to : 'topple', files : ['plot.lua', 'test.lua', 'topple-glsl.lua', 'topple-gpu-3d-display.lua', 'topple-gpu-display.lua', 'topple-gpu.lua']},
 	],
+	['vec-ffi'] : [{from : '/lua/vec-ffi', to : 'vec-ffi', files : ['box2f.lua', 'box2i.lua', 'box3f.lua', 'create_box.lua', 'create_plane.lua', 'create_quat.lua', 'create_vec2.lua', 'create_vec3.lua', 'create_vec.lua', 'plane2f.lua', 'plane3f.lua', 'quatd.lua', 'quatf.lua', 'suffix.lua', 'vec2b.lua', 'vec2d.lua', 'vec2f.lua', 'vec2i.lua', 'vec2s.lua', 'vec2sz.lua', 'vec2ub.lua', 'vec3b.lua', 'vec3d.lua', 'vec3f.lua', 'vec3i.lua', 'vec3s.lua', 'vec3sz.lua', 'vec3ub.lua', 'vec4b.lua', 'vec4d.lua', 'vec4f.lua', 'vec4i.lua', 'vec4ub.lua', 'vec-ffi.lua']}],
 	['vec'] : [
 		{from : '/lua/vec', to : 'vec', files : ['box2.lua', 'box3.lua', 'create.lua', 'quat.lua', 'vec2.lua', 'vec3.lua', 'vec4.lua', 'vec.lua']},
 	],
-	['vec-ffi'] : [{from : '/lua/vec-ffi', to : 'vec-ffi', files : ['box2f.lua', 'box2i.lua', 'box3f.lua', 'create_box.lua', 'create_plane.lua', 'create_quat.lua', 'create_vec2.lua', 'create_vec3.lua', 'create_vec.lua', 'plane2f.lua', 'plane3f.lua', 'quatd.lua', 'quatf.lua', 'suffix.lua', 'vec2b.lua', 'vec2d.lua', 'vec2f.lua', 'vec2i.lua', 'vec2s.lua', 'vec2sz.lua', 'vec2ub.lua', 'vec3b.lua', 'vec3d.lua', 'vec3f.lua', 'vec3i.lua', 'vec3s.lua', 'vec3sz.lua', 'vec3ub.lua', 'vec4b.lua', 'vec4d.lua', 'vec4f.lua', 'vec4i.lua', 'vec4ub.lua', 'vec-ffi.lua']}],
 };
 
 export { luaPackages };
