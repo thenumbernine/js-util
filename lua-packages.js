@@ -75,8 +75,8 @@ const luaPackages = {
 		{from : '/lua/netrefl', to : 'netrefl', files : ['clientconn.lua', 'localclientconn.lua', 'localserverconn.lua', 'netcom.lua', 'netfield.lua', 'netfield_list.lua', 'netfield_vec.lua', 'receiveblocking.lua', 'remoteclientconn.lua', 'remotequery.lua', 'remoteserverconn.lua', 'server.lua', 'serverconn.lua', 'wordparser.lua']},
 	],
 	['neuralnet'] : [
-		[{from : '/lua/neuralnet', to : 'neuralnet', files : ['activation.lua', 'ann-cpp.lua', 'ann-ffi.lua', 'ann.lua', 'qnn.lua', 'tdnn.lua']},
-		[{from : '/lua/neuralnet/tests', to : 'neuralnet/tests', files : ['accuracy.lua', 'cartpole.lua', 'complex_mul.lua', 'mul.lua', 'performance.lua', 'poker.lua', 'randomwalk.lua', 'sine-glapp.lua', 'sine.lua', 'tictactoe.lua', 'xor.lua']},
+		{from : '/lua/neuralnet', to : 'neuralnet', files : ['activation.lua', 'ann-cpp.lua', 'ann-ffi.lua', 'ann.lua', 'qnn.lua', 'tdnn.lua']},
+		{from : '/lua/neuralnet/tests', to : 'neuralnet/tests', files : ['accuracy.lua', 'cartpole.lua', 'complex_mul.lua', 'mul.lua', 'performance.lua', 'poker.lua', 'randomwalk.lua', 'sine-glapp.lua', 'sine.lua', 'tictactoe.lua', 'xor.lua']},
 	],
 	['parser'] : [
 		{from : '/lua/parser', to : 'parser', files : ['load_xform.lua', 'parser.lua', 'syntax_5.1.txt', 'syntax_5.2.txt', 'syntax_5.3.txt', 'syntax_5.4.txt', 'syntax_ast_5.1.txt', 'syntax_grammar.txt']},
