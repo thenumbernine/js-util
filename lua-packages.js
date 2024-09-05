@@ -147,6 +147,9 @@ const luaPackages = {
 		{from : '/lua/tensor', to : 'tensor', files : ['delta.lua', 'index.lua', 'layer.lua', 'matrix.lua', 'notebook.lua', 'representation.lua', 'tensor.lua']},
 		{from : '/lua/tensor/tests', to : 'tensor/tests', files : ['delta.lua', 'inverse.lua', 'metric.lua', 'test.lua']},
 	],
+	['threadmanager'] : [
+		{from : '/lua/threadmanager', to : 'threadmanager', files : ['threadmanager.lua']},
+	],
 	['topple'] :  [
 		{from : '/cpp/Topple', to : 'topple', files : ['plot.lua', 'test.lua', 'topple-glsl.lua', 'topple-gpu-3d-display.lua', 'topple-gpu-display.lua', 'topple-gpu.lua']},
 	],
