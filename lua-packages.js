@@ -94,7 +94,7 @@ const luaPackages = {
 		{from : '/lua/plot3d', to : 'plot3d', files : ['plot3d.lua', 'run.lua', 'font.png']},
 	],
 	['pong'] : [
-		{from : '/lua/pong', to : 'pong', files : ['pong.lua', 'ball.png', 'block.png', 'block.wav', 'item.wav', 'player.png', 'player1.wav', 'player2.wav']},
+		{from : '/lua/pong', to : 'pong', files : ['pong.lua', 'ball.png', 'block.png', 'block.wav', 'font.png', 'item.wav', 'player.png', 'player1.wav', 'player2.wav']},
 	],
 	['prime-spiral'] : [{from : '/lua/prime-spiral', to : 'prime-spiral', files : ['run.lua', 'pi']}],
 	['rule110'] : [{from : '/lua/rule110', to : 'rule110', files : ['rule110.lua']}],
