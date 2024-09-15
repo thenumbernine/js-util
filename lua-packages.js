@@ -80,6 +80,10 @@ const luaPackages = {
 		{from : '/lua/neuralnet', to : 'neuralnet', files : ['activation.lua', 'ann-cpp.lua', 'ann-ffi.lua', 'ann.lua', 'qnn.lua', 'tdnn.lua']},
 		{from : '/lua/neuralnet/tests', to : 'neuralnet/tests', files : ['accuracy.lua', 'cartpole.lua', 'complex_mul.lua', 'mul.lua', 'performance.lua', 'poker.lua', 'randomwalk.lua', 'sine-glapp.lua', 'sine.lua', 'tictactoe.lua', 'xor.lua']},
 	],
+	['numo9'] : [
+		{from : '/lua/numo9', to : 'numo9', files : ['btnp_test.n9', 'font.png', 'fpstest.n9', 'hello.n9', 'n9a.lua', 'run.lua']},
+		{from : '/lua/numo9/numo9', to : 'numo9/numo9', files : ['app.lua', 'archive.lua', 'console.lua', 'editcode.lua', 'editor.lua', 'editsprites.lua', 'edittilemap.lua', 'filesystem.lua', 'keys.lua', 'resetgfx.lua']},
+	],
 	['parser'] : [
 		{from : '/lua/parser', to : 'parser', files : ['load_xform.lua', 'parser.lua', 'syntax_5.1.txt', 'syntax_5.2.txt', 'syntax_5.3.txt', 'syntax_5.4.txt', 'syntax_ast_5.1.txt', 'syntax_grammar.txt']},
 		{from : '/lua/parser/base', to : 'parser/base', files : ['ast.lua', 'datareader.lua', 'parser.lua', 'tokenizer.lua']},
