@@ -14,6 +14,9 @@ const luaPackages = {
 	['black-hole-skymap'] :  [	// not in the /lua folder:
 		{from : '/black-hole-skymap/lua', to : 'black-hole-skymap', files : ['black-hole-skymap.lua', 'black-hole-skymap-noniterative.lua', 'r_for_rho.lua']},
 	],
+	['chess-on-manifold'] : [
+		{from: '/lua/chess-on-manifold', to : 'chess-on-manifold', files : ['run.lua', 'app.lua', 'board.lua', 'piece.lua', 'pieces.png', 'place.lua', 'player.lua']},
+	],
 	['cl'] : [
 		{from : '/lua/cl', to : 'cl', files : ['assert.lua', 'assertparam.lua', 'buffer.lua', 'checkerror.lua', 'cl.lua', 'commandqueue.lua', 'context.lua', 'device.lua', 'event.lua', 'getinfo.lua', 'imagegl.lua', 'kernel.lua', 'memory.lua', 'platform.lua', 'program.lua']},
 		{from : '/lua/cl/obj', to : 'cl/obj', files : ['buffer.lua', 'domain.lua', 'env.lua', 'half.lua', 'kernel.lua', 'number.lua', 'program.lua', 'reduce.lua']},
