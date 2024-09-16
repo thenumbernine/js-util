@@ -62,7 +62,7 @@ const luaPackages = {
 	],
 	['lambda-cdm'] : [{from : '/lua/lambda-cdm', to : 'lambda-cdm', files : ['bisect.lua', 'run.lua']}],
 	['langfix'] : [
-		{from : '/lua/langfix', to : 'langfix', files : ['run.lua', 'test.rua', 'env.lua', 'langfix.lua']},
+		{from : '/lua/langfix', to : 'langfix', files : ['ast.lua', 'env.lua', 'langfix.lua', 'parser.lua', 'run.lua', 'tokenizer.lua', 'test.rua']},
 	],
 	['line-integral-convolution'] : [{from : '/lua/line-integral-convolution', to : 'line-integral-convolution', files : ['run.lua']}],
 	['make'] : [
@@ -84,7 +84,7 @@ const luaPackages = {
 		{from : '/lua/neuralnet/tests', to : 'neuralnet/tests', files : ['accuracy.lua', 'cartpole.lua', 'complex_mul.lua', 'mul.lua', 'performance.lua', 'poker.lua', 'randomwalk.lua', 'sine-glapp.lua', 'sine.lua', 'tictactoe.lua', 'xor.lua']},
 	],
 	['numo9'] : [
-		{from : '/lua/numo9', to : 'numo9', files : ['btnp_test.n9', 'font.png', 'fpstest.n9', 'hello.n9', 'n9a.lua', 'run.lua']},
+		{from : '/lua/numo9', to : 'numo9', files : ['btnp_test.n9', 'font.png', 'fpstest.n9', 'hello.n9', 'n9a.lua', 'n9a_p8_glue.lua', 'run.lua']},
 		{from : '/lua/numo9/numo9', to : 'numo9/numo9', files : ['app.lua', 'archive.lua', 'console.lua', 'editcode.lua', 'editor.lua', 'editsprites.lua', 'edittilemap.lua', 'filesystem.lua', 'keys.lua', 'resetgfx.lua']},
 	],
 	['parser'] : [
