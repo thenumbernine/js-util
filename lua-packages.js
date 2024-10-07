@@ -62,7 +62,8 @@ const luaPackages = {
 	],
 	['lambda-cdm'] : [{from : '/lua/lambda-cdm', to : 'lambda-cdm', files : ['bisect.lua', 'run.lua']}],
 	['langfix'] : [
-		{from : '/lua/langfix', to : 'langfix', files : ['ast.lua', 'env.lua', 'langfix.lua', 'parser.lua', 'run.lua', 'tokenizer.lua', 'test.rua']},
+		{from : '/lua/langfix', to : 'langfix', files : ['ast.lua', 'env.lua', 'langfix.lua', 'parser.lua', 'run.lua', 'tokenizer.lua']},
+		{from : '/lua/langfix/tests', to : 'langfix/tests', files : ['parse.lua', 'test.rua']},
 	],
 	['line-integral-convolution'] : [{from : '/lua/line-integral-convolution', to : 'line-integral-convolution', files : ['run.lua']}],
 	['make'] : [
@@ -85,7 +86,7 @@ const luaPackages = {
 	],
 	['numo9'] : [
 		{from : '/lua/numo9', to : 'numo9', files : ['btnp_test.n9', 'font.png', 'fpstest.n9', 'hello.n9', 'n9a.lua', 'n9a_p8_glue.lua', 'run.lua']},
-		{from : '/lua/numo9/numo9', to : 'numo9/numo9', files : ['app.lua', 'archive.lua', 'console.lua', 'editcode.lua', 'editor.lua', 'editsprites.lua', 'edittilemap.lua', 'filesystem.lua', 'keys.lua', 'resetgfx.lua']},
+		{from : '/lua/numo9/numo9', to : 'numo9/numo9', files : ['app.lua', 'archive.lua', 'audio.lua', 'console.lua', 'editcode.lua', 'editmusic.lua', 'editnet.lua', 'editsfx.lua', 'editsprites.lua', 'edittilemap.lua', 'filesystem.lua', 'keys.lua', 'mainmenu.lua', 'net.lua', 'rom.lua', 'ui.lua', 'video.lua']},
 	],
 	['parser'] : [
 		{from : '/lua/parser', to : 'parser', files : ['load_xform.lua', 'parser.lua', 'syntax_5.1.txt', 'syntax_5.2.txt', 'syntax_5.3.txt', 'syntax_5.4.txt', 'syntax_ast_5.1.txt', 'syntax_grammar.txt']},
@@ -116,7 +117,8 @@ const luaPackages = {
 		//sand-attack/highscores : [{from : '/lua/sand-attack/highscores', to : 'sand-attack/highscores', files : ['2024-06-21-22-05-44.demo']}],	// ... isn't in the repo ... interesting, mkdir didn't seem to work ... also interesting making an empty dir ?
 	],
 	['sdl'] : [
-		{from : '/lua/sdl', to : 'sdl', files : ['app.lua', 'assert.lua', 'sdl.lua', 'tests/test.lua']},
+		{from : '/lua/sdl', to : 'sdl', files : ['app.lua', 'assert.lua', 'audio.lua', 'sdl.lua']},
+		{from : '/lua/sdl/tests', to : 'sdl/tests', files : ['app.lua', 'audio.lua']},
 	],
 	['seashell'] : [
 		{from : '/lua/seashell', to : 'seashell', files : ['eqn.lua', 'run.lua', 'cached-eqns.glsl']},
