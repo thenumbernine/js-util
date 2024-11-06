@@ -132,6 +132,9 @@ const luaPackages = {
 	['sphere-grid'] : [
 		{from : '/lua/sphere-grid', to : 'sphere-grid', files : ['run.lua']},
 	],
+	['space-filling-curve'] : [
+		{from : '/lua/space-filling-curve', to : 'space-filling-curve', files : ['run.lua']},
+	],
 	['stat'] : [{from : '/lua/stat', to : 'stat', files : ['bin.lua', 'set.lua', 'stat.lua']}],
 	['struct'] : [{from : '/lua/struct', to : 'struct', files : ['struct.lua', 'test.lua']}],
 	['super_metroid_randomizer'] : [
