@@ -247,12 +247,6 @@ function DOM(tag, args, listeners) {
 	if (reserved.text !== undefined) {
 		dom.innerText = reserved.text;
 	}
-	if (reserved.appendTo !== undefined) {
-		reserved.appendTo.append(dom);
-	}
-	if (reserved.prependTo !== undefined) {
-		reserved.prependTo.prepend(dom);
-	}
 	if (reserved.click !== undefined) {
 		dom.addEventListener('click', reserved.click);
 	}
@@ -264,6 +258,15 @@ function DOM(tag, args, listeners) {
 			dom.classList.add(cl);
 		});
 	}
+
+	//add last for load event's sake
+	if (reserved.appendTo !== undefined) {
+		reserved.appendTo.append(dom);
+	}
+	if (reserved.prependTo !== undefined) {
+		reserved.prependTo.prepend(dom);
+	}
+
 	return dom;
 }
 
