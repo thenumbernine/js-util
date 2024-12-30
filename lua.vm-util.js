@@ -80,6 +80,7 @@ function executeLuaVMFileSet(args) {
 					if (
 						file.dest.substring(file.dest.length-4) == '.lua'
 						|| file.dest.substring(file.dest.length-8) == '.symmath'
+						|| file.dest.substring(file.dest.length-4) == '.txt'
 					) {
 //console.log('loading data file', file.dest);
 						let parts = pathToParts(file.dest);
