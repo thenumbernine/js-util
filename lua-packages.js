@@ -26,7 +26,7 @@ const luaPackages = {
 	['csv'] : [{from : '/lua/csv', to : 'csv', files : ['csv.lua', 'tolua.lua']}],
 	['dkjson'] : [{from : '/lua/dkjson', to : 'dkjson', files : ['dkjson.lua']}],
 	['earth-magnetic-field'] : [
-		{from : '/lua/earth-magnetic-field', to : 'earth-magnetic-field', files : ['run.lua', 'reduce.lua', '2020/wmm.cof', '2025/wmm.cof', 'earth.png', 'calc_b.shader']},
+		{from : '/lua/earth-magnetic-field', to : 'earth-magnetic-field', files : ['run.lua', 'reduce.lua', 'wmm2020-cof.txt', 'wmm2025-cof.txt', 'earth.png', 'calc_b.shader']},
 	],
 	['ext'] : [{from : '/lua/ext', to : 'ext', files : ['assert.lua', 'class.lua', 'cmdline.lua', 'coroutine.lua', 'ctypes.lua', 'debug.lua', 'detect_ffi.lua', 'detect_lfs.lua', 'detect_os.lua', 'env.lua', 'ext.lua', 'fromlua.lua', 'gc.lua', 'gcmem.lua', 'io.lua', 'load.lua', 'math.lua', 'meta.lua', 'number.lua', 'op.lua', 'os.lua', 'path.lua', 'range.lua', 'reload.lua', 'require.lua', 'string.lua', 'table.lua', 'timer.lua', 'tolua.lua', 'xpcall.lua']}],
 	['fibonacci-modulo'] : [{from : '/lua/fibonacci-modulo', to : 'fibonacci-modulo', files : ['run.lua', 'fibonacci.lua']}],
