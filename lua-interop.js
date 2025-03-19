@@ -222,7 +222,7 @@ const push_js = (L, jsValue) => {
 //console.log('lua->js calling func=', jsValue, 'arg1=this', _this, 'args=', args);
 					let ret;
 					try {
-						jsValue.apply(_this, args);
+						ret = jsValue.apply(_this, args);
 					} catch (e) {
 						M._luaL_error(L, M.stringToNewUTF8(e.toString()));
 						return 0;
