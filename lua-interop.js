@@ -61,6 +61,8 @@ M.LUA_LOADED_TABLE = M.stringToNewUTF8('_LOADED');
 
 const str_luaToJs = M.stringToNewUTF8('luaToJs');
 const str_jsToLua = M.stringToNewUTF8('jsToLua');
+const str_luaWrapObjectMT = M.stringToNewUTF8('luaWrapObjectMT');
+const str_luaWrapFuncMT = M.stringToNewUTF8('luaWrapFuncMT');
 const str___index = M.stringToNewUTF8('__index');
 const str___newindex = M.stringToNewUTF8('__newindex');
 const str___tostring = M.stringToNewUTF8('__tostring');
@@ -72,8 +74,11 @@ const str_loaded = M.stringToNewUTF8('loaded');
 const str_global = M.stringToNewUTF8('global');
 const str_null = M.stringToNewUTF8('null');
 const str_new = M.stringToNewUTF8('new');
+const str_tonumber = M.stringToNewUTF8('tonumber');
+const str_tostring = M.stringToNewUTF8('tostring');
+const str_instanceof = M.stringToNewUTF8('instanceof');
+const str_typeof = M.stringToNewUTF8('typeof');
 const str_js = M.stringToNewUTF8('js');
-const str_jsToLuaMT = M.stringToNewUTF8('jsToLuaMT');
 
 // define this before doing any lua<->js stuff
 const errHandler = M.addFunction(L => {
@@ -129,15 +134,15 @@ const wrapper___len_func = M.addFunction(L => {
 	return 1;
 }, 'ip');
 
-const wrapper___call_func = M.addFunction(L => {
+const call_func = (L, isArrow) => {
 	// since it's __call, the 1st arg is the func-obj
 	const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
 	// convert args to js
 	const n = M._lua_gettop(L);
 //console.log('lua->js call converting this arg 1...');
-	const _this = lua_to_js(L, 2);
+	const _this = isArrow ? null : lua_to_js(L, 2);
 	const args = [];
-	for (let i = 3; i <= n; ++i) {
+	for (let i = (isArrow ? 2 : 3); i <= n; ++i) {
 //console.log('lua->js call converting arg ', i, '...');
 		args.push(lua_to_js(L, i));
 	}
@@ -154,7 +159,9 @@ const wrapper___call_func = M.addFunction(L => {
 	// only supports single-return for now
 //console.log('... pushing ret', ret);
 	return push_js(L, ret);
-}, 'ip');
+}
+const wrapper___call_func = M.addFunction(L => call_func(L, false), 'ip');
+const wrapper___callArrow_func = M.addFunction(L => call_func(L, true), 'ip');
 
 
 // maps from js objects to some kind of index to look up lua object in lua table
@@ -275,7 +282,7 @@ const lua_to_js = (L, i) => {
 };
 
 let jsNullToken;
-const push_js = (L, jsValue) => {
+const push_js = (L, jsValue, isArrow) => {
 //console.log('push_js begin top', M._lua_gettop(L));
 	const t = typeof(jsValue);
 	switch (t) {
@@ -315,14 +322,21 @@ const push_js = (L, jsValue) => {
 
 			// TODO this is a faulty test , but good luck finding a better one
 			//const isArrow = t == 'function' && !jsValue.toString().startsWith('function');
+			// because it's faulty I'm going to allow specifying arrow functions manually
 
-			{
+			if (isArrow) {
+				// push a cfunction with its own addFunction ...
+				// unlike pushing an object, this will be 1:1 with function args, no separate initial 'this' arg
+				M._lua_newtable(L);								// luaWrapper={}
+				M._luaL_setmetatable(L, str_luaWrapFuncMT);		// luaWrapper
+			} else {
 //console.log('push_js pushing object');
 				// convert to a Lua table and push that table
 				// or push a table with metamethods that read into this table
-				M._lua_newtable(L);						// luaWrapper={}
-				M._luaL_setmetatable(L, str_jsToLuaMT);	// luaWrapper
+				M._lua_newtable(L);								// luaWrapper={}
+				M._luaL_setmetatable(L, str_luaWrapObjectMT);	// luaWrapper
 			}
+
 			// keep up with the lua<->js map
 //console.log('push_js setting relation with key', jsObjID);
 			jsToLua.set(jsValue, jsObjID);
@@ -363,7 +377,7 @@ window.luaToJs = luaToJs;
 		M._lua_setglobal(L, str_luaToJs);
 
 		// setup wrapper metatable
-		if (M._luaL_newmetatable(L, str_jsToLuaMT)) {
+		if (M._luaL_newmetatable(L, str_luaWrapObjectMT)) {
 			M._lua_pushcfunction(L, wrapper___index_func);	// t, mt, luaWrapper
 			M._lua_setfield(L, -2, str___index);
 
@@ -380,6 +394,25 @@ window.luaToJs = luaToJs;
 			M._lua_setfield(L, -2, str___call);
 		}
 		M._lua_pop(L, 1);
+
+		if (M._luaL_newmetatable(L, str_luaWrapFuncMT)) {
+			M._lua_pushcfunction(L, wrapper___index_func);	// t, mt, luaWrapper
+			M._lua_setfield(L, -2, str___index);
+
+			M._lua_pushcfunction(L, wrapper___newindex_func); // t, mt, luaWrapper
+			M._lua_setfield(L, -2, str___newindex);	// t, mt
+
+			M._lua_pushcfunction(L, wrapper___tostring_func);	// t, mt, luaWrapper
+			M._lua_setfield(L, -2, str___tostring);
+
+			M._lua_pushcfunction(L, wrapper___len_func);	// t, mt, luaWrapper
+			M._lua_setfield(L, -2, str___len);
+
+			M._lua_pushcfunction(L, wrapper___callArrow_func);		// luaWrapper
+			M._lua_setfield(L, -2, str___call);
+		}
+		M._lua_pop(L, 1);
+
 
 		M._luaL_openlibs(L);
 
@@ -412,8 +445,24 @@ window.luaToJs = luaToJs;
 		luaToJs.set(jsToLua.get(jsNullToken), null);
 
 		// js.new():
-		push_js(L, (cl, ...args) => { return new cl(...args); });
+		push_js(L, (cl, ...args) => new cl(...args) );
 		M._lua_setfield(L, -2, str_new);
+
+		// js.tonumber()
+		push_js(L, x => 1*x, true);
+		M._lua_setfield(L, -2, str_tonumber);
+
+		// js.tostring()
+		push_js(L, x => ''+x, true);
+		M._lua_setfield(L, -2, str_tostring);
+
+		// js.instanceof()
+		push_js(L, (a, b) => a instanceof b, true);
+		M._lua_setfield(L, -2, str_instanceof);
+
+		// js.typeof()
+		push_js(L, x => typeof(x), true);
+		M._lua_setfield(L, -2, str_typeof);
 
 		M._lua_setfield(L, -2, str_js);	// package.loaded;  package.loaded.js = js
 	},
