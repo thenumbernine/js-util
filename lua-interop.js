@@ -257,7 +257,7 @@ const push_js = (L, jsValue) => {
 				M._lua_pushcfunction(L, M.addFunction(L => {
 					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
 					if (jsValue === null) {
-						M._lua_pushstring(L, M.stringToNewUTF8('[js null]'));
+						M._lua_pushstring(L, M.stringToNewUTF8('[null]'));
 						return 1;
 					}
 
@@ -354,33 +354,41 @@ window.luaToJs = luaToJs;
 
 		M._luaL_openlibs(L);
 
-		// here - add package.loaded.js ... that's fengari compat ... how come I get the feeling that's a bad name to use ...
-		{
-			// not working:
-			//M._lua_getfield(L, M.LUA_REGISTRYINDEX, M.stringToNewUTF8(M.LUA_LOADED_TABLE));	// package.loaded
-			// instead:
-			M._lua_getglobal(L, M.stringToNewUTF8('package'));	//package
-			M._lua_getfield(L, -1, M.stringToNewUTF8('loaded'));	//package, package.loaded
-			M._lua_remove(L, -2);								// package.loaded
-
-			M._lua_newtable(L);	// package.loaded, js={}
-
-			push_js(L, window);	// package.loaded, js, window
-			M._lua_setfield(L, -2, M.stringToNewUTF8('global'));	// package.loaded, js;  js.global = window
-
-			// special hack ... make sure luaToJs for jsNullToken returns null
-			jsNullToken = {};
-			this['null'] = jsNullToken;
-
-			push_js(L, jsNullToken);
-			M._lua_setfield(L, -2, M.stringToNewUTF8('null'));
-
-			// change lua->js calls passing lua's "jsNullToken" will produce `null` in js
-			luaToJs.set(jsToLua.get(jsNullToken), null);
-
-			M._lua_setfield(L, -2, M.stringToNewUTF8('js'));	// package.loaded;  package.loaded.js = js
-		}
+		this.luaopen_js();
 	},
+
+	luaopen_js : function() {
+		// here - add package.loaded.js ... that's fengari compat ... how come I get the feeling that's a bad name to use ...
+		// not working:
+		//M._lua_getfield(L, M.LUA_REGISTRYINDEX, M.stringToNewUTF8(M.LUA_LOADED_TABLE));	// package.loaded
+		// instead:
+		M._lua_getglobal(L, M.stringToNewUTF8('package'));	//package
+		M._lua_getfield(L, -1, M.stringToNewUTF8('loaded'));	//package, package.loaded
+		M._lua_remove(L, -2);								// package.loaded
+
+		M._lua_newtable(L);	// package.loaded, js={}
+
+		// js.global:
+		push_js(L, window);	// package.loaded, js, window
+		M._lua_setfield(L, -2, M.stringToNewUTF8('global'));	// package.loaded, js;  js.global = window
+
+		// special hack ... make sure luaToJs for jsNullToken returns null
+		jsNullToken = {};
+		this['null'] = jsNullToken;
+
+		push_js(L, jsNullToken);
+		M._lua_setfield(L, -2, M.stringToNewUTF8('null'));
+
+		// change lua->js calls passing lua's "jsNullToken" will produce `null` in js
+		luaToJs.set(jsToLua.get(jsNullToken), null);
+
+		// js.new():
+		push_js(L, (cl, ...args) => { return new cl(...args); });
+		M._lua_setfield(L, -2, M.stringToNewUTF8('new'));
+
+		M._lua_setfield(L, -2, M.stringToNewUTF8('js'));	// package.loaded;  package.loaded.js = js
+	},
+
 	doString : function(s) {
 		M._lua_pushcfunction(L, errHandler);
 		const result = M._luaL_loadstring(L, M.stringToNewUTF8(s));	// throw on error?
@@ -400,22 +408,8 @@ window.luaToJs = luaToJs;
 			//throw msg; // return? idk?
 		}
 	},
-	global : {
-		set : (name, v) => {
-			/* getting memory errors
-			M._lua_pushglobaltable(L);
-			push_js(L, name);
-			push_js(L, v);
-			M._lua_settable(L, -3);
-			*/
-			/* so instead */
-			if (typeof(name) != 'string') throw "for now can only set global key strings";
-			push_js(L, v);
-			M._lua_setglobal(L, M.stringToNewUTF8(name));
-			/**/
-		},
-	},
-	// feel free to override this
+
+	// TODO stop using this and find how to override emscripten 's stdout & stderr
 	stdoutPrint : function(s) {
 		console.log('> '+s);
 	},
