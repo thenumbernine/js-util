@@ -57,7 +57,22 @@ M._luaL_typename = (L,i) => M._lua_typename(L, M._lua_type(L,i));
 
 // lauxlib.h
 
-M.LUA_LOADED_TABLE = '_LOADED';
+M.LUA_LOADED_TABLE = M.stringToNewUTF8('_LOADED');
+
+const str_luaToJs = M.stringToNewUTF8('luaToJs');
+const str_jsToLua = M.stringToNewUTF8('jsToLua');
+const str___index = M.stringToNewUTF8('__index');
+const str___newindex = M.stringToNewUTF8('__newindex');
+const str___tostring = M.stringToNewUTF8('__tostring');
+const str___len = M.stringToNewUTF8('__len');
+const str___call = M.stringToNewUTF8('__call');
+const str__null_ = M.stringToNewUTF8('[null]');
+const str_package = M.stringToNewUTF8('package');
+const str_loaded = M.stringToNewUTF8('loaded');
+const str_global = M.stringToNewUTF8('global');
+const str_null = M.stringToNewUTF8('null');
+const str_new = M.stringToNewUTF8('new');
+const str_js = M.stringToNewUTF8('js');
 
 let errHandler;
 
@@ -97,7 +112,7 @@ const lua_to_js = (L, i) => {
 	case M.LUA_TFUNCTION:
 //console.log('lua_to_js top=', M._lua_gettop(L));
 //console.log('lua_to_js got table/function, checking cache...');
-		M._lua_getglobal(L, M.stringToNewUTF8('luaToJs'));	// stack = luaToJs
+		M._lua_getglobal(L, str_luaToJs);	// stack = luaToJs
 		M._lua_pushvalue(L, i);			// stack = luaToJs, luaValue
 		M._lua_gettable(L, -2);			// stack = luaToJs, luaToJs[luaValue]
 		if (!M._lua_isnil(L, -1)) {
@@ -135,7 +150,7 @@ const lua_to_js = (L, i) => {
 					M._lua_pushcfunction(L, errHandler);	// msgh
 
 					// get back the function from the cache key
-					M._lua_getglobal(L, M.stringToNewUTF8('jsToLua'));	// msgh, jsToLua
+					M._lua_getglobal(L, str_jsToLua);	// msgh, jsToLua
 					M._lua_geti(L, -1, jsObjID);						// msgh, jsToLua, jsToLua[jsObjID]
 					M._lua_remove(L, -2);								// msgh, jsToLua[jsObjID]
 
@@ -165,7 +180,7 @@ const lua_to_js = (L, i) => {
 			M._lua_pushinteger(L, jsObjID);		// stack = luaToJs, luaValue, jsObjID
 			M._lua_settable(L, -3);				// stack = luaToJs; luaToJs[luaValue] = jsObjID
 			M._lua_pop(L, 1);
-			M._lua_getglobal(L, M.stringToNewUTF8('jsToLua'));	// stack = jsToLua
+			M._lua_getglobal(L, str_jsToLua);	// stack = jsToLua
 			M._lua_pushvalue(L, i);				// stack = jsToLua, luaValue
 			M._lua_seti(L, -2, jsObjID);		// stack = jsToLua; jsToLua[jsObjID] = luaValue
 			M._lua_pop(L, 1);
@@ -209,7 +224,7 @@ const push_js = (L, jsValue) => {
 		let jsObjID = jsToLua.get(jsValue);
 		if (jsObjID !== undefined) {
 //console.log('push_js found in entry', jsObjID);
-			M._lua_getglobal(L, M.stringToNewUTF8('jsToLua'));
+			M._lua_getglobal(L, str_jsToLua);
 			M._lua_geti(L, -1, BigInt(jsObjID));
 //console.log('push_js returning');
 			return 1;
@@ -245,7 +260,7 @@ const push_js = (L, jsValue) => {
 //console.log('wrapper for jsToLua key', jsObjID, 'index key', indexKey, 'returning value', jsValue[indexKey]);
 					return push_js(L, jsValue[indexKey]);
 				}, 'ip'));	// t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__index'));
+				M._lua_setfield(L, -2, str___index);
 
 				M._lua_pushcfunction(L, M.addFunction(L => {
 					// t, newindexKey, newindexValue
@@ -257,26 +272,26 @@ const push_js = (L, jsValue) => {
 					jsValue[newindexKey] = newindexValue;
 					return 0;
 				}, 'ip')); // t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__newindex'));	// t, mt
+				M._lua_setfield(L, -2, str___newindex);	// t, mt
 
 				M._lua_pushcfunction(L, M.addFunction(L => {
 					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
 					if (jsValue === null) {
-						M._lua_pushstring(L, M.stringToNewUTF8('[null]'));
+						M._lua_pushstring(L, str__null_);
 						return 1;
 					}
 
 					M._lua_pushstring(L, M.stringToNewUTF8(jsValue.toString()));
 					return 1;
 				}, 'ip'));	// t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__tostring'));
+				M._lua_setfield(L, -2, str___tostring);
 
 				M._lua_pushcfunction(L, M.addFunction(L => {
 					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
 					M._lua_pushinteger(L, jsValue.length || jsValue.size || 0);
 					return 1;
 				}, 'ip'));	// t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__len'));
+				M._lua_setfield(L, -2, str___len);
 
 				M._lua_pushcfunction(L, M.addFunction(L => {
 					// since it's __call, the 1st arg is the func-obj
@@ -304,7 +319,7 @@ const push_js = (L, jsValue) => {
 //console.log('... pushing ret', ret);
 					return push_js(L, ret);
 				}, 'ip'));		// luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__call'));
+				M._lua_setfield(L, -2, str___call);
 
 				M._lua_setmetatable(L, -2);	// t, mt
 			}
@@ -312,11 +327,11 @@ const push_js = (L, jsValue) => {
 //console.log('push_js setting relation with key', jsObjID);
 			jsToLua.set(jsValue, jsObjID);
 			luaToJs.set(jsObjID, jsValue);
-			M._lua_getglobal(L, M.stringToNewUTF8('jsToLua'));	// stack = luaWrapper, jsToLua
+			M._lua_getglobal(L, str_jsToLua);	// stack = luaWrapper, jsToLua
 			M._lua_pushvalue(L, -2);							// stack = luaWrapper, jsToLua, luaWrapper
 			M._lua_seti(L, -2, jsObjID);						// stack = luaWrapper, jsToLua; jsToLua[jsObjID] = luaWrapper
 			M._lua_pop(L, 1);									// stack = luaWrapper
-			M._lua_getglobal(L, M.stringToNewUTF8('luaToJs'));	// stack = luaWrapper, luaToJs
+			M._lua_getglobal(L, str_luaToJs);	// stack = luaWrapper, luaToJs
 			M._lua_pushvalue(L, -2);							// stack = luaWrapper, luaToJs, luaWrapper
 			M._lua_pushinteger(L, jsObjID);						// stack = luaWrapper, luaToJs, luaWrapper, jsObjID
 			M._lua_settable(L, -3);								// stack = luaWrapper, luaToJs; luaToJs[luaWrapper] = jsObjID
@@ -343,15 +358,15 @@ window.jsToLua = jsToLua;
 window.luaToJs = luaToJs;
 		// TODO use registery instead of this
 		M._lua_newtable(L);
-		M._lua_setglobal(L, M.stringToNewUTF8("jsToLua"));
+		M._lua_setglobal(L, str_jsToLua);
 		M._lua_newtable(L);
-		M._lua_setglobal(L, M.stringToNewUTF8("luaToJs"));
+		M._lua_setglobal(L, str_luaToJs);
 
 		// define this before doing any lua<->js stuff
 		errHandler = M.addFunction(L => {
 			let msg = M._lua_tostring(L, 1);
 			if (msg == 0) {
-				if (M._luaL_callmeta(L, 1, M.stringToNewUTF8('__tostring')) &&
+				if (M._luaL_callmeta(L, 1, str___tostring) &&
 					M._lua_type(L, -1) == M.LUA_TSTRING
 				) {
 					return 1;
@@ -374,31 +389,31 @@ window.luaToJs = luaToJs;
 		// not working:
 		//M._lua_getfield(L, M.LUA_REGISTRYINDEX, M.stringToNewUTF8(M.LUA_LOADED_TABLE));	// package.loaded
 		// instead:
-		M._lua_getglobal(L, M.stringToNewUTF8('package'));	//package
-		M._lua_getfield(L, -1, M.stringToNewUTF8('loaded'));	//package, package.loaded
+		M._lua_getglobal(L, str_package);	//package
+		M._lua_getfield(L, -1, str_loaded);	//package, package.loaded
 		M._lua_remove(L, -2);								// package.loaded
 
 		M._lua_newtable(L);	// package.loaded, js={}
 
 		// js.global:
 		push_js(L, window);	// package.loaded, js, window
-		M._lua_setfield(L, -2, M.stringToNewUTF8('global'));	// package.loaded, js;  js.global = window
+		M._lua_setfield(L, -2, str_global);	// package.loaded, js;  js.global = window
 
 		// special hack ... make sure luaToJs for jsNullToken returns null
 		jsNullToken = {};
 		this['null'] = jsNullToken;
 
 		push_js(L, jsNullToken);
-		M._lua_setfield(L, -2, M.stringToNewUTF8('null'));
+		M._lua_setfield(L, -2, str_null);
 
 		// change lua->js calls passing lua's "jsNullToken" will produce `null` in js
 		luaToJs.set(jsToLua.get(jsNullToken), null);
 
 		// js.new():
 		push_js(L, (cl, ...args) => { return new cl(...args); });
-		M._lua_setfield(L, -2, M.stringToNewUTF8('new'));
+		M._lua_setfield(L, -2, str_new);
 
-		M._lua_setfield(L, -2, M.stringToNewUTF8('js'));	// package.loaded;  package.loaded.js = js
+		M._lua_setfield(L, -2, str_js);	// package.loaded;  package.loaded.js = js
 	},
 
 	doString : function(s) {
