@@ -117,12 +117,17 @@ const lua_to_js = (L, i) => {
 
 			let jsValue;
 			if (t == M.LUA_TTABLE) {
+//console.log('creating js wrapper for lua obj...');
 				jsValue = {};	// do I want JS objects or JS maps?  maps are more like Lua, but don't have syntax support in JS ...
 				M._lua_pushnil(L);  // first key
-				while (M._lua_next(L, t) != 0) {
-				   jsValue[lua_to_js(L, -2)] = lua_to_js(L, -1);
-				   lua_pop(L, 1);
+				while (M._lua_next(L, i) != 0) {
+					const luaKey = lua_to_js(L, -2);
+					const luaValue = lua_to_js(L, -1);
+//console.log('setting', luaKey, 'to', luaValue);
+					jsValue[luaKey] = luaValue;
+					M._lua_pop(L, 1);
 				}
+//console.log('done with wrapper', jsValue);
 			} else if (t == M.LUA_TFUNCTION) {
 				// create proxy obj
 				jsValue = (...args) => {
@@ -265,6 +270,13 @@ const push_js = (L, jsValue) => {
 					return 1;
 				}, 'ip'));	// t, mt, luaWrapper
 				M._lua_setfield(L, -2, M.stringToNewUTF8('__tostring'));
+
+				M._lua_pushcfunction(L, M.addFunction(L => {
+					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
+					M._lua_pushinteger(L, jsValue.length || jsValue.size || 0);
+					return 1;
+				}, 'ip'));	// t, mt, luaWrapper
+				M._lua_setfield(L, -2, M.stringToNewUTF8('__len'));
 
 				M._lua_pushcfunction(L, M.addFunction(L => {
 					// since it's __call, the 1st arg is the func-obj
