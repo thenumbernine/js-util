@@ -55,6 +55,10 @@ M._lua_replace = (L,idx) => { M._lua_copy(L, -1, idx); M._lua_pop(L, 1); };
 M._lua_pcall = (L, nargs, nret, msgh) => M._lua_pcallk(L, nargs, nret, msgh, 0, 0);
 M._luaL_typename = (L,i) => M._lua_typename(L, M._lua_type(L,i));
 
+// lauxlib.h
+
+M.LUA_LOADED_TABLE = '_LOADED';
+
 let errHandler;
 
 // maps from js objects to some kind of index to look up lua object in lua table
@@ -107,7 +111,7 @@ const lua_to_js = (L, i) => {
 //console.log('lua_to_js building wrapper...');
 			M._lua_pop(L, 1);			// stack = luaToJs
 //console.log('lua_to_js top=', M._lua_gettop(L));
-			
+
 			const jsObjID = BigInt(jsToLua.size);	// consistent with push_js below
 //console.log('lua_to_js cache key=', jsObjID);
 
@@ -122,27 +126,27 @@ const lua_to_js = (L, i) => {
 			} else if (t == M.LUA_TFUNCTION) {
 				// create proxy obj
 				jsValue = (...args) => {
-//console.log('lua_to_js proxy function being called with args', ...args);					
+//console.log('lua_to_js proxy function being called with args', ...args);
 					M._lua_pushcfunction(L, errHandler);	// msgh
-					
+
 					// get back the function from the cache key
 					M._lua_getglobal(L, M.stringToNewUTF8('jsToLua'));	// msgh, jsToLua
 					M._lua_geti(L, -1, jsObjID);						// msgh, jsToLua, jsToLua[jsObjID]
 					M._lua_remove(L, -2);								// msgh, jsToLua[jsObjID]
-					
+
 					const n = args.length;
 					for (let i = 0; i < n; ++i) {
 						push_js(L, args[i]);
 					}										// msgh, f, args...
-//console.log('lua_to_js proxy function pcall...');					
+//console.log('lua_to_js proxy function pcall...');
 					const numret = M._lua_pcall(L, n, M.LUA_MULTRET, 1);
-//console.log('lua_to_js proxy function got back #return=', numret);					
+//console.log('lua_to_js proxy function got back #return=', numret);
 					// results ... always an array?  coerce to prim for size <= 1?
 					const ret = [];
 					for (let i = 0; i < numret; ++i) {
 						ret.push(lua_to_js(L, -numret+i));
 					}
-//console.log('lua_to_proxy function got results', ret);					
+//console.log('lua_to_proxy function got results', ret);
 					return ret;
 				};
 			}
@@ -169,6 +173,7 @@ const lua_to_js = (L, i) => {
 	}
 };
 
+let jsNullToken;
 const push_js = (L, jsValue) => {
 //console.log('push_js begin top', M._lua_gettop(L));
 	const t = typeof(jsValue);
@@ -190,7 +195,8 @@ const push_js = (L, jsValue) => {
 	case 'object':
 		// cuz for null, type is 'object' ... smh javascript
 		if (jsValue === null) {
-			M._lua_pushnil(L);
+			//M._lua_pushnil(L);
+			push_js(L, jsNullToken);
 			return 1;
 		}
 //console.log('push_js checking cache for', jsValue);
@@ -268,6 +274,12 @@ const push_js = (L, jsValue) => {
 				}, 'ip')); // t, mt, luaWrapper
 				M._lua_setfield(L, -2, M.stringToNewUTF8('__newindex'));	// t, mt
 				M._lua_pushcfunction(L, M.addFunction(L => {
+					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
+					if (jsValue === null) {
+						M._lua_pushstring(L, M.stringToNewUTF8('[js null]'));
+						return 1;
+					}
+
 					M._lua_pushstring(L, M.stringToNewUTF8(jsValue.toString()));
 					return 1;
 				}, 'ip'));	// t, mt, luaWrapper
@@ -313,7 +325,7 @@ window.luaToJs = luaToJs;
 		M._lua_newtable(L);
 		M._lua_setglobal(L, M.stringToNewUTF8("luaToJs"));
 
-		M._luaL_openlibs(L);
+		// define this before doing any lua<->js stuff
 		errHandler = M.addFunction(L => {
 			let msg = M._lua_tostring(L, 1);
 			if (msg == 0) {
@@ -329,6 +341,41 @@ window.luaToJs = luaToJs;
 			M._luaL_traceback(L, L, msg, 1);
 			return 1;
 		}, 'ip');
+
+		M._luaL_openlibs(L);
+
+		// here - add package.loaded.js ... that's fengari compat ... how come I get the feeling that's a bad name to use ...
+		{
+			// not working:
+			//M._lua_getfield(L, M.LUA_REGISTRYINDEX, M.stringToNewUTF8(M.LUA_LOADED_TABLE));	// package.loaded
+			// instead:
+console.log('getglobal package');
+			M._lua_getglobal(L, M.stringToNewUTF8('package'));	//package
+console.log('get package loaded');
+			M._lua_getfield(L, -1, M.stringToNewUTF8('loaded'));	//package, package.loaded
+console.log('removing package');
+			M._lua_remove(L, -2);								// package.loaded
+console.log('left with package.loaded');
+
+console.log('making js');
+			M._lua_newtable(L);	// package.loaded, js={}
+
+console.log('push window');
+			push_js(L, window);	// package.loaded, js, window
+			M._lua_setfield(L, -2, M.stringToNewUTF8('global'));	// package.loaded, js;  js.global = window
+
+			// special hack ... make sure luaToJs for jsNullToken returns null
+			jsNullToken = {};
+			this['null'] = jsNullToken;
+
+			push_js(L, jsNullToken);
+			M._lua_setfield(L, -2, M.stringToNewUTF8('null'));
+
+			// change lua->js calls passing lua's "jsNullToken" will produce `null` in js
+			luaToJs.set(jsToLua.get(jsNullToken), null);
+
+			M._lua_setfield(L, -2, M.stringToNewUTF8('js'));	// package.loaded;  package.loaded.js = js
+		}
 	},
 	doString : function(s) {
 		M._lua_pushcfunction(L, errHandler);
@@ -368,6 +415,9 @@ window.luaToJs = luaToJs;
 	stdoutPrint : function(s) {
 		console.log('> '+s);
 	},
+
+	push_js : push_js,
+	lua_to_js : lua_to_js,
 };
 
 export { lua };
