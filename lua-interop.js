@@ -211,16 +211,70 @@ const push_js = (L, jsValue) => {
 		} else {
 			jsObjID = BigInt(jsToLua.size);
 //console.log("push_js didn't find any entry, using new key", jsObjID);
-			if (t == 'function') {
-//console.log('push_js pushing function');
-				// tempted to push a Lua object with __call, not that it makes a difference
+
+			const isArrow = t == 'function'
+				// TODO this is a faulty test , but good luck finding a better one
+				&& !jsValue.toString().startsWith('function');
+
+			{
+//console.log('push_js pushing object');
+				// convert to a Lua table and push that table
+				// or push a table with metamethods that read into this table
+				M._lua_newtable(L);	// t={}
+
+				// if it's a js object ...
+				// ... that happens to be wrapping a lua object ...
+				// ... then just push the lua object
+				// ... but where to store th associations?  not in closure anymore...
+				//const tp = M._lua_topointer(L, -1);
+				//jsToLuaObjs.set(jsValue, tp);
+				//luaToJSObjs.set(tp, jsValue);
+				// ... can't use topointer cuz I can't recover it which I'll want to do for 2nd etc dereferences ...
+
+				M._lua_newtable(L);	// t, mt={}
+
 				M._lua_pushcfunction(L, M.addFunction(L => {
+					// t, indexKey
+					// should I even re-get the js table?  or just use closure?
+					const indexKey = lua_to_js(L, 2);
+//console.log('wrapper for jsToLua key', jsObjID, 'index key', indexKey, 'returning value', jsValue[indexKey]);
+					return push_js(L, jsValue[indexKey]);
+				}, 'ip'));	// t, mt, luaWrapper
+				M._lua_setfield(L, -2, M.stringToNewUTF8('__index'));
+
+				M._lua_pushcfunction(L, M.addFunction(L => {
+					// t, newindexKey, newindexValue
+					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
+					// TODO instead of relying on closures, we can define this function once and read the jsObjID from the table
+					const newindexKey = lua_to_js(L, 2);
+					const newindexValue = lua_to_js(L, 3);
+//console.log('wrapper for jsValue=', jsValue, 'newindexKey=', newindexKey, 'newindexValue=', newindexValue);
+					jsValue[newindexKey] = newindexValue;
+					return 0;
+				}, 'ip')); // t, mt, luaWrapper
+				M._lua_setfield(L, -2, M.stringToNewUTF8('__newindex'));	// t, mt
+
+				M._lua_pushcfunction(L, M.addFunction(L => {
+					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
+					if (jsValue === null) {
+						M._lua_pushstring(L, M.stringToNewUTF8('[js null]'));
+						return 1;
+					}
+
+					M._lua_pushstring(L, M.stringToNewUTF8(jsValue.toString()));
+					return 1;
+				}, 'ip'));	// t, mt, luaWrapper
+				M._lua_setfield(L, -2, M.stringToNewUTF8('__tostring'));
+
+				M._lua_pushcfunction(L, M.addFunction(L => {
+					// since it's __call, the 1st arg is the func-obj
+					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
 					// convert args to js
 					const n = M._lua_gettop(L);
 //console.log('lua->js call converting this arg 1...');
-					const _this = lua_to_js(L, 1);
+					const _this = lua_to_js(L, 2);
 					const args = [];
-					for (let i = 2; i <= n; ++i) {
+					for (let i = 3; i <= n; ++i) {
 //console.log('lua->js call converting arg ', i, '...');
 						args.push(lua_to_js(L, i));
 					}
@@ -238,52 +292,8 @@ const push_js = (L, jsValue) => {
 //console.log('... pushing ret', ret);
 					return push_js(L, ret);
 				}, 'ip'));		// luaWrapper
-			} else if (t == 'object') {
-//console.log('push_js pushing object');
-				// convert to a Lua table and push that table
-				// or push a table with metamethods that read into this table
-				M._lua_newtable(L);	// t={}
+				M._lua_setfield(L, -2, M.stringToNewUTF8('__call'));
 
-				// if it's a js object ...
-				// ... that happens to be wrapping a lua object ...
-				// ... then just push the lua object
-				// ... but where to store th associations?  not in closure anymore...
-				//const tp = M._lua_topointer(L, -1);
-				//jsToLuaObjs.set(jsValue, tp);
-				//luaToJSObjs.set(tp, jsValue);
-				// ... can't use topointer cuz I can't recover it which I'll want to do for 2nd etc dereferences ...
-
-				M._lua_newtable(L);	// t, mt={}
-				M._lua_pushcfunction(L, M.addFunction(L => {
-					// t, indexKey
-					// should I even re-get the js table?  or just use closure?
-					const indexKey = lua_to_js(L, 2);
-//console.log('wrapper for jsToLua key', jsObjID, 'index key', indexKey, 'returning value', jsValue[indexKey]);
-					return push_js(L, jsValue[indexKey]);
-				}, 'ip'));	// t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__index'));
-				M._lua_pushcfunction(L, M.addFunction(L => {
-					// t, newindexKey, newindexValue
-					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
-					// TODO instead of relying on closures, we can define this function once and read the jsObjID from the table
-					const newindexKey = lua_to_js(L, 2);
-					const newindexValue = lua_to_js(L, 3);
-//console.log('wrapper for jsValue=', jsValue, 'newindexKey=', newindexKey, 'newindexValue=', newindexValue);
-					jsValue[newindexKey] = newindexValue;
-					return 0;
-				}, 'ip')); // t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__newindex'));	// t, mt
-				M._lua_pushcfunction(L, M.addFunction(L => {
-					const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
-					if (jsValue === null) {
-						M._lua_pushstring(L, M.stringToNewUTF8('[js null]'));
-						return 1;
-					}
-
-					M._lua_pushstring(L, M.stringToNewUTF8(jsValue.toString()));
-					return 1;
-				}, 'ip'));	// t, mt, luaWrapper
-				M._lua_setfield(L, -2, M.stringToNewUTF8('__tostring'));
 				M._lua_setmetatable(L, -2);	// t, mt
 			}
 			// keep up with the lua<->js map
@@ -349,18 +359,12 @@ window.luaToJs = luaToJs;
 			// not working:
 			//M._lua_getfield(L, M.LUA_REGISTRYINDEX, M.stringToNewUTF8(M.LUA_LOADED_TABLE));	// package.loaded
 			// instead:
-console.log('getglobal package');
 			M._lua_getglobal(L, M.stringToNewUTF8('package'));	//package
-console.log('get package loaded');
 			M._lua_getfield(L, -1, M.stringToNewUTF8('loaded'));	//package, package.loaded
-console.log('removing package');
 			M._lua_remove(L, -2);								// package.loaded
-console.log('left with package.loaded');
 
-console.log('making js');
 			M._lua_newtable(L);	// package.loaded, js={}
 
-console.log('push window');
 			push_js(L, window);	// package.loaded, js, window
 			M._lua_setfield(L, -2, M.stringToNewUTF8('global'));	// package.loaded, js;  js.global = window
 
