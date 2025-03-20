@@ -398,8 +398,86 @@ package.path = package.path .. ';./?/?.lua'
 }
 EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
 
+
+// new system I guess
+
+const fetchBytes = src => {
+	return new Promise((resolve, reject) => {
+		const req = new XMLHttpRequest();
+		req.open('GET', src, true);
+		req.responseType = 'arraybuffer';
+		req.onload = ev => {
+			resolve(new Uint8Array(req.response));
+		};
+		req.onerror = function() {
+			console.log("failed on", src);
+			reject({
+				status: this.status,
+				statusText: req.statusText
+			});
+		};
+		req.send(null);
+	});
+};
+
+// https://github.com/hellpanderrr/lua-in-browser
+const mountFile = (FS, filePath, luaPath, callback) => {
+	return fetchBytes(filePath)
+	.then(fileContent => {
+
+		const fileSep = luaPath.lastIndexOf('/');
+		const file = luaPath.substring(fileSep + 1);
+		const body = luaPath.substring(0, luaPath.length - file.length - 1);
+
+		if (body.length > 0) {
+			const parts = body.split('/').reverse();
+			let parent = '';
+
+			while (parts.length) {
+				const part = parts.pop();
+				if (!part) continue;
+
+				const current = `${parent}/${part}`;
+				try {
+					FS.mkdir(current);
+				} catch (err) {} // ignore EEXIST
+
+				parent = current;
+			}
+		}
+
+		FS.writeFile(luaPath, fileContent, {encoding:'binary'});
+
+		// I know, I could just let whoever is calling addPackage pick all the filenames they want out and wait until after the promise is finished, but meh. ..
+		if (callback) {
+			callback(luaPath);
+		}
+	});
+}
+
+const addFromToDir = (FS, fromPath, toPath, files, callback) =>
+	// TODO use Promise.allSettled, but that means first flatten all the promises into one Promise.all ... shudders ... javascript is so retarded ...
+	Promise.all(files.map(f => mountFile(
+		FS,
+		(fromPath+'/'+f).replace('+', '%2b'),	//TODO full url escape? but not for /'s
+		toPath+'/'+f,
+		callback
+	)));
+
+const addPackage = (FS, pkg, callback) =>
+	Promise.all(
+		pkg.map(fileset =>
+			addFromToDir(FS, fileset.from, fileset.to, fileset.files, callback)
+		)
+	);
+
 export {
 	EmbeddedLuaInterpreter,
 	luaVmPackageInfos,
 	executeLuaVMFileSet,
+
+	fetchBytes,
+	mountFile,
+	addFromToDir,
+	addPackage,
 };
