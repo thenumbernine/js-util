@@ -413,8 +413,16 @@ window.luaToJs = luaToJs;
 		}
 		M._lua_pop(L, 1);
 
-
 		M._luaL_openlibs(L);
+
+		// getting weird wasm error: Uncaught RuntimeError: null function or function signature mismatch
+		//M._luaL_requiref(L, M.stringToNewUTF8('ffi'), M._luaopen_ffi, 0);
+		// can't do this cuz I need a emcc mem loc func ptr of luaopen_ffi, not a js wrapper ...
+		// how to get that?  use dlsym? that's broken
+		// instead I have to re-wrap luaopen_ffi ...
+		M._luaL_requiref(L, M.stringToNewUTF8('ffi'), M.addFunction(L => M._luaopen_ffi(L), 'ip'), 0);
+
+		M._lua_pop(L, 1);
 
 		this.luaopen_js();
 	},
