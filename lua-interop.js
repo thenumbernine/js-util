@@ -370,8 +370,9 @@ const lua = {
 
 		jsToLua = new Map();
 		luaToJs = new Map();
-window.jsToLua = jsToLua;
-window.luaToJs = luaToJs;
+		lua.jsToLua = jsToLua;
+		lua.luaToJs = luaToJs;
+
 		// TODO use registery instead of this
 		M.lua_newtable(L);
 		M.lua_setglobal(L, str_jsToLua);
