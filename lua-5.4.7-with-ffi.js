@@ -446,16 +446,18 @@ async function createWasm() {
   // performing other necessary setup
   /** @param {WebAssembly.Module=} module*/
   function receiveInstance(instance, module) {
-    wasmExports = instance.exports;
-
+    Module.wasmInstance = instance;
+	Module.wasmModule = module;
     
+	wasmExports = instance.exports;
 
     wasmMemory = wasmExports['memory'];
-    
+    Module.wasmExports = wasmExports; // = Module.wasmInstance.exports
+
     updateMemoryViews();
 
     wasmTable = wasmExports['__indirect_function_table'];
-    
+	Module.wasmTable = wasmTable; // = Module.wasmInstance.exports.__indirect_function_table
 
     addOnInit(wasmExports['__wasm_call_ctors']);
 
@@ -658,7 +660,7 @@ async function createWasm() {
 
   /** @type {WebAssembly.Table} */
   var wasmTable;
-  Module['wasmTable'] = wasmTable;
+  Module['wasmTable'] = wasmTable; // won't do anthing, will it?
   /** @suppress{checkTypes} */
   var getWasmTableEntry = (funcPtr) => {
       // In -Os and -Oz builds, do not implement a JS side wasm table mirror for small
@@ -4286,7 +4288,8 @@ async function createWasm() {
       // First, create the map if this is the first use.
       if (!functionsInTableMap) {
         functionsInTableMap = new WeakMap();
-        updateTableMap(0, wasmTable.length);
+        Module.functionsInTableMap = functionsInTableMap;
+		updateTableMap(0, wasmTable.length);
       }
       return functionsInTableMap.get(func) || 0;
     };

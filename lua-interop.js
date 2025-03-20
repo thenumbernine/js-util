@@ -79,6 +79,7 @@ const str_tostring = M.stringToNewUTF8('tostring');
 const str_instanceof = M.stringToNewUTF8('instanceof');
 const str_typeof = M.stringToNewUTF8('typeof');
 const str_js = M.stringToNewUTF8('js');
+const str_ffi = M.stringToNewUTF8('ffi');
 
 // define this before doing any lua<->js stuff
 const errHandler = M.addFunction(L => {
@@ -89,6 +90,7 @@ const errHandler = M.addFunction(L => {
 		) {
 			return 1;
 		} else {
+			// does vararg not work with emcc / wasm?
 			//msg = M.lua_pushfstring(L, M.stringToNewUTF8("(error object is a %s value)"), M.luaL_typename(L, 1));
 			msg = M.lua_pushstring(L, M.stringToNewUTF8("(error object is a "+M.UTF8ToString(M.luaL_typename(L, 1))+" value)"));
 		}
@@ -416,11 +418,14 @@ window.luaToJs = luaToJs;
 		M.luaL_openlibs(L);
 
 		// getting weird wasm error: Uncaught RuntimeError: null function or function signature mismatch
-		//M.luaL_requiref(L, M.stringToNewUTF8('ffi'), M.luaopen_ffi, 0);
+		//M.luaL_requiref(L, str_ffi, M.luaopen_ffi, 0);
 		// can't do this cuz I need a emcc mem loc func ptr of luaopen_ffi, not a js wrapper ...
 		// how to get that?  use dlsym? that's broken
-		// instead I have to re-wrap luaopen_ffi ...
-		M.luaL_requiref(L, M.stringToNewUTF8('ffi'), M.addFunction(L => M.luaopen_ffi(L), 'ip'), 0);
+		// using getFunctionAddress?
+		//M.luaL_requiref(L, str_ffi, M.getFunctionAddress(M.luaopen_ffi), 0); // nope, same error
+		//M.luaL_requiref(L, str_ffi, M.__emutls_get_address('luaopen_ffi'), 0); // nope, "table index is out of bounds" ... what table where?
+		// instead I have to re-add luaopen_ffi ...
+		M.luaL_requiref(L, str_ffi, M.addFunction(M.luaopen_ffi), 0);
 
 		M.lua_pop(L, 1);
 
