@@ -48,7 +48,7 @@ const luaPackages = {
 		{from : '/lua/htmlparser/tests', to : 'htmlparser/tests', files : ['dominion-from-diehrstraits.lua', 'dominion.lua', 'exportITunesPlaylist.lua', 'prettyprint.lua', 'yqlkey.lua']},
 	],
 	['image'] : [
-		{from : '/lua/image', to : 'image', files : ['image.lua']},
+		{from : '/lua/image', to : 'image', files : ['image.lua', 'quantize_mediancut.lua']},
 		{from : '/lua/image/luajit', to : 'image/luajit', files : ['bmp.lua', 'fits.lua', 'gif.lua', 'image.lua', 'jpeg.lua', 'loader.lua', 'png.lua', 'tiff.lua']},
 	],
 	['imgui'] : [{from : '/lua/imgui', to : 'imgui', files : ['imgui.lua']}],
