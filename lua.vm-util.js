@@ -7,7 +7,7 @@ does github.io allow any server-side execution?
 otherwise I'll have to keep regenerating this / make a script to do so
 */
 
-import {DOM, assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts, require} from './util.js';
+import {DOM, assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 import {newLua} from '/js/lua-interop.js';
 /*
 Some helper functions for using lua.vm.js
