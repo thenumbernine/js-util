@@ -1,5 +1,12 @@
 // this file will load the emscripten module and provide the lua<->js wrapper code
-import { lua as M } from '/js/lua-5.4.7-with-ffi.js';
+import { newLuaLib } from '/js/lua-5.4.7-with-ffi.js';
+
+const newLua = async(args) => {
+
+args.print ??= s => { console.log('> '+s); }
+args.printErr ??= s => { console.log('> '+s); }
+
+const M = await newLuaLib(args);
 
 // luaconf.h
 //M.LUAI_MAXSTACK = 1000000;	// 32 bit
@@ -487,7 +494,7 @@ const lua = {
 		if (result != M.LUA_OK) {
 			// TODO get stack trace and error message
 			const msg = M.UTF8ToString(M.lua_tostring(L, -1));
-			this.stdoutPrint('syntax error: '+msg);
+			M.printErr('syntax error: '+msg);
 			throw 'syntax error: '+msg;
 		}
 		//console.log('luaL_loadstring', result);	// no syntax errors
@@ -496,18 +503,15 @@ const lua = {
 		//console.log('lua_pcall', ret);
 		if (ret != 0) {
 			const msg = M.UTF8ToString(M.lua_tostring(L, -1));
-			this.stdoutPrint(msg);
+			M.printErr(msg);
 			//throw msg; // return? idk?
 		}
-	},
-
-	// TODO stop using this and find how to override emscripten 's stdout & stderr
-	stdoutPrint : function(s) {
-		console.log('> '+s);
 	},
 
 	push_js : push_js,
 	lua_to_js : lua_to_js,
 };
 
-export { lua };
+	return lua;
+}; //newLua 
+export { newLua };

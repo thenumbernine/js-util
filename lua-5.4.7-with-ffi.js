@@ -1,3 +1,5 @@
+const newLuaLib = async(Module = {}) => {
+
 const wasmPath = "/js/lua-5.4.7-with-ffi.wasm";
 var _scriptName = typeof document != 'undefined' ? document.currentScript?.src : undefined;
 
@@ -15,7 +17,6 @@ var _scriptName = typeof document != 'undefined' ? document.currentScript?.src :
 // after the generated code, you will need to define   var Module = {};
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
-const Module = {};
 
 // Set up the promise that indicates the Module is initialized
 var readyPromiseResolve, readyPromiseReject;
@@ -4555,4 +4556,6 @@ if (Module['preInit']) {
 
 run();
 
-export { Module as lua };
+	return Module;
+}; // newLuaLib
+export { newLuaLib };
