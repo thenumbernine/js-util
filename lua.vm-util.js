@@ -8,6 +8,7 @@ otherwise I'll have to keep regenerating this / make a script to do so
 */
 
 import {DOM, assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts, require} from './util.js';
+import {newLua} from '/js/lua-interop.js';
 /*
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
@@ -124,14 +125,12 @@ class EmbeddedLuaInterpreter {
 	constructor(args) {
 		const thiz = this;
 		(async () => {
-			window.LuaModule = {
+			thiz.lua = await newLua({
 				print : s => { thiz.print(s); },
 				printErr : s => { thiz.printErr(s); },
-				stdin : () => {},
-			};
-			thiz.LuaModule = await require('/js/lua.vm.js');
-			window.LuaModule = undefined;
-//console.log('LuaModule', thiz.LuaModule);
+			});
+			thiz.lua.newState();
+			thiz.LuaModule = thiz.lua.lib;
 
 			//granted it doesn't make much sense to include tests from one package without including the package itself ...
 			if (args.packageTests) {
@@ -341,12 +340,7 @@ package.path = package.path .. ';./?/?.lua'
 		return div;
 	}
 	execute(s) {
-		/* seems lua syntax error handling is messed up in lua.vm.js ...
-		this.LuaModule.Lua.execute(s);
-		*/
-		/* until then */
-		this.LuaModule.Lua.execute('assert(load[=====['+s+']=====])()');
-		/* */
+		this.lua.doString(s);
 	}
 	executeAndPrint(s) {
 		this.print('> '+s);
