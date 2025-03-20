@@ -139,7 +139,7 @@ const wrapper___tostring_func = M.addFunction(L => {
 
 const wrapper___len_func = M.addFunction(L => {
 	const jsValue = lua_to_js(L, 1);	// optional line or just use the closure variable
-	M.lua_pushinteger(L, jsValue.length || jsValue.size || 0);
+	M.lua_pushinteger(L, BigInt(jsValue.length || jsValue.size || 0));
 	return 1;
 }, 'ip');
 
