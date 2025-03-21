@@ -470,10 +470,11 @@ function animate(args) {
 
 // See: https://lea.verou.me/2020/07/import-non-esm-libraries-in-es-modules,-with-client-side-vanilla-js/
 async function require(path) {
-	let _module = window.module;
+	const _module = window.module;
 	window.module = {};
+	window.module.exports ??= {};	// I added this.  why is it a thing?  lots of exporters expect `module.exports` to exist before they overwrite it.  why care if it's there if you're about to overwrite it?
 	await import(path);
-	let exports = module.exports;
+	const exports = module.exports;
 	window.module = _module;
 	return exports;
 }
