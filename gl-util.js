@@ -1,5 +1,5 @@
 import {vec3, mat4} from '/js/gl-matrix-3.4.1/index.js';
-import {DOM, merge} from '/js/util.js';
+import {merge, Canvas} from '/js/dom.js';
 import {makeScene} from './gl-util-Scene.js';
 import {makeSceneObject} from './gl-util-SceneObject.js';
 import {makeView} from './gl-util-View.js';
@@ -60,7 +60,7 @@ window.glutil = this;
 		if (args.fullscreen) {
 			window.scrollTo(0,1);
 			if (this.canvas === undefined) {
-				this.canvas = DOM('canvas', {prependTo:document.body});
+				this.canvas = Canvas({prependTo:document.body});
 			}
 
 			merge(this.canvas.style, {

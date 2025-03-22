@@ -1,4 +1,4 @@
-import {DOM} from '/js/util.js';
+import {Canvas} from '/js/dom.js';
 import {mat4} from '/js/gl-matrix-3.4.1/index.js';
 import {makeTexture2D} from './gl-util-Texture2D.js';
 import {makeProgram} from './gl-util-Program.js';
@@ -10,7 +10,7 @@ glutil.import('UnitQuad', makeUnitQuad);
 const gl = glutil.context;
 class Font {
 	constructor(args) {
-		let c = DOM('canvas');
+		let c = Canvas();
 		c.width = 256;
 		c.height = 256;
 		let c2d = c.getContext('2d');

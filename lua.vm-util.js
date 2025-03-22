@@ -7,7 +7,8 @@ does github.io allow any server-side execution?
 otherwise I'll have to keep regenerating this / make a script to do so
 */
 
-import {DOM, assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
+import {A, Br, Div, Span, Input, Button} from './dom.js';
+import {assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 import {newLua} from '/js/lua-interop.js';
 /*
 Some helper functions for using lua.vm.js
@@ -167,30 +168,39 @@ class EmbeddedLuaInterpreter {
 
 			thiz.parentContainer = document.getElementById(args.id);
 
-			thiz.container = DOM('div');
-			if (thiz.parentContainer) {
-				thiz.parentContainer.appendChild(thiz.container);
-			}
+			thiz.container = Div({
+				appendTo : thiz.parentContainer || undefined,
+				children : [
+					thiz.output = Div({
+						innerText : 'Loading...',
+						style : {
+							width : '80em',
+							height : '24em',
+							//border : '1px solid black',
+							border : '0px',
+							'font-family' : 'Courier',
+							'overflow-y' : 'scroll'
+						},
+					}),
+					Div({
+						innerHTML : 'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>',
+					}),
+					thiz.inputGo = Button({
+						innerText : 'GO!',
+					}),
+					thiz.input = Input({
+						type : 'email',
+						style : {
+							width : '80em',
+							border : '1px solid black',
+							'font-family' : 'Courier'
+						},
+					}),
+					Br(),
+				],
+			});
 			hide(thiz.container);
-
-			DOM('div', {
-				innerHTML : 'Lua VM emulation courtesy of <a href="http://emscripten.org">Emscripten</a>',
-				appendTo : thiz.container,
-			});
-
 			thiz.outputBuffer = '';
-			thiz.output = DOM('div', {
-				text : 'Loading...',
-				css : {
-					width : '80em',
-					height : '24em',
-					//border : '1px solid black',
-					border : '0px',
-					'font-family' : 'Courier',
-					'overflow-y' : 'scroll'
-				},
-				appendTo : thiz.container,
-			});
 
 			thiz.history = [];
 			//load history from cookies
@@ -200,30 +210,16 @@ class EmbeddedLuaInterpreter {
 				thiz.history.push(line);
 			}*/
 			thiz.historyIndex = thiz.history.length;
-			thiz.inputGo = DOM('button', {
-				text : 'GO!',
-				appendTo : thiz.container,
-			});
 
-			thiz.input = DOM('input', {
-				type : 'email',
-				css : {
-					width : '80em',
-					border : '1px solid black',
-					'font-family' : 'Courier'
-				},
-				appendTo : thiz.container,
-			});
 			thiz.input.setAttribute('autocapitalize', 'off');
 			thiz.input.setAttribute('autocomplete', 'off');
 			thiz.input.setAttribute('autocorrect', 'off');
 			thiz.input.setAttribute('spellcheck', 'off');
-			DOM('br', {appendTo:thiz.container});
 
-			thiz.launchButton = DOM('button', {text:'Launch'});
-			if (thiz.parentContainer) {
-				thiz.parentContainer.appendChild(thiz.launchButton);
-			}
+			thiz.launchButton = Button({
+				innerText:'Launch',
+				appendTo:thiz.parentContainer || undefined,
+			});
 
 			const onLaunch = () => {
 				hide(thiz.launchButton);
@@ -296,7 +292,7 @@ class EmbeddedLuaInterpreter {
 
 		//provide test buttons
 		if (this.tests) {
-			this.testContainer = DOM('div', {appendTo:this.container});
+			this.testContainer = Div({appendTo:this.container});
 			this.tests.forEach(info => {
 				let div = thiz.createDivForTestRow(info);
 				thiz.testContainer.appendChild(div);
@@ -313,31 +309,29 @@ package.path = package.path .. ';./?/?.lua'
 	}
 	createDivForTestRow(info) {
 		let thiz = this;
-		let div = DOM('div');
-		DOM('a', {
-			href:info.url,
-			text:'[View]',
-			target:'_blank',
-			css : {'margin-right' : '10px'},
-			appendTo : div,
-		})
-
-		DOM('a', {
-			href : '#',
-			text : '[Run]',
-			css : {'margin-right' : '10px'},
-			click : e => {
-				thiz.executeAndPrint("dofile '"+info.dest+"'");
-			},
-			appendTo : div,
+		return Div({
+			children : [
+				A({
+					href:info.url,
+					innerText:'[View]',
+					target:'_blank',
+					style: {'margin-right' : '10px'},
+				}),
+				A({
+					href : '#',
+					innerText : '[Run]',
+					style : {'margin-right' : '10px'},
+					events : {
+						click : e => {
+							thiz.executeAndPrint("dofile '"+info.dest+"'");
+						},
+					},
+				}),
+				Span({
+					innerText:info.name !== undefined ? info.name : info.dest,
+				}),
+			],
 		});
-
-		DOM('span', {
-			text:info.name !== undefined ? info.name : info.dest,
-			appendTo:div,
-		});
-
-		return div;
 	}
 	execute(s) {
 		this.lua.doString(s);

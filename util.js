@@ -1,3 +1,5 @@
+import {merge, Img, Div, Span, Br, Progress} from './dom.js';
+
 //http://stackoverflow.com/questions/3954438/remove-item-from-array-by-value
 // expects 'this'
 function arrayRemove(...args) {
@@ -49,13 +51,6 @@ function arrayMap(...args) {
 	}
 
 	return res;
-}
-
-function merge(mergedst, mergesrc) {
-	for (let k in mergesrc) {
-		mergedst[k] = mergesrc[k];
-	}
-	return mergedst;
 }
 
 function traceback() {
@@ -190,10 +185,6 @@ function removeFromParent(o) {
 	o.parentNode.removeChild(o);
 }
 
-function Text(text) {
-	return document.createTextNode(text);
-}
-
 function hide(o) {
 	o.style.display = 'none';
 }
@@ -214,6 +205,7 @@ function toggleHidden(o) {
 	}
 }
 
+/*
 // TODO listeners ...
 // should I just intersperse them within args, like jquery does?
 // should I give them a reserved table in args?
@@ -269,6 +261,7 @@ function DOM(tag, args, listeners) {
 
 	return dom;
 }
+*/
 
 function preload(checklist, done, update, error) {
 	checklist = arrayClone(checklist);
@@ -276,7 +269,7 @@ function preload(checklist, done, update, error) {
 //console.log('got checklist', checklist, 'len', len);
 	checklist.forEach(src => {
 //console.log('loading',src);
-		const img = DOM('img', {
+		const img = Img({
 			attrs : {
 				src : src,
 			},
@@ -359,20 +352,23 @@ class FileSetLoader {
 			}
 		}
 
-		this.div = DOM('div', {
-			css : {
+		this.div = Div({
+			style : {
 				margin : 'auto',
 			},
-		});
-		document.body.prepend(this.div);
-		this.loading = DOM('span', {text:'Loading...', appendTo:this.div});
-		DOM('br', {appendTo:this.div});
-		this.progress = DOM('progress', {
-			attrs : {
-				max : 0,
-				value : 0,
-			},
-			appendTo: this.div,
+			prependTo : document.body,
+			children : [
+				this.loading = Span({
+					innerText:'Loading...',
+				}),
+				Br(),
+				this.progress = Progress({
+					attrs : {
+						max : 0,
+						value : 0,
+					},
+				}),
+			],
 		});
 
 		this.results = [];
@@ -541,8 +537,6 @@ export {
 	fixJQuery,
 	posmod,
 	removeFromParent,
-	Text,
-	DOM,
 	hide,
 	show,
 	hidden,
