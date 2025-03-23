@@ -403,21 +403,13 @@ const addPackage = (FS, pkg, callback) =>
 //but I could also potentially form it into the loader that universe uses ...
 // it'd just take changing the loading div stuff and change the xmlhttprequest data type
 /*
-args:
-	files : array of string
-	onload(filename) : (optional) run per file downloaded
-
-produces:
-	array of results from loaded files
+files : array of string
+returns: array of results from loaded files
 */
-const fileSetLoader = async(args) => {
-	const thiz = {};
-
-	thiz.files = args.files;
-
+const fileSetLoader = async(files) => {
 	const progress = Progress({
 		attrs : {
-			max : thiz.files.length,
+			max : files.length,
 			value : 0,
 		},
 	});
@@ -435,25 +427,20 @@ const fileSetLoader = async(args) => {
 		],
 	});
 
-	thiz.results = thiz.files.map(file => null);
+	const results = files.map(file => null);
 
 	let numLoaded = 0;
-	await Promise.all(thiz.files.map((file,i) => fetch(file.url)
+	await Promise.all(files.map((file,i) => fetch(file.url)
 		.then(response => response.text())
 		.then(responseText => {
-			thiz.results[i] = responseText;
+			results[i] = responseText;
 			++numLoaded;
 			progress.setAttribute('value', numLoaded);
-
-			// per-file onload
-			if (args.onload) {
-				args.onload.call(thiz, file.url, file.dest, responseText);
-			}
 		})));
 
 	removeFromParent(div);
 
-	return thiz;
+	return results;
 }
 
 /*

@@ -1,14 +1,5 @@
-/*
-This and util.js are old and clunky.
-I have a much smaller and smoother filesystem-loader in glapp-js, but it doesn't come with a DOM progress bar.
-
-autogen was nice ...
-does github.io allow any server-side execution?
-otherwise I'll have to keep regenerating this / make a script to do so
-*/
-
 import {A, Br, Div, Span, Input, Button} from './dom.js';
-import {assert, show, hide, fetchBytes, mountFile, addFromToDir, addPackage, fileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
+import {assert, show, hide, fileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 import {newLua} from '/js/lua-interop.js';
 /*
 Some helper functions for using lua.vm.js
@@ -51,6 +42,8 @@ used to be used more
 but now I'm opting for the more lean lua-interop.js
 so atm this is only actively used in emoji-lua
 
+... I want to async/await this but it's a class and javascript is too retarded to async/await class constructors so ... I'll just leave it
+
 specify the files you want and let it go at it
 args:
 	id : (optional) id of the parent container for all this to go
@@ -65,8 +58,6 @@ args:
 
 	files : files
 	done : (optional) done , run after all loaded, after onLaunch
-	onload(url, dest, data) : (optional) per-file on-load callback
-	onexec(url, dest) : (optional) per-file on-execute callback
 */
 class EmbeddedLuaInterpreter {
 	constructor(args) {
@@ -164,69 +155,44 @@ class EmbeddedLuaInterpreter {
 			thiz.input.setAttribute('autocorrect', 'off');
 			thiz.input.setAttribute('spellcheck', 'off');
 
-			thiz.launchButton = Button({
-				innerText:'Launch',
-				appendTo:thiz.parentContainer || undefined,
-			});
+			show(thiz.container);
 
-			const onLaunch = async() => {
-				hide(thiz.launchButton);
-				show(thiz.container);
+			const FS = thiz.LuaModule.FS;
 
-				args.onexec = (url, dest) => {
-//Module.print('loading '+dest+' ...');
-				};
-				args.done = () => {
-//Module.print('initializing...');
-					setTimeout(() => {
-						thiz.doneLoadingFilesystem();
-					}, 1);
-				};
-				const FS = thiz.LuaModule.FS;
+			//TODO don't store them here
+			//just pull from their remote location / github repo
+			const results = await fileSetLoader(args.files);
 
-				const fsl = await fileSetLoader({
-					//TODO don't store them here
-					//just pull from their remote location / github repo
-					files : args.files,
-					onload : args.onload,	// per-file onload with {files, results} as 'this'
-				});
+			//console.log('results', this.results);
 
-				//console.log('results', this.results);
-
-				// once they're all loaded, onexec?
-				fsl.results.forEach((result, i) => {
-					let file = fsl.files[i];
-
-					args?.onexec(file.url, file.dest);
+			// once they're all loaded, onexec?
+			results.forEach((result, i) => {
+				let file = args.files[i];
 
 //console.log('loading data file', file.dest);
-					let parts = pathToParts(file.dest);
-					if (parts.dir != '.') {
-						try { 	//how do you detect if a path is already created?
+				let parts = pathToParts(file.dest);
+				if (parts.dir != '.') {
+					try { 	//how do you detect if a path is already created?
 //console.log('mkdir', parts.dir);
-							FS.createPath('/', parts.dir, true, true);
-						} catch (e) {
-							console.log('failed to create path', parts.dir, 'with error', e);
-						}
-					}
-					try {
-//console.log('writing', parts.file);
-						FS.createDataFile(parts.dir, parts.file, result, true, false);
+						FS.createPath('/', parts.dir, true, true);
 					} catch (e) {
-						console.log("failed to create file", file.dest, 'file', parts.file, 'dir', parts.dir, 'with error', e);
+						console.log('failed to create path', parts.dir, 'with error', e);
 					}
-				});
+				}
+				try {
+//console.log('writing', parts.file);
+					FS.createDataFile(parts.dir, parts.file, result, true, false);
+				} catch (e) {
+					console.log("failed to create file", file.dest, 'file', parts.file, 'dir', parts.dir, 'with error', e);
+				}
+			});
 
 //console.log('...executeLuaVMFileSet done');
-				args?.done();
-			};
+//Module.print('initializing...');
+			setTimeout(() => {
+				thiz.doneLoadingFilesystem();
+			}, 1);
 
-			thiz.launchButton.addEventListener('click', e => {
-				onLaunch();
-			});
-			if (args.autoLaunch) {
-				onLaunch();
-			}
 		})();
 	}
 	processInput() {
@@ -371,14 +337,4 @@ package.path = package.path .. ';./?/?.lua'
 }
 EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
 
-
-export {
-	EmbeddedLuaInterpreter,
-	luaVmPackageInfos,
-
-	// TODO remove these from here and just use js/util.js
-	fetchBytes,
-	mountFile,
-	addFromToDir,
-	addPackage,
-};
+export {EmbeddedLuaInterpreter};
