@@ -8,7 +8,7 @@ otherwise I'll have to keep regenerating this / make a script to do so
 */
 
 import {A, Br, Div, Span, Input, Button} from './dom.js';
-import {assert, show, hide, FileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
+import {assert, show, hide, fetchBytes, fileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 import {newLua} from '/js/lua-interop.js';
 /*
 Some helper functions for using lua.vm.js
@@ -16,8 +16,66 @@ I want this to turn into an in-page filesystem + lua interpreter.
 This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it shouldn't do that.
 */
 
+
+// https://github.com/hellpanderrr/lua-in-browser
+//emscripten filesystem helper function
+const mountFile = (FS, filePath, luaPath, callback) => {
+	return fetchBytes(filePath)
+	.then(fileContent => {
+
+		const fileSep = luaPath.lastIndexOf('/');
+		const file = luaPath.substring(fileSep + 1);
+		const body = luaPath.substring(0, luaPath.length - file.length - 1);
+
+		if (body.length > 0) {
+			const parts = body.split('/').reverse();
+			let parent = '';
+
+			while (parts.length) {
+				const part = parts.pop();
+				if (!part) continue;
+
+				const current = `${parent}/${part}`;
+				try {
+					FS.mkdir(current);
+				} catch (err) {} // ignore EEXIST
+
+				parent = current;
+			}
+		}
+
+		FS.writeFile(luaPath, fileContent, {encoding:'binary'});
+
+		// I know, I could just let whoever is calling addPackage pick all the filenames they want out and wait until after the promise is finished, but meh. ..
+		if (callback) {
+			callback(luaPath);
+		}
+	});
+}
+
+//emscripten filesystem helper function
+const addFromToDir = (FS, fromPath, toPath, files, callback) =>
+	// TODO use Promise.allSettled, but that means first flatten all the promises into one Promise.all ... shudders ... javascript is so retarded ...
+	Promise.all(files.map(f => mountFile(
+		FS,
+		(fromPath+'/'+f).replace('+', '%2b'),	//TODO full url escape? but not for /'s
+		toPath+'/'+f,
+		callback
+	)));
+
+//emscripten filesystem helper function
+const addPackage = (FS, pkg, callback) =>
+	Promise.all(
+		pkg.map(fileset =>
+			addFromToDir(FS, fileset.from, fileset.to, fileset.files, callback)
+		)
+	);
+
+
+
 // convert new package system to old package system
 // why keep the old around?  it still supports 'tests' folders, which is baked into the EmbeddedLuaInterpreter, which I don't want to get rid of just yet
+// TODO get rid of that though, just use this /tests test instead.
 const luaVmPackageInfos = {};
 
 import { luaPackages } from '/js/lua-packages.js';
@@ -42,77 +100,11 @@ for (let pkgname in luaPackages) {
 	if (tests.length) dst.tests = tests;
 }
 
-/*
-args:
-	files : files
-	done : (optional) done
-	ext : (optional) set to true to include lua-ext files
-	onload(url, dest, data) : (optional) per-file on-load callback
-	onexec(url, dest) : (optional) per-file on-execute callback
-*/
-function executeLuaVMFileSet(args) {
-	const FS = assertExists(args, 'FS');
-	let files = arrayClone(assertExists(args, 'files'));
-	if (args.packages) {
-		args.packages.forEach(packageName => {
-			const packageContent = luaVmPackageInfos[packageName];
-			if (packageContent) {
-				if (packageContent.files) files = files.concat(packageContent.files);
-				if (packageContent.tests) files = files.concat(packageContent.tests);
-			}
-		});
-	}
-	new FileSetLoader({
-		//TODO don't store them here
-		//just pull from their remote location / github repo
-		files : files,
-		onload : args.onload,
-		done : function() {
-			let thiz = this;
-//console.log('results', this.results);
-			asyncfor({
-				map	: this.results,
-				callback : function(i, result) {
-					let file = thiz.files[i];
-
-					if (args.onexec) {
-						args.onexec(file.url, file.dest);
-					}
-
-					if (
-						file.dest.substring(file.dest.length-4) == '.lua'
-						|| file.dest.substring(file.dest.length-8) == '.symmath'
-						|| file.dest.substring(file.dest.length-4) == '.txt'
-					) {
-//console.log('loading data file', file.dest);
-						let parts = pathToParts(file.dest);
-						if (parts.dir != '.') {
-							try { 	//how do you detect if a path is already created?
-								FS.createPath('/', parts.dir, true, true);
-							} catch (e) {
-								console.log('failed to create path', parts.dir, e);
-							}
-						}
-						try {
-							FS.createDataFile(parts.dir, parts.file, result, true, false);
-						} catch (e) {
-							console.log("failed to create file", file.dest, e);
-						}
-					} else {
-						throw "got a non-lua file "+file.dest;
-					}
-
-				},
-				done : args.done
-			});
-		}
-	});
-}
 
 /*
 a commonly used one
 specify the files you want and let it go at it
-args are passed on to executeLuaVMFileSet plus ...
+args:
 	id : (optional) id of the parent container for all this to go
 	tests : list of buttons to provide the user at the bottom of the container.  each member of the array contains the following:
 		url : where to find the file
@@ -121,6 +113,12 @@ args are passed on to executeLuaVMFileSet plus ...
 
 		these are automatically added to args.files.   no need to duplicate.
 	packages : (optional) auto-populates files and tests
+
+
+	files : files
+	done : (optional) done
+	onload(url, dest, data) : (optional) per-file on-load callback
+	onexec(url, dest) : (optional) per-file on-execute callback
 */
 class EmbeddedLuaInterpreter {
 	constructor(args) {
@@ -146,8 +144,10 @@ class EmbeddedLuaInterpreter {
 				});
 				args.packageTests = undefined;
 			}
+
+			args.files ??= [];
+
 			if (args.packages) {
-				if (!args.files) args.files = [];
 				args.packages.forEach(packageName => {
 					const packageContent = luaVmPackageInfos[packageName];
 					if (packageContent) {
@@ -221,7 +221,7 @@ class EmbeddedLuaInterpreter {
 				appendTo:thiz.parentContainer || undefined,
 			});
 
-			const onLaunch = () => {
+			const onLaunch = async() => {
 				hide(thiz.launchButton);
 				show(thiz.container);
 
@@ -234,11 +234,49 @@ class EmbeddedLuaInterpreter {
 						thiz.doneLoadingFilesystem();
 					}, 1);
 				};
-				args.FS = thiz.LuaModule.FS;
-				executeLuaVMFileSet(args);
+				const FS = thiz.LuaModule.FS;
+
+				const fsl = await fileSetLoader({
+					//TODO don't store them here
+					//just pull from their remote location / github repo
+					files : args.files,
+					onload : args.onload,	// per-file onload with {files, results} as 'this'
+				});
+
+				//console.log('results', this.results);
+
+				// once they're all loaded, onexec?
+				fsl.results.forEach((result, i) => {
+					let file = fsl.files[i];
+
+					args?.onexec(file.url, file.dest);
+
+//console.log('loading data file', file.dest);
+					let parts = pathToParts(file.dest);
+					if (parts.dir != '.') {
+						try { 	//how do you detect if a path is already created?
+//console.log('mkdir', parts.dir);
+							FS.createPath('/', parts.dir, true, true);
+						} catch (e) {
+							console.log('failed to create path', parts.dir, 'with error', e);
+						}
+					}
+					try {
+//console.log('writing', parts.file);
+						FS.createDataFile(parts.dir, parts.file, result, true, false);
+					} catch (e) {
+						console.log("failed to create file", file.dest, 'file', parts.file, 'dir', parts.dir, 'with error', e);
+					}
+				});
+
+//console.log('...executeLuaVMFileSet done');
+				args?.done();
+
 			};
 
-			thiz.launchButton.addEventListener('click', e => { onLaunch(); });
+			thiz.launchButton.addEventListener('click', e => {
+				onLaunch();
+			});
 			if (args.autoLaunch) {
 				onLaunch();
 			}
@@ -387,82 +425,9 @@ package.path = package.path .. ';./?/?.lua'
 EmbeddedLuaInterpreter.prototype.HISTORY_MAX = 100;
 
 
-// new system I guess
-
-const fetchBytes = src => {
-	return new Promise((resolve, reject) => {
-		const req = new XMLHttpRequest();
-		req.open('GET', src, true);
-		req.responseType = 'arraybuffer';
-		req.onload = ev => {
-			resolve(new Uint8Array(req.response));
-		};
-		req.onerror = function() {
-			console.log("failed on", src);
-			reject({
-				status: this.status,
-				statusText: req.statusText
-			});
-		};
-		req.send(null);
-	});
-};
-
-// https://github.com/hellpanderrr/lua-in-browser
-const mountFile = (FS, filePath, luaPath, callback) => {
-	return fetchBytes(filePath)
-	.then(fileContent => {
-
-		const fileSep = luaPath.lastIndexOf('/');
-		const file = luaPath.substring(fileSep + 1);
-		const body = luaPath.substring(0, luaPath.length - file.length - 1);
-
-		if (body.length > 0) {
-			const parts = body.split('/').reverse();
-			let parent = '';
-
-			while (parts.length) {
-				const part = parts.pop();
-				if (!part) continue;
-
-				const current = `${parent}/${part}`;
-				try {
-					FS.mkdir(current);
-				} catch (err) {} // ignore EEXIST
-
-				parent = current;
-			}
-		}
-
-		FS.writeFile(luaPath, fileContent, {encoding:'binary'});
-
-		// I know, I could just let whoever is calling addPackage pick all the filenames they want out and wait until after the promise is finished, but meh. ..
-		if (callback) {
-			callback(luaPath);
-		}
-	});
-}
-
-const addFromToDir = (FS, fromPath, toPath, files, callback) =>
-	// TODO use Promise.allSettled, but that means first flatten all the promises into one Promise.all ... shudders ... javascript is so retarded ...
-	Promise.all(files.map(f => mountFile(
-		FS,
-		(fromPath+'/'+f).replace('+', '%2b'),	//TODO full url escape? but not for /'s
-		toPath+'/'+f,
-		callback
-	)));
-
-const addPackage = (FS, pkg, callback) =>
-	Promise.all(
-		pkg.map(fileset =>
-			addFromToDir(FS, fileset.from, fileset.to, fileset.files, callback)
-		)
-	);
-
 export {
 	EmbeddedLuaInterpreter,
 	luaVmPackageInfos,
-	executeLuaVMFileSet,
 
 	fetchBytes,
 	mountFile,

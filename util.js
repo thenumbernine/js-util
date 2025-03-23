@@ -323,99 +323,81 @@ function getIDs() {
 	return ids;
 }
 
+// TODO move to js/util.js
+const fetchBytes = src => {
+	return new Promise((resolve, reject) => {
+		const req = new XMLHttpRequest();
+		req.open('GET', src, true);
+		req.responseType = 'arraybuffer';
+		req.onload = ev => {
+			resolve(new Uint8Array(req.response));
+		};
+		req.onerror = function() {
+			console.log("failed on", src);
+			reject({
+				status: this.status,
+				statusText: req.statusText
+			});
+		};
+		req.send(null);
+	});
+};
+
 //used especially with the lua.vm-utils.js
 //but I could also potentially form it into the loader that universe uses ...
 // it'd just take changing the loading div stuff and change the xmlhttprequest data type
-class FileSetLoader {
-	/*
-	args:
-		files : array of string
-		onload(filename) : (optional) once one file is done
-		done : (optional) once they're all done
+/*
+args:
+	files : array of string
+	onload(filename) : (optional) run per file downloaded
 
-	produces:
-		this.files : a copy of the args.files
-			either strings or {url, dest} for remote/local locations
-		this.div : div containing the label and progress bar
-		this.loading : label
-		this.progress : progress bar
-		this.results : results from loaded files
-	*/
-	constructor(args) {
-		let thiz = this;
+produces:
+	array of results from loaded files
+*/
+const fileSetLoader = async(args) => {
+	const thiz = {};
 
-		this.files = arrayClone(args.files);
-		for (let i = 0; i < this.files.length; ++i) {
-			let file = this.files[i];
-			if (typeof(file) == 'string') {
-				this.files[i] = {url:file, dest:file};
+	thiz.files = args.files;
+
+	const progress = Progress({
+		attrs : {
+			max : thiz.files.length,
+			value : 0,
+		},
+	});
+	const div = Div({
+		style : {
+			margin : 'auto',
+		},
+		prependTo : document.body,
+		children : [
+			Span({
+				innerText:'Loading...',
+			}),
+			Br(),
+			progress,
+		],
+	});
+
+	thiz.results = thiz.files.map(file => null);
+
+	let numLoaded = 0;
+	await Promise.all(thiz.files.map((file,i) => fetch(file.url)
+		.then(response => response.text())
+		.then(responseText => {
+			thiz.results[i] = responseText;
+			++numLoaded;
+			progress.setAttribute('value', numLoaded);
+
+			// per-file onload
+			if (args.onload) {
+				args.onload.call(thiz, file.url, file.dest, responseText);
 			}
-		}
+		})));
 
-		this.div = Div({
-			style : {
-				margin : 'auto',
-			},
-			prependTo : document.body,
-			children : [
-				this.loading = Span({
-					innerText:'Loading...',
-				}),
-				Br(),
-				this.progress = Progress({
-					attrs : {
-						max : 0,
-						value : 0,
-					},
-				}),
-			],
-		});
+	removeFromParent(div);
 
-		this.results = [];
-		const dones = [];
-		for (let i = 0; i < this.files.length; ++i) {
-			dones[i] = false;
-			this.results[i] = null;
-		}
-
-		const updateProgress = () => {
-			let loaded = 0;
-			let total = 0;
-			for (let i = 0; i < thiz.files.length; ++i) {
-				if (dones[i]) ++loaded;
-				++total;
-			}
-			thiz.progress.setAttribute('max', total);
-			thiz.progress.setAttribute('value', loaded);
-		};
-
-		const updateDones = () => {
-			for (let i = 0; i < thiz.files.length; ++i) {
-				if (!dones[i]) return;
-			}
-			removeFromParent(thiz.div);
-			if (args.done) args.done.call(thiz);
-		};
-
-		this.files.forEach((file, i) => {
-			fetch(file.url)
-			.then(response => {
-				if (!response.ok) return Promise.reject('not ok');
-				return response.text();
-			})
-			.then(responseText => {
-				thiz.results[i] = responseText;
-				dones[i] = true;
-				updateProgress();
-				if (args.onload) {
-					args.onload.call(thiz, file.url, file.dest, this.responseText);
-				}
-				updateDones();
-			}).catch(e => {
-				console.log(e)
-			});
-		});
-	}
+	return thiz;
 }
 
 /*
@@ -543,7 +525,8 @@ export {
 	toggleHidden,
 	getIDs,
 	preload,
-	FileSetLoader,
+	fetchBytes,
+	fileSetLoader,
 	animate,
 	require,
 	makeClass,

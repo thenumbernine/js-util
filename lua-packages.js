@@ -93,7 +93,7 @@ const luaPackages = {
 		{from : '/lua/parser/base', to : 'parser/base', files : ['ast.lua', 'datareader.lua', 'parser.lua', 'tokenizer.lua']},
 		{from : '/lua/parser/grammar', to : 'parser/grammar', files : ['parser.lua', 'tokenizer.lua']},
 		{from : '/lua/parser/lua', to : 'parser/lua', files : ['ast.lua', 'parser.lua', 'tokenizer.lua']},
-		{from : '/lua/parser/tests', to : 'parser/tests', files : ['flatten.lua', 'lua_to_c.lua', 'lua_to_c_test.lua', 'minify_tests.lua', 'minify_tests.txt', 'parse.lua', 'parsemyself.lua', 'spantest.lua', 'strings.lua']},
+		{from : '/lua/parser/tests', to : 'parser/tests', files : ['flatten.lua', 'lua_to_c.lua', 'lua_to_c_test.lua', 'validate.lua', 'validate-key.txt', 'parse.lua', 'parsemyself.lua', 'spantest.lua', 'strings.lua']},
 	],
 	['plot2d'] : [
 		{from : '/lua/plot2d', to : 'plot2d', files : ['app.lua', 'plot2d.lua', 'run.lua', 'font.png']},
