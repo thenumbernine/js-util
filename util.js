@@ -343,6 +343,62 @@ const fetchBytes = src => {
 	});
 };
 
+// https://github.com/hellpanderrr/lua-in-browser
+//emscripten filesystem helper function
+const mountFile = (FS, filePath, luaPath, callback) => {
+	return fetchBytes(filePath)
+	.then(fileContent => {
+
+		const fileSep = luaPath.lastIndexOf('/');
+		const file = luaPath.substring(fileSep + 1);
+		const body = luaPath.substring(0, luaPath.length - file.length - 1);
+
+		if (body.length > 0) {
+			const parts = body.split('/').reverse();
+			let parent = '';
+
+			while (parts.length) {
+				const part = parts.pop();
+				if (!part) continue;
+
+				const current = `${parent}/${part}`;
+				try {
+					FS.mkdir(current);
+				} catch (err) {} // ignore EEXIST
+
+				parent = current;
+			}
+		}
+
+		FS.writeFile(luaPath, fileContent, {encoding:'binary'});
+
+		// I know, I could just let whoever is calling addPackage pick all the filenames they want out and wait until after the promise is finished, but meh. ..
+		if (callback) {
+			callback(luaPath);
+		}
+	});
+}
+
+//emscripten filesystem helper function
+const addFromToDir = (FS, fromPath, toPath, files, callback) =>
+	// TODO use Promise.allSettled, but that means first flatten all the promises into one Promise.all ... shudders ... javascript is so retarded ...
+	Promise.all(files.map(f => mountFile(
+		FS,
+		(fromPath+'/'+f).replace('+', '%2b'),	//TODO full url escape? but not for /'s
+		toPath+'/'+f,
+		callback
+	)));
+
+//emscripten filesystem helper function
+const addPackage = (FS, pkg, callback) =>
+	Promise.all(
+		pkg.map(fileset =>
+			addFromToDir(FS, fileset.from, fileset.to, fileset.files, callback)
+		)
+	);
+
+
+
 //used especially with the lua.vm-utils.js
 //but I could also potentially form it into the loader that universe uses ...
 // it'd just take changing the loading div stuff and change the xmlhttprequest data type
@@ -526,6 +582,9 @@ export {
 	getIDs,
 	preload,
 	fetchBytes,
+	mountFile,
+	addFromToDir,
+	addPackage,
 	fileSetLoader,
 	animate,
 	require,

@@ -8,68 +8,13 @@ otherwise I'll have to keep regenerating this / make a script to do so
 */
 
 import {A, Br, Div, Span, Input, Button} from './dom.js';
-import {assert, show, hide, fetchBytes, fileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
+import {assert, show, hide, fetchBytes, mountFile, addFromToDir, addPackage, fileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 import {newLua} from '/js/lua-interop.js';
 /*
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
 This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it shouldn't do that.
 */
-
-
-// https://github.com/hellpanderrr/lua-in-browser
-//emscripten filesystem helper function
-const mountFile = (FS, filePath, luaPath, callback) => {
-	return fetchBytes(filePath)
-	.then(fileContent => {
-
-		const fileSep = luaPath.lastIndexOf('/');
-		const file = luaPath.substring(fileSep + 1);
-		const body = luaPath.substring(0, luaPath.length - file.length - 1);
-
-		if (body.length > 0) {
-			const parts = body.split('/').reverse();
-			let parent = '';
-
-			while (parts.length) {
-				const part = parts.pop();
-				if (!part) continue;
-
-				const current = `${parent}/${part}`;
-				try {
-					FS.mkdir(current);
-				} catch (err) {} // ignore EEXIST
-
-				parent = current;
-			}
-		}
-
-		FS.writeFile(luaPath, fileContent, {encoding:'binary'});
-
-		// I know, I could just let whoever is calling addPackage pick all the filenames they want out and wait until after the promise is finished, but meh. ..
-		if (callback) {
-			callback(luaPath);
-		}
-	});
-}
-
-//emscripten filesystem helper function
-const addFromToDir = (FS, fromPath, toPath, files, callback) =>
-	// TODO use Promise.allSettled, but that means first flatten all the promises into one Promise.all ... shudders ... javascript is so retarded ...
-	Promise.all(files.map(f => mountFile(
-		FS,
-		(fromPath+'/'+f).replace('+', '%2b'),	//TODO full url escape? but not for /'s
-		toPath+'/'+f,
-		callback
-	)));
-
-//emscripten filesystem helper function
-const addPackage = (FS, pkg, callback) =>
-	Promise.all(
-		pkg.map(fileset =>
-			addFromToDir(FS, fileset.from, fileset.to, fileset.files, callback)
-		)
-	);
 
 
 
@@ -102,7 +47,10 @@ for (let pkgname in luaPackages) {
 
 
 /*
-a commonly used one
+used to be used more
+but now I'm opting for the more lean lua-interop.js
+so atm this is only actively used in emoji-lua
+
 specify the files you want and let it go at it
 args:
 	id : (optional) id of the parent container for all this to go
@@ -428,6 +376,7 @@ export {
 	EmbeddedLuaInterpreter,
 	luaVmPackageInfos,
 
+	// TODO remove these from here and just use js/util.js
 	fetchBytes,
 	mountFile,
 	addFromToDir,
