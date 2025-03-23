@@ -116,7 +116,7 @@ args:
 
 
 	files : files
-	done : (optional) done
+	done : (optional) done , run after all loaded, after onLaunch
 	onload(url, dest, data) : (optional) per-file on-load callback
 	onexec(url, dest) : (optional) per-file on-execute callback
 */
@@ -271,7 +271,6 @@ class EmbeddedLuaInterpreter {
 
 //console.log('...executeLuaVMFileSet done');
 				args?.done();
-
 			};
 
 			thiz.launchButton.addEventListener('click', e => {
