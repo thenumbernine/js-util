@@ -15,7 +15,12 @@ const luaPackages = {
 		{from : '/black-hole-skymap/lua', to : 'black-hole-skymap', files : ['black-hole-skymap.lua', 'black-hole-skymap-noniterative.lua', 'r_for_rho.lua']},
 	],
 	['chess-on-manifold'] : [
-		{from: '/lua/chess-on-manifold', to : 'chess-on-manifold', files : ['run.lua', 'app.lua', 'board.lua', 'piece.lua', 'pieces.png', 'place.lua', 'player.lua']},
+		{from : '/lua/chess-on-manifold', to : 'chess-on-manifold', files : ['run.lua', 'app.lua', 'board.lua', 'piece.lua', 'pieces.png', 'place.lua', 'player.lua']},
+	],
+	['chompman'] : [
+		{from : '/lua/chompman', to : 'chompman', files : ['run.lua'],
+		{from : '/lua/chompman/chompman', to : 'chompman/chompman', files : ['app.lua', 'cube.lua', 'game.lua', 'ghost.lua', 'map.lua', 'object.lua', 'player.lua', 'soundcache.lua'],
+		{from : '/lua/chompman/sounds', to : 'chompman/sounds', files : ['pacman_beginning.wav', 'pacman_chomp.wav', 'pacman_death.wav', 'pacman_eatfruit.wav', 'pacman_eatghost.wav', 'pacman_extrapac.wav', 'pacman_intermission.wav'],
 	],
 	['cl'] : [
 		{from : '/lua/cl', to : 'cl', files : ['assert.lua', 'assertparam.lua', 'buffer.lua', 'checkerror.lua', 'cl.lua', 'commandqueue.lua', 'context.lua', 'device.lua', 'event.lua', 'getinfo.lua', 'imagegl.lua', 'kernel.lua', 'memory.lua', 'platform.lua', 'program.lua']},
