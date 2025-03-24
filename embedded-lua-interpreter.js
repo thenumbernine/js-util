@@ -68,7 +68,8 @@ class EmbeddedLuaInterpreter {
 				printErr : s => { thiz.printErr(s); },
 			});
 			thiz.lua.newState();
-			thiz.LuaModule = thiz.lua.lib;
+			thiz.lib = thiz.lua.lib;
+			thiz.FS = thiz.lib.FS;
 
 			//granted it doesn't make much sense to include tests from one package without including the package itself ...
 			if (args.packageTests) {
@@ -157,7 +158,7 @@ class EmbeddedLuaInterpreter {
 
 			show(thiz.container);
 
-			const FS = thiz.LuaModule.FS;
+			const FS = thiz.FS;
 
 			//TODO don't store them here
 			//just pull from their remote location / github repo
