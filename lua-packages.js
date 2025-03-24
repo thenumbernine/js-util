@@ -110,6 +110,7 @@ const luaPackages = {
 		{from : '/lua/pong', to : 'pong', files : ['pong.lua', 'ball.png', 'block.png', 'block.wav', 'font.png', 'item.wav', 'player.png', 'player1.wav', 'player2.wav']},
 	],
 	['prime-spiral'] : [{from : '/lua/prime-spiral', to : 'prime-spiral', files : ['run.lua', 'pi']}],
+	['resourcecache'] : [{from : '/lua/resourcecache', to : 'resourcecache', files : ['resourcecache.lua', 'texturecache.lua']}],
 	['rule110'] : [{from : '/lua/rule110', to : 'rule110', files : ['rule110.lua']}],
 	['sand-attack'] : [
 		{from : '/lua/sand-attack', to : 'sand-attack', files : ['app.lua', 'player.lua', 'run.lua', 'serialize.lua', 'splash.demo']}, // isn't in the repo: 'config.lua'
