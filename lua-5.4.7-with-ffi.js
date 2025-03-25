@@ -256,7 +256,7 @@ function preRun() {
 function initRuntime() {
   runtimeInitialized = true;
 
-  
+
 if (!Module['noFSInit'] && !FS.initialized)
   FS.init();
 FS.ignorePermissions = false;
@@ -447,18 +447,16 @@ async function createWasm() {
   // performing other necessary setup
   /** @param {WebAssembly.Module=} module*/
   function receiveInstance(instance, module) {
-    Module.wasmInstance = instance;
-	Module.wasmModule = module;
-    
-	wasmExports = instance.exports;
+    wasmExports = instance.exports;
+
+
 
     wasmMemory = wasmExports['memory'];
-    Module.wasmExports = wasmExports; // = Module.wasmInstance.exports
 
     updateMemoryViews();
 
     wasmTable = wasmExports['__indirect_function_table'];
-	Module.wasmTable = wasmTable; // = Module.wasmInstance.exports.__indirect_function_table
+
 
     addOnInit(wasmExports['__wasm_call_ctors']);
 
@@ -529,7 +527,7 @@ async function createWasm() {
     };
   Module['callRuntimeCallbacks'] = callRuntimeCallbacks;
 
-  
+
     /**
      * @param {number} ptr
      * @param {string} type
@@ -553,7 +551,7 @@ async function createWasm() {
   var noExitRuntime = Module['noExitRuntime'] || true;
   Module['noExitRuntime'] = noExitRuntime;
 
-  
+
     /**
      * @param {number} ptr
      * @param {number} value
@@ -583,7 +581,7 @@ async function createWasm() {
 
   var UTF8Decoder = typeof TextDecoder != 'undefined' ? new TextDecoder() : undefined;
   Module['UTF8Decoder'] = UTF8Decoder;
-  
+
     /**
      * Given a pointer 'idx' to a null-terminated UTF8-encoded string in the given
      * array that contains uint8 values, returns a copy of that string as a
@@ -602,7 +600,7 @@ async function createWasm() {
       // (As a tiny code save trick, compare endPtr against endIdx using a negation,
       // so that undefined/NaN means Infinity)
       while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
-  
+
       if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
         return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
       }
@@ -624,7 +622,7 @@ async function createWasm() {
         } else {
           u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63);
         }
-  
+
         if (u0 < 0x10000) {
           str += String.fromCharCode(u0);
         } else {
@@ -635,7 +633,7 @@ async function createWasm() {
       return str;
     };
   Module['UTF8ArrayToString'] = UTF8ArrayToString;
-  
+
     /**
      * Given a pointer 'ptr' to a null-terminated UTF8-encoded string in the
      * emscripten HEAP, returns a copy of that string as a Javascript String object.
@@ -659,14 +657,20 @@ async function createWasm() {
       abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [filename ? UTF8ToString(filename) : 'unknown filename', line, func ? UTF8ToString(func) : 'unknown function']);
   Module['___assert_fail'] = ___assert_fail;
 
+  var wasmTableMirror = [];
+  Module['wasmTableMirror'] = wasmTableMirror;
+
   /** @type {WebAssembly.Table} */
   var wasmTable;
-  Module['wasmTable'] = wasmTable; // won't do anthing, will it?
-  /** @suppress{checkTypes} */
+  Module['wasmTable'] = wasmTable;
   var getWasmTableEntry = (funcPtr) => {
-      // In -Os and -Oz builds, do not implement a JS side wasm table mirror for small
-      // code size, but directly access wasmTable, which is a bit slower as uncached.
-      return wasmTable.get(funcPtr);
+      var func = wasmTableMirror[funcPtr];
+      if (!func) {
+        if (funcPtr >= wasmTableMirror.length) wasmTableMirror.length = funcPtr + 1;
+        /** @suppress {checkTypes} */
+        wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
+      }
+      return func;
     };
   Module['getWasmTableEntry'] = getWasmTableEntry;
   var ___call_sighandler = (fp, sig) => getWasmTableEntry(fp)(sig);
@@ -733,9 +737,9 @@ async function createWasm() {
   join2:(l, r) => PATH.normalize(l + '/' + r),
   };
   Module['PATH'] = PATH;
-  
+
   var initRandomFill = () => {
-  
+
       return (view) => crypto.getRandomValues(view);
     };
   Module['initRandomFill'] = initRandomFill;
@@ -744,9 +748,9 @@ async function createWasm() {
       (randomFill = initRandomFill())(view);
     };
   Module['randomFill'] = randomFill;
-  
-  
-  
+
+
+
   var PATH_FS = {
   resolve:(...args) => {
         var resolvedPath = '',
@@ -801,12 +805,12 @@ async function createWasm() {
       },
   };
   Module['PATH_FS'] = PATH_FS;
-  
-  
-  
+
+
+
   var FS_stdin_getChar_buffer = [];
   Module['FS_stdin_getChar_buffer'] = FS_stdin_getChar_buffer;
-  
+
   var lengthBytesUTF8 = (str) => {
       var len = 0;
       for (var i = 0; i < str.length; ++i) {
@@ -828,13 +832,13 @@ async function createWasm() {
       return len;
     };
   Module['lengthBytesUTF8'] = lengthBytesUTF8;
-  
+
   var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
       // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
       // undefined and false each don't write out any bytes.
       if (!(maxBytesToWrite > 0))
         return 0;
-  
+
       var startIdx = outIdx;
       var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
       for (var i = 0; i < str.length; ++i) {
@@ -1046,13 +1050,13 @@ async function createWasm() {
   },
   };
   Module['TTY'] = TTY;
-  
-  
+
+
   var zeroMemory = (address, size) => {
       HEAPU8.fill(0, address, address + size);
     };
   Module['zeroMemory'] = zeroMemory;
-  
+
   var alignMemory = (size, alignment) => {
       return Math.ceil(size / alignment) * alignment;
     };
@@ -1133,7 +1137,7 @@ async function createWasm() {
           // When the byte data of the file is populated, this will point to either a typed array, or a normal JS array. Typed arrays are preferred
           // for performance, and used by default. However, typed arrays are not resizable like normal JS arrays are, so there is a small disk size
           // penalty involved for appending file writes that continuously grow a file similar to std::vector capacity vs used -scheme.
-          node.contents = null; 
+          node.contents = null;
         } else if (FS.isLink(node.mode)) {
           node.node_ops = MEMFS.ops_table.link.node;
           node.stream_ops = MEMFS.ops_table.link.stream;
@@ -1293,11 +1297,11 @@ async function createWasm() {
           if (buffer.buffer === HEAP8.buffer) {
             canOwn = false;
           }
-  
+
           if (!length) return 0;
           var node = stream.node;
           node.mtime = node.ctime = Date.now();
-  
+
           if (buffer.subarray && (!node.contents || node.contents.subarray)) { // This write is from a typed array to a typed array?
             if (canOwn) {
               node.contents = buffer.subarray(offset, offset + length);
@@ -1312,7 +1316,7 @@ async function createWasm() {
               return length;
             }
           }
-  
+
           // Appending to an existing file and we need to reallocate, or source data did not come as a typed array.
           MEMFS.expandFileStorage(node, position+length);
           if (node.contents.subarray && buffer.subarray) {
@@ -1385,25 +1389,25 @@ async function createWasm() {
   },
   };
   Module['MEMFS'] = MEMFS;
-  
+
   var asyncLoad = async (url) => {
       var arrayBuffer = await readAsync(url);
       return new Uint8Array(arrayBuffer);
     };
   Module['asyncLoad'] = asyncLoad;
-  
-  
+
+
   var FS_createDataFile = (parent, name, fileData, canRead, canWrite, canOwn) => {
       FS.createDataFile(parent, name, fileData, canRead, canWrite, canOwn);
     };
   Module['FS_createDataFile'] = FS_createDataFile;
-  
+
   var preloadPlugins = Module['preloadPlugins'] || [];
   Module['preloadPlugins'] = preloadPlugins;
   var FS_handledByPreloadPlugin = (byteArray, fullname, finish, onerror) => {
       // Ensure plugins are ready.
       if (typeof Browser != 'undefined') Browser.init();
-  
+
       var handled = false;
       preloadPlugins.forEach((plugin) => {
         if (handled) return;
@@ -1445,7 +1449,7 @@ async function createWasm() {
       }
     };
   Module['FS_createPreloadedFile'] = FS_createPreloadedFile;
-  
+
   var FS_modeStringToFlags = (str) => {
       var flagModes = {
         'r': 0,
@@ -1462,7 +1466,7 @@ async function createWasm() {
       return flags;
     };
   Module['FS_modeStringToFlags'] = FS_modeStringToFlags;
-  
+
   var FS_getMode = (canRead, canWrite) => {
       var mode = 0;
       if (canRead) mode |= 292 | 73;
@@ -1470,9 +1474,9 @@ async function createWasm() {
       return mode;
     };
   Module['FS_getMode'] = FS_getMode;
-  
-  
-  
+
+
+
   var FS = {
   root:null,
   mounts:[],
@@ -1572,37 +1576,37 @@ async function createWasm() {
           throw new FS.ErrnoError(44);
         }
         opts.follow_mount ??= true
-  
+
         if (!PATH.isAbs(path)) {
           path = FS.cwd() + '/' + path;
         }
-  
+
         // limit max consecutive symlinks to 40 (SYMLOOP_MAX).
         linkloop: for (var nlinks = 0; nlinks < 40; nlinks++) {
           // split the absolute path
           var parts = path.split('/').filter((p) => !!p);
-  
+
           // start at the root
           var current = FS.root;
           var current_path = '/';
-  
+
           for (var i = 0; i < parts.length; i++) {
             var islast = (i === parts.length-1);
             if (islast && opts.parent) {
               // stop resolving
               break;
             }
-  
+
             if (parts[i] === '.') {
               continue;
             }
-  
+
             if (parts[i] === '..') {
               current_path = PATH.dirname(current_path);
               current = current.parent;
               continue;
             }
-  
+
             current_path = PATH.join2(current_path, parts[i]);
             try {
               current = FS.lookupNode(current, parts[i]);
@@ -1615,12 +1619,12 @@ async function createWasm() {
               }
               throw e;
             }
-  
+
             // jump to the mount's root node if this is a mountpoint
             if (FS.isMountpoint(current) && (!islast || opts.follow_mount)) {
               current = current.mounted.root;
             }
-  
+
             // by default, lookupPath will not follow a symlink if it is the final path component.
             // setting opts.follow = true will override this behavior.
             if (FS.isLink(current.mode) && (!islast || opts.follow)) {
@@ -1653,7 +1657,7 @@ async function createWasm() {
       },
   hashName(parentid, name) {
         var hash = 0;
-  
+
         for (var i = 0; i < name.length; i++) {
           hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
         }
@@ -1696,9 +1700,9 @@ async function createWasm() {
       },
   createNode(parent, name, mode, rdev) {
         var node = new FS.FSNode(parent, name, mode, rdev);
-  
+
         FS.hashAddNode(node);
-  
+
         return node;
       },
   destroyNode(node) {
@@ -1833,7 +1837,7 @@ async function createWasm() {
       },
   getStream:(fd) => FS.streams[fd],
   createStream(stream, fd = -1) {
-  
+
         // clone it, so we can return an instance of FSStream
         stream = Object.assign(new FS.FSStream(), stream);
         if (fd == -1) {
@@ -1873,15 +1877,15 @@ async function createWasm() {
   getMounts(mount) {
         var mounts = [];
         var check = [mount];
-  
+
         while (check.length) {
           var m = check.pop();
-  
+
           mounts.push(m);
-  
+
           check.push(...m.mounts);
         }
-  
+
         return mounts;
       },
   syncfs(populate, callback) {
@@ -1889,21 +1893,21 @@ async function createWasm() {
           callback = populate;
           populate = false;
         }
-  
+
         FS.syncFSRequests++;
-  
+
         if (FS.syncFSRequests > 1) {
           err(`warning: ${FS.syncFSRequests} FS.syncfs operations in flight at once, probably just doing extra work`);
         }
-  
+
         var mounts = FS.getMounts(FS.root.mount);
         var completed = 0;
-  
+
         function doCallback(errCode) {
           FS.syncFSRequests--;
           return callback(errCode);
         }
-  
+
         function done(errCode) {
           if (errCode) {
             if (!done.errored) {
@@ -1916,7 +1920,7 @@ async function createWasm() {
             doCallback(null);
           }
         };
-  
+
         // sync all mounts
         mounts.forEach((mount) => {
           if (!mount.type.syncfs) {
@@ -1929,79 +1933,79 @@ async function createWasm() {
         var root = mountpoint === '/';
         var pseudo = !mountpoint;
         var node;
-  
+
         if (root && FS.root) {
           throw new FS.ErrnoError(10);
         } else if (!root && !pseudo) {
           var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
-  
+
           mountpoint = lookup.path;  // use the absolute path
           node = lookup.node;
-  
+
           if (FS.isMountpoint(node)) {
             throw new FS.ErrnoError(10);
           }
-  
+
           if (!FS.isDir(node.mode)) {
             throw new FS.ErrnoError(54);
           }
         }
-  
+
         var mount = {
           type,
           opts,
           mountpoint,
           mounts: []
         };
-  
+
         // create a root node for the fs
         var mountRoot = type.mount(mount);
         mountRoot.mount = mount;
         mount.root = mountRoot;
-  
+
         if (root) {
           FS.root = mountRoot;
         } else if (node) {
           // set as a mountpoint
           node.mounted = mount;
-  
+
           // add the new mount to the current mount's children
           if (node.mount) {
             node.mount.mounts.push(mount);
           }
         }
-  
+
         return mountRoot;
       },
   unmount(mountpoint) {
         var lookup = FS.lookupPath(mountpoint, { follow_mount: false });
-  
+
         if (!FS.isMountpoint(lookup.node)) {
           throw new FS.ErrnoError(28);
         }
-  
+
         // destroy the nodes for this mount, and all its child mounts
         var node = lookup.node;
         var mount = node.mounted;
         var mounts = FS.getMounts(mount);
-  
+
         Object.keys(FS.nameTable).forEach((hash) => {
           var current = FS.nameTable[hash];
-  
+
           while (current) {
             var next = current.name_next;
-  
+
             if (mounts.includes(current.mount)) {
               FS.destroyNode(current);
             }
-  
+
             current = next;
           }
         });
-  
+
         // no longer a mountpoint
         node.mounted = null;
-  
+
         // remove this mount from the child mounts
         var idx = node.mount.mounts.indexOf(mount);
         node.mount.mounts.splice(idx, 1);
@@ -2053,7 +2057,7 @@ async function createWasm() {
           flags: 2,
           namelen: 255,
         };
-  
+
         if (node.node_ops.statfs) {
           Object.assign(rtn, node.node_ops.statfs(node.mount.opts.root));
         }
@@ -2116,13 +2120,13 @@ async function createWasm() {
         var new_name = PATH.basename(new_path);
         // parents must exist
         var lookup, old_dir, new_dir;
-  
+
         // let the errors from non existent directories percolate up
         lookup = FS.lookupPath(old_path, { parent: true });
         old_dir = lookup.node;
         lookup = FS.lookupPath(new_path, { parent: true });
         new_dir = lookup.node;
-  
+
         if (!old_dir || !new_dir) throw new FS.ErrnoError(44);
         // need to be part of the same mount
         if (old_dir.mount !== new_dir.mount) {
@@ -2420,7 +2424,7 @@ async function createWasm() {
         }
         // we've already handled these, don't pass down to the underlying vfs
         flags &= ~(128 | 512 | 131072);
-  
+
         // register the stream with the filesystem
         var stream = FS.createStream({
           node,
@@ -2716,7 +2720,7 @@ async function createWasm() {
         // TODO deprecate the old functionality of a single
         // input / output callback and that utilizes FS.createDevice
         // and instead require a unique set of stream ops
-  
+
         // by default, we symlink the standard streams to the
         // default tty devices. however, if the standard streams
         // have been overwritten we create a unique device for
@@ -2736,7 +2740,7 @@ async function createWasm() {
         } else {
           FS.symlink('/dev/tty1', '/dev/stderr');
         }
-  
+
         // open default streams for the stdin, stdout and stderr devices
         var stdin = FS.open('/dev/stdin', 0);
         var stdout = FS.open('/dev/stdout', 1);
@@ -2744,25 +2748,25 @@ async function createWasm() {
       },
   staticInit() {
         FS.nameTable = new Array(4096);
-  
+
         FS.mount(MEMFS, {}, '/');
-  
+
         FS.createDefaultDirectories();
         FS.createDefaultDevices();
         FS.createSpecialDirectories();
-  
+
         FS.filesystems = {
           'MEMFS': MEMFS,
         };
       },
   init(input, output, error) {
         FS.initialized = true;
-  
+
         // Allow Module.stdin etc. to provide defaults, if none explicitly passed to us here
         input ??= Module['stdin'];
         output ??= Module['stdout'];
         error ??= Module['stderr'];
-  
+
         FS.createStandardStreams(input, output, error);
       },
   quit() {
@@ -2949,27 +2953,27 @@ async function createWasm() {
             var header;
             var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
             var usesGzip = (header = xhr.getResponseHeader("Content-Encoding")) && header === "gzip";
-  
+
             var chunkSize = 1024*1024; // Chunk size in bytes
-  
+
             if (!hasByteServing) chunkSize = datalength;
-  
+
             // Function to get a range from the remote URL.
             var doXHR = (from, to) => {
               if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
               if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
-  
+
               // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
               var xhr = new XMLHttpRequest();
               xhr.open('GET', url, false);
               if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
-  
+
               // Some hints to the browser that we want binary data.
               xhr.responseType = 'arraybuffer';
               if (xhr.overrideMimeType) {
                 xhr.overrideMimeType('text/plain; charset=x-user-defined');
               }
-  
+
               xhr.send(null);
               if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
               if (xhr.response !== undefined) {
@@ -2988,7 +2992,7 @@ async function createWasm() {
               if (typeof lazyArray.chunks[chunkNum] == 'undefined') throw new Error('doXHR failed!');
               return lazyArray.chunks[chunkNum];
             });
-  
+
             if (usesGzip || !datalength) {
               // if the server uses gzip or doesn't supply the length, we have to download the whole file to get the (uncompressed) length
               chunkSize = datalength = 1; // this will force getter(0)/doXHR do download the whole file
@@ -2996,7 +3000,7 @@ async function createWasm() {
               chunkSize = datalength;
               out("LazyFiles on gzip forces download of the whole file when length is accessed");
             }
-  
+
             this._length = datalength;
             this._chunkSize = chunkSize;
             this.lengthKnown = true;
@@ -3014,7 +3018,7 @@ async function createWasm() {
             return this._chunkSize;
           }
         }
-  
+
         if (typeof XMLHttpRequest != 'undefined') {
           if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
           var lazyArray = new LazyUint8Array();
@@ -3022,7 +3026,7 @@ async function createWasm() {
         } else {
           var properties = { isDevice: false, url: url };
         }
-  
+
         var node = FS.createFile(parent, name, properties, canRead, canWrite);
         // This is a total hack, but I want to get this lazy file code out of the
         // core of MEMFS. If we want to keep this lazy file concept I feel it should
@@ -3085,7 +3089,7 @@ async function createWasm() {
       },
   };
   Module['FS'] = FS;
-  
+
   var SYSCALLS = {
   DEFAULT_POLLMASK:5,
   calculateAt(dirfd, path, allowEmpty) {
@@ -3166,7 +3170,7 @@ async function createWasm() {
   Module['SYSCALLS'] = SYSCALLS;
   function ___syscall_dup3(fd, newfd, flags) {
   try {
-  
+
       var old = SYSCALLS.getStreamFromFD(fd);
       if (old.fd === newfd) return -28;
       // Check newfd is within range of valid open file descriptors.
@@ -3191,12 +3195,12 @@ async function createWasm() {
   Module['syscallGetVarargI'] = syscallGetVarargI;
   var syscallGetVarargP = syscallGetVarargI;
   Module['syscallGetVarargP'] = syscallGetVarargP;
-  
-  
+
+
   function ___syscall_fcntl64(fd, cmd, varargs) {
   SYSCALLS.varargs = varargs;
   try {
-  
+
       var stream = SYSCALLS.getStreamFromFD(fd);
       switch (cmd) {
         case 0: {
@@ -3240,11 +3244,11 @@ async function createWasm() {
   }
   Module['___syscall_fcntl64'] = ___syscall_fcntl64;
 
-  
+
   function ___syscall_ioctl(fd, op, varargs) {
   SYSCALLS.varargs = varargs;
   try {
-  
+
       var stream = SYSCALLS.getStreamFromFD(fd);
       switch (op) {
         case 21509: {
@@ -3337,11 +3341,11 @@ async function createWasm() {
   }
   Module['___syscall_ioctl'] = ___syscall_ioctl;
 
-  
+
   function ___syscall_openat(dirfd, path, flags, varargs) {
   SYSCALLS.varargs = varargs;
   try {
-  
+
       path = SYSCALLS.getStr(path);
       path = SYSCALLS.calculateAt(dirfd, path);
       var mode = varargs ? syscallGetVarargI() : 0;
@@ -3353,20 +3357,20 @@ async function createWasm() {
   }
   Module['___syscall_openat'] = ___syscall_openat;
 
-  
+
   var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
       return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
     };
   Module['stringToUTF8'] = stringToUTF8;
-  
+
   function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
   try {
-  
+
       path = SYSCALLS.getStr(path);
       path = SYSCALLS.calculateAt(dirfd, path);
       if (bufsize <= 0) return -28;
       var ret = FS.readlink(path);
-  
+
       var len = Math.min(bufsize, lengthBytesUTF8(ret));
       var endChar = HEAP8[buf+len];
       stringToUTF8(ret, buf, bufsize+1);
@@ -3383,7 +3387,7 @@ async function createWasm() {
 
   function ___syscall_renameat(olddirfd, oldpath, newdirfd, newpath) {
   try {
-  
+
       oldpath = SYSCALLS.getStr(oldpath);
       newpath = SYSCALLS.getStr(newpath);
       oldpath = SYSCALLS.calculateAt(olddirfd, oldpath);
@@ -3399,7 +3403,7 @@ async function createWasm() {
 
   function ___syscall_rmdir(path) {
   try {
-  
+
       path = SYSCALLS.getStr(path);
       FS.rmdir(path);
       return 0;
@@ -3412,7 +3416,7 @@ async function createWasm() {
 
   function ___syscall_unlinkat(dirfd, path, flags) {
   try {
-  
+
       path = SYSCALLS.getStr(path);
       path = SYSCALLS.calculateAt(dirfd, path);
       if (flags === 0) {
@@ -3436,7 +3440,7 @@ async function createWasm() {
 
   var getExecutableName = () => thisProgram || './this.program';
   Module['getExecutableName'] = getExecutableName;
-  
+
   var __emscripten_get_progname = (str, len) => stringToUTF8(getExecutableName(), str, len);
   Module['__emscripten_get_progname'] = __emscripten_get_progname;
 
@@ -3464,15 +3468,15 @@ async function createWasm() {
 
   var INT53_MAX = 9007199254740992;
   Module['INT53_MAX'] = INT53_MAX;
-  
+
   var INT53_MIN = -9007199254740992;
   Module['INT53_MIN'] = INT53_MIN;
   var bigintToI53Checked = (num) => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
   Module['bigintToI53Checked'] = bigintToI53Checked;
   function __gmtime_js(time, tmPtr) {
     time = bigintToI53Checked(time);
-  
-    
+
+
       var date = new Date(time * 1000);
       HEAP32[((tmPtr)>>2)] = date.getUTCSeconds();
       HEAP32[(((tmPtr)+(4))>>2)] = date.getUTCMinutes();
@@ -3490,25 +3494,25 @@ async function createWasm() {
 
   var isLeapYear = (year) => year%4 === 0 && (year%100 !== 0 || year%400 === 0);
   Module['isLeapYear'] = isLeapYear;
-  
+
   var MONTH_DAYS_LEAP_CUMULATIVE = [0,31,60,91,121,152,182,213,244,274,305,335];
   Module['MONTH_DAYS_LEAP_CUMULATIVE'] = MONTH_DAYS_LEAP_CUMULATIVE;
-  
+
   var MONTH_DAYS_REGULAR_CUMULATIVE = [0,31,59,90,120,151,181,212,243,273,304,334];
   Module['MONTH_DAYS_REGULAR_CUMULATIVE'] = MONTH_DAYS_REGULAR_CUMULATIVE;
   var ydayFromDate = (date) => {
       var leap = isLeapYear(date.getFullYear());
       var monthDaysCumulative = (leap ? MONTH_DAYS_LEAP_CUMULATIVE : MONTH_DAYS_REGULAR_CUMULATIVE);
       var yday = monthDaysCumulative[date.getMonth()] + date.getDate() - 1; // -1 since it's days since Jan 1
-  
+
       return yday;
     };
   Module['ydayFromDate'] = ydayFromDate;
-  
+
   function __localtime_js(time, tmPtr) {
     time = bigintToI53Checked(time);
-  
-    
+
+
       var date = new Date(time*1000);
       HEAP32[((tmPtr)>>2)] = date.getSeconds();
       HEAP32[(((tmPtr)+(4))>>2)] = date.getMinutes();
@@ -3517,11 +3521,11 @@ async function createWasm() {
       HEAP32[(((tmPtr)+(16))>>2)] = date.getMonth();
       HEAP32[(((tmPtr)+(20))>>2)] = date.getFullYear()-1900;
       HEAP32[(((tmPtr)+(24))>>2)] = date.getDay();
-  
+
       var yday = ydayFromDate(date)|0;
       HEAP32[(((tmPtr)+(28))>>2)] = yday;
       HEAP32[(((tmPtr)+(36))>>2)] = -(date.getTimezoneOffset() * 60);
-  
+
       // Attention: DST is in December in South, and some regions don't have DST at all.
       var start = new Date(date.getFullYear(), 0, 1);
       var summerOffset = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
@@ -3532,10 +3536,10 @@ async function createWasm() {
   }
   Module['__localtime_js'] = __localtime_js;
 
-  
+
   var __mktime_js = function(tmPtr) {
-  
-    var ret = (() => { 
+
+    var ret = (() => {
       var date = new Date(HEAP32[(((tmPtr)+(20))>>2)] + 1900,
                           HEAP32[(((tmPtr)+(16))>>2)],
                           HEAP32[(((tmPtr)+(12))>>2)],
@@ -3543,7 +3547,7 @@ async function createWasm() {
                           HEAP32[(((tmPtr)+(4))>>2)],
                           HEAP32[((tmPtr)>>2)],
                           0);
-  
+
       // There's an ambiguous hour when the time goes back; the tm_isdst field is
       // used to disambiguate it.  Date() basically guesses, so we fix it up if it
       // guessed wrong, or fill in tm_isdst with the guess if it's -1.
@@ -3562,7 +3566,7 @@ async function createWasm() {
         // Don't try setMinutes(date.getMinutes() + ...) -- it's messed up.
         date.setTime(date.getTime() + (trueOffset - guessedOffset)*60000);
       }
-  
+
       HEAP32[(((tmPtr)+(24))>>2)] = date.getDay();
       var yday = ydayFromDate(date)|0;
       HEAP32[(((tmPtr)+(28))>>2)] = yday;
@@ -3573,7 +3577,7 @@ async function createWasm() {
       HEAP32[(((tmPtr)+(12))>>2)] = date.getDate();
       HEAP32[(((tmPtr)+(16))>>2)] = date.getMonth();
       HEAP32[(((tmPtr)+(20))>>2)] = date.getYear();
-  
+
       var timeMs = date.getTime();
       if (isNaN(timeMs)) {
         return -1;
@@ -3585,17 +3589,17 @@ async function createWasm() {
   };
   Module['__mktime_js'] = __mktime_js;
 
-  
-  
-  
-  
-  
+
+
+
+
+
   function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
     offset = bigintToI53Checked(offset);
-  
-    
+
+
   try {
-  
+
       if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd);
       var res = FS.mmap(stream, len, offset, prot, flags);
@@ -3611,13 +3615,13 @@ async function createWasm() {
   }
   Module['__mmap_js'] = __mmap_js;
 
-  
+
   function __munmap_js(addr, len, prot, flags, fd, offset) {
     offset = bigintToI53Checked(offset);
-  
-    
+
+
   try {
-  
+
       var stream = SYSCALLS.getStreamFromFD(fd);
       if (prot & 2) {
         SYSCALLS.doMsync(addr, stream, len, flags, offset);
@@ -3633,7 +3637,7 @@ async function createWasm() {
   var timers = {
   };
   Module['timers'] = timers;
-  
+
   var handleException = (e) => {
       // Certain exception types we do not treat as errors since they are used for
       // internal control flow.
@@ -3646,8 +3650,8 @@ async function createWasm() {
       quit_(1, e);
     };
   Module['handleException'] = handleException;
-  
-  
+
+
   var keepRuntimeAlive = () => noExitRuntime || runtimeKeepaliveCounter > 0;
   Module['keepRuntimeAlive'] = keepRuntimeAlive;
   var _proc_exit = (code) => {
@@ -3663,14 +3667,14 @@ async function createWasm() {
   /** @param {boolean|number=} implicit */
   var exitJS = (status, implicit) => {
       EXITSTATUS = status;
-  
+
       _proc_exit(status);
     };
   Module['exitJS'] = exitJS;
   var _exit = exitJS;
   Module['_exit'] = _exit;
-  
-  
+
+
   var maybeExit = () => {
       if (!keepRuntimeAlive()) {
         try {
@@ -3693,8 +3697,8 @@ async function createWasm() {
       }
     };
   Module['callUserCallback'] = callUserCallback;
-  
-  
+
+
   var _emscripten_get_now = () => performance.now();
   Module['_emscripten_get_now'] = _emscripten_get_now;
   var __setitimer_js = (which, timeout_ms) => {
@@ -3703,11 +3707,11 @@ async function createWasm() {
         clearTimeout(timers[which].id);
         delete timers[which];
       }
-  
+
       // A timeout of zero simply cancels the current timeout so we have nothing
       // more to do.
       if (!timeout_ms) return 0;
-  
+
       var id = setTimeout(() => {
         delete timers[which];
         callUserCallback(() => __emscripten_timeout(which, _emscripten_get_now()));
@@ -3724,7 +3728,7 @@ async function createWasm() {
       var summer = new Date(currentYear, 6, 1);
       var winterOffset = winter.getTimezoneOffset();
       var summerOffset = summer.getTimezoneOffset();
-  
+
       // Local standard timezone offset. Local standard time is not adjusted for
       // daylight savings.  This code uses the fact that getTimezoneOffset returns
       // a greater value during Standard Time versus Daylight Saving Time (DST).
@@ -3732,28 +3736,28 @@ async function createWasm() {
       // compares whether the output of the given date the same (Standard) or less
       // (DST).
       var stdTimezoneOffset = Math.max(winterOffset, summerOffset);
-  
+
       // timezone is specified as seconds west of UTC ("The external variable
       // `timezone` shall be set to the difference, in seconds, between
       // Coordinated Universal Time (UTC) and local standard time."), the same
       // as returned by stdTimezoneOffset.
       // See http://pubs.opengroup.org/onlinepubs/009695399/functions/tzset.html
       HEAPU32[((timezone)>>2)] = stdTimezoneOffset * 60;
-  
+
       HEAP32[((daylight)>>2)] = Number(winterOffset != summerOffset);
-  
+
       var extractZone = (timezoneOffset) => {
         // Why inverse sign?
         // Read here https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset
         var sign = timezoneOffset >= 0 ? "-" : "+";
-  
+
         var absOffset = Math.abs(timezoneOffset)
         var hours = String(Math.floor(absOffset / 60)).padStart(2, "0");
         var minutes = String(absOffset % 60).padStart(2, "0");
-  
+
         return `UTC${sign}${hours}${minutes}`;
       }
-  
+
       var winterName = extractZone(winterOffset);
       var summerName = extractZone(summerOffset);
       if (summerOffset < winterOffset) {
@@ -3767,20 +3771,20 @@ async function createWasm() {
     };
   Module['__tzset_js'] = __tzset_js;
 
-  
+
   var _emscripten_date_now = () => Date.now();
   Module['_emscripten_date_now'] = _emscripten_date_now;
-  
+
   var nowIsMonotonic = 1;
   Module['nowIsMonotonic'] = nowIsMonotonic;
-  
+
   var checkWasiClock = (clock_id) => clock_id >= 0 && clock_id <= 3;
   Module['checkWasiClock'] = checkWasiClock;
-  
+
   function _clock_time_get(clk_id, ignored_precision, ptime) {
     ignored_precision = bigintToI53Checked(ignored_precision);
-  
-    
+
+
       if (!checkWasiClock(clk_id)) {
         return 28;
       }
@@ -3812,8 +3816,8 @@ async function createWasm() {
   var _emscripten_get_heap_max = () => getHeapMax();
   Module['_emscripten_get_heap_max'] = _emscripten_get_heap_max;
 
-  
-  
+
+
   var growMemory = (size) => {
       var b = wasmMemory.buffer;
       var pages = ((size - b.byteLength + 65535) / 65536) | 0;
@@ -3834,7 +3838,7 @@ async function createWasm() {
       requestedSize >>>= 0;
       // With multithreaded builds, races can happen (another thread might increase the size
       // in between), so return a failure, and let the caller retry.
-  
+
       // Memory resize rules:
       // 1.  Always increase heap size to at least the requested size, rounded up
       //     to next page multiple.
@@ -3851,14 +3855,14 @@ async function createWasm() {
       //     over-eager decision to excessively reserve due to (3) above.
       //     Hence if an allocation fails, cut down on the amount of excess
       //     growth, in an attempt to succeed to perform a smaller allocation.
-  
+
       // A limit is set for how much we can grow. We should not exceed that
       // (the wasm binary specifies it, so if we tried, we'd fail anyhow).
       var maxHeapSize = getHeapMax();
       if (requestedSize > maxHeapSize) {
         return false;
       }
-  
+
       // Loop through potential heap size increases. If we attempt a too eager
       // reservation that fails, cut down on the attempted size and reserve a
       // smaller bump instead. (max 3 times, chosen somewhat arbitrarily)
@@ -3866,12 +3870,12 @@ async function createWasm() {
         var overGrownHeapSize = oldSize * (1 + 0.2 / cutDown); // ensure geometric growth
         // but limit overreserving (default to capping at +96MB overgrowth at most)
         overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296 );
-  
+
         var newSize = Math.min(maxHeapSize, alignMemory(Math.max(requestedSize, overGrownHeapSize), 65536));
-  
+
         var replacement = growMemory(newSize);
         if (replacement) {
-  
+
           return true;
         }
       }
@@ -3882,7 +3886,7 @@ async function createWasm() {
   var ENV = {
   };
   Module['ENV'] = ENV;
-  
+
   var getEnvStrings = () => {
       if (!getEnvStrings.strings) {
         // Default values.
@@ -3914,7 +3918,7 @@ async function createWasm() {
       return getEnvStrings.strings;
     };
   Module['getEnvStrings'] = getEnvStrings;
-  
+
   var stringToAscii = (str, buffer) => {
       for (var i = 0; i < str.length; ++i) {
         HEAP8[buffer++] = str.charCodeAt(i);
@@ -3948,7 +3952,7 @@ async function createWasm() {
 
   function _fd_close(fd) {
   try {
-  
+
       var stream = SYSCALLS.getStreamFromFD(fd);
       FS.close(stream);
       return 0;
@@ -3977,10 +3981,10 @@ async function createWasm() {
       return ret;
     };
   Module['doReadv'] = doReadv;
-  
+
   function _fd_read(fd, iov, iovcnt, pnum) {
   try {
-  
+
       var stream = SYSCALLS.getStreamFromFD(fd);
       var num = doReadv(stream, iov, iovcnt);
       HEAPU32[((pnum)>>2)] = num;
@@ -3992,13 +3996,13 @@ async function createWasm() {
   }
   Module['_fd_read'] = _fd_read;
 
-  
+
   function _fd_seek(fd, offset, whence, newOffset) {
     offset = bigintToI53Checked(offset);
-  
-    
+
+
   try {
-  
+
       if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd);
       FS.llseek(stream, offset, whence);
@@ -4034,10 +4038,10 @@ async function createWasm() {
       return ret;
     };
   Module['doWritev'] = doWritev;
-  
+
   function _fd_write(fd, iov, iovcnt, pnum) {
   try {
-  
+
       var stream = SYSCALLS.getStreamFromFD(fd);
       var num = doWritev(stream, iov, iovcnt);
       HEAPU32[((pnum)>>2)] = num;
@@ -4058,14 +4062,14 @@ async function createWasm() {
       return func;
     };
   Module['getCFunc'] = getCFunc;
-  
+
   var writeArrayToMemory = (array, buffer) => {
       HEAP8.set(array, buffer);
     };
   Module['writeArrayToMemory'] = writeArrayToMemory;
-  
-  
-  
+
+
+
   var stackAlloc = (sz) => __emscripten_stack_alloc(sz);
   Module['stackAlloc'] = stackAlloc;
   var stringToUTF8OnStack = (str) => {
@@ -4075,11 +4079,11 @@ async function createWasm() {
       return ret;
     };
   Module['stringToUTF8OnStack'] = stringToUTF8OnStack;
-  
-  
-  
-  
-  
+
+
+
+
+
     /**
      * @param {string|null=} returnType
      * @param {Array=} argTypes
@@ -4102,7 +4106,7 @@ async function createWasm() {
           return ret;
         }
       };
-  
+
       function convertReturnValue(ret) {
         if (returnType === 'string') {
           return UTF8ToString(ret);
@@ -4110,7 +4114,7 @@ async function createWasm() {
         if (returnType === 'boolean') return Boolean(ret);
         return ret;
       }
-  
+
       var func = getCFunc(ident);
       var cArgs = [];
       var stack = 0;
@@ -4130,14 +4134,14 @@ async function createWasm() {
         if (stack !== 0) stackRestore(stack);
         return convertReturnValue(ret);
       }
-  
+
       ret = onDone(ret);
       return ret;
     };
   Module['ccall'] = ccall;
 
-  
-  
+
+
     /**
      * @param {string=} returnType
      * @param {Array=} argTypes
@@ -4155,8 +4159,8 @@ async function createWasm() {
     };
   Module['cwrap'] = cwrap;
 
-  
-  
+
+
   var stringToNewUTF8 = (str) => {
       var size = lengthBytesUTF8(str) + 1;
       var ret = _malloc(size);
@@ -4173,7 +4177,7 @@ async function createWasm() {
       }
     };
   Module['uleb128Encode'] = uleb128Encode;
-  
+
   var sigToWasmTypes = (sig) => {
       var typeNames = {
         'i': 'i32',
@@ -4193,7 +4197,7 @@ async function createWasm() {
       return type;
     };
   Module['sigToWasmTypes'] = sigToWasmTypes;
-  
+
   var generateFuncType = (sig, target) => {
       var sigRet = sig.slice(0, 1);
       var sigParam = sig.slice(1);
@@ -4205,14 +4209,14 @@ async function createWasm() {
         'd': 0x7c, // f64
         'e': 0x6f, // externref
       };
-  
+
       // Parameters, length + signatures
       target.push(0x60 /* form: func */);
       uleb128Encode(sigParam.length, target);
       for (var i = 0; i < sigParam.length; ++i) {
         target.push(typeCodes[sigParam[i]]);
       }
-  
+
       // Return values, length + signatures
       // With no multi-return in MVP, either 0 (void) or 1 (anything else)
       if (sigRet == 'v') {
@@ -4223,7 +4227,7 @@ async function createWasm() {
     };
   Module['generateFuncType'] = generateFuncType;
   var convertJsFunctionToWasm = (func, sig) => {
-  
+
       // If the type reflection proposal is available, use the new
       // "WebAssembly.Function" constructor.
       // Otherwise, construct a minimal wasm module importing the JS function and
@@ -4231,14 +4235,14 @@ async function createWasm() {
       if (typeof WebAssembly.Function == "function") {
         return new WebAssembly.Function(sigToWasmTypes(sig), func);
       }
-  
+
       // The module is static, with the exception of the type section, which is
       // generated based on the signature passed in.
       var typeSectionBody = [
         0x01, // count: 1
       ];
       generateFuncType(sig, typeSectionBody);
-  
+
       // Rest of the module is static
       var bytes = [
         0x00, 0x61, 0x73, 0x6d, // magic ("\0asm")
@@ -4248,7 +4252,7 @@ async function createWasm() {
       // Write the overall length of the type section followed by the body
       uleb128Encode(typeSectionBody.length, bytes);
       bytes.push(...typeSectionBody);
-  
+
       // The rest of the module is static
       bytes.push(
         0x02, 0x07, // import section
@@ -4258,7 +4262,7 @@ async function createWasm() {
           // (export "f" (func 0 (type 0)))
           0x01, 0x01, 0x66, 0x00, 0x00,
       );
-  
+
       // We can compile this wasm module synchronously because it is very small.
       // This accepts an import (at "e.f"), that it reroutes to an export (at "f")
       var module = new WebAssembly.Module(new Uint8Array(bytes));
@@ -4267,8 +4271,8 @@ async function createWasm() {
       return wrappedFunc;
     };
   Module['convertJsFunctionToWasm'] = convertJsFunctionToWasm;
-  
-  
+
+
   var updateTableMap = (offset, count) => {
       if (functionsInTableMap) {
         for (var i = offset; i < offset + count; i++) {
@@ -4281,25 +4285,24 @@ async function createWasm() {
       }
     };
   Module['updateTableMap'] = updateTableMap;
-  
+
   var functionsInTableMap;
   Module['functionsInTableMap'] = functionsInTableMap;
-  
+
   var getFunctionAddress = (func) => {
       // First, create the map if this is the first use.
       if (!functionsInTableMap) {
         functionsInTableMap = new WeakMap();
-        Module.functionsInTableMap = functionsInTableMap;
-		updateTableMap(0, wasmTable.length);
+        updateTableMap(0, wasmTable.length);
       }
       return functionsInTableMap.get(func) || 0;
     };
   Module['getFunctionAddress'] = getFunctionAddress;
-  
-  
+
+
   var freeTableIndexes = [];
   Module['freeTableIndexes'] = freeTableIndexes;
-  
+
   var getEmptyTableSlot = () => {
       // Reuse a free index if there is one, otherwise grow.
       if (freeTableIndexes.length) {
@@ -4318,12 +4321,20 @@ async function createWasm() {
       return wasmTable.length - 1;
     };
   Module['getEmptyTableSlot'] = getEmptyTableSlot;
-  
-  
-  /** @suppress{checkTypes} */
-  var setWasmTableEntry = (idx, func) => wasmTable.set(idx, func);
+
+
+
+  var setWasmTableEntry = (idx, func) => {
+      /** @suppress {checkTypes} */
+      wasmTable.set(idx, func);
+      // With ABORT_ON_WASM_EXCEPTIONS wasmTable.get is overridden to return wrapped
+      // functions so we need to call it here to retrieve the potential wrapper correctly
+      // instead of just storing 'func' directly into wasmTableMirror
+      /** @suppress {checkTypes} */
+      wasmTableMirror[idx] = wasmTable.get(idx);
+    };
   Module['setWasmTableEntry'] = setWasmTableEntry;
-  
+
   /** @param {string=} sig */
   var addFunction = (func, sig) => {
       // Check if the function is already in the table, to ensure each function
@@ -4332,11 +4343,11 @@ async function createWasm() {
       if (rtn) {
         return rtn;
       }
-  
+
       // It's not in the table, add it now.
-  
+
       var ret = getEmptyTableSlot();
-  
+
       // Set the new value.
       try {
         // Attempting to call this with JS function will cause of table.set() to fail
@@ -4348,9 +4359,9 @@ async function createWasm() {
         var wrapped = convertJsFunctionToWasm(func, sig);
         setWasmTableEntry(ret, wrapped);
       }
-  
+
       functionsInTableMap.set(func, ret);
-  
+
       return ret;
     };
   Module['addFunction'] = addFunction;
