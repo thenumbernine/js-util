@@ -1,8 +1,9 @@
 // this file will load the emscripten module and provide the lua<->js wrapper code
-import { newLuaLib } from '/js/lua-5.4.7-with-ffi.js';
+import { default as newLuaLib } from '/js/lua-5.4.7-with-ffi.js';
 
 const newLua = async(args = {}) => {
 
+args.locateFile ??= () => '/js/lua-5.4.7-with-ffi.wasm';
 args.print ??= s => { console.log('> '+s); }
 args.printErr ??= s => { console.log('> '+s); }
 
