@@ -676,7 +676,7 @@ var LDSO = {
   }
 };
 
-var ___heap_base = 1094736;
+var ___heap_base = 5289040;
 
 var alignMemory = (size, alignment) => Math.ceil(size / alignment) * alignment;
 
@@ -1428,14 +1428,14 @@ var ___memory_base = new WebAssembly.Global({
   "mutable": false
 }, 1024);
 
-var ___stack_high = 1094736;
+var ___stack_high = 5289040;
 
 var ___stack_low = 46160;
 
 var ___stack_pointer = new WebAssembly.Global({
   "value": "i32",
   "mutable": true
-}, 1094736);
+}, 5289040);
 
 var PATH = {
   isAbs: path => path.charAt(0) === "/",
@@ -5516,6 +5516,8 @@ var _dlopen = Module["_dlopen"] = wasmExports["dlopen"];
 var ___dl_seterr = wasmExports["__dl_seterr"];
 
 var _calloc = wasmExports["calloc"];
+
+var _gettimeofday = Module["_gettimeofday"] = wasmExports["gettimeofday"];
 
 var _emscripten_builtin_memalign = wasmExports["emscripten_builtin_memalign"];
 
