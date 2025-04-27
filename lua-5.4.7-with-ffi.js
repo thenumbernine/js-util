@@ -287,13 +287,14 @@ function initMemory() {
 
     /** @suppress {checkTypes} */
     wasmMemory = new WebAssembly.Memory({
-      'initial': INITIAL_MEMORY / 65536,
+      'initial': BigInt(INITIAL_MEMORY / 65536),
       // In theory we should not need to emit the maximum if we want "unlimited"
       // or 4GB of memory, but VMs error on that atm, see
       // https://github.com/emscripten-core/emscripten/issues/14130
       // And in the pthreads case we definitely need to emit a maximum. So
       // always emit one.
-      'maximum': 32768,
+      'maximum': BigInt(32768),
+      'address': 'i64',
     });
   }
 
@@ -528,6 +529,8 @@ async function createWasm() {
     LDSO.init();
     loadDylibs();
 
+    wasmExports = applySignatureConversions(wasmExports);
+
     
 
     __RELOC_FUNCS__.push(wasmExports['__wasm_apply_data_relocs']);
@@ -588,7 +591,7 @@ async function createWasm() {
   get(obj, symName) {
         var rtn = GOT[symName];
         if (!rtn) {
-          rtn = GOT[symName] = new WebAssembly.Global({'value': 'i32', 'mutable': true});
+          rtn = GOT[symName] = new WebAssembly.Global({'value': 'i64', 'mutable': true});
         }
         if (!currentModuleWeakSymbols.has(symName)) {
           // Any non-weak reference to a symbol marks it as `required`, which
@@ -780,12 +783,12 @@ async function createWasm() {
     switch (type) {
       case 'i1': return HEAP8[ptr];
       case 'i8': return HEAP8[ptr];
-      case 'i16': return HEAP16[((ptr)>>1)];
-      case 'i32': return HEAP32[((ptr)>>2)];
-      case 'i64': return HEAP64[((ptr)>>3)];
-      case 'float': return HEAPF32[((ptr)>>2)];
-      case 'double': return HEAPF64[((ptr)>>3)];
-      case '*': return HEAPU32[((ptr)>>2)];
+      case 'i16': return HEAP16[((ptr)/2)];
+      case 'i32': return HEAP32[((ptr)/4)];
+      case 'i64': return HEAP64[((ptr)/8)];
+      case 'float': return HEAPF32[((ptr)/4)];
+      case 'double': return HEAPF64[((ptr)/8)];
+      case '*': return Number(HEAPU64[((ptr)/8)]);
       default: abort(`invalid type for getValue: ${type}`);
     }
   }
@@ -815,7 +818,7 @@ async function createWasm() {
   
   
   
-  var ___heap_base = 513792;
+  var ___heap_base = 546992;
   
   var alignMemory = (size, alignment) => {
       return Math.ceil(size / alignment) * alignment;
@@ -833,7 +836,7 @@ async function createWasm() {
       // Keep __heap_base stack aligned.
       var end = ret + alignMemory(size, 16);
       ___heap_base = end;
-      GOT['__heap_base'].value = end;
+      GOT['__heap_base'].value = BigInt(end);
       return ret;
     };
   
@@ -874,7 +877,7 @@ async function createWasm() {
         'f': 'f32',
         'd': 'f64',
         'e': 'externref',
-        'p': 'i32',
+        'p': 'i64',
       };
       var type = {
         parameters: [],
@@ -891,7 +894,7 @@ async function createWasm() {
       var sigParam = sig.slice(1);
       var typeCodes = {
         'i': 0x7f, // i32
-        'p': 0x7f, // i32
+        'p': 0x7e, // i64
         'j': 0x7e, // i64
         'f': 0x7d, // f32
         'd': 0x7c, // f64
@@ -962,15 +965,20 @@ async function createWasm() {
   
   /** @type {WebAssembly.Table} */
   var wasmTable = new WebAssembly.Table({
-    'initial': 1353,
+    'initial': BigInt(1353),
+    'address': 'i64',
     'element': 'anyfunc'
   });
   ;
   var getWasmTableEntry = (funcPtr) => {
+      // Function pointers should show up as numbers, even under wasm64, but
+      // we still have some places where bigint values can flow here.
+      // https://github.com/emscripten-core/emscripten/issues/18200
+      funcPtr = Number(funcPtr);
       var func = wasmTableMirror[funcPtr];
       if (!func) {
         /** @suppress {checkTypes} */
-        wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
+        wasmTableMirror[funcPtr] = func = wasmTable.get(BigInt(funcPtr));
       }
       return func;
     };
@@ -993,7 +1001,7 @@ async function createWasm() {
       // First, create the map if this is the first use.
       if (!functionsInTableMap) {
         functionsInTableMap = new WeakMap();
-        updateTableMap(0, wasmTable.length);
+        updateTableMap(0, Number(wasmTable.length));
       }
       return functionsInTableMap.get(func) || 0;
     };
@@ -1009,25 +1017,25 @@ async function createWasm() {
       // Grow the table
       try {
         /** @suppress {checkTypes} */
-        wasmTable.grow(1);
+        wasmTable.grow(BigInt(1));
       } catch (err) {
         if (!(err instanceof RangeError)) {
           throw err;
         }
         throw 'Unable to grow wasm table. Set ALLOW_TABLE_GROWTH.';
       }
-      return wasmTable.length - 1;
+      return Number(wasmTable.length) - 1;
     };
   
   
   var setWasmTableEntry = (idx, func) => {
       /** @suppress {checkTypes} */
-      wasmTable.set(idx, func);
+      wasmTable.set(BigInt(idx), func);
       // With ABORT_ON_WASM_EXCEPTIONS wasmTable.get is overridden to return wrapped
       // functions so we need to call it here to retrieve the potential wrapper correctly
       // instead of just storing 'func' directly into wasmTableMirror
       /** @suppress {checkTypes} */
-      wasmTableMirror[idx] = wasmTable.get(idx);
+      wasmTableMirror[idx] = wasmTable.get(BigInt(idx));
     };
   /** @param {string=} sig */
   var addFunction = (func, sig) => {
@@ -1066,11 +1074,11 @@ async function createWasm() {
   
         var value = exports[symName];
   
-        GOT[symName] ||= new WebAssembly.Global({'value': 'i32', 'mutable': true});
+        GOT[symName] ||= new WebAssembly.Global({'value': 'i64', 'mutable': true});
         if (replace || GOT[symName].value == 0) {
           if (typeof value == 'function') {
-            GOT[symName].value = addFunction(value);
-          } else if (typeof value == 'number') {
+            GOT[symName].value = BigInt(addFunction(value));
+          } else if (typeof value == 'bigint') {
             GOT[symName].value = value;
           } else {
             err(`unhandled export type for '${symName}': ${typeof value}`);
@@ -1089,8 +1097,8 @@ async function createWasm() {
           // https://github.com/WebAssembly/mutable-global/issues/1
           value = value.value;
         }
-        if (typeof value == 'number') {
-          value += memoryBase;
+        if (typeof value == 'bigint') {
+          value += BigInt(memoryBase);
         }
         relocated[e] = value;
       }
@@ -1109,9 +1117,15 @@ async function createWasm() {
     };
   
   var dynCall = (sig, ptr, args = [], promising = false) => {
+      // With MEMORY64 we have an additional step to convert `p` arguments to
+      // bigint. This is the runtime equivalent of the wrappers we create for wasm
+      // exports in `emscripten.py:create_wasm64_wrappers`.
+      for (var i = 1; i < sig.length; ++i) {
+        if (sig[i] == 'p') args[i-1] = BigInt(args[i-1]);
+      }
       var func = getWasmTableEntry(ptr);
       var rtn = func(...args);
-      return rtn;
+      return sig[0] == 'p' ? Number(rtn) : rtn;
     };
   
   
@@ -1194,17 +1208,17 @@ async function createWasm() {
           var memAlign = Math.pow(2, metadata.memoryAlign);
           // prepare memory
           var memoryBase = metadata.memorySize ? alignMemory(getMemory(metadata.memorySize + memAlign), memAlign) : 0; // TODO: add to cleanups
-          var tableBase = metadata.tableSize ? wasmTable.length : 0;
+          var tableBase = metadata.tableSize ? Number(wasmTable.length) : 0;
           if (handle) {
-            HEAP8[(handle)+(8)] = 1;
-            HEAPU32[(((handle)+(12))>>2)] = memoryBase;
-            HEAP32[(((handle)+(16))>>2)] = metadata.memorySize;
-            HEAPU32[(((handle)+(20))>>2)] = tableBase;
-            HEAP32[(((handle)+(24))>>2)] = metadata.tableSize;
+            HEAP8[(handle)+(12)] = 1;
+            HEAPU64[(((handle)+(16))/8)] = BigInt(memoryBase);
+            HEAP32[(((handle)+(24))/4)] = metadata.memorySize;
+            HEAPU64[(((handle)+(32))/8)] = BigInt(tableBase);
+            HEAP32[(((handle)+(40))/4)] = metadata.tableSize;
           }
   
         if (metadata.tableSize) {
-          wasmTable.grow(metadata.tableSize);
+          wasmTable.grow(BigInt(metadata.tableSize));
         }
   
         // This is the export map that we ultimately return.  We declare it here
@@ -1241,8 +1255,10 @@ async function createWasm() {
             // symbols that should be local to this module
             switch (prop) {
               case '__memory_base':
-                return memoryBase;
+                return BigInt(memoryBase);
               case '__table_base':
+                return BigInt(tableBase);
+              case '__table_base32':
                 return tableBase;
             }
             if (prop in wasmImports && !wasmImports[prop].stub) {
@@ -1297,8 +1313,8 @@ async function createWasm() {
           if ('__start_em_asm' in moduleExports) {
             var start = moduleExports['__start_em_asm'];
             var stop = moduleExports['__stop_em_asm'];
-            
-            
+            start = Number(start);
+            stop = Number(stop);
             while (start < stop) {
               var jsString = UTF8ToString(start);
               addEmAsm(start, jsString);
@@ -1326,7 +1342,7 @@ async function createWasm() {
           for (var name in moduleExports) {
             if (name.startsWith('__em_js__')) {
               var start = moduleExports[name]
-              var jsString = UTF8ToString(start);
+              var jsString = UTF8ToString(Number(start));
               // EM_JS strings are stored in the data section in the form
               // SIG<::>BODY.
               var parts = jsString.split('<::>');
@@ -1497,8 +1513,8 @@ async function createWasm() {
   
         // for wasm, we can use fetch for async, but for fs mode we can only imitate it
         if (handle) {
-          var data = HEAPU32[(((handle)+(28))>>2)];
-          var dataSize = HEAPU32[(((handle)+(32))>>2)];
+          var data = Number(HEAPU64[(((handle)+(48))/8)]);
+          var dataSize = Number(HEAPU64[(((handle)+(56))/8)]);
           if (data && dataSize) {
             var libData = HEAP8.slice(data, data + dataSize);
             return flags.loadAsync ? Promise.resolve(libData) : libData;
@@ -1565,8 +1581,10 @@ async function createWasm() {
           }
           if (typeof value == 'function') {
             /** @suppress {checkTypes} */
-            entry.value = addFunction(value, value.sig);
+            entry.value = BigInt(addFunction(value, value.sig));
           } else if (typeof value == 'number') {
+            entry.value = BigInt(value);
+          } else if (typeof value == 'bigint') {
             entry.value = value;
           } else {
             throw new Error(`bad export type for '${symName}': ${typeof value}`);
@@ -1609,33 +1627,48 @@ async function createWasm() {
     switch (type) {
       case 'i1': HEAP8[ptr] = value; break;
       case 'i8': HEAP8[ptr] = value; break;
-      case 'i16': HEAP16[((ptr)>>1)] = value; break;
-      case 'i32': HEAP32[((ptr)>>2)] = value; break;
-      case 'i64': HEAP64[((ptr)>>3)] = BigInt(value); break;
-      case 'float': HEAPF32[((ptr)>>2)] = value; break;
-      case 'double': HEAPF64[((ptr)>>3)] = value; break;
-      case '*': HEAPU32[((ptr)>>2)] = value; break;
+      case 'i16': HEAP16[((ptr)/2)] = value; break;
+      case 'i32': HEAP32[((ptr)/4)] = value; break;
+      case 'i64': HEAP64[((ptr)/8)] = BigInt(value); break;
+      case 'float': HEAPF32[((ptr)/4)] = value; break;
+      case 'double': HEAPF64[((ptr)/8)] = value; break;
+      case '*': HEAPU64[((ptr)/8)] = BigInt(value); break;
       default: abort(`invalid type for setValue: ${type}`);
     }
   }
 
 
 
-  var ___assert_fail = (condition, filename, line, func) =>
-      abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [filename ? UTF8ToString(filename) : 'unknown filename', line, func ? UTF8ToString(func) : 'unknown function']);
+  var INT53_MAX = 9007199254740992;
+  
+  var INT53_MIN = -9007199254740992;
+  var bigintToI53Checked = (num) => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
+  
+  function ___assert_fail(condition, filename, line, func) {
+    condition = bigintToI53Checked(condition);
+    filename = bigintToI53Checked(filename);
+    func = bigintToI53Checked(func);
+  
+  return abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [filename ? UTF8ToString(filename) : 'unknown filename', line, func ? UTF8ToString(func) : 'unknown function']);
+  }
   ___assert_fail.sig = 'vppip';
 
-  var ___call_sighandler = (fp, sig) => getWasmTableEntry(fp)(sig);
+  
+  function ___call_sighandler(fp, sig) {
+    fp = bigintToI53Checked(fp);
+  
+  return getWasmTableEntry(fp)(sig);
+  }
   ___call_sighandler.sig = 'vpi';
 
 
-  var ___memory_base = new WebAssembly.Global({'value': 'i32', 'mutable': false}, 1024);
+  var ___memory_base = new WebAssembly.Global({'value': 'i64', 'mutable': false}, BigInt(1024));
 
-  var ___stack_high = 513792;
+  var ___stack_high = 546992;
 
-  var ___stack_low = 448256;
+  var ___stack_low = 481456;
 
-  var ___stack_pointer = new WebAssembly.Global({'value': 'i32', 'mutable': true}, 513792);
+  var ___stack_pointer = new WebAssembly.Global({'value': 'i64', 'mutable': true}, BigInt(546992));
 
   var PATH = {
   isAbs:(path) => path.charAt(0) === '/',
@@ -1699,11 +1732,6 @@ async function createWasm() {
   };
   
   var initRandomFill = () => {
-      // This block is not needed on v19+ since crypto.getRandomValues is builtin
-      if (ENVIRONMENT_IS_NODE) {
-        var nodeCrypto = require('crypto');
-        return (view) => nodeCrypto.randomFillSync(view);
-      }
   
       return (view) => crypto.getRandomValues(view);
     };
@@ -4080,38 +4108,38 @@ async function createWasm() {
         return dir + '/' + path;
       },
   writeStat(buf, stat) {
-        HEAP32[((buf)>>2)] = stat.dev;
-        HEAP32[(((buf)+(4))>>2)] = stat.mode;
-        HEAPU32[(((buf)+(8))>>2)] = stat.nlink;
-        HEAP32[(((buf)+(12))>>2)] = stat.uid;
-        HEAP32[(((buf)+(16))>>2)] = stat.gid;
-        HEAP32[(((buf)+(20))>>2)] = stat.rdev;
-        HEAP64[(((buf)+(24))>>3)] = BigInt(stat.size);
-        HEAP32[(((buf)+(32))>>2)] = 4096;
-        HEAP32[(((buf)+(36))>>2)] = stat.blocks;
+        HEAP32[((buf)/4)] = stat.dev;
+        HEAP32[(((buf)+(4))/4)] = stat.mode;
+        HEAPU64[(((buf)+(8))/8)] = BigInt(stat.nlink);
+        HEAP32[(((buf)+(16))/4)] = stat.uid;
+        HEAP32[(((buf)+(20))/4)] = stat.gid;
+        HEAP32[(((buf)+(24))/4)] = stat.rdev;
+        HEAP64[(((buf)+(32))/8)] = BigInt(stat.size);
+        HEAP32[(((buf)+(40))/4)] = 4096;
+        HEAP32[(((buf)+(44))/4)] = stat.blocks;
         var atime = stat.atime.getTime();
         var mtime = stat.mtime.getTime();
         var ctime = stat.ctime.getTime();
-        HEAP64[(((buf)+(40))>>3)] = BigInt(Math.floor(atime / 1000));
-        HEAPU32[(((buf)+(48))>>2)] = (atime % 1000) * 1000 * 1000;
-        HEAP64[(((buf)+(56))>>3)] = BigInt(Math.floor(mtime / 1000));
-        HEAPU32[(((buf)+(64))>>2)] = (mtime % 1000) * 1000 * 1000;
-        HEAP64[(((buf)+(72))>>3)] = BigInt(Math.floor(ctime / 1000));
-        HEAPU32[(((buf)+(80))>>2)] = (ctime % 1000) * 1000 * 1000;
-        HEAP64[(((buf)+(88))>>3)] = BigInt(stat.ino);
+        HEAP64[(((buf)+(48))/8)] = BigInt(Math.floor(atime / 1000));
+        HEAPU64[(((buf)+(56))/8)] = BigInt((atime % 1000) * 1000 * 1000);
+        HEAP64[(((buf)+(64))/8)] = BigInt(Math.floor(mtime / 1000));
+        HEAPU64[(((buf)+(72))/8)] = BigInt((mtime % 1000) * 1000 * 1000);
+        HEAP64[(((buf)+(80))/8)] = BigInt(Math.floor(ctime / 1000));
+        HEAPU64[(((buf)+(88))/8)] = BigInt((ctime % 1000) * 1000 * 1000);
+        HEAP64[(((buf)+(96))/8)] = BigInt(stat.ino);
         return 0;
       },
   writeStatFs(buf, stats) {
-        HEAP32[(((buf)+(4))>>2)] = stats.bsize;
-        HEAP32[(((buf)+(40))>>2)] = stats.bsize;
-        HEAP32[(((buf)+(8))>>2)] = stats.blocks;
-        HEAP32[(((buf)+(12))>>2)] = stats.bfree;
-        HEAP32[(((buf)+(16))>>2)] = stats.bavail;
-        HEAP32[(((buf)+(20))>>2)] = stats.files;
-        HEAP32[(((buf)+(24))>>2)] = stats.ffree;
-        HEAP32[(((buf)+(28))>>2)] = stats.fsid;
-        HEAP32[(((buf)+(44))>>2)] = stats.flags;  // ST_NOSUID
-        HEAP32[(((buf)+(36))>>2)] = stats.namelen;
+        HEAP32[(((buf)+(8))/4)] = stats.bsize;
+        HEAP32[(((buf)+(56))/4)] = stats.bsize;
+        HEAP32[(((buf)+(16))/4)] = stats.blocks;
+        HEAP32[(((buf)+(20))/4)] = stats.bfree;
+        HEAP32[(((buf)+(24))/4)] = stats.bavail;
+        HEAP32[(((buf)+(28))/4)] = stats.files;
+        HEAP32[(((buf)+(32))/4)] = stats.ffree;
+        HEAP32[(((buf)+(36))/4)] = stats.fsid;
+        HEAP32[(((buf)+(64))/4)] = stats.flags;  // ST_NOSUID
+        HEAP32[(((buf)+(48))/4)] = stats.namelen;
       },
   doMsync(addr, stream, len, flags, offset) {
         if (!FS.isFile(stream.node.mode)) {
@@ -4134,7 +4162,14 @@ async function createWasm() {
         return ret;
       },
   };
-  var ___syscall__newselect = function (nfds, readfds, writefds, exceptfds, timeout) {
+  
+  var ___syscall__newselect = function(nfds, readfds, writefds, exceptfds, timeout) {
+    readfds = bigintToI53Checked(readfds);
+    writefds = bigintToI53Checked(writefds);
+    exceptfds = bigintToI53Checked(exceptfds);
+    timeout = bigintToI53Checked(timeout);
+  
+  
   try {
   
       // readfds are supported,
@@ -4145,12 +4180,12 @@ async function createWasm() {
   
       var total = 0;
   
-      var srcReadLow = (readfds ? HEAP32[((readfds)>>2)] : 0),
-          srcReadHigh = (readfds ? HEAP32[(((readfds)+(4))>>2)] : 0);
-      var srcWriteLow = (writefds ? HEAP32[((writefds)>>2)] : 0),
-          srcWriteHigh = (writefds ? HEAP32[(((writefds)+(4))>>2)] : 0);
-      var srcExceptLow = (exceptfds ? HEAP32[((exceptfds)>>2)] : 0),
-          srcExceptHigh = (exceptfds ? HEAP32[(((exceptfds)+(4))>>2)] : 0);
+      var srcReadLow = (readfds ? HEAP32[((readfds)/4)] : 0),
+          srcReadHigh = (readfds ? HEAP32[(((readfds)+(4))/4)] : 0);
+      var srcWriteLow = (writefds ? HEAP32[((writefds)/4)] : 0),
+          srcWriteHigh = (writefds ? HEAP32[(((writefds)+(4))/4)] : 0);
+      var srcExceptLow = (exceptfds ? HEAP32[((exceptfds)/4)] : 0),
+          srcExceptHigh = (exceptfds ? HEAP32[(((exceptfds)+(4))/4)] : 0);
   
       var dstReadLow = 0,
           dstReadHigh = 0;
@@ -4159,12 +4194,12 @@ async function createWasm() {
       var dstExceptLow = 0,
           dstExceptHigh = 0;
   
-      var allLow = (readfds ? HEAP32[((readfds)>>2)] : 0) |
-                   (writefds ? HEAP32[((writefds)>>2)] : 0) |
-                   (exceptfds ? HEAP32[((exceptfds)>>2)] : 0);
-      var allHigh = (readfds ? HEAP32[(((readfds)+(4))>>2)] : 0) |
-                    (writefds ? HEAP32[(((writefds)+(4))>>2)] : 0) |
-                    (exceptfds ? HEAP32[(((exceptfds)+(4))>>2)] : 0);
+      var allLow = (readfds ? HEAP32[((readfds)/4)] : 0) |
+                   (writefds ? HEAP32[((writefds)/4)] : 0) |
+                   (exceptfds ? HEAP32[((exceptfds)/4)] : 0);
+      var allHigh = (readfds ? HEAP32[(((readfds)+(4))/4)] : 0) |
+                    (writefds ? HEAP32[(((writefds)+(4))/4)] : 0) |
+                    (exceptfds ? HEAP32[(((exceptfds)+(4))/4)] : 0);
   
       var check = (fd, low, high, val) => fd < 32 ? (low & val) : (high & val);
   
@@ -4186,8 +4221,8 @@ async function createWasm() {
             // Note that sizeof(time_t) != sizeof(long) in wasm32. The former is 8, while the latter is 4.
             // This means using "C_STRUCTS.timeval.tv_usec" leads to a wrong offset.
             // So, instead, we use POINTER_SIZE.
-            var tv_sec = (readfds ? HEAP32[((timeout)>>2)] : 0),
-                tv_usec = (readfds ? HEAP32[(((timeout)+(4))>>2)] : 0);
+            var tv_sec = (readfds ? HEAP32[((timeout)/4)] : 0),
+                tv_usec = (readfds ? HEAP32[(((timeout)+(8))/4)] : 0);
             timeoutInMillis = (tv_sec + tv_usec / 1000000) * 1000;
           }
           flags = stream.stream_ops.poll(stream, timeoutInMillis);
@@ -4208,16 +4243,16 @@ async function createWasm() {
       }
   
       if (readfds) {
-        HEAP32[((readfds)>>2)] = dstReadLow;
-        HEAP32[(((readfds)+(4))>>2)] = dstReadHigh;
+        HEAP32[((readfds)/4)] = dstReadLow;
+        HEAP32[(((readfds)+(4))/4)] = dstReadHigh;
       }
       if (writefds) {
-        HEAP32[((writefds)>>2)] = dstWriteLow;
-        HEAP32[(((writefds)+(4))>>2)] = dstWriteHigh;
+        HEAP32[((writefds)/4)] = dstWriteLow;
+        HEAP32[(((writefds)+(4))/4)] = dstWriteHigh;
       }
       if (exceptfds) {
-        HEAP32[((exceptfds)>>2)] = dstExceptLow;
-        HEAP32[(((exceptfds)+(4))>>2)] = dstExceptHigh;
+        HEAP32[((exceptfds)/4)] = dstExceptLow;
+        HEAP32[(((exceptfds)+(4))/4)] = dstExceptHigh;
       }
   
       return total;
@@ -4225,6 +4260,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   };
   ___syscall__newselect.sig = 'iipppp';
 
@@ -4578,7 +4614,7 @@ async function createWasm() {
               if (sock.recv_queue.length) {
                 bytes = sock.recv_queue[0].data.length;
               }
-              HEAP32[((arg)>>2)] = bytes;
+              HEAP32[((arg)/4)] = bytes;
               return 0;
             default:
               return 28;
@@ -4926,24 +4962,24 @@ async function createWasm() {
           addr = inetPton4(addr);
           zeroMemory(sa, 16);
           if (addrlen) {
-            HEAP32[((addrlen)>>2)] = 16;
+            HEAP32[((addrlen)/4)] = 16;
           }
-          HEAP16[((sa)>>1)] = family;
-          HEAP32[(((sa)+(4))>>2)] = addr;
-          HEAP16[(((sa)+(2))>>1)] = _htons(port);
+          HEAP16[((sa)/2)] = family;
+          HEAP32[(((sa)+(4))/4)] = addr;
+          HEAP16[(((sa)+(2))/2)] = _htons(port);
           break;
         case 10:
           addr = inetPton6(addr);
           zeroMemory(sa, 28);
           if (addrlen) {
-            HEAP32[((addrlen)>>2)] = 28;
+            HEAP32[((addrlen)/4)] = 28;
           }
-          HEAP32[((sa)>>2)] = family;
-          HEAP32[(((sa)+(8))>>2)] = addr[0];
-          HEAP32[(((sa)+(12))>>2)] = addr[1];
-          HEAP32[(((sa)+(16))>>2)] = addr[2];
-          HEAP32[(((sa)+(20))>>2)] = addr[3];
-          HEAP16[(((sa)+(2))>>1)] = _htons(port);
+          HEAP32[((sa)/4)] = family;
+          HEAP32[(((sa)+(8))/4)] = addr[0];
+          HEAP32[(((sa)+(12))/4)] = addr[1];
+          HEAP32[(((sa)+(16))/4)] = addr[2];
+          HEAP32[(((sa)+(20))/4)] = addr[3];
+          HEAP16[(((sa)+(2))/2)] = _htons(port);
           break;
         default:
           return 5;
@@ -4996,7 +5032,12 @@ async function createWasm() {
         return null;
       },
   };
+  
   function ___syscall_accept4(fd, addr, addrlen, flags, d1, d2) {
+    addr = bigintToI53Checked(addr);
+    addrlen = bigintToI53Checked(addrlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -5009,6 +5050,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_accept4.sig = 'iippiii';
 
@@ -5116,8 +5158,8 @@ async function createWasm() {
   
   var readSockaddr = (sa, salen) => {
       // family / port offsets are common to both sockaddr_in and sockaddr_in6
-      var family = HEAP16[((sa)>>1)];
-      var port = _ntohs(HEAPU16[(((sa)+(2))>>1)]);
+      var family = HEAP16[((sa)/2)];
+      var port = _ntohs(HEAPU16[(((sa)+(2))/2)]);
       var addr;
   
       switch (family) {
@@ -5125,7 +5167,7 @@ async function createWasm() {
           if (salen !== 16) {
             return { errno: 28 };
           }
-          addr = HEAP32[(((sa)+(4))>>2)];
+          addr = HEAP32[(((sa)+(4))/4)];
           addr = inetNtop4(addr);
           break;
         case 10:
@@ -5133,10 +5175,10 @@ async function createWasm() {
             return { errno: 28 };
           }
           addr = [
-            HEAP32[(((sa)+(8))>>2)],
-            HEAP32[(((sa)+(12))>>2)],
-            HEAP32[(((sa)+(16))>>2)],
-            HEAP32[(((sa)+(20))>>2)]
+            HEAP32[(((sa)+(8))/4)],
+            HEAP32[(((sa)+(12))/4)],
+            HEAP32[(((sa)+(16))/4)],
+            HEAP32[(((sa)+(20))/4)]
           ];
           addr = inetNtop6(addr);
           break;
@@ -5154,7 +5196,12 @@ async function createWasm() {
       info.addr = DNS.lookup_addr(info.addr) || info.addr;
       return info;
     };
+  
   function ___syscall_bind(fd, addr, addrlen, d1, d2, d3) {
+    addr = bigintToI53Checked(addr);
+    addrlen = bigintToI53Checked(addrlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -5165,10 +5212,15 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_bind.sig = 'iippiii';
 
+  
   function ___syscall_chdir(path) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5178,10 +5230,15 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_chdir.sig = 'ip';
 
+  
   function ___syscall_chmod(path, mode) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5191,11 +5248,17 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_chmod.sig = 'ipi';
 
   
+  
   function ___syscall_connect(fd, addr, addrlen, d1, d2, d3) {
+    addr = bigintToI53Checked(addr);
+    addrlen = bigintToI53Checked(addrlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -5206,6 +5269,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_connect.sig = 'iippiii';
 
@@ -5238,7 +5302,11 @@ async function createWasm() {
   }
   ___syscall_dup3.sig = 'iiii';
 
+  
   function ___syscall_faccessat(dirfd, path, amode, flags) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5264,16 +5332,13 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_faccessat.sig = 'iipii';
 
   var ___syscall_fadvise64 = (fd, offset, len, advice) => 0;
   ___syscall_fadvise64.sig = 'iijji';
 
-  var INT53_MAX = 9007199254740992;
-  
-  var INT53_MIN = -9007199254740992;
-  var bigintToI53Checked = (num) => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
   function ___syscall_fallocate(fd, mode, offset, len) {
     offset = bigintToI53Checked(offset);
     len = bigintToI53Checked(len);
@@ -5329,7 +5394,11 @@ async function createWasm() {
   }
   ___syscall_fchmod.sig = 'iii';
 
+  
   function ___syscall_fchmodat2(dirfd, path, mode, flags) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       var nofollow = flags & 256;
@@ -5341,6 +5410,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_fchmodat2.sig = 'iipii';
 
@@ -5356,7 +5426,11 @@ async function createWasm() {
   }
   ___syscall_fchown32.sig = 'iiii';
 
+  
   function ___syscall_fchownat(dirfd, path, owner, group, flags) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5369,20 +5443,28 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_fchownat.sig = 'iipiii';
 
-  /** @suppress {duplicate } */
+  var syscallGetVarargP = () => {
+      var ret = Number(HEAPU64[((SYSCALLS.varargs)/8)]);
+      SYSCALLS.varargs += 8;
+      return ret;
+    };
+  
   var syscallGetVarargI = () => {
       // the `+` prepended here is necessary to convince the JSCompiler that varargs is indeed a number.
-      var ret = HEAP32[((+SYSCALLS.varargs)>>2)];
+      var ret = HEAP32[((+SYSCALLS.varargs)/4)];
       SYSCALLS.varargs += 4;
       return ret;
     };
-  var syscallGetVarargP = syscallGetVarargI;
   
   
   function ___syscall_fcntl64(fd, cmd, varargs) {
+    varargs = bigintToI53Checked(varargs);
+  
+  
   SYSCALLS.varargs = varargs;
   try {
   
@@ -5410,15 +5492,15 @@ async function createWasm() {
           stream.flags |= arg;
           return 0;
         }
-        case 12: {
+        case 5: {
           var arg = syscallGetVarargP();
           var offset = 0;
           // We're always unlocked.
-          HEAP16[(((arg)+(offset))>>1)] = 2;
+          HEAP16[(((arg)+(offset))/2)] = 2;
           return 0;
         }
-        case 13:
-        case 14:
+        case 6:
+        case 7:
           // Pretend that the locking is successful. These are process-level locks,
           // and Emscripten programs are a single process. If we supported linking a
           // filesystem between programs, we'd need to do more here.
@@ -5430,6 +5512,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_fcntl64.sig = 'iiip';
 
@@ -5445,7 +5528,11 @@ async function createWasm() {
   }
   ___syscall_fdatasync.sig = 'ii';
 
+  
   function ___syscall_fstat64(fd, buf) {
+    buf = bigintToI53Checked(buf);
+  
+  
   try {
   
       return SYSCALLS.writeStat(buf, FS.fstat(fd));
@@ -5453,10 +5540,16 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_fstat64.sig = 'iip';
 
+  
   function ___syscall_fstatfs64(fd, size, buf) {
+    size = bigintToI53Checked(size);
+    buf = bigintToI53Checked(buf);
+  
+  
   try {
   
       var stream = SYSCALLS.getStreamFromFD(fd);
@@ -5466,6 +5559,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_fstatfs64.sig = 'iipp';
 
@@ -5490,7 +5584,12 @@ async function createWasm() {
   var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
       return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
     };
+  
   function ___syscall_getcwd(buf, size) {
+    buf = bigintToI53Checked(buf);
+    size = bigintToI53Checked(size);
+  
+  
   try {
   
       if (size === 0) return -28;
@@ -5503,11 +5602,17 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_getcwd.sig = 'ipp';
 
   
+  
   function ___syscall_getdents64(fd, dirp, count) {
+    dirp = bigintToI53Checked(dirp);
+    count = bigintToI53Checked(count);
+  
+  
   try {
   
       var stream = SYSCALLS.getStreamFromFD(fd)
@@ -5550,9 +5655,9 @@ async function createWasm() {
                  FS.isLink(child.mode) ? 10 :   // DT_LNK, symbolic link.
                  8;                             // DT_REG, regular file.
         }
-        HEAP64[((dirp + pos)>>3)] = BigInt(id);
-        HEAP64[(((dirp + pos)+(8))>>3)] = BigInt((idx + 1) * struct_size);
-        HEAP16[(((dirp + pos)+(16))>>1)] = 280;
+        HEAP64[((dirp + pos)/8)] = BigInt(id);
+        HEAP64[(((dirp + pos)+(8))/8)] = BigInt((idx + 1) * struct_size);
+        HEAP16[(((dirp + pos)+(16))/2)] = 280;
         HEAP8[(dirp + pos)+(18)] = type;
         stringToUTF8(name, dirp + pos + 19, 256);
         pos += struct_size;
@@ -5563,12 +5668,18 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_getdents64.sig = 'iipp';
 
   
   
+  
   function ___syscall_getpeername(fd, addr, addrlen, d1, d2, d3) {
+    addr = bigintToI53Checked(addr);
+    addrlen = bigintToI53Checked(addrlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -5581,12 +5692,18 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_getpeername.sig = 'iippiii';
 
   
   
+  
   function ___syscall_getsockname(fd, addr, addrlen, d1, d2, d3) {
+    addr = bigintToI53Checked(addr);
+    addrlen = bigintToI53Checked(addrlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -5597,10 +5714,16 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_getsockname.sig = 'iippiii';
 
+  
   function ___syscall_getsockopt(fd, level, optname, optval, optlen, d1) {
+    optval = bigintToI53Checked(optval);
+    optlen = bigintToI53Checked(optlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -5608,8 +5731,8 @@ async function createWasm() {
       // so only supports SOL_SOCKET with SO_ERROR.
       if (level === 1) {
         if (optname === 4) {
-          HEAP32[((optval)>>2)] = sock.error;
-          HEAP32[((optlen)>>2)] = 4;
+          HEAP32[((optval)/4)] = sock.error;
+          HEAP32[((optlen)/4)] = 4;
           sock.error = null; // Clear the error (The SO_ERROR option obtains and then clears this field).
           return 0;
         }
@@ -5619,11 +5742,16 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_getsockopt.sig = 'iiiippi';
 
   
+  
   function ___syscall_ioctl(fd, op, varargs) {
+    varargs = bigintToI53Checked(varargs);
+  
+  
   SYSCALLS.varargs = varargs;
   try {
   
@@ -5638,10 +5766,10 @@ async function createWasm() {
           if (stream.tty.ops.ioctl_tcgets) {
             var termios = stream.tty.ops.ioctl_tcgets(stream);
             var argp = syscallGetVarargP();
-            HEAP32[((argp)>>2)] = termios.c_iflag || 0;
-            HEAP32[(((argp)+(4))>>2)] = termios.c_oflag || 0;
-            HEAP32[(((argp)+(8))>>2)] = termios.c_cflag || 0;
-            HEAP32[(((argp)+(12))>>2)] = termios.c_lflag || 0;
+            HEAP32[((argp)/4)] = termios.c_iflag || 0;
+            HEAP32[(((argp)+(4))/4)] = termios.c_oflag || 0;
+            HEAP32[(((argp)+(8))/4)] = termios.c_cflag || 0;
+            HEAP32[(((argp)+(12))/4)] = termios.c_lflag || 0;
             for (var i = 0; i < 32; i++) {
               HEAP8[(argp + i)+(17)] = termios.c_cc[i] || 0;
             }
@@ -5661,10 +5789,10 @@ async function createWasm() {
           if (!stream.tty) return -59;
           if (stream.tty.ops.ioctl_tcsets) {
             var argp = syscallGetVarargP();
-            var c_iflag = HEAP32[((argp)>>2)];
-            var c_oflag = HEAP32[(((argp)+(4))>>2)];
-            var c_cflag = HEAP32[(((argp)+(8))>>2)];
-            var c_lflag = HEAP32[(((argp)+(12))>>2)];
+            var c_iflag = HEAP32[((argp)/4)];
+            var c_oflag = HEAP32[(((argp)+(4))/4)];
+            var c_cflag = HEAP32[(((argp)+(8))/4)];
+            var c_lflag = HEAP32[(((argp)+(12))/4)];
             var c_cc = []
             for (var i = 0; i < 32; i++) {
               c_cc.push(HEAP8[(argp + i)+(17)]);
@@ -5676,7 +5804,7 @@ async function createWasm() {
         case 21519: {
           if (!stream.tty) return -59;
           var argp = syscallGetVarargP();
-          HEAP32[((argp)>>2)] = 0;
+          HEAP32[((argp)/4)] = 0;
           return 0;
         }
         case 21520: {
@@ -5694,8 +5822,8 @@ async function createWasm() {
           if (stream.tty.ops.ioctl_tiocgwinsz) {
             var winsize = stream.tty.ops.ioctl_tiocgwinsz(stream.tty);
             var argp = syscallGetVarargP();
-            HEAP16[((argp)>>1)] = winsize[0];
-            HEAP16[(((argp)+(2))>>1)] = winsize[1];
+            HEAP16[((argp)/2)] = winsize[0];
+            HEAP16[(((argp)+(2))/2)] = winsize[1];
           }
           return 0;
         }
@@ -5716,6 +5844,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_ioctl.sig = 'iiip';
 
@@ -5732,7 +5861,12 @@ async function createWasm() {
   }
   ___syscall_listen.sig = 'iiiiiii';
 
+  
   function ___syscall_lstat64(path, buf) {
+    path = bigintToI53Checked(path);
+    buf = bigintToI53Checked(buf);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5741,10 +5875,15 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_lstat64.sig = 'ipp';
 
+  
   function ___syscall_mkdirat(dirfd, path, mode) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5755,10 +5894,15 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_mkdirat.sig = 'iipi';
 
+  
   function ___syscall_mknodat(dirfd, path, mode, dev) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5779,10 +5923,16 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_mknodat.sig = 'iipii';
 
+  
   function ___syscall_newfstatat(dirfd, path, buf, flags) {
+    path = bigintToI53Checked(path);
+    buf = bigintToI53Checked(buf);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -5795,11 +5945,17 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_newfstatat.sig = 'iippi';
 
   
+  
   function ___syscall_openat(dirfd, path, flags, varargs) {
+    path = bigintToI53Checked(path);
+    varargs = bigintToI53Checked(varargs);
+  
+  
   SYSCALLS.varargs = varargs;
   try {
   
@@ -5811,6 +5967,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_openat.sig = 'iipip';
 
@@ -6043,7 +6200,11 @@ async function createWasm() {
         return 'pipe[' + (PIPEFS.nextname.current++) + ']';
       },
   };
+  
   function ___syscall_pipe(fdPtr) {
+    fdPtr = bigintToI53Checked(fdPtr);
+  
+  
   try {
   
       if (fdPtr == 0) {
@@ -6052,25 +6213,30 @@ async function createWasm() {
   
       var res = PIPEFS.createPipe();
   
-      HEAP32[((fdPtr)>>2)] = res.readable_fd;
-      HEAP32[(((fdPtr)+(4))>>2)] = res.writable_fd;
+      HEAP32[((fdPtr)/4)] = res.readable_fd;
+      HEAP32[(((fdPtr)+(4))/4)] = res.writable_fd;
   
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_pipe.sig = 'ip';
 
+  
   function ___syscall_poll(fds, nfds, timeout) {
+    fds = bigintToI53Checked(fds);
+  
+  
   try {
   
       var nonzero = 0;
       for (var i = 0; i < nfds; i++) {
         var pollfd = fds + 8 * i;
-        var fd = HEAP32[((pollfd)>>2)];
-        var events = HEAP16[(((pollfd)+(4))>>1)];
+        var fd = HEAP32[((pollfd)/4)];
+        var events = HEAP16[(((pollfd)+(4))/2)];
         var mask = 32;
         var stream = FS.getStream(fd);
         if (stream) {
@@ -6081,19 +6247,26 @@ async function createWasm() {
         }
         mask &= events | 8 | 16;
         if (mask) nonzero++;
-        HEAP16[(((pollfd)+(6))>>1)] = mask;
+        HEAP16[(((pollfd)+(6))/2)] = mask;
       }
       return nonzero;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_poll.sig = 'ipii';
 
   
   
+  
   function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
+    path = bigintToI53Checked(path);
+    buf = bigintToI53Checked(buf);
+    bufsize = bigintToI53Checked(bufsize);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -6112,12 +6285,20 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_readlinkat.sig = 'iippp';
 
   
   
+  
   function ___syscall_recvfrom(fd, buf, len, flags, addr, addrlen) {
+    buf = bigintToI53Checked(buf);
+    len = bigintToI53Checked(len);
+    addr = bigintToI53Checked(addr);
+    addrlen = bigintToI53Checked(addrlen);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -6132,21 +6313,26 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_recvfrom.sig = 'iippipp';
 
   
   
+  
   function ___syscall_recvmsg(fd, message, flags, d1, d2, d3) {
+    message = bigintToI53Checked(message);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
-      var iov = HEAPU32[(((message)+(8))>>2)];
-      var num = HEAP32[(((message)+(12))>>2)];
+      var iov = HEAPU64[(((message)+(16))/8)];
+      var num = HEAP32[(((message)+(24))/4)];
       // get the total amount of data we can read across all arrays
       var total = 0;
       for (var i = 0; i < num; i++) {
-        total += HEAP32[(((iov)+((8 * i) + 4))>>2)];
+        total += HEAP32[(((iov)+((16 * i) + 8))/4)];
       }
       // try to read total data
       var msg = sock.sock_ops.recvmsg(sock, total);
@@ -6161,7 +6347,7 @@ async function createWasm() {
       // Requests that the function block until the full amount of data requested can be returned. The function may return a smaller amount of data if a signal is caught, if the connection is terminated, if MSG_PEEK was specified, or if an error is pending for the socket.
   
       // write the source address out
-      var name = HEAPU32[((message)>>2)];
+      var name = Number(HEAPU64[((message)/8)]);
       if (name) {
         var errno = writeSockaddr(name, sock.family, DNS.lookup_name(msg.addr), msg.port);
       }
@@ -6169,8 +6355,8 @@ async function createWasm() {
       var bytesRead = 0;
       var bytesRemaining = msg.buffer.byteLength;
       for (var i = 0; bytesRemaining > 0 && i < num; i++) {
-        var iovbase = HEAPU32[(((iov)+((8 * i) + 0))>>2)];
-        var iovlen = HEAP32[(((iov)+((8 * i) + 4))>>2)];
+        var iovbase = HEAPU64[(((iov)+((16 * i) + 0))/8)];
+        var iovlen = HEAP32[(((iov)+((16 * i) + 8))/4)];
         if (!iovlen) {
           continue;
         }
@@ -6195,10 +6381,16 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_recvmsg.sig = 'iipiiii';
 
+  
   function ___syscall_renameat(olddirfd, oldpath, newdirfd, newpath) {
+    oldpath = bigintToI53Checked(oldpath);
+    newpath = bigintToI53Checked(newpath);
+  
+  
   try {
   
       oldpath = SYSCALLS.getStr(oldpath);
@@ -6211,10 +6403,15 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_renameat.sig = 'iipip';
 
+  
   function ___syscall_rmdir(path) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -6224,20 +6421,27 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_rmdir.sig = 'ip';
 
   
+  
   function ___syscall_sendmsg(fd, message, flags, d1, d2, d3) {
+    message = bigintToI53Checked(message);
+    d1 = bigintToI53Checked(d1);
+    d2 = bigintToI53Checked(d2);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
-      var iov = HEAPU32[(((message)+(8))>>2)];
-      var num = HEAP32[(((message)+(12))>>2)];
+      var iov = Number(HEAPU64[(((message)+(16))/8)]);
+      var num = HEAP32[(((message)+(24))/4)];
       // read the address and port to send to
       var addr, port;
-      var name = HEAPU32[((message)>>2)];
-      var namelen = HEAP32[(((message)+(4))>>2)];
+      var name = Number(HEAPU64[((message)/8)]);
+      var namelen = HEAP32[(((message)+(8))/4)];
       if (name) {
         var info = getSocketAddress(name, namelen);
         port = info.port;
@@ -6246,13 +6450,13 @@ async function createWasm() {
       // concatenate scatter-gather arrays into one message buffer
       var total = 0;
       for (var i = 0; i < num; i++) {
-        total += HEAP32[(((iov)+((8 * i) + 4))>>2)];
+        total += HEAP32[(((iov)+((16 * i) + 8))/4)];
       }
       var view = new Uint8Array(total);
       var offset = 0;
       for (var i = 0; i < num; i++) {
-        var iovbase = HEAPU32[(((iov)+((8 * i) + 0))>>2)];
-        var iovlen = HEAP32[(((iov)+((8 * i) + 4))>>2)];
+        var iovbase = HEAPU64[(((iov)+((16 * i) + 0))/8)];
+        var iovlen = HEAP32[(((iov)+((16 * i) + 8))/4)];
         for (var j = 0; j < iovlen; j++) {
           view[offset++] = HEAP8[(iovbase)+(j)];
         }
@@ -6263,11 +6467,19 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_sendmsg.sig = 'iipippi';
 
   
+  
   function ___syscall_sendto(fd, message, length, flags, addr, addr_len) {
+    message = bigintToI53Checked(message);
+    length = bigintToI53Checked(length);
+    addr = bigintToI53Checked(addr);
+    addr_len = bigintToI53Checked(addr_len);
+  
+  
   try {
   
       var sock = getSocketFromFD(fd);
@@ -6282,6 +6494,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_sendto.sig = 'iippipp';
 
@@ -6297,7 +6510,12 @@ async function createWasm() {
   }
   ___syscall_socket.sig = 'iiiiiii';
 
+  
   function ___syscall_stat64(path, buf) {
+    path = bigintToI53Checked(path);
+    buf = bigintToI53Checked(buf);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -6306,10 +6524,17 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_stat64.sig = 'ipp';
 
+  
   function ___syscall_statfs64(path, size, buf) {
+    path = bigintToI53Checked(path);
+    size = bigintToI53Checked(size);
+    buf = bigintToI53Checked(buf);
+  
+  
   try {
   
       SYSCALLS.writeStatFs(buf, FS.statfs(SYSCALLS.getStr(path)));
@@ -6318,10 +6543,16 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_statfs64.sig = 'ippp';
 
+  
   function ___syscall_symlinkat(target, dirfd, linkpath) {
+    target = bigintToI53Checked(target);
+    linkpath = bigintToI53Checked(linkpath);
+  
+  
   try {
   
       target = SYSCALLS.getStr(target);
@@ -6333,11 +6564,13 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_symlinkat.sig = 'ipip';
 
   
   function ___syscall_truncate64(path, length) {
+    path = bigintToI53Checked(path);
     length = bigintToI53Checked(length);
   
   
@@ -6355,7 +6588,11 @@ async function createWasm() {
   }
   ___syscall_truncate64.sig = 'ipj';
 
+  
   function ___syscall_unlinkat(dirfd, path, flags) {
+    path = bigintToI53Checked(path);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -6372,14 +6609,20 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_unlinkat.sig = 'iipi';
 
   var readI53FromI64 = (ptr) => {
-      return HEAPU32[((ptr)>>2)] + HEAP32[(((ptr)+(4))>>2)] * 4294967296;
+      return HEAPU32[((ptr)/4)] + HEAP32[(((ptr)+(4))/4)] * 4294967296;
     };
   
+  
   function ___syscall_utimensat(dirfd, path, times, flags) {
+    path = bigintToI53Checked(path);
+    times = bigintToI53Checked(times);
+  
+  
   try {
   
       path = SYSCALLS.getStr(path);
@@ -6390,7 +6633,7 @@ async function createWasm() {
         mtime = now;
       } else {
         var seconds = readI53FromI64(times);
-        var nanoseconds = HEAP32[(((times)+(8))>>2)];
+        var nanoseconds = HEAP32[(((times)+(8))/4)];
         if (nanoseconds == 1073741823) {
           atime = now;
         } else if (nanoseconds == 1073741822) {
@@ -6400,7 +6643,7 @@ async function createWasm() {
         }
         times += 16;
         seconds = readI53FromI64(times);
-        nanoseconds = HEAP32[(((times)+(8))>>2)];
+        nanoseconds = HEAP32[(((times)+(8))/4)];
         if (nanoseconds == 1073741823) {
           mtime = now;
         } else if (nanoseconds == 1073741822) {
@@ -6419,10 +6662,13 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return -e.errno;
   }
+  ;
   }
   ___syscall_utimensat.sig = 'iippi';
 
-  var ___table_base = new WebAssembly.Global({'value': 'i32', 'mutable': false}, 1);
+  var ___table_base = new WebAssembly.Global({'value': 'i64', 'mutable': false}, BigInt(1));
+
+  var ___table_base32 = 1;
 
   var __abort_js = () =>
       abort('');
@@ -6451,8 +6697,8 @@ async function createWasm() {
   var dlopenInternal = (handle, jsflags) => {
       // void *dlopen(const char *file, int mode);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/dlopen.html
-      var filename = UTF8ToString(handle + 36);
-      var flags = HEAP32[(((handle)+(4))>>2)];
+      var filename = UTF8ToString(handle + 64);
+      var flags = HEAP32[(((handle)+(8))/4)];
       filename = PATH.normalize(filename);
       var searchpaths = [];
   
@@ -6477,15 +6723,27 @@ async function createWasm() {
         return 0;
       }
     };
-  var __dlopen_js = (handle) => {
+  
+  var __dlopen_js = function(handle) {
+    handle = bigintToI53Checked(handle);
+  
+  var ret = (() => { 
       return dlopenInternal(handle, { loadAsync: false });
-    };
+     })();
+  return BigInt(ret);
+  };
   __dlopen_js.sig = 'pp';
 
   
   
   
-  var __dlsym_js = (handle, symbol, symbolIndex) => {
+  
+  var __dlsym_js = function(handle, symbol, symbolIndex) {
+    handle = bigintToI53Checked(handle);
+    symbol = bigintToI53Checked(symbol);
+    symbolIndex = bigintToI53Checked(symbolIndex);
+  
+  var ret = (() => { 
       // void *dlsym(void *restrict handle, const char *restrict name);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/dlsym.html
       symbol = UTF8ToString(symbol);
@@ -6511,11 +6769,13 @@ async function createWasm() {
           // function we rely on the `sig` attribute being set based on the
           // `<func>__sig` specified in library JS file.
           result = addFunction(result, result.sig);
-          HEAPU32[((symbolIndex)>>2)] = newSymIndex;
+          HEAPU64[((symbolIndex)/8)] = BigInt(newSymIndex);
         }
       }
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   __dlsym_js.sig = 'pppp';
 
   
@@ -6577,17 +6837,24 @@ async function createWasm() {
   
   
   
-  var __emscripten_dlopen_js = (handle, onsuccess, onerror, user_data) => {
+  
+  function __emscripten_dlopen_js(handle, onsuccess, onerror, user_data) {
+    handle = bigintToI53Checked(handle);
+    onsuccess = bigintToI53Checked(onsuccess);
+    onerror = bigintToI53Checked(onerror);
+    user_data = bigintToI53Checked(user_data);
+  
+  
       /** @param {Object=} e */
       function errorCallback(e) {
-        var filename = UTF8ToString(handle + 36);
+        var filename = UTF8ToString(handle + 64);
         dlSetError(`'Could not load dynamic lib: ${filename}\n${e}`);
         
-        callUserCallback(() => getWasmTableEntry(onerror)(handle, user_data));
+        callUserCallback(() => ((a1, a2) => getWasmTableEntry(onerror).call(null, BigInt(a1), BigInt(a2)))(handle, user_data));
       }
       function successCallback() {
         
-        callUserCallback(() => getWasmTableEntry(onsuccess)(handle, user_data));
+        callUserCallback(() => ((a1, a2) => getWasmTableEntry(onsuccess).call(null, BigInt(a1), BigInt(a2)))(handle, user_data));
       }
   
       
@@ -6597,22 +6864,33 @@ async function createWasm() {
       } else {
         errorCallback();
       }
-    };
+    ;
+  }
   __emscripten_dlopen_js.sig = 'vpppp';
 
   var getExecutableName = () => thisProgram || './this.program';
   
-  var __emscripten_get_progname = (str, len) => stringToUTF8(getExecutableName(), str, len);
+  
+  function __emscripten_get_progname(str, len) {
+    str = bigintToI53Checked(str);
+  
+  return stringToUTF8(getExecutableName(), str, len);
+  }
   __emscripten_get_progname.sig = 'vpi';
 
   
   
   
-  var __emscripten_lookup_name = (name) => {
+  
+  function __emscripten_lookup_name(name) {
+    name = bigintToI53Checked(name);
+  
+  
       // uint32_t _emscripten_lookup_name(const char *name);
       var nameString = UTF8ToString(name);
       return inetPton4(DNS.lookup_name(nameString));
-    };
+    ;
+  }
   __emscripten_lookup_name.sig = 'ip';
 
   var __emscripten_runtime_keepalive_clear = () => {
@@ -6621,7 +6899,11 @@ async function createWasm() {
     };
   __emscripten_runtime_keepalive_clear.sig = 'v';
 
-  var __emscripten_system = (command) => {
+  
+  function __emscripten_system(command) {
+    command = bigintToI53Checked(command);
+  
+  
       if (ENVIRONMENT_IS_NODE) {
         if (!command) return 1; // shell is available
   
@@ -6658,7 +6940,8 @@ async function createWasm() {
       // Can't call external programs.
       if (!command) return 0; // no shell available
       return -52;
-    };
+    ;
+  }
   __emscripten_system.sig = 'ip';
 
   var __emscripten_throw_longjmp = () => {
@@ -6668,19 +6951,20 @@ async function createWasm() {
 
   function __gmtime_js(time, tmPtr) {
     time = bigintToI53Checked(time);
+    tmPtr = bigintToI53Checked(tmPtr);
   
   
       var date = new Date(time * 1000);
-      HEAP32[((tmPtr)>>2)] = date.getUTCSeconds();
-      HEAP32[(((tmPtr)+(4))>>2)] = date.getUTCMinutes();
-      HEAP32[(((tmPtr)+(8))>>2)] = date.getUTCHours();
-      HEAP32[(((tmPtr)+(12))>>2)] = date.getUTCDate();
-      HEAP32[(((tmPtr)+(16))>>2)] = date.getUTCMonth();
-      HEAP32[(((tmPtr)+(20))>>2)] = date.getUTCFullYear()-1900;
-      HEAP32[(((tmPtr)+(24))>>2)] = date.getUTCDay();
+      HEAP32[((tmPtr)/4)] = date.getUTCSeconds();
+      HEAP32[(((tmPtr)+(4))/4)] = date.getUTCMinutes();
+      HEAP32[(((tmPtr)+(8))/4)] = date.getUTCHours();
+      HEAP32[(((tmPtr)+(12))/4)] = date.getUTCDate();
+      HEAP32[(((tmPtr)+(16))/4)] = date.getUTCMonth();
+      HEAP32[(((tmPtr)+(20))/4)] = date.getUTCFullYear()-1900;
+      HEAP32[(((tmPtr)+(24))/4)] = date.getUTCDay();
       var start = Date.UTC(date.getUTCFullYear(), 0, 1, 0, 0, 0, 0);
       var yday = ((date.getTime() - start) / (1000 * 60 * 60 * 24))|0;
-      HEAP32[(((tmPtr)+(28))>>2)] = yday;
+      HEAP32[(((tmPtr)+(28))/4)] = yday;
     ;
   }
   __gmtime_js.sig = 'vjp';
@@ -6700,47 +6984,49 @@ async function createWasm() {
   
   function __localtime_js(time, tmPtr) {
     time = bigintToI53Checked(time);
+    tmPtr = bigintToI53Checked(tmPtr);
   
   
       var date = new Date(time*1000);
-      HEAP32[((tmPtr)>>2)] = date.getSeconds();
-      HEAP32[(((tmPtr)+(4))>>2)] = date.getMinutes();
-      HEAP32[(((tmPtr)+(8))>>2)] = date.getHours();
-      HEAP32[(((tmPtr)+(12))>>2)] = date.getDate();
-      HEAP32[(((tmPtr)+(16))>>2)] = date.getMonth();
-      HEAP32[(((tmPtr)+(20))>>2)] = date.getFullYear()-1900;
-      HEAP32[(((tmPtr)+(24))>>2)] = date.getDay();
+      HEAP32[((tmPtr)/4)] = date.getSeconds();
+      HEAP32[(((tmPtr)+(4))/4)] = date.getMinutes();
+      HEAP32[(((tmPtr)+(8))/4)] = date.getHours();
+      HEAP32[(((tmPtr)+(12))/4)] = date.getDate();
+      HEAP32[(((tmPtr)+(16))/4)] = date.getMonth();
+      HEAP32[(((tmPtr)+(20))/4)] = date.getFullYear()-1900;
+      HEAP32[(((tmPtr)+(24))/4)] = date.getDay();
   
       var yday = ydayFromDate(date)|0;
-      HEAP32[(((tmPtr)+(28))>>2)] = yday;
-      HEAP32[(((tmPtr)+(36))>>2)] = -(date.getTimezoneOffset() * 60);
+      HEAP32[(((tmPtr)+(28))/4)] = yday;
+      HEAP64[(((tmPtr)+(40))/8)] = BigInt(-(date.getTimezoneOffset() * 60));
   
       // Attention: DST is in December in South, and some regions don't have DST at all.
       var start = new Date(date.getFullYear(), 0, 1);
       var summerOffset = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
       var winterOffset = start.getTimezoneOffset();
       var dst = (summerOffset != winterOffset && date.getTimezoneOffset() == Math.min(winterOffset, summerOffset))|0;
-      HEAP32[(((tmPtr)+(32))>>2)] = dst;
+      HEAP32[(((tmPtr)+(32))/4)] = dst;
     ;
   }
   __localtime_js.sig = 'vjp';
 
   
   var __mktime_js = function(tmPtr) {
+    tmPtr = bigintToI53Checked(tmPtr);
   
   var ret = (() => { 
-      var date = new Date(HEAP32[(((tmPtr)+(20))>>2)] + 1900,
-                          HEAP32[(((tmPtr)+(16))>>2)],
-                          HEAP32[(((tmPtr)+(12))>>2)],
-                          HEAP32[(((tmPtr)+(8))>>2)],
-                          HEAP32[(((tmPtr)+(4))>>2)],
-                          HEAP32[((tmPtr)>>2)],
+      var date = new Date(HEAP32[(((tmPtr)+(20))/4)] + 1900,
+                          HEAP32[(((tmPtr)+(16))/4)],
+                          HEAP32[(((tmPtr)+(12))/4)],
+                          HEAP32[(((tmPtr)+(8))/4)],
+                          HEAP32[(((tmPtr)+(4))/4)],
+                          HEAP32[((tmPtr)/4)],
                           0);
   
       // There's an ambiguous hour when the time goes back; the tm_isdst field is
       // used to disambiguate it.  Date() basically guesses, so we fix it up if it
       // guessed wrong, or fill in tm_isdst with the guess if it's -1.
-      var dst = HEAP32[(((tmPtr)+(32))>>2)];
+      var dst = HEAP32[(((tmPtr)+(32))/4)];
       var guessedOffset = date.getTimezoneOffset();
       var start = new Date(date.getFullYear(), 0, 1);
       var summerOffset = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
@@ -6748,7 +7034,7 @@ async function createWasm() {
       var dstOffset = Math.min(winterOffset, summerOffset); // DST is in December in South
       if (dst < 0) {
         // Attention: some regions don't have DST at all.
-        HEAP32[(((tmPtr)+(32))>>2)] = Number(summerOffset != winterOffset && dstOffset == guessedOffset);
+        HEAP32[(((tmPtr)+(32))/4)] = Number(summerOffset != winterOffset && dstOffset == guessedOffset);
       } else if ((dst > 0) != (dstOffset == guessedOffset)) {
         var nonDstOffset = Math.max(winterOffset, summerOffset);
         var trueOffset = dst > 0 ? dstOffset : nonDstOffset;
@@ -6756,16 +7042,16 @@ async function createWasm() {
         date.setTime(date.getTime() + (trueOffset - guessedOffset)*60000);
       }
   
-      HEAP32[(((tmPtr)+(24))>>2)] = date.getDay();
+      HEAP32[(((tmPtr)+(24))/4)] = date.getDay();
       var yday = ydayFromDate(date)|0;
-      HEAP32[(((tmPtr)+(28))>>2)] = yday;
+      HEAP32[(((tmPtr)+(28))/4)] = yday;
       // To match expected behavior, update fields from date
-      HEAP32[((tmPtr)>>2)] = date.getSeconds();
-      HEAP32[(((tmPtr)+(4))>>2)] = date.getMinutes();
-      HEAP32[(((tmPtr)+(8))>>2)] = date.getHours();
-      HEAP32[(((tmPtr)+(12))>>2)] = date.getDate();
-      HEAP32[(((tmPtr)+(16))>>2)] = date.getMonth();
-      HEAP32[(((tmPtr)+(20))>>2)] = date.getYear();
+      HEAP32[((tmPtr)/4)] = date.getSeconds();
+      HEAP32[(((tmPtr)+(4))/4)] = date.getMinutes();
+      HEAP32[(((tmPtr)+(8))/4)] = date.getHours();
+      HEAP32[(((tmPtr)+(12))/4)] = date.getDate();
+      HEAP32[(((tmPtr)+(16))/4)] = date.getMonth();
+      HEAP32[(((tmPtr)+(20))/4)] = date.getYear();
   
       var timeMs = date.getTime();
       if (isNaN(timeMs)) {
@@ -6784,7 +7070,10 @@ async function createWasm() {
   
   
   function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
+    len = bigintToI53Checked(len);
     offset = bigintToI53Checked(offset);
+    allocated = bigintToI53Checked(allocated);
+    addr = bigintToI53Checked(addr);
   
   
   try {
@@ -6793,8 +7082,8 @@ async function createWasm() {
       var stream = SYSCALLS.getStreamFromFD(fd);
       var res = FS.mmap(stream, len, offset, prot, flags);
       var ptr = res.ptr;
-      HEAP32[((allocated)>>2)] = res.allocated;
-      HEAPU32[((addr)>>2)] = ptr;
+      HEAP32[((allocated)/4)] = res.allocated;
+      HEAPU64[((addr)/8)] = BigInt(ptr);
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
@@ -6806,6 +7095,8 @@ async function createWasm() {
 
   
   function __msync_js(addr, len, prot, flags, fd, offset) {
+    addr = bigintToI53Checked(addr);
+    len = bigintToI53Checked(len);
     offset = bigintToI53Checked(offset);
   
   
@@ -6824,6 +7115,8 @@ async function createWasm() {
 
   
   function __munmap_js(addr, len, prot, flags, fd, offset) {
+    addr = bigintToI53Checked(addr);
+    len = bigintToI53Checked(len);
     offset = bigintToI53Checked(offset);
   
   
@@ -6869,21 +7162,22 @@ async function createWasm() {
   __setitimer_js.sig = 'iid';
 
   var __timegm_js = function(tmPtr) {
+    tmPtr = bigintToI53Checked(tmPtr);
   
   var ret = (() => { 
-      var time = Date.UTC(HEAP32[(((tmPtr)+(20))>>2)] + 1900,
-                          HEAP32[(((tmPtr)+(16))>>2)],
-                          HEAP32[(((tmPtr)+(12))>>2)],
-                          HEAP32[(((tmPtr)+(8))>>2)],
-                          HEAP32[(((tmPtr)+(4))>>2)],
-                          HEAP32[((tmPtr)>>2)],
+      var time = Date.UTC(HEAP32[(((tmPtr)+(20))/4)] + 1900,
+                          HEAP32[(((tmPtr)+(16))/4)],
+                          HEAP32[(((tmPtr)+(12))/4)],
+                          HEAP32[(((tmPtr)+(8))/4)],
+                          HEAP32[(((tmPtr)+(4))/4)],
+                          HEAP32[((tmPtr)/4)],
                           0);
       var date = new Date(time);
   
-      HEAP32[(((tmPtr)+(24))>>2)] = date.getUTCDay();
+      HEAP32[(((tmPtr)+(24))/4)] = date.getUTCDay();
       var start = Date.UTC(date.getUTCFullYear(), 0, 1, 0, 0, 0, 0);
       var yday = ((date.getTime() - start) / (1000 * 60 * 60 * 24))|0;
-      HEAP32[(((tmPtr)+(28))>>2)] = yday;
+      HEAP32[(((tmPtr)+(28))/4)] = yday;
   
       return date.getTime() / 1000;
      })();
@@ -6891,7 +7185,14 @@ async function createWasm() {
   };
   __timegm_js.sig = 'jp';
 
-  var __tzset_js = (timezone, daylight, std_name, dst_name) => {
+  
+  var __tzset_js = function(timezone, daylight, std_name, dst_name) {
+    timezone = bigintToI53Checked(timezone);
+    daylight = bigintToI53Checked(daylight);
+    std_name = bigintToI53Checked(std_name);
+    dst_name = bigintToI53Checked(dst_name);
+  
+  
       // TODO: Use (malleable) environment variables instead of system settings.
       var currentYear = new Date().getFullYear();
       var winter = new Date(currentYear, 0, 1);
@@ -6912,9 +7213,9 @@ async function createWasm() {
       // Coordinated Universal Time (UTC) and local standard time."), the same
       // as returned by stdTimezoneOffset.
       // See http://pubs.opengroup.org/onlinepubs/009695399/functions/tzset.html
-      HEAPU32[((timezone)>>2)] = stdTimezoneOffset * 60;
+      HEAPU64[((timezone)/8)] = BigInt(stdTimezoneOffset * 60);
   
-      HEAP32[((daylight)>>2)] = Number(winterOffset != summerOffset);
+      HEAP32[((daylight)/4)] = Number(winterOffset != summerOffset);
   
       var extractZone = (timezoneOffset) => {
         // Why inverse sign?
@@ -6938,7 +7239,8 @@ async function createWasm() {
         stringToUTF8(winterName, dst_name, 17);
         stringToUTF8(summerName, std_name, 17);
       }
-    };
+    ;
+  };
   __tzset_js.sig = 'vpppp';
 
   
@@ -8464,7 +8766,11 @@ async function createWasm() {
     };
   _alBuffer3i.sig = 'viiiii';
 
-  var _alBufferData = (bufferId, format, pData, size, freq) => {
+  
+  function _alBufferData(bufferId, format, pData, size, freq) {
+    pData = bigintToI53Checked(pData);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -8573,7 +8879,8 @@ async function createWasm() {
         AL.currentCtx.err = 40963;
         return;
       }
-    };
+    ;
+  }
   _alBufferData.sig = 'viipii';
 
   var _alBufferf = (bufferId, param, value) => {
@@ -8581,7 +8888,11 @@ async function createWasm() {
     };
   _alBufferf.sig = 'viif';
 
-  var _alBufferfv = (bufferId, param, pValues) => {
+  
+  function _alBufferfv(bufferId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -8591,7 +8902,8 @@ async function createWasm() {
       }
   
       AL.setBufferParam('alBufferfv', bufferId, param, null);
-    };
+    ;
+  }
   _alBufferfv.sig = 'viip';
 
   var _alBufferi = (bufferId, param, value) => {
@@ -8599,7 +8911,11 @@ async function createWasm() {
     };
   _alBufferi.sig = 'viii';
 
-  var _alBufferiv = (bufferId, param, pValues) => {
+  
+  function _alBufferiv(bufferId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -8610,24 +8926,29 @@ async function createWasm() {
   
       switch (param) {
       case 0x2015 /* AL_LOOP_POINTS_SOFT */:
-        AL.paramArray[0] = HEAP32[((pValues)>>2)];
-        AL.paramArray[1] = HEAP32[(((pValues)+(4))>>2)];
+        AL.paramArray[0] = HEAP32[((pValues)/4)];
+        AL.paramArray[1] = HEAP32[(((pValues)+(4))/4)];
         AL.setBufferParam('alBufferiv', bufferId, param, AL.paramArray);
         break;
       default:
         AL.setBufferParam('alBufferiv', bufferId, param, null);
         break;
       }
-    };
+    ;
+  }
   _alBufferiv.sig = 'viip';
 
-  var _alDeleteBuffers = (count, pBufferIds) => {
+  
+  function _alDeleteBuffers(count, pBufferIds) {
+    pBufferIds = bigintToI53Checked(pBufferIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
   
       for (var i = 0; i < count; ++i) {
-        var bufId = HEAP32[(((pBufferIds)+(i*4))>>2)];
+        var bufId = HEAP32[(((pBufferIds)+(i*4))/4)];
         /// Deleting the zero buffer is a legal NOP, so ignore it
         if (bufId === 0) {
           continue;
@@ -8647,7 +8968,7 @@ async function createWasm() {
       }
   
       for (var i = 0; i < count; ++i) {
-        var bufId = HEAP32[(((pBufferIds)+(i*4))>>2)];
+        var bufId = HEAP32[(((pBufferIds)+(i*4))/4)];
         if (bufId === 0) {
           continue;
         }
@@ -8656,7 +8977,8 @@ async function createWasm() {
         delete AL.buffers[bufId];
         AL.freeIds.push(bufId);
       }
-    };
+    ;
+  }
   _alDeleteBuffers.sig = 'vip';
 
   var _alSourcei = (sourceId, param, value) => {
@@ -8685,13 +9007,17 @@ async function createWasm() {
     };
   _alSourcei.sig = 'viii';
   
-  var _alDeleteSources = (count, pSourceIds) => {
+  
+  function _alDeleteSources(count, pSourceIds) {
+    pSourceIds = bigintToI53Checked(pSourceIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
   
       for (var i = 0; i < count; ++i) {
-        var srcId = HEAP32[(((pSourceIds)+(i*4))>>2)];
+        var srcId = HEAP32[(((pSourceIds)+(i*4))/4)];
         if (!AL.currentCtx.sources[srcId]) {
           AL.currentCtx.err = 40961;
           return;
@@ -8699,13 +9025,14 @@ async function createWasm() {
       }
   
       for (var i = 0; i < count; ++i) {
-        var srcId = HEAP32[(((pSourceIds)+(i*4))>>2)];
+        var srcId = HEAP32[(((pSourceIds)+(i*4))/4)];
         AL.setSourceState(AL.currentCtx.sources[srcId], 4116);
         _alSourcei(srcId, 0x1009 /* AL_BUFFER */, 0);
         delete AL.currentCtx.sources[srcId];
         AL.freeIds.push(srcId);
       }
-    };
+    ;
+  }
   _alDeleteSources.sig = 'vip';
 
   var _alDisable = (param) => {
@@ -8762,7 +9089,11 @@ async function createWasm() {
     };
   _alEnable.sig = 'vi';
 
-  var _alGenBuffers = (count, pBufferIds) => {
+  
+  function _alGenBuffers(count, pBufferIds) {
+    pBufferIds = bigintToI53Checked(pBufferIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -8780,12 +9111,17 @@ async function createWasm() {
         };
         AL.deviceRefCounts[buf.deviceId]++;
         AL.buffers[buf.id] = buf;
-        HEAP32[(((pBufferIds)+(i*4))>>2)] = buf.id;
+        HEAP32[(((pBufferIds)+(i*4))/4)] = buf.id;
       }
-    };
+    ;
+  }
   _alGenBuffers.sig = 'vip';
 
-  var _alGenSources = (count, pSourceIds) => {
+  
+  function _alGenSources(count, pSourceIds) {
+    pSourceIds = bigintToI53Checked(pSourceIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -8827,9 +9163,10 @@ async function createWasm() {
           }
         };
         AL.currentCtx.sources[src.id] = src;
-        HEAP32[(((pSourceIds)+(i*4))>>2)] = src.id;
+        HEAP32[(((pSourceIds)+(i*4))/4)] = src.id;
       }
-    };
+    ;
+  }
   _alGenSources.sig = 'vip';
 
   var _alGetBoolean = (param) => {
@@ -8850,7 +9187,11 @@ async function createWasm() {
     };
   _alGetBoolean.sig = 'ii';
 
-  var _alGetBooleanv = (param, pValues) => {
+  
+  function _alGetBooleanv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getGlobalParam('alGetBooleanv', param);
       // Silently ignore null destinations, as per the spec for global state functions
       if (val === null || !pValues) {
@@ -8867,10 +9208,17 @@ async function createWasm() {
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetBooleanv.sig = 'vip';
 
-  var _alGetBuffer3f = (bufferId, param, pValue0, pValue1, pValue2) => {
+  
+  function _alGetBuffer3f(bufferId, param, pValue0, pValue1, pValue2) {
+    pValue0 = bigintToI53Checked(pValue0);
+    pValue1 = bigintToI53Checked(pValue1);
+    pValue2 = bigintToI53Checked(pValue2);
+  
+  
       var val = AL.getBufferParam('alGetBuffer3f', bufferId, param);
       if (val === null) {
         return;
@@ -8881,10 +9229,17 @@ async function createWasm() {
       }
   
       AL.currentCtx.err = 40962;
-    };
+    ;
+  }
   _alGetBuffer3f.sig = 'viippp';
 
-  var _alGetBuffer3i = (bufferId, param, pValue0, pValue1, pValue2) => {
+  
+  function _alGetBuffer3i(bufferId, param, pValue0, pValue1, pValue2) {
+    pValue0 = bigintToI53Checked(pValue0);
+    pValue1 = bigintToI53Checked(pValue1);
+    pValue2 = bigintToI53Checked(pValue2);
+  
+  
       var val = AL.getBufferParam('alGetBuffer3i', bufferId, param);
       if (val === null) {
         return;
@@ -8895,10 +9250,15 @@ async function createWasm() {
       }
   
       AL.currentCtx.err = 40962;
-    };
+    ;
+  }
   _alGetBuffer3i.sig = 'viippp';
 
-  var _alGetBufferf = (bufferId, param, pValue) => {
+  
+  function _alGetBufferf(bufferId, param, pValue) {
+    pValue = bigintToI53Checked(pValue);
+  
+  
       var val = AL.getBufferParam('alGetBufferf', bufferId, param);
       if (val === null) {
         return;
@@ -8909,10 +9269,15 @@ async function createWasm() {
       }
   
       AL.currentCtx.err = 40962;
-    };
+    ;
+  }
   _alGetBufferf.sig = 'viip';
 
-  var _alGetBufferfv = (bufferId, param, pValues) => {
+  
+  function _alGetBufferfv(bufferId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getBufferParam('alGetBufferfv', bufferId, param);
       if (val === null) {
         return;
@@ -8923,10 +9288,15 @@ async function createWasm() {
       }
   
       AL.currentCtx.err = 40962;
-    };
+    ;
+  }
   _alGetBufferfv.sig = 'viip';
 
-  var _alGetBufferi = (bufferId, param, pValue) => {
+  
+  function _alGetBufferi(bufferId, param, pValue) {
+    pValue = bigintToI53Checked(pValue);
+  
+  
       var val = AL.getBufferParam('alGetBufferi', bufferId, param);
       if (val === null) {
         return;
@@ -8941,16 +9311,21 @@ async function createWasm() {
       case 0x2002 /* AL_BITS */:
       case 0x2003 /* AL_CHANNELS */:
       case 0x2004 /* AL_SIZE */:
-        HEAP32[((pValue)>>2)] = val;
+        HEAP32[((pValue)/4)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetBufferi.sig = 'viip';
 
-  var _alGetBufferiv = (bufferId, param, pValues) => {
+  
+  function _alGetBufferiv(bufferId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getBufferParam('alGetBufferiv', bufferId, param);
       if (val === null) {
         return;
@@ -8965,17 +9340,18 @@ async function createWasm() {
       case 0x2002 /* AL_BITS */:
       case 0x2003 /* AL_CHANNELS */:
       case 0x2004 /* AL_SIZE */:
-        HEAP32[((pValues)>>2)] = val;
+        HEAP32[((pValues)/4)] = val;
         break;
       case 0x2015 /* AL_LOOP_POINTS_SOFT */:
-        HEAP32[((pValues)>>2)] = val[0];
-        HEAP32[(((pValues)+(4))>>2)] = val[1];
+        HEAP32[((pValues)/4)] = val[0];
+        HEAP32[(((pValues)+(4))/4)] = val[1];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetBufferiv.sig = 'viip';
 
   var _alGetDouble = (param) => {
@@ -8996,7 +9372,11 @@ async function createWasm() {
     };
   _alGetDouble.sig = 'di';
 
-  var _alGetDoublev = (param, pValues) => {
+  
+  function _alGetDoublev(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getGlobalParam('alGetDoublev', param);
       // Silently ignore null destinations, as per the spec for global state functions
       if (val === null || !pValues) {
@@ -9007,17 +9387,22 @@ async function createWasm() {
       case 49152:
       case 49155:
       case 53248:
-        HEAPF64[((pValues)>>3)] = val;
+        HEAPF64[((pValues)/8)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetDoublev.sig = 'vip';
 
   
-  var _alGetEnumValue = (pEnumName) => {
+  
+  function _alGetEnumValue(pEnumName) {
+    pEnumName = bigintToI53Checked(pEnumName);
+  
+  
       if (!AL.currentCtx) {
         return 0;
       }
@@ -9116,7 +9501,8 @@ async function createWasm() {
         AL.currentCtx.err = 40963;
         return 0;
       }
-    };
+    ;
+  }
   _alGetEnumValue.sig = 'ip';
 
   var _alGetError = () => {
@@ -9147,7 +9533,11 @@ async function createWasm() {
     };
   _alGetFloat.sig = 'fi';
 
-  var _alGetFloatv = (param, pValues) => {
+  
+  function _alGetFloatv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getGlobalParam('alGetFloatv', param);
       // Silently ignore null destinations, as per the spec for global state functions
       if (val === null || !pValues) {
@@ -9158,13 +9548,14 @@ async function createWasm() {
       case 49152:
       case 49155:
       case 53248:
-        HEAPF32[((pValues)>>2)] = val;
+        HEAPF32[((pValues)/4)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetFloatv.sig = 'vip';
 
   var _alGetInteger = (param) => {
@@ -9185,7 +9576,11 @@ async function createWasm() {
     };
   _alGetInteger.sig = 'ii';
 
-  var _alGetIntegerv = (param, pValues) => {
+  
+  function _alGetIntegerv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getGlobalParam('alGetIntegerv', param);
       // Silently ignore null destinations, as per the spec for global state functions
       if (val === null || !pValues) {
@@ -9196,16 +9591,23 @@ async function createWasm() {
       case 49152:
       case 49155:
       case 53248:
-        HEAP32[((pValues)>>2)] = val;
+        HEAP32[((pValues)/4)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetIntegerv.sig = 'vip';
 
-  var _alGetListener3f = (param, pValue0, pValue1, pValue2) => {
+  
+  function _alGetListener3f(param, pValue0, pValue1, pValue2) {
+    pValue0 = bigintToI53Checked(pValue0);
+    pValue1 = bigintToI53Checked(pValue1);
+    pValue2 = bigintToI53Checked(pValue2);
+  
+  
       var val = AL.getListenerParam('alGetListener3f', param);
       if (val === null) {
         return;
@@ -9218,18 +9620,25 @@ async function createWasm() {
       switch (param) {
       case 4100:
       case 4102:
-        HEAPF32[((pValue0)>>2)] = val[0];
-        HEAPF32[((pValue1)>>2)] = val[1];
-        HEAPF32[((pValue2)>>2)] = val[2];
+        HEAPF32[((pValue0)/4)] = val[0];
+        HEAPF32[((pValue1)/4)] = val[1];
+        HEAPF32[((pValue2)/4)] = val[2];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetListener3f.sig = 'vippp';
 
-  var _alGetListener3i = (param, pValue0, pValue1, pValue2) => {
+  
+  function _alGetListener3i(param, pValue0, pValue1, pValue2) {
+    pValue0 = bigintToI53Checked(pValue0);
+    pValue1 = bigintToI53Checked(pValue1);
+    pValue2 = bigintToI53Checked(pValue2);
+  
+  
       var val = AL.getListenerParam('alGetListener3i', param);
       if (val === null) {
         return;
@@ -9242,18 +9651,23 @@ async function createWasm() {
       switch (param) {
       case 4100:
       case 4102:
-        HEAP32[((pValue0)>>2)] = val[0];
-        HEAP32[((pValue1)>>2)] = val[1];
-        HEAP32[((pValue2)>>2)] = val[2];
+        HEAP32[((pValue0)/4)] = val[0];
+        HEAP32[((pValue1)/4)] = val[1];
+        HEAP32[((pValue2)/4)] = val[2];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetListener3i.sig = 'vippp';
 
-  var _alGetListenerf = (param, pValue) => {
+  
+  function _alGetListenerf(param, pValue) {
+    pValue = bigintToI53Checked(pValue);
+  
+  
       var val = AL.getListenerParam('alGetListenerf', param);
       if (val === null) {
         return;
@@ -9265,16 +9679,21 @@ async function createWasm() {
   
       switch (param) {
       case 4106:
-        HEAPF32[((pValue)>>2)] = val;
+        HEAPF32[((pValue)/4)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetListenerf.sig = 'vip';
 
-  var _alGetListenerfv = (param, pValues) => {
+  
+  function _alGetListenerfv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getListenerParam('alGetListenerfv', param);
       if (val === null) {
         return;
@@ -9287,26 +9706,31 @@ async function createWasm() {
       switch (param) {
       case 4100:
       case 4102:
-        HEAPF32[((pValues)>>2)] = val[0];
-        HEAPF32[(((pValues)+(4))>>2)] = val[1];
-        HEAPF32[(((pValues)+(8))>>2)] = val[2];
+        HEAPF32[((pValues)/4)] = val[0];
+        HEAPF32[(((pValues)+(4))/4)] = val[1];
+        HEAPF32[(((pValues)+(8))/4)] = val[2];
         break;
       case 4111:
-        HEAPF32[((pValues)>>2)] = val[0];
-        HEAPF32[(((pValues)+(4))>>2)] = val[1];
-        HEAPF32[(((pValues)+(8))>>2)] = val[2];
-        HEAPF32[(((pValues)+(12))>>2)] = val[3];
-        HEAPF32[(((pValues)+(16))>>2)] = val[4];
-        HEAPF32[(((pValues)+(20))>>2)] = val[5];
+        HEAPF32[((pValues)/4)] = val[0];
+        HEAPF32[(((pValues)+(4))/4)] = val[1];
+        HEAPF32[(((pValues)+(8))/4)] = val[2];
+        HEAPF32[(((pValues)+(12))/4)] = val[3];
+        HEAPF32[(((pValues)+(16))/4)] = val[4];
+        HEAPF32[(((pValues)+(20))/4)] = val[5];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetListenerfv.sig = 'vip';
 
-  var _alGetListeneri = (param, pValue) => {
+  
+  function _alGetListeneri(param, pValue) {
+    pValue = bigintToI53Checked(pValue);
+  
+  
       var val = AL.getListenerParam('alGetListeneri', param);
       if (val === null) {
         return;
@@ -9317,10 +9741,15 @@ async function createWasm() {
       }
   
       AL.currentCtx.err = 40962;
-    };
+    ;
+  }
   _alGetListeneri.sig = 'vip';
 
-  var _alGetListeneriv = (param, pValues) => {
+  
+  function _alGetListeneriv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getListenerParam('alGetListeneriv', param);
       if (val === null) {
         return;
@@ -9333,26 +9762,33 @@ async function createWasm() {
       switch (param) {
       case 4100:
       case 4102:
-        HEAP32[((pValues)>>2)] = val[0];
-        HEAP32[(((pValues)+(4))>>2)] = val[1];
-        HEAP32[(((pValues)+(8))>>2)] = val[2];
+        HEAP32[((pValues)/4)] = val[0];
+        HEAP32[(((pValues)+(4))/4)] = val[1];
+        HEAP32[(((pValues)+(8))/4)] = val[2];
         break;
       case 4111:
-        HEAP32[((pValues)>>2)] = val[0];
-        HEAP32[(((pValues)+(4))>>2)] = val[1];
-        HEAP32[(((pValues)+(8))>>2)] = val[2];
-        HEAP32[(((pValues)+(12))>>2)] = val[3];
-        HEAP32[(((pValues)+(16))>>2)] = val[4];
-        HEAP32[(((pValues)+(20))>>2)] = val[5];
+        HEAP32[((pValues)/4)] = val[0];
+        HEAP32[(((pValues)+(4))/4)] = val[1];
+        HEAP32[(((pValues)+(8))/4)] = val[2];
+        HEAP32[(((pValues)+(12))/4)] = val[3];
+        HEAP32[(((pValues)+(16))/4)] = val[4];
+        HEAP32[(((pValues)+(20))/4)] = val[5];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetListeneriv.sig = 'vip';
 
-  var _alGetSource3f = (sourceId, param, pValue0, pValue1, pValue2) => {
+  
+  function _alGetSource3f(sourceId, param, pValue0, pValue1, pValue2) {
+    pValue0 = bigintToI53Checked(pValue0);
+    pValue1 = bigintToI53Checked(pValue1);
+    pValue2 = bigintToI53Checked(pValue2);
+  
+  
       var val = AL.getSourceParam('alGetSource3f', sourceId, param);
       if (val === null) {
         return;
@@ -9366,18 +9802,25 @@ async function createWasm() {
       case 4100:
       case 4101:
       case 4102:
-        HEAPF32[((pValue0)>>2)] = val[0];
-        HEAPF32[((pValue1)>>2)] = val[1];
-        HEAPF32[((pValue2)>>2)] = val[2];
+        HEAPF32[((pValue0)/4)] = val[0];
+        HEAPF32[((pValue1)/4)] = val[1];
+        HEAPF32[((pValue2)/4)] = val[2];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetSource3f.sig = 'viippp';
 
-  var _alGetSource3i = (sourceId, param, pValue0, pValue1, pValue2) => {
+  
+  function _alGetSource3i(sourceId, param, pValue0, pValue1, pValue2) {
+    pValue0 = bigintToI53Checked(pValue0);
+    pValue1 = bigintToI53Checked(pValue1);
+    pValue2 = bigintToI53Checked(pValue2);
+  
+  
       var val = AL.getSourceParam('alGetSource3i', sourceId, param);
       if (val === null) {
         return;
@@ -9391,18 +9834,23 @@ async function createWasm() {
       case 4100:
       case 4101:
       case 4102:
-        HEAP32[((pValue0)>>2)] = val[0];
-        HEAP32[((pValue1)>>2)] = val[1];
-        HEAP32[((pValue2)>>2)] = val[2];
+        HEAP32[((pValue0)/4)] = val[0];
+        HEAP32[((pValue1)/4)] = val[1];
+        HEAP32[((pValue2)/4)] = val[2];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetSource3i.sig = 'viippp';
 
-  var _alGetSourcef = (sourceId, param, pValue) => {
+  
+  function _alGetSourcef(sourceId, param, pValue) {
+    pValue = bigintToI53Checked(pValue);
+  
+  
       var val = AL.getSourceParam('alGetSourcef', sourceId, param);
       if (val === null) {
         return;
@@ -9427,16 +9875,21 @@ async function createWasm() {
       case 0x1025 /* AL_SAMPLE_OFFSET */:
       case 0x1026 /* AL_BYTE_OFFSET */:
       case 0x200B /* AL_SEC_LENGTH_SOFT */:
-        HEAPF32[((pValue)>>2)] = val;
+        HEAPF32[((pValue)/4)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetSourcef.sig = 'viip';
 
-  var _alGetSourcefv = (sourceId, param, pValues) => {
+  
+  function _alGetSourcefv(sourceId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getSourceParam('alGetSourcefv', sourceId, param);
       if (val === null) {
         return;
@@ -9461,23 +9914,28 @@ async function createWasm() {
       case 0x1025 /* AL_SAMPLE_OFFSET */:
       case 0x1026 /* AL_BYTE_OFFSET */:
       case 0x200B /* AL_SEC_LENGTH_SOFT */:
-        HEAPF32[((pValues)>>2)] = val[0];
+        HEAPF32[((pValues)/4)] = val[0];
         break;
       case 4100:
       case 4101:
       case 4102:
-        HEAPF32[((pValues)>>2)] = val[0];
-        HEAPF32[(((pValues)+(4))>>2)] = val[1];
-        HEAPF32[(((pValues)+(8))>>2)] = val[2];
+        HEAPF32[((pValues)/4)] = val[0];
+        HEAPF32[(((pValues)+(4))/4)] = val[1];
+        HEAPF32[(((pValues)+(8))/4)] = val[2];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetSourcefv.sig = 'viip';
 
-  var _alGetSourcei = (sourceId, param, pValue) => {
+  
+  function _alGetSourcei(sourceId, param, pValue) {
+    pValue = bigintToI53Checked(pValue);
+  
+  
       var val = AL.getSourceParam('alGetSourcei', sourceId, param);
       if (val === null) {
         return;
@@ -9507,16 +9965,21 @@ async function createWasm() {
       case 0x2009 /* AL_BYTE_LENGTH_SOFT */:
       case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
       case 53248:
-        HEAP32[((pValue)>>2)] = val;
+        HEAP32[((pValue)/4)] = val;
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetSourcei.sig = 'viip';
 
-  var _alGetSourceiv = (sourceId, param, pValues) => {
+  
+  function _alGetSourceiv(sourceId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       var val = AL.getSourceParam('alGetSourceiv', sourceId, param);
       if (val === null) {
         return;
@@ -9546,20 +10009,21 @@ async function createWasm() {
       case 0x2009 /* AL_BYTE_LENGTH_SOFT */:
       case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
       case 53248:
-        HEAP32[((pValues)>>2)] = val;
+        HEAP32[((pValues)/4)] = val;
         break;
       case 4100:
       case 4101:
       case 4102:
-        HEAP32[((pValues)>>2)] = val[0];
-        HEAP32[(((pValues)+(4))>>2)] = val[1];
-        HEAP32[(((pValues)+(8))>>2)] = val[2];
+        HEAP32[((pValues)/4)] = val[0];
+        HEAP32[(((pValues)+(4))/4)] = val[1];
+        HEAP32[(((pValues)+(8))/4)] = val[2];
         break;
       default:
         AL.currentCtx.err = 40962;
         return;
       }
-    };
+    ;
+  }
   _alGetSourceiv.sig = 'viip';
 
   
@@ -9571,7 +10035,10 @@ async function createWasm() {
       return ret;
     };
   
-  var _alGetString = (param) => {
+  
+  var _alGetString = function(param) {
+  
+  var ret = (() => { 
       if (AL.stringCache[param]) {
         return AL.stringCache[param];
       }
@@ -9619,7 +10086,9 @@ async function createWasm() {
       ret = stringToNewUTF8(ret);
       AL.stringCache[param] = ret;
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alGetString.sig = 'pi';
 
   var _alIsBuffer = (bufferId) => {
@@ -9652,11 +10121,16 @@ async function createWasm() {
   _alIsEnabled.sig = 'ii';
 
   
-  var _alIsExtensionPresent = (pExtName) => {
+  
+  function _alIsExtensionPresent(pExtName) {
+    pExtName = bigintToI53Checked(pExtName);
+  
+  
       var name = UTF8ToString(pExtName);
   
       return AL.AL_EXTENSIONS[name] ? 1 : 0;
-    };
+    ;
+  }
   _alIsExtensionPresent.sig = 'ip';
 
   var _alIsSource = (sourceId) => {
@@ -9715,7 +10189,11 @@ async function createWasm() {
     };
   _alListenerf.sig = 'vif';
 
-  var _alListenerfv = (param, pValues) => {
+  
+  function _alListenerfv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -9727,25 +10205,26 @@ async function createWasm() {
       switch (param) {
       case 4100:
       case 4102:
-        AL.paramArray[0] = HEAPF32[((pValues)>>2)];
-        AL.paramArray[1] = HEAPF32[(((pValues)+(4))>>2)];
-        AL.paramArray[2] = HEAPF32[(((pValues)+(8))>>2)];
+        AL.paramArray[0] = HEAPF32[((pValues)/4)];
+        AL.paramArray[1] = HEAPF32[(((pValues)+(4))/4)];
+        AL.paramArray[2] = HEAPF32[(((pValues)+(8))/4)];
         AL.setListenerParam('alListenerfv', param, AL.paramArray);
         break;
       case 4111:
-        AL.paramArray[0] = HEAPF32[((pValues)>>2)];
-        AL.paramArray[1] = HEAPF32[(((pValues)+(4))>>2)];
-        AL.paramArray[2] = HEAPF32[(((pValues)+(8))>>2)];
-        AL.paramArray[3] = HEAPF32[(((pValues)+(12))>>2)];
-        AL.paramArray[4] = HEAPF32[(((pValues)+(16))>>2)];
-        AL.paramArray[5] = HEAPF32[(((pValues)+(20))>>2)];
+        AL.paramArray[0] = HEAPF32[((pValues)/4)];
+        AL.paramArray[1] = HEAPF32[(((pValues)+(4))/4)];
+        AL.paramArray[2] = HEAPF32[(((pValues)+(8))/4)];
+        AL.paramArray[3] = HEAPF32[(((pValues)+(12))/4)];
+        AL.paramArray[4] = HEAPF32[(((pValues)+(16))/4)];
+        AL.paramArray[5] = HEAPF32[(((pValues)+(20))/4)];
         AL.setListenerParam('alListenerfv', param, AL.paramArray);
         break;
       default:
         AL.setListenerParam('alListenerfv', param, null);
         break;
       }
-    };
+    ;
+  }
   _alListenerfv.sig = 'vip';
 
   var _alListeneri = (param, value) => {
@@ -9753,7 +10232,11 @@ async function createWasm() {
     };
   _alListeneri.sig = 'vii';
 
-  var _alListeneriv = (param, pValues) => {
+  
+  function _alListeneriv(param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -9765,25 +10248,26 @@ async function createWasm() {
       switch (param) {
       case 4100:
       case 4102:
-        AL.paramArray[0] = HEAP32[((pValues)>>2)];
-        AL.paramArray[1] = HEAP32[(((pValues)+(4))>>2)];
-        AL.paramArray[2] = HEAP32[(((pValues)+(8))>>2)];
+        AL.paramArray[0] = HEAP32[((pValues)/4)];
+        AL.paramArray[1] = HEAP32[(((pValues)+(4))/4)];
+        AL.paramArray[2] = HEAP32[(((pValues)+(8))/4)];
         AL.setListenerParam('alListeneriv', param, AL.paramArray);
         break;
       case 4111:
-        AL.paramArray[0] = HEAP32[((pValues)>>2)];
-        AL.paramArray[1] = HEAP32[(((pValues)+(4))>>2)];
-        AL.paramArray[2] = HEAP32[(((pValues)+(8))>>2)];
-        AL.paramArray[3] = HEAP32[(((pValues)+(12))>>2)];
-        AL.paramArray[4] = HEAP32[(((pValues)+(16))>>2)];
-        AL.paramArray[5] = HEAP32[(((pValues)+(20))>>2)];
+        AL.paramArray[0] = HEAP32[((pValues)/4)];
+        AL.paramArray[1] = HEAP32[(((pValues)+(4))/4)];
+        AL.paramArray[2] = HEAP32[(((pValues)+(8))/4)];
+        AL.paramArray[3] = HEAP32[(((pValues)+(12))/4)];
+        AL.paramArray[4] = HEAP32[(((pValues)+(16))/4)];
+        AL.paramArray[5] = HEAP32[(((pValues)+(20))/4)];
         AL.setListenerParam('alListeneriv', param, AL.paramArray);
         break;
       default:
         AL.setListenerParam('alListeneriv', param, null);
         break;
       }
-    };
+    ;
+  }
   _alListeneriv.sig = 'vip';
 
   var _alSource3f = (sourceId, param, value0, value1, value2) => {
@@ -9833,7 +10317,11 @@ async function createWasm() {
     };
   _alSourcePause.sig = 'vi';
 
-  var _alSourcePausev = (count, pSourceIds) => {
+  
+  function _alSourcePausev(count, pSourceIds) {
+    pSourceIds = bigintToI53Checked(pSourceIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -9841,17 +10329,18 @@ async function createWasm() {
         AL.currentCtx.err = 40963;
       }
       for (var i = 0; i < count; ++i) {
-        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))>>2)]]) {
+        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))/4)]]) {
           AL.currentCtx.err = 40961;
           return;
         }
       }
   
       for (var i = 0; i < count; ++i) {
-        var srcId = HEAP32[(((pSourceIds)+(i*4))>>2)];
+        var srcId = HEAP32[(((pSourceIds)+(i*4))/4)];
         AL.setSourceState(AL.currentCtx.sources[srcId], 4115);
       }
-    };
+    ;
+  }
   _alSourcePausev.sig = 'vip';
 
   var _alSourcePlay = (sourceId) => {
@@ -9867,7 +10356,11 @@ async function createWasm() {
     };
   _alSourcePlay.sig = 'vi';
 
-  var _alSourcePlayv = (count, pSourceIds) => {
+  
+  function _alSourcePlayv(count, pSourceIds) {
+    pSourceIds = bigintToI53Checked(pSourceIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -9875,20 +10368,25 @@ async function createWasm() {
         AL.currentCtx.err = 40963;
       }
       for (var i = 0; i < count; ++i) {
-        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))>>2)]]) {
+        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))/4)]]) {
           AL.currentCtx.err = 40961;
           return;
         }
       }
   
       for (var i = 0; i < count; ++i) {
-        var srcId = HEAP32[(((pSourceIds)+(i*4))>>2)];
+        var srcId = HEAP32[(((pSourceIds)+(i*4))/4)];
         AL.setSourceState(AL.currentCtx.sources[srcId], 4114);
       }
-    };
+    ;
+  }
   _alSourcePlayv.sig = 'vip';
 
-  var _alSourceQueueBuffers = (sourceId, count, pBufferIds) => {
+  
+  function _alSourceQueueBuffers(sourceId, count, pBufferIds) {
+    pBufferIds = bigintToI53Checked(pBufferIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -9916,7 +10414,7 @@ async function createWasm() {
       }
   
       for (var i = 0; i < count; ++i) {
-        var bufId = HEAP32[(((pBufferIds)+(i*4))>>2)];
+        var bufId = HEAP32[(((pBufferIds)+(i*4))/4)];
         var buf = AL.buffers[bufId];
         if (!buf) {
           AL.currentCtx.err = 40961;
@@ -9940,7 +10438,7 @@ async function createWasm() {
   
       src.type = 0x1029 /* AL_STREAMING */;
       for (var i = 0; i < count; ++i) {
-        var bufId = HEAP32[(((pBufferIds)+(i*4))>>2)];
+        var bufId = HEAP32[(((pBufferIds)+(i*4))/4)];
         var buf = AL.buffers[bufId];
         buf.refCount++;
         src.bufQueue.push(buf);
@@ -9953,7 +10451,8 @@ async function createWasm() {
   
       AL.initSourcePanner(src);
       AL.scheduleSourceAudio(src);
-    };
+    ;
+  }
   _alSourceQueueBuffers.sig = 'viip';
 
   var _alSourceRewind = (sourceId) => {
@@ -9972,7 +10471,11 @@ async function createWasm() {
     };
   _alSourceRewind.sig = 'vi';
 
-  var _alSourceRewindv = (count, pSourceIds) => {
+  
+  function _alSourceRewindv(count, pSourceIds) {
+    pSourceIds = bigintToI53Checked(pSourceIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -9980,17 +10483,18 @@ async function createWasm() {
         AL.currentCtx.err = 40963;
       }
       for (var i = 0; i < count; ++i) {
-        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))>>2)]]) {
+        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))/4)]]) {
           AL.currentCtx.err = 40961;
           return;
         }
       }
   
       for (var i = 0; i < count; ++i) {
-        var srcId = HEAP32[(((pSourceIds)+(i*4))>>2)];
+        var srcId = HEAP32[(((pSourceIds)+(i*4))/4)];
         AL.setSourceState(AL.currentCtx.sources[srcId], 4113);
       }
-    };
+    ;
+  }
   _alSourceRewindv.sig = 'vip';
 
   var _alSourceStop = (sourceId) => {
@@ -10006,7 +10510,11 @@ async function createWasm() {
     };
   _alSourceStop.sig = 'vi';
 
-  var _alSourceStopv = (count, pSourceIds) => {
+  
+  function _alSourceStopv(count, pSourceIds) {
+    pSourceIds = bigintToI53Checked(pSourceIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -10014,20 +10522,25 @@ async function createWasm() {
         AL.currentCtx.err = 40963;
       }
       for (var i = 0; i < count; ++i) {
-        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))>>2)]]) {
+        if (!AL.currentCtx.sources[HEAP32[(((pSourceIds)+(i*4))/4)]]) {
           AL.currentCtx.err = 40961;
           return;
         }
       }
   
       for (var i = 0; i < count; ++i) {
-        var srcId = HEAP32[(((pSourceIds)+(i*4))>>2)];
+        var srcId = HEAP32[(((pSourceIds)+(i*4))/4)];
         AL.setSourceState(AL.currentCtx.sources[srcId], 4116);
       }
-    };
+    ;
+  }
   _alSourceStopv.sig = 'vip';
 
-  var _alSourceUnqueueBuffers = (sourceId, count, pBufferIds) => {
+  
+  function _alSourceUnqueueBuffers(sourceId, count, pBufferIds) {
+    pBufferIds = bigintToI53Checked(pBufferIds);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -10049,7 +10562,7 @@ async function createWasm() {
         var buf = src.bufQueue.shift();
         buf.refCount--;
         // Write the buffers index out to the return list.
-        HEAP32[(((pBufferIds)+(i*4))>>2)] = buf.id;
+        HEAP32[(((pBufferIds)+(i*4))/4)] = buf.id;
         src.bufsProcessed--;
       }
   
@@ -10060,7 +10573,8 @@ async function createWasm() {
   
       AL.initSourcePanner(src);
       AL.scheduleSourceAudio(src);
-    };
+    ;
+  }
   _alSourceUnqueueBuffers.sig = 'viip';
 
   var _alSourcef = (sourceId, param, value) => {
@@ -10088,7 +10602,11 @@ async function createWasm() {
     };
   _alSourcef.sig = 'viif';
 
-  var _alSourcefv = (sourceId, param, pValues) => {
+  
+  function _alSourcefv(sourceId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -10112,26 +10630,31 @@ async function createWasm() {
       case 0x1025 /* AL_SAMPLE_OFFSET */:
       case 0x1026 /* AL_BYTE_OFFSET */:
       case 0x200B /* AL_SEC_LENGTH_SOFT */:
-        var val = HEAPF32[((pValues)>>2)];
+        var val = HEAPF32[((pValues)/4)];
         AL.setSourceParam('alSourcefv', sourceId, param, val);
         break;
       case 4100:
       case 4101:
       case 4102:
-        AL.paramArray[0] = HEAPF32[((pValues)>>2)];
-        AL.paramArray[1] = HEAPF32[(((pValues)+(4))>>2)];
-        AL.paramArray[2] = HEAPF32[(((pValues)+(8))>>2)];
+        AL.paramArray[0] = HEAPF32[((pValues)/4)];
+        AL.paramArray[1] = HEAPF32[(((pValues)+(4))/4)];
+        AL.paramArray[2] = HEAPF32[(((pValues)+(8))/4)];
         AL.setSourceParam('alSourcefv', sourceId, param, AL.paramArray);
         break;
       default:
         AL.setSourceParam('alSourcefv', sourceId, param, null);
         break;
       }
-    };
+    ;
+  }
   _alSourcefv.sig = 'viip';
 
 
-  var _alSourceiv = (sourceId, param, pValues) => {
+  
+  function _alSourceiv(sourceId, param, pValues) {
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (!AL.currentCtx) {
         return;
       }
@@ -10156,22 +10679,23 @@ async function createWasm() {
       case 0x2009 /* AL_BYTE_LENGTH_SOFT */:
       case 0x200A /* AL_SAMPLE_LENGTH_SOFT */:
       case 53248:
-        var val = HEAP32[((pValues)>>2)];
+        var val = HEAP32[((pValues)/4)];
         AL.setSourceParam('alSourceiv', sourceId, param, val);
         break;
       case 4100:
       case 4101:
       case 4102:
-        AL.paramArray[0] = HEAP32[((pValues)>>2)];
-        AL.paramArray[1] = HEAP32[(((pValues)+(4))>>2)];
-        AL.paramArray[2] = HEAP32[(((pValues)+(8))>>2)];
+        AL.paramArray[0] = HEAP32[((pValues)/4)];
+        AL.paramArray[1] = HEAP32[(((pValues)+(4))/4)];
+        AL.paramArray[2] = HEAP32[(((pValues)+(8))/4)];
         AL.setSourceParam('alSourceiv', sourceId, param, AL.paramArray);
         break;
       default:
         AL.setSourceParam('alSourceiv', sourceId, param, null);
         break;
       }
-    };
+    ;
+  }
   _alSourceiv.sig = 'viip';
 
   var _alSpeedOfSound = (value) => {
@@ -10179,7 +10703,11 @@ async function createWasm() {
     };
   _alSpeedOfSound.sig = 'vf';
 
-  var _alcCaptureCloseDevice = (deviceId) => {
+  
+  var _alcCaptureCloseDevice = function(deviceId) {
+    deviceId = bigintToI53Checked(deviceId);
+  
+  
       var c = AL.requireValidCaptureDevice(deviceId, 'alcCaptureCloseDevice');
       if (!c) return false;
   
@@ -10206,7 +10734,8 @@ async function createWasm() {
       c.isCapturing = false;
   
       return true;
-    };
+    ;
+  };
   _alcCaptureCloseDevice.sig = 'ip';
 
   var listenOnce = (object, event, func) =>
@@ -10228,7 +10757,11 @@ async function createWasm() {
     };
   
   
-  var _alcCaptureOpenDevice = (pDeviceName, requestedSampleRate, format, bufferFrameCapacity) => {
+  
+  var _alcCaptureOpenDevice = function(pDeviceName, requestedSampleRate, format, bufferFrameCapacity) {
+    pDeviceName = bigintToI53Checked(pDeviceName);
+  
+  var ret = (() => { 
   
       var resolvedDeviceName = AL.CAPTURE_DEVICE_NAME;
   
@@ -10487,10 +11020,17 @@ async function createWasm() {
       var id = AL.newId();
       AL.captures[id] = newCapture;
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alcCaptureOpenDevice.sig = 'ppiii';
 
-  var _alcCaptureSamples = (deviceId, pFrames, requestedFrameCount) => {
+  
+  function _alcCaptureSamples(deviceId, pFrames, requestedFrameCount) {
+    deviceId = bigintToI53Checked(deviceId);
+    pFrames = bigintToI53Checked(pFrames);
+  
+  
       var c = AL.requireValidCaptureDevice(deviceId, 'alcCaptureSamples');
       if (!c) return;
   
@@ -10512,10 +11052,10 @@ async function createWasm() {
       }
   
       function setF32Sample(i, sample) {
-        HEAPF32[(((pFrames)+(4*i))>>2)] = sample;
+        HEAPF32[(((pFrames)+(4*i))/4)] = sample;
       }
       function setI16Sample(i, sample) {
-        HEAP16[(((pFrames)+(2*i))>>1)] = sample;
+        HEAP16[(((pFrames)+(2*i))/2)] = sample;
       }
       function setU8Sample(i, sample) {
         HEAP8[(pFrames)+(i)] = sample;
@@ -10563,10 +11103,15 @@ async function createWasm() {
       // of available captured sample-frames, but not only would it
       // be insane not to do, OpenAL-Soft happens to do that as well.
       c.capturedFrameCount = 0;
-    };
+    ;
+  }
   _alcCaptureSamples.sig = 'vppi';
 
-  var _alcCaptureStart = (deviceId) => {
+  
+  function _alcCaptureStart(deviceId) {
+    deviceId = bigintToI53Checked(deviceId);
+  
+  
       var c = AL.requireValidCaptureDevice(deviceId, 'alcCaptureStart');
       if (!c) return;
   
@@ -10580,18 +11125,28 @@ async function createWasm() {
       c.isCapturing = true;
       c.capturedFrameCount = 0;
       c.capturePlayhead = 0;
-    };
+    ;
+  }
   _alcCaptureStart.sig = 'vp';
 
-  var _alcCaptureStop = (deviceId) => {
+  
+  function _alcCaptureStop(deviceId) {
+    deviceId = bigintToI53Checked(deviceId);
+  
+  
       var c = AL.requireValidCaptureDevice(deviceId, 'alcCaptureStop');
       if (!c) return;
   
       c.isCapturing = false;
-    };
+    ;
+  }
   _alcCaptureStop.sig = 'vp';
 
-  var _alcCloseDevice = (deviceId) => {
+  
+  function _alcCloseDevice(deviceId) {
+    deviceId = bigintToI53Checked(deviceId);
+  
+  
       if (!(deviceId in AL.deviceRefCounts) || AL.deviceRefCounts[deviceId] > 0) {
         return 0;
       }
@@ -10599,11 +11154,17 @@ async function createWasm() {
       delete AL.deviceRefCounts[deviceId];
       AL.freeIds.push(deviceId);
       return 1;
-    };
+    ;
+  }
   _alcCloseDevice.sig = 'ip';
 
   
-  var _alcCreateContext = (deviceId, pAttrList) => {
+  
+  var _alcCreateContext = function(deviceId, pAttrList) {
+    deviceId = bigintToI53Checked(deviceId);
+    pAttrList = bigintToI53Checked(pAttrList);
+  
+  var ret = (() => { 
       if (!(deviceId in AL.deviceRefCounts)) {
         AL.alcErr = 0xA001; /* ALC_INVALID_DEVICE */
         return 0;
@@ -10739,10 +11300,16 @@ async function createWasm() {
       }
   
       return ctx.id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alcCreateContext.sig = 'ppp';
 
-  var _alcDestroyContext = (contextId) => {
+  
+  function _alcDestroyContext(contextId) {
+    contextId = bigintToI53Checked(contextId);
+  
+  
       var ctx = AL.contexts[contextId];
       if (AL.currentCtx === ctx) {
         AL.alcErr = 0xA002 /* ALC_INVALID_CONTEXT */;
@@ -10756,27 +11323,44 @@ async function createWasm() {
       AL.deviceRefCounts[ctx.deviceId]--;
       delete AL.contexts[contextId];
       AL.freeIds.push(contextId);
-    };
+    ;
+  }
   _alcDestroyContext.sig = 'vp';
 
-  var _alcGetContextsDevice = (contextId) => {
+  
+  var _alcGetContextsDevice = function(contextId) {
+    contextId = bigintToI53Checked(contextId);
+  
+  var ret = (() => { 
       if (contextId in AL.contexts) {
         return AL.contexts[contextId].deviceId;
       }
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alcGetContextsDevice.sig = 'pp';
 
-  var _alcGetCurrentContext = () => {
+  
+  var _alcGetCurrentContext = function() {
+  
+  var ret = (() => { 
       if (AL.currentCtx !== null) {
         return AL.currentCtx.id;
       }
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alcGetCurrentContext.sig = 'p';
 
   
-  var _alcGetEnumValue = (deviceId, pEnumName) => {
+  
+  function _alcGetEnumValue(deviceId, pEnumName) {
+    deviceId = bigintToI53Checked(deviceId);
+    pEnumName = bigintToI53Checked(pEnumName);
+  
+  
       // Spec says :
       // Using a NULL handle is legal, but only the
       // tokens defined by the AL core are guaranteed.
@@ -10831,17 +11415,28 @@ async function createWasm() {
         AL.alcErr = 40964;
         return 0;
       }
-    };
+    ;
+  }
   _alcGetEnumValue.sig = 'ipp';
 
-  var _alcGetError = (deviceId) => {
+  
+  function _alcGetError(deviceId) {
+    deviceId = bigintToI53Checked(deviceId);
+  
+  
       var err = AL.alcErr;
       AL.alcErr = 0;
       return err;
-    };
+    ;
+  }
   _alcGetError.sig = 'ip';
 
-  var _alcGetIntegerv = (deviceId, param, size, pValues) => {
+  
+  function _alcGetIntegerv(deviceId, param, size, pValues) {
+    deviceId = bigintToI53Checked(deviceId);
+    pValues = bigintToI53Checked(pValues);
+  
+  
       if (size === 0 || !pValues) {
         // Ignore the query, per the spec
         return;
@@ -10849,10 +11444,10 @@ async function createWasm() {
   
       switch (param) {
       case 0x1000 /* ALC_MAJOR_VERSION */:
-        HEAP32[((pValues)>>2)] = 1;
+        HEAP32[((pValues)/4)] = 1;
         break;
       case 0x1001 /* ALC_MINOR_VERSION */:
-        HEAP32[((pValues)>>2)] = 1;
+        HEAP32[((pValues)/4)] = 1;
         break;
       case 0x1002 /* ALC_ATTRIBUTES_SIZE */:
         if (!(deviceId in AL.deviceRefCounts)) {
@@ -10864,7 +11459,7 @@ async function createWasm() {
           return;
         }
   
-        HEAP32[((pValues)>>2)] = AL.currentCtx.attrs.length;
+        HEAP32[((pValues)/4)] = AL.currentCtx.attrs.length;
         break;
       case 0x1003 /* ALC_ALL_ATTRIBUTES */:
         if (!(deviceId in AL.deviceRefCounts)) {
@@ -10877,7 +11472,7 @@ async function createWasm() {
         }
   
         for (var i = 0; i < AL.currentCtx.attrs.length; i++) {
-          HEAP32[(((pValues)+(i*4))>>2)] = AL.currentCtx.attrs[i];
+          HEAP32[(((pValues)+(i*4))/4)] = AL.currentCtx.attrs[i];
         }
         break;
       case 0x1007 /* ALC_FREQUENCY */:
@@ -10890,7 +11485,7 @@ async function createWasm() {
           return;
         }
   
-        HEAP32[((pValues)>>2)] = AL.currentCtx.audioCtx.sampleRate;
+        HEAP32[((pValues)/4)] = AL.currentCtx.audioCtx.sampleRate;
         break;
       case 0x1010 /* ALC_MONO_SOURCES */:
       case 0x1011 /* ALC_STEREO_SOURCES */:
@@ -10903,7 +11498,7 @@ async function createWasm() {
           return;
         }
   
-        HEAP32[((pValues)>>2)] = 0x7FFFFFFF;
+        HEAP32[((pValues)/4)] = 0x7FFFFFFF;
         break;
       case 0x1992 /* ALC_HRTF_SOFT */:
       case 0x1993 /* ALC_HRTF_STATUS_SOFT */:
@@ -10919,14 +11514,14 @@ async function createWasm() {
             hrtfStatus = ctx.hrtf ? 1 /* ALC_HRTF_ENABLED_SOFT */ : 0 /* ALC_HRTF_DISABLED_SOFT */;
           }
         }
-        HEAP32[((pValues)>>2)] = hrtfStatus;
+        HEAP32[((pValues)/4)] = hrtfStatus;
         break;
       case 0x1994 /* ALC_NUM_HRTF_SPECIFIERS_SOFT */:
         if (!(deviceId in AL.deviceRefCounts)) {
           AL.alcErr = 40961;
           return;
         }
-        HEAP32[((pValues)>>2)] = 1;
+        HEAP32[((pValues)/4)] = 1;
         break;
       case 0x20003 /* ALC_MAX_AUXILIARY_SENDS */:
         if (!(deviceId in AL.deviceRefCounts)) {
@@ -10938,7 +11533,7 @@ async function createWasm() {
           return;
         }
   
-        HEAP32[((pValues)>>2)] = 1;
+        HEAP32[((pValues)/4)] = 1;
       case 0x312 /* ALC_CAPTURE_SAMPLES */:
         var c = AL.requireValidCaptureDevice(deviceId, 'alcGetIntegerv');
         if (!c) {
@@ -10948,17 +11543,22 @@ async function createWasm() {
         var dstfreq = c.requestedSampleRate;
         var srcfreq = c.audioCtx.sampleRate;
         var nsamples = Math.floor(n * (dstfreq/srcfreq));
-        HEAP32[((pValues)>>2)] = nsamples;
+        HEAP32[((pValues)/4)] = nsamples;
         break;
       default:
         AL.alcErr = 40963;
         return;
       }
-    };
+    ;
+  }
   _alcGetIntegerv.sig = 'vpiip';
 
   
-  var _alcGetString = (deviceId, param) => {
+  
+  var _alcGetString = function(deviceId, param) {
+    deviceId = bigintToI53Checked(deviceId);
+  
+  var ret = (() => { 
       if (AL.alcStringCache[param]) {
         return AL.alcStringCache[param];
       }
@@ -11029,29 +11629,46 @@ async function createWasm() {
       ret = stringToNewUTF8(ret);
       AL.alcStringCache[param] = ret;
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alcGetString.sig = 'ppi';
 
   
-  var _alcIsExtensionPresent = (deviceId, pExtName) => {
+  
+  function _alcIsExtensionPresent(deviceId, pExtName) {
+    deviceId = bigintToI53Checked(deviceId);
+    pExtName = bigintToI53Checked(pExtName);
+  
+  
       var name = UTF8ToString(pExtName);
   
       return AL.ALC_EXTENSIONS[name] ? 1 : 0;
-    };
+    ;
+  }
   _alcIsExtensionPresent.sig = 'ipp';
 
-  var _alcMakeContextCurrent = (contextId) => {
+  
+  function _alcMakeContextCurrent(contextId) {
+    contextId = bigintToI53Checked(contextId);
+  
+  
       if (contextId === 0) {
         AL.currentCtx = null;
       } else {
         AL.currentCtx = AL.contexts[contextId];
       }
       return 1;
-    };
+    ;
+  }
   _alcMakeContextCurrent.sig = 'ip';
 
   
-  var _alcOpenDevice = (pDeviceName) => {
+  
+  var _alcOpenDevice = function(pDeviceName) {
+    pDeviceName = bigintToI53Checked(pDeviceName);
+  
+  var ret = (() => { 
       if (pDeviceName) {
         var name = UTF8ToString(pDeviceName);
         if (name !== AL.DEVICE_NAME) {
@@ -11065,13 +11682,25 @@ async function createWasm() {
         return deviceId;
       }
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _alcOpenDevice.sig = 'pp';
 
-  var _alcProcessContext = (contextId) => {};
+  
+  function _alcProcessContext(contextId) {
+    contextId = bigintToI53Checked(contextId);
+  
+  ;
+  }
   _alcProcessContext.sig = 'vp';
 
-  var _alcSuspendContext = (contextId) => {};
+  
+  function _alcSuspendContext(contextId) {
+    contextId = bigintToI53Checked(contextId);
+  
+  ;
+  }
   _alcSuspendContext.sig = 'vp';
 
   
@@ -11087,7 +11716,11 @@ async function createWasm() {
   var nowIsMonotonic = 1;
   
   var checkWasiClock = (clock_id) => clock_id >= 0 && clock_id <= 3;
-  var _clock_res_get = (clk_id, pres) => {
+  
+  function _clock_res_get(clk_id, pres) {
+    pres = bigintToI53Checked(pres);
+  
+  
       if (!checkWasiClock(clk_id)) {
         return 28;
       }
@@ -11100,9 +11733,10 @@ async function createWasm() {
       } else {
         return 52;
       }
-      HEAP64[((pres)>>3)] = BigInt(nsec);
+      HEAP64[((pres)/8)] = BigInt(nsec);
       return 0;
-    };
+    ;
+  }
   _clock_res_get.sig = 'iip';
 
   
@@ -11113,6 +11747,7 @@ async function createWasm() {
   
   function _clock_time_get(clk_id, ignored_precision, ptime) {
     ignored_precision = bigintToI53Checked(ignored_precision);
+    ptime = bigintToI53Checked(ptime);
   
   
       if (!checkWasiClock(clk_id)) {
@@ -11129,7 +11764,7 @@ async function createWasm() {
       }
       // "now" is in ms, and wasi times are in ns.
       var nsec = Math.round(now * 1000 * 1000);
-      HEAP64[((ptime)>>3)] = BigInt(nsec);
+      HEAP64[((ptime)/8)] = BigInt(nsec);
       return 0;
     ;
   }
@@ -11273,15 +11908,14 @@ async function createWasm() {
         // Floats are always passed as doubles, so all types except for 'i'
         // are 8 bytes and require alignment.
         var wide = (ch != 105);
-        wide &= (ch != 112);
         buf += wide && (buf % 8) ? 4 : 0;
         readEmAsmArgsArray.push(
           // Special case for pointers under wasm64 or CAN_ADDRESS_2GB mode.
-          ch == 112 ? HEAPU32[((buf)>>2)] :
-          ch == 106 ? HEAP64[((buf)>>3)] :
+          ch == 112 ? Number(HEAPU64[((buf)/8)]) :
+          ch == 106 ? HEAP64[((buf)/8)] :
           ch == 105 ?
-            HEAP32[((buf)>>2)] :
-            HEAPF64[((buf)>>3)]
+            HEAP32[((buf)/4)] :
+            HEAPF64[((buf)/8)]
         );
         buf += wide ? 8 : 4;
       }
@@ -11291,42 +11925,71 @@ async function createWasm() {
       var args = readEmAsmArgs(sigPtr, argbuf);
       return ASM_CONSTS[code](...args);
     };
-  var _emscripten_asm_const_int = (code, sigPtr, argbuf) => {
+  
+  function _emscripten_asm_const_int(code, sigPtr, argbuf) {
+    code = bigintToI53Checked(code);
+    sigPtr = bigintToI53Checked(sigPtr);
+    argbuf = bigintToI53Checked(argbuf);
+  
+  
       return runEmAsmFunction(code, sigPtr, argbuf);
-    };
+    ;
+  }
   _emscripten_asm_const_int.sig = 'ippp';
 
-  var _emscripten_console_error = (str) => {
+  
+  function _emscripten_console_error(str) {
+    str = bigintToI53Checked(str);
+  
+  
       console.error(UTF8ToString(str));
-    };
+    ;
+  }
   _emscripten_console_error.sig = 'vp';
 
-  var _emscripten_console_log = (str) => {
+  
+  function _emscripten_console_log(str) {
+    str = bigintToI53Checked(str);
+  
+  
       console.log(UTF8ToString(str));
-    };
+    ;
+  }
   _emscripten_console_log.sig = 'vp';
 
-  var _emscripten_console_trace = (str) => {
+  
+  function _emscripten_console_trace(str) {
+    str = bigintToI53Checked(str);
+  
+  
       console.trace(UTF8ToString(str));
-    };
+    ;
+  }
   _emscripten_console_trace.sig = 'vp';
 
-  var _emscripten_console_warn = (str) => {
+  
+  function _emscripten_console_warn(str) {
+    str = bigintToI53Checked(str);
+  
+  
       console.warn(UTF8ToString(str));
-    };
+    ;
+  }
   _emscripten_console_warn.sig = 'vp';
 
 
-  var _emscripten_err = (str) => err(UTF8ToString(str));
+  
+  function _emscripten_err(str) {
+    str = bigintToI53Checked(str);
+  
+  return err(UTF8ToString(str));
+  }
   _emscripten_err.sig = 'vp';
 
   var getHeapMax = () =>
-      // Stay one Wasm page short of 4GB: while e.g. Chrome is able to allocate
-      // full 4GB Wasm memories, the size will wrap back to 0 bytes in Wasm side
-      // for any code that deals with heap sizes, which would require special
-      // casing all heap size related code to treat 0 specially.
       2147483648;
-  var _emscripten_get_heap_max = () => getHeapMax();
+  
+  var _emscripten_get_heap_max = () => BigInt(getHeapMax());;
   _emscripten_get_heap_max.sig = 'p';
 
 
@@ -11469,37 +12132,18 @@ async function createWasm() {
           } else {
             GL.recordError(0x502 /* GL_INVALID_OPERATION */);
           }
-          HEAP32[(((buffers)+(i*4))>>2)] = id;
+          HEAP32[(((buffers)+(i*4))/4)] = id;
         }
       },
   getSource:(shader, count, string, length) => {
         var source = '';
         for (var i = 0; i < count; ++i) {
-          var len = length ? HEAPU32[(((length)+(i*4))>>2)] : undefined;
-          source += UTF8ToString(HEAPU32[(((string)+(i*4))>>2)], len);
+          var len = length ? Number(HEAPU64[(((length)+(i*8))/8)]) : undefined;
+          source += UTF8ToString(Number(HEAPU64[(((string)+(i*8))/8)]), len);
         }
         return source;
       },
   createContext:(/** @type {HTMLCanvasElement} */ canvas, webGLContextAttributes) => {
-  
-        // BUG: Workaround Safari WebGL issue: After successfully acquiring WebGL
-        // context on a canvas, calling .getContext() will always return that
-        // context independent of which 'webgl' or 'webgl2'
-        // context version was passed. See:
-        //   https://bugs.webkit.org/show_bug.cgi?id=222758
-        // and:
-        //   https://github.com/emscripten-core/emscripten/issues/13295.
-        // TODO: Once the bug is fixed and shipped in Safari, adjust the Safari
-        // version field in above check.
-        if (!canvas.getContextSafariWebGL2Fixed) {
-          canvas.getContextSafariWebGL2Fixed = canvas.getContext;
-          /** @type {function(this:HTMLCanvasElement, string, (Object|null)=): (Object|null)} */
-          function fixedGetContext(ver, attrs) {
-            var gl = canvas.getContextSafariWebGL2Fixed(ver, attrs);
-            return ((ver == 'webgl') == (gl instanceof WebGLRenderingContext)) ? gl : null;
-          }
-          canvas.getContext = fixedGetContext;
-        }
   
         var ctx =
           canvas.getContext("webgl", webGLContextAttributes);
@@ -11617,10 +12261,15 @@ async function createWasm() {
   var _emscripten_glBeginQueryEXT = _glBeginQueryEXT;
 
   
+  
   /** @suppress {duplicate } */
-  var _glBindAttribLocation = (program, index, name) => {
+  function _glBindAttribLocation(program, index, name) {
+    name = bigintToI53Checked(name);
+  
+  
       GLctx.bindAttribLocation(GL.programs[program], index, UTF8ToString(name));
-    };
+    ;
+  }
   _glBindAttribLocation.sig = 'viip';
   var _emscripten_glBindAttribLocation = _glBindAttribLocation;
   _emscripten_glBindAttribLocation.sig = 'viip';
@@ -11702,23 +12351,36 @@ async function createWasm() {
   var _emscripten_glBlendFuncSeparate = _glBlendFuncSeparate;
   _emscripten_glBlendFuncSeparate.sig = 'viiii';
 
+  
   /** @suppress {duplicate } */
-  var _glBufferData = (target, size, data, usage) => {
+  function _glBufferData(target, size, data, usage) {
+    size = bigintToI53Checked(size);
+    data = bigintToI53Checked(data);
+  
+  
   
       // N.b. here first form specifies a heap subarray, second form an integer
       // size, so the ?: code here is polymorphic. It is advised to avoid
       // randomly mixing both uses in calling code, to avoid any potential JS
       // engine JIT issues.
       GLctx.bufferData(target, data ? HEAPU8.subarray(data, data+size) : size, usage);
-    };
+    ;
+  }
   _glBufferData.sig = 'vippi';
   var _emscripten_glBufferData = _glBufferData;
   _emscripten_glBufferData.sig = 'vippi';
 
+  
   /** @suppress {duplicate } */
-  var _glBufferSubData = (target, offset, size, data) => {
+  function _glBufferSubData(target, offset, size, data) {
+    offset = bigintToI53Checked(offset);
+    size = bigintToI53Checked(size);
+    data = bigintToI53Checked(data);
+  
+  
       GLctx.bufferSubData(target, offset, HEAPU8.subarray(data, data+size));
-    };
+    ;
+  }
   _glBufferSubData.sig = 'vippp';
   var _emscripten_glBufferSubData = _glBufferSubData;
   _emscripten_glBufferSubData.sig = 'vippp';
@@ -11776,23 +12438,33 @@ async function createWasm() {
   var _emscripten_glCompileShader = _glCompileShader;
   _emscripten_glCompileShader.sig = 'vi';
 
+  
   /** @suppress {duplicate } */
-  var _glCompressedTexImage2D = (target, level, internalFormat, width, height, border, imageSize, data) => {
+  function _glCompressedTexImage2D(target, level, internalFormat, width, height, border, imageSize, data) {
+    data = bigintToI53Checked(data);
+  
+  
       // `data` may be null here, which means "allocate uniniitalized space but
       // don't upload" in GLES parlance, but `compressedTexImage2D` requires the
       // final data parameter, so we simply pass a heap view starting at zero
       // effectively uploading whatever happens to be near address zero.  See
       // https://github.com/emscripten-core/emscripten/issues/19300.
       GLctx.compressedTexImage2D(target, level, internalFormat, width, height, border, HEAPU8.subarray((data), data+imageSize));
-    };
+    ;
+  }
   _glCompressedTexImage2D.sig = 'viiiiiiip';
   var _emscripten_glCompressedTexImage2D = _glCompressedTexImage2D;
   _emscripten_glCompressedTexImage2D.sig = 'viiiiiiip';
 
+  
   /** @suppress {duplicate } */
-  var _glCompressedTexSubImage2D = (target, level, xoffset, yoffset, width, height, format, imageSize, data) => {
+  function _glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data) {
+    data = bigintToI53Checked(data);
+  
+  
       GLctx.compressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, HEAPU8.subarray((data), data+imageSize));
-    };
+    ;
+  }
   _glCompressedTexSubImage2D.sig = 'viiiiiiiip';
   var _emscripten_glCompressedTexSubImage2D = _glCompressedTexSubImage2D;
   _emscripten_glCompressedTexSubImage2D.sig = 'viiiiiiiip';
@@ -11843,10 +12515,14 @@ async function createWasm() {
   var _emscripten_glCullFace = _glCullFace;
   _emscripten_glCullFace.sig = 'vi';
 
+  
   /** @suppress {duplicate } */
-  var _glDeleteBuffers = (n, buffers) => {
+  function _glDeleteBuffers(n, buffers) {
+    buffers = bigintToI53Checked(buffers);
+  
+  
       for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((buffers)+(i*4))>>2)];
+        var id = HEAP32[(((buffers)+(i*4))/4)];
         var buffer = GL.buffers[id];
   
         // From spec: "glDeleteBuffers silently ignores 0's and names that do not
@@ -11858,22 +12534,28 @@ async function createWasm() {
         GL.buffers[id] = null;
   
       }
-    };
+    ;
+  }
   _glDeleteBuffers.sig = 'vip';
   var _emscripten_glDeleteBuffers = _glDeleteBuffers;
   _emscripten_glDeleteBuffers.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glDeleteFramebuffers = (n, framebuffers) => {
+  function _glDeleteFramebuffers(n, framebuffers) {
+    framebuffers = bigintToI53Checked(framebuffers);
+  
+  
       for (var i = 0; i < n; ++i) {
-        var id = HEAP32[(((framebuffers)+(i*4))>>2)];
+        var id = HEAP32[(((framebuffers)+(i*4))/4)];
         var framebuffer = GL.framebuffers[id];
         if (!framebuffer) continue; // GL spec: "glDeleteFramebuffers silently ignores 0s and names that do not correspond to existing framebuffer objects".
         GLctx.deleteFramebuffer(framebuffer);
         framebuffer.name = 0;
         GL.framebuffers[id] = null;
       }
-    };
+    ;
+  }
   _glDeleteFramebuffers.sig = 'vip';
   var _emscripten_glDeleteFramebuffers = _glDeleteFramebuffers;
   _emscripten_glDeleteFramebuffers.sig = 'vip';
@@ -11896,30 +12578,40 @@ async function createWasm() {
   var _emscripten_glDeleteProgram = _glDeleteProgram;
   _emscripten_glDeleteProgram.sig = 'vi';
 
+  
   /** @suppress {duplicate } */
-  var _glDeleteQueriesEXT = (n, ids) => {
+  function _glDeleteQueriesEXT(n, ids) {
+    ids = bigintToI53Checked(ids);
+  
+  
       for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((ids)+(i*4))>>2)];
+        var id = HEAP32[(((ids)+(i*4))/4)];
         var query = GL.queries[id];
         if (!query) continue; // GL spec: "unused names in ids are ignored, as is the name zero."
         GLctx.disjointTimerQueryExt['deleteQueryEXT'](query);
         GL.queries[id] = null;
       }
-    };
+    ;
+  }
   _glDeleteQueriesEXT.sig = 'vip';
   var _emscripten_glDeleteQueriesEXT = _glDeleteQueriesEXT;
 
+  
   /** @suppress {duplicate } */
-  var _glDeleteRenderbuffers = (n, renderbuffers) => {
+  function _glDeleteRenderbuffers(n, renderbuffers) {
+    renderbuffers = bigintToI53Checked(renderbuffers);
+  
+  
       for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((renderbuffers)+(i*4))>>2)];
+        var id = HEAP32[(((renderbuffers)+(i*4))/4)];
         var renderbuffer = GL.renderbuffers[id];
         if (!renderbuffer) continue; // GL spec: "glDeleteRenderbuffers silently ignores 0s and names that do not correspond to existing renderbuffer objects".
         GLctx.deleteRenderbuffer(renderbuffer);
         renderbuffer.name = 0;
         GL.renderbuffers[id] = null;
       }
-    };
+    ;
+  }
   _glDeleteRenderbuffers.sig = 'vip';
   var _emscripten_glDeleteRenderbuffers = _glDeleteRenderbuffers;
   _emscripten_glDeleteRenderbuffers.sig = 'vip';
@@ -11941,10 +12633,14 @@ async function createWasm() {
   var _emscripten_glDeleteShader = _glDeleteShader;
   _emscripten_glDeleteShader.sig = 'vi';
 
+  
   /** @suppress {duplicate } */
-  var _glDeleteTextures = (n, textures) => {
+  function _glDeleteTextures(n, textures) {
+    textures = bigintToI53Checked(textures);
+  
+  
       for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((textures)+(i*4))>>2)];
+        var id = HEAP32[(((textures)+(i*4))/4)];
         var texture = GL.textures[id];
         // GL spec: "glDeleteTextures silently ignores 0s and names that do not
         // correspond to existing textures".
@@ -11953,20 +12649,26 @@ async function createWasm() {
         texture.name = 0;
         GL.textures[id] = null;
       }
-    };
+    ;
+  }
   _glDeleteTextures.sig = 'vip';
   var _emscripten_glDeleteTextures = _glDeleteTextures;
   _emscripten_glDeleteTextures.sig = 'vip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glDeleteVertexArrays = (n, vaos) => {
+  function _glDeleteVertexArrays(n, vaos) {
+    vaos = bigintToI53Checked(vaos);
+  
+  
       for (var i = 0; i < n; i++) {
-        var id = HEAP32[(((vaos)+(i*4))>>2)];
+        var id = HEAP32[(((vaos)+(i*4))/4)];
         GLctx.deleteVertexArray(GL.vaos[id]);
         GL.vaos[id] = null;
       }
-    };
+    ;
+  }
   _glDeleteVertexArrays.sig = 'vip';
   /** @suppress {duplicate } */
   var _glDeleteVertexArraysOES = _glDeleteVertexArrays;
@@ -12039,36 +12741,51 @@ async function createWasm() {
   
   var tempFixedLengthArray = [];
   
+  
   /** @suppress {duplicate } */
-  var _glDrawBuffers = (n, bufs) => {
+  function _glDrawBuffers(n, bufs) {
+    bufs = bigintToI53Checked(bufs);
+  
+  
   
       var bufArray = tempFixedLengthArray[n];
       for (var i = 0; i < n; i++) {
-        bufArray[i] = HEAP32[(((bufs)+(i*4))>>2)];
+        bufArray[i] = HEAP32[(((bufs)+(i*4))/4)];
       }
   
       GLctx.drawBuffers(bufArray);
-    };
+    ;
+  }
   _glDrawBuffers.sig = 'vip';
   /** @suppress {duplicate } */
   var _glDrawBuffersWEBGL = _glDrawBuffers;
   var _emscripten_glDrawBuffersWEBGL = _glDrawBuffersWEBGL;
 
+  
   /** @suppress {duplicate } */
-  var _glDrawElements = (mode, count, type, indices) => {
+  function _glDrawElements(mode, count, type, indices) {
+    indices = bigintToI53Checked(indices);
+  
+  
   
       GLctx.drawElements(mode, count, type, indices);
   
-    };
+    ;
+  }
   _glDrawElements.sig = 'viiip';
   var _emscripten_glDrawElements = _glDrawElements;
   _emscripten_glDrawElements.sig = 'viiip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glDrawElementsInstanced = (mode, count, type, indices, primcount) => {
+  function _glDrawElementsInstanced(mode, count, type, indices, primcount) {
+    indices = bigintToI53Checked(indices);
+  
+  
       GLctx.drawElementsInstanced(mode, count, type, indices, primcount);
-    };
+    ;
+  }
   _glDrawElementsInstanced.sig = 'viiipi';
   /** @suppress {duplicate } */
   var _glDrawElementsInstancedANGLE = _glDrawElementsInstanced;
@@ -12131,66 +12848,96 @@ async function createWasm() {
   var _emscripten_glFrontFace = _glFrontFace;
   _emscripten_glFrontFace.sig = 'vi';
 
+  
   /** @suppress {duplicate } */
-  var _glGenBuffers = (n, buffers) => {
+  function _glGenBuffers(n, buffers) {
+    buffers = bigintToI53Checked(buffers);
+  
+  
       GL.genObject(n, buffers, 'createBuffer', GL.buffers
         );
-    };
+    ;
+  }
   _glGenBuffers.sig = 'vip';
   var _emscripten_glGenBuffers = _glGenBuffers;
   _emscripten_glGenBuffers.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glGenFramebuffers = (n, ids) => {
+  function _glGenFramebuffers(n, ids) {
+    ids = bigintToI53Checked(ids);
+  
+  
       GL.genObject(n, ids, 'createFramebuffer', GL.framebuffers
         );
-    };
+    ;
+  }
   _glGenFramebuffers.sig = 'vip';
   var _emscripten_glGenFramebuffers = _glGenFramebuffers;
   _emscripten_glGenFramebuffers.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glGenQueriesEXT = (n, ids) => {
+  function _glGenQueriesEXT(n, ids) {
+    ids = bigintToI53Checked(ids);
+  
+  
       for (var i = 0; i < n; i++) {
         var query = GLctx.disjointTimerQueryExt['createQueryEXT']();
         if (!query) {
           GL.recordError(0x502 /* GL_INVALID_OPERATION */);
-          while (i < n) HEAP32[(((ids)+(i++*4))>>2)] = 0;
+          while (i < n) HEAP32[(((ids)+(i++*4))/4)] = 0;
           return;
         }
         var id = GL.getNewId(GL.queries);
         query.name = id;
         GL.queries[id] = query;
-        HEAP32[(((ids)+(i*4))>>2)] = id;
+        HEAP32[(((ids)+(i*4))/4)] = id;
       }
-    };
+    ;
+  }
   _glGenQueriesEXT.sig = 'vip';
   var _emscripten_glGenQueriesEXT = _glGenQueriesEXT;
 
+  
   /** @suppress {duplicate } */
-  var _glGenRenderbuffers = (n, renderbuffers) => {
+  function _glGenRenderbuffers(n, renderbuffers) {
+    renderbuffers = bigintToI53Checked(renderbuffers);
+  
+  
       GL.genObject(n, renderbuffers, 'createRenderbuffer', GL.renderbuffers
         );
-    };
+    ;
+  }
   _glGenRenderbuffers.sig = 'vip';
   var _emscripten_glGenRenderbuffers = _glGenRenderbuffers;
   _emscripten_glGenRenderbuffers.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glGenTextures = (n, textures) => {
+  function _glGenTextures(n, textures) {
+    textures = bigintToI53Checked(textures);
+  
+  
       GL.genObject(n, textures, 'createTexture', GL.textures
         );
-    };
+    ;
+  }
   _glGenTextures.sig = 'vip';
   var _emscripten_glGenTextures = _glGenTextures;
   _emscripten_glGenTextures.sig = 'vip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGenVertexArrays = (n, arrays) => {
+  function _glGenVertexArrays(n, arrays) {
+    arrays = bigintToI53Checked(arrays);
+  
+  
       GL.genObject(n, arrays, 'createVertexArray', GL.vaos
         );
-    };
+    ;
+  }
   _glGenVertexArrays.sig = 'vip';
   /** @suppress {duplicate } */
   var _glGenVertexArraysOES = _glGenVertexArrays;
@@ -12211,56 +12958,80 @@ async function createWasm() {
       if (info) {
         // If an error occurs, nothing will be written to length, size and type and name.
         var numBytesWrittenExclNull = name && stringToUTF8(info.name, name, bufSize);
-        if (length) HEAP32[((length)>>2)] = numBytesWrittenExclNull;
-        if (size) HEAP32[((size)>>2)] = info.size;
-        if (type) HEAP32[((type)>>2)] = info.type;
+        if (length) HEAP32[((length)/4)] = numBytesWrittenExclNull;
+        if (size) HEAP32[((size)/4)] = info.size;
+        if (type) HEAP32[((type)/4)] = info.type;
       }
     };
   
+  
   /** @suppress {duplicate } */
-  var _glGetActiveAttrib = (program, index, bufSize, length, size, type, name) =>
-      __glGetActiveAttribOrUniform('getActiveAttrib', program, index, bufSize, length, size, type, name);
+  function _glGetActiveAttrib(program, index, bufSize, length, size, type, name) {
+    length = bigintToI53Checked(length);
+    size = bigintToI53Checked(size);
+    type = bigintToI53Checked(type);
+    name = bigintToI53Checked(name);
+  
+  return __glGetActiveAttribOrUniform('getActiveAttrib', program, index, bufSize, length, size, type, name);
+  }
   _glGetActiveAttrib.sig = 'viiipppp';
   var _emscripten_glGetActiveAttrib = _glGetActiveAttrib;
   _emscripten_glGetActiveAttrib.sig = 'viiipppp';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetActiveUniform = (program, index, bufSize, length, size, type, name) =>
-      __glGetActiveAttribOrUniform('getActiveUniform', program, index, bufSize, length, size, type, name);
+  function _glGetActiveUniform(program, index, bufSize, length, size, type, name) {
+    length = bigintToI53Checked(length);
+    size = bigintToI53Checked(size);
+    type = bigintToI53Checked(type);
+    name = bigintToI53Checked(name);
+  
+  return __glGetActiveAttribOrUniform('getActiveUniform', program, index, bufSize, length, size, type, name);
+  }
   _glGetActiveUniform.sig = 'viiipppp';
   var _emscripten_glGetActiveUniform = _glGetActiveUniform;
   _emscripten_glGetActiveUniform.sig = 'viiipppp';
 
+  
   /** @suppress {duplicate } */
-  var _glGetAttachedShaders = (program, maxCount, count, shaders) => {
+  function _glGetAttachedShaders(program, maxCount, count, shaders) {
+    count = bigintToI53Checked(count);
+    shaders = bigintToI53Checked(shaders);
+  
+  
       var result = GLctx.getAttachedShaders(GL.programs[program]);
       var len = result.length;
       if (len > maxCount) {
         len = maxCount;
       }
-      HEAP32[((count)>>2)] = len;
+      HEAP32[((count)/4)] = len;
       for (var i = 0; i < len; ++i) {
         var id = GL.shaders.indexOf(result[i]);
-        HEAP32[(((shaders)+(i*4))>>2)] = id;
+        HEAP32[(((shaders)+(i*4))/4)] = id;
       }
-    };
+    ;
+  }
   _glGetAttachedShaders.sig = 'viipp';
   var _emscripten_glGetAttachedShaders = _glGetAttachedShaders;
   _emscripten_glGetAttachedShaders.sig = 'viipp';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetAttribLocation = (program, name) =>
-      GLctx.getAttribLocation(GL.programs[program], UTF8ToString(name));
+  function _glGetAttribLocation(program, name) {
+    name = bigintToI53Checked(name);
+  
+  return GLctx.getAttribLocation(GL.programs[program], UTF8ToString(name));
+  }
   _glGetAttribLocation.sig = 'iip';
   var _emscripten_glGetAttribLocation = _glGetAttribLocation;
   _emscripten_glGetAttribLocation.sig = 'iip';
 
   var writeI53ToI64 = (ptr, num) => {
-      HEAPU32[((ptr)>>2)] = num;
-      var lower = HEAPU32[((ptr)>>2)];
-      HEAPU32[(((ptr)+(4))>>2)] = (num - lower)/4294967296;
+      HEAPU32[((ptr)/4)] = num;
+      var lower = HEAPU32[((ptr)/4)];
+      HEAPU32[(((ptr)+(4))/4)] = (num - lower)/4294967296;
     };
   
   var emscriptenWebGLGet = (name_, p, type) => {
@@ -12339,8 +13110,8 @@ async function createWasm() {
                        result instanceof Array) {
               for (var i = 0; i < result.length; ++i) {
                 switch (type) {
-                  case 0: HEAP32[(((p)+(i*4))>>2)] = result[i]; break;
-                  case 2: HEAPF32[(((p)+(i*4))>>2)] = result[i]; break;
+                  case 0: HEAP32[(((p)+(i*4))/4)] = result[i]; break;
+                  case 2: HEAPF32[(((p)+(i*4))/4)] = result[i]; break;
                   case 4: HEAP8[(p)+(i)] = result[i] ? 1 : 0; break;
                 }
               }
@@ -12364,20 +13135,29 @@ async function createWasm() {
   
       switch (type) {
         case 1: writeI53ToI64(p, ret); break;
-        case 0: HEAP32[((p)>>2)] = ret; break;
-        case 2:   HEAPF32[((p)>>2)] = ret; break;
+        case 0: HEAP32[((p)/4)] = ret; break;
+        case 2:   HEAPF32[((p)/4)] = ret; break;
         case 4: HEAP8[p] = ret ? 1 : 0; break;
       }
     };
   
+  
   /** @suppress {duplicate } */
-  var _glGetBooleanv = (name_, p) => emscriptenWebGLGet(name_, p, 4);
+  function _glGetBooleanv(name_, p) {
+    p = bigintToI53Checked(p);
+  
+  return emscriptenWebGLGet(name_, p, 4);
+  }
   _glGetBooleanv.sig = 'vip';
   var _emscripten_glGetBooleanv = _glGetBooleanv;
   _emscripten_glGetBooleanv.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glGetBufferParameteriv = (target, value, data) => {
+  function _glGetBufferParameteriv(target, value, data) {
+    data = bigintToI53Checked(data);
+  
+  
       if (!data) {
         // GLES2 specification does not specify how to behave if data is a null
         // pointer. Since calling this function does not make sense if data ==
@@ -12385,8 +13165,9 @@ async function createWasm() {
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
         return;
       }
-      HEAP32[((data)>>2)] = GLctx.getBufferParameter(target, value);
-    };
+      HEAP32[((data)/4)] = GLctx.getBufferParameter(target, value);
+    ;
+  }
   _glGetBufferParameteriv.sig = 'viip';
   var _emscripten_glGetBufferParameteriv = _glGetBufferParameteriv;
   _emscripten_glGetBufferParameteriv.sig = 'viip';
@@ -12402,45 +13183,70 @@ async function createWasm() {
   _emscripten_glGetError.sig = 'i';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetFloatv = (name_, p) => emscriptenWebGLGet(name_, p, 2);
+  function _glGetFloatv(name_, p) {
+    p = bigintToI53Checked(p);
+  
+  return emscriptenWebGLGet(name_, p, 2);
+  }
   _glGetFloatv.sig = 'vip';
   var _emscripten_glGetFloatv = _glGetFloatv;
   _emscripten_glGetFloatv.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glGetFramebufferAttachmentParameteriv = (target, attachment, pname, params) => {
+  function _glGetFramebufferAttachmentParameteriv(target, attachment, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       var result = GLctx.getFramebufferAttachmentParameter(target, attachment, pname);
       if (result instanceof WebGLRenderbuffer ||
           result instanceof WebGLTexture) {
         result = result.name | 0;
       }
-      HEAP32[((params)>>2)] = result;
-    };
+      HEAP32[((params)/4)] = result;
+    ;
+  }
   _glGetFramebufferAttachmentParameteriv.sig = 'viiip';
   var _emscripten_glGetFramebufferAttachmentParameteriv = _glGetFramebufferAttachmentParameteriv;
   _emscripten_glGetFramebufferAttachmentParameteriv.sig = 'viiip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetIntegerv = (name_, p) => emscriptenWebGLGet(name_, p, 0);
+  function _glGetIntegerv(name_, p) {
+    p = bigintToI53Checked(p);
+  
+  return emscriptenWebGLGet(name_, p, 0);
+  }
   _glGetIntegerv.sig = 'vip';
   var _emscripten_glGetIntegerv = _glGetIntegerv;
   _emscripten_glGetIntegerv.sig = 'vip';
 
+  
   /** @suppress {duplicate } */
-  var _glGetProgramInfoLog = (program, maxLength, length, infoLog) => {
+  function _glGetProgramInfoLog(program, maxLength, length, infoLog) {
+    length = bigintToI53Checked(length);
+    infoLog = bigintToI53Checked(infoLog);
+  
+  
       var log = GLctx.getProgramInfoLog(GL.programs[program]);
       if (log === null) log = '(unknown error)';
       var numBytesWrittenExclNull = (maxLength > 0 && infoLog) ? stringToUTF8(log, infoLog, maxLength) : 0;
-      if (length) HEAP32[((length)>>2)] = numBytesWrittenExclNull;
-    };
+      if (length) HEAP32[((length)/4)] = numBytesWrittenExclNull;
+    ;
+  }
   _glGetProgramInfoLog.sig = 'viipp';
   var _emscripten_glGetProgramInfoLog = _glGetProgramInfoLog;
   _emscripten_glGetProgramInfoLog.sig = 'viipp';
 
+  
   /** @suppress {duplicate } */
-  var _glGetProgramiv = (program, pname, p) => {
+  function _glGetProgramiv(program, pname, p) {
+    p = bigintToI53Checked(p);
+  
+  
       if (!p) {
         // GLES2 specification does not specify how to behave if p is a null
         // pointer. Since calling this function does not make sense if p == null,
@@ -12459,7 +13265,7 @@ async function createWasm() {
       if (pname == 0x8B84) { // GL_INFO_LOG_LENGTH
         var log = GLctx.getProgramInfoLog(program);
         if (log === null) log = '(unknown error)';
-        HEAP32[((p)>>2)] = log.length + 1;
+        HEAP32[((p)/4)] = log.length + 1;
       } else if (pname == 0x8B87 /* GL_ACTIVE_UNIFORM_MAX_LENGTH */) {
         if (!program.maxUniformLength) {
           var numActiveUniforms = GLctx.getProgramParameter(program, 0x8B86/*GL_ACTIVE_UNIFORMS*/);
@@ -12467,7 +13273,7 @@ async function createWasm() {
             program.maxUniformLength = Math.max(program.maxUniformLength, GLctx.getActiveUniform(program, i).name.length+1);
           }
         }
-        HEAP32[((p)>>2)] = program.maxUniformLength;
+        HEAP32[((p)/4)] = program.maxUniformLength;
       } else if (pname == 0x8B8A /* GL_ACTIVE_ATTRIBUTE_MAX_LENGTH */) {
         if (!program.maxAttributeLength) {
           var numActiveAttributes = GLctx.getProgramParameter(program, 0x8B89/*GL_ACTIVE_ATTRIBUTES*/);
@@ -12475,7 +13281,7 @@ async function createWasm() {
             program.maxAttributeLength = Math.max(program.maxAttributeLength, GLctx.getActiveAttrib(program, i).name.length+1);
           }
         }
-        HEAP32[((p)>>2)] = program.maxAttributeLength;
+        HEAP32[((p)/4)] = program.maxAttributeLength;
       } else if (pname == 0x8A35 /* GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH */) {
         if (!program.maxUniformBlockNameLength) {
           var numActiveUniformBlocks = GLctx.getProgramParameter(program, 0x8A36/*GL_ACTIVE_UNIFORM_BLOCKS*/);
@@ -12483,18 +13289,23 @@ async function createWasm() {
             program.maxUniformBlockNameLength = Math.max(program.maxUniformBlockNameLength, GLctx.getActiveUniformBlockName(program, i).length+1);
           }
         }
-        HEAP32[((p)>>2)] = program.maxUniformBlockNameLength;
+        HEAP32[((p)/4)] = program.maxUniformBlockNameLength;
       } else {
-        HEAP32[((p)>>2)] = GLctx.getProgramParameter(program, pname);
+        HEAP32[((p)/4)] = GLctx.getProgramParameter(program, pname);
       }
-    };
+    ;
+  }
   _glGetProgramiv.sig = 'viip';
   var _emscripten_glGetProgramiv = _glGetProgramiv;
   _emscripten_glGetProgramiv.sig = 'viip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetQueryObjecti64vEXT = (id, pname, params) => {
+  function _glGetQueryObjecti64vEXT(id, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       if (!params) {
         // GLES2 specification does not specify how to behave if params is a null pointer. Since calling this function does not make sense
         // if p == null, issue a GL error to notify user about it.
@@ -12513,12 +13324,17 @@ async function createWasm() {
         ret = param;
       }
       writeI53ToI64(params, ret);
-    };
+    ;
+  }
   _glGetQueryObjecti64vEXT.sig = 'viip';
   var _emscripten_glGetQueryObjecti64vEXT = _glGetQueryObjecti64vEXT;
 
+  
   /** @suppress {duplicate } */
-  var _glGetQueryObjectivEXT = (id, pname, params) => {
+  function _glGetQueryObjectivEXT(id, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       if (!params) {
         // GLES2 specification does not specify how to behave if params is a null pointer. Since calling this function does not make sense
         // if p == null, issue a GL error to notify user about it.
@@ -12533,8 +13349,9 @@ async function createWasm() {
       } else {
         ret = param;
       }
-      HEAP32[((params)>>2)] = ret;
-    };
+      HEAP32[((params)/4)] = ret;
+    ;
+  }
   _glGetQueryObjectivEXT.sig = 'viip';
   var _emscripten_glGetQueryObjectivEXT = _glGetQueryObjectivEXT;
 
@@ -12548,69 +13365,101 @@ async function createWasm() {
   var _glGetQueryObjectuivEXT = _glGetQueryObjectivEXT;
   var _emscripten_glGetQueryObjectuivEXT = _glGetQueryObjectuivEXT;
 
+  
   /** @suppress {duplicate } */
-  var _glGetQueryivEXT = (target, pname, params) => {
+  function _glGetQueryivEXT(target, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       if (!params) {
         // GLES2 specification does not specify how to behave if params is a null pointer. Since calling this function does not make sense
         // if p == null, issue a GL error to notify user about it.
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
         return;
       }
-      HEAP32[((params)>>2)] = GLctx.disjointTimerQueryExt['getQueryEXT'](target, pname);
-    };
+      HEAP32[((params)/4)] = GLctx.disjointTimerQueryExt['getQueryEXT'](target, pname);
+    ;
+  }
   _glGetQueryivEXT.sig = 'viip';
   var _emscripten_glGetQueryivEXT = _glGetQueryivEXT;
 
+  
   /** @suppress {duplicate } */
-  var _glGetRenderbufferParameteriv = (target, pname, params) => {
+  function _glGetRenderbufferParameteriv(target, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       if (!params) {
         // GLES2 specification does not specify how to behave if params is a null pointer. Since calling this function does not make sense
         // if params == null, issue a GL error to notify user about it.
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
         return;
       }
-      HEAP32[((params)>>2)] = GLctx.getRenderbufferParameter(target, pname);
-    };
+      HEAP32[((params)/4)] = GLctx.getRenderbufferParameter(target, pname);
+    ;
+  }
   _glGetRenderbufferParameteriv.sig = 'viip';
   var _emscripten_glGetRenderbufferParameteriv = _glGetRenderbufferParameteriv;
   _emscripten_glGetRenderbufferParameteriv.sig = 'viip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetShaderInfoLog = (shader, maxLength, length, infoLog) => {
+  function _glGetShaderInfoLog(shader, maxLength, length, infoLog) {
+    length = bigintToI53Checked(length);
+    infoLog = bigintToI53Checked(infoLog);
+  
+  
       var log = GLctx.getShaderInfoLog(GL.shaders[shader]);
       if (log === null) log = '(unknown error)';
       var numBytesWrittenExclNull = (maxLength > 0 && infoLog) ? stringToUTF8(log, infoLog, maxLength) : 0;
-      if (length) HEAP32[((length)>>2)] = numBytesWrittenExclNull;
-    };
+      if (length) HEAP32[((length)/4)] = numBytesWrittenExclNull;
+    ;
+  }
   _glGetShaderInfoLog.sig = 'viipp';
   var _emscripten_glGetShaderInfoLog = _glGetShaderInfoLog;
   _emscripten_glGetShaderInfoLog.sig = 'viipp';
 
+  
   /** @suppress {duplicate } */
-  var _glGetShaderPrecisionFormat = (shaderType, precisionType, range, precision) => {
+  function _glGetShaderPrecisionFormat(shaderType, precisionType, range, precision) {
+    range = bigintToI53Checked(range);
+    precision = bigintToI53Checked(precision);
+  
+  
       var result = GLctx.getShaderPrecisionFormat(shaderType, precisionType);
-      HEAP32[((range)>>2)] = result.rangeMin;
-      HEAP32[(((range)+(4))>>2)] = result.rangeMax;
-      HEAP32[((precision)>>2)] = result.precision;
-    };
+      HEAP32[((range)/4)] = result.rangeMin;
+      HEAP32[(((range)+(4))/4)] = result.rangeMax;
+      HEAP32[((precision)/4)] = result.precision;
+    ;
+  }
   _glGetShaderPrecisionFormat.sig = 'viipp';
   var _emscripten_glGetShaderPrecisionFormat = _glGetShaderPrecisionFormat;
   _emscripten_glGetShaderPrecisionFormat.sig = 'viipp';
 
+  
   /** @suppress {duplicate } */
-  var _glGetShaderSource = (shader, bufSize, length, source) => {
+  function _glGetShaderSource(shader, bufSize, length, source) {
+    length = bigintToI53Checked(length);
+    source = bigintToI53Checked(source);
+  
+  
       var result = GLctx.getShaderSource(GL.shaders[shader]);
       if (!result) return; // If an error occurs, nothing will be written to length or source.
       var numBytesWrittenExclNull = (bufSize > 0 && source) ? stringToUTF8(result, source, bufSize) : 0;
-      if (length) HEAP32[((length)>>2)] = numBytesWrittenExclNull;
-    };
+      if (length) HEAP32[((length)/4)] = numBytesWrittenExclNull;
+    ;
+  }
   _glGetShaderSource.sig = 'viipp';
   var _emscripten_glGetShaderSource = _glGetShaderSource;
   _emscripten_glGetShaderSource.sig = 'viipp';
 
+  
   /** @suppress {duplicate } */
-  var _glGetShaderiv = (shader, pname, p) => {
+  function _glGetShaderiv(shader, pname, p) {
+    p = bigintToI53Checked(p);
+  
+  
       if (!p) {
         // GLES2 specification does not specify how to behave if p is a null
         // pointer. Since calling this function does not make sense if p == null,
@@ -12626,17 +13475,18 @@ async function createWasm() {
         // (An empty string is falsey, so we can just check that instead of
         // looking at log.length.)
         var logLength = log ? log.length + 1 : 0;
-        HEAP32[((p)>>2)] = logLength;
+        HEAP32[((p)/4)] = logLength;
       } else if (pname == 0x8B88) { // GL_SHADER_SOURCE_LENGTH
         var source = GLctx.getShaderSource(GL.shaders[shader]);
         // source may be a null, or the empty string, both of which are falsey
         // values that we report a 0 length for.
         var sourceLength = source ? source.length + 1 : 0;
-        HEAP32[((p)>>2)] = sourceLength;
+        HEAP32[((p)/4)] = sourceLength;
       } else {
-        HEAP32[((p)>>2)] = GLctx.getShaderParameter(GL.shaders[shader], pname);
+        HEAP32[((p)/4)] = GLctx.getShaderParameter(GL.shaders[shader], pname);
       }
-    };
+    ;
+  }
   _glGetShaderiv.sig = 'viip';
   var _emscripten_glGetShaderiv = _glGetShaderiv;
   _emscripten_glGetShaderiv.sig = 'viip';
@@ -12649,8 +13499,11 @@ async function createWasm() {
       return exts;
     };
   
+  
   /** @suppress {duplicate } */
-  var _glGetString = (name_) => {
+  var _glGetString = function(name_) {
+  
+  var ret = (() => { 
       var ret = GL.stringCache[name_];
       if (!ret) {
         switch (name_) {
@@ -12692,13 +13545,19 @@ async function createWasm() {
         GL.stringCache[name_] = ret;
       }
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _glGetString.sig = 'pi';
   var _emscripten_glGetString = _glGetString;
   _emscripten_glGetString.sig = 'pi';
 
+  
   /** @suppress {duplicate } */
-  var _glGetTexParameterfv = (target, pname, params) => {
+  function _glGetTexParameterfv(target, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       if (!params) {
         // GLES2 specification does not specify how to behave if params is a null
         // pointer. Since calling this function does not make sense if p == null,
@@ -12706,14 +13565,19 @@ async function createWasm() {
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
         return;
       }
-      HEAPF32[((params)>>2)] = GLctx.getTexParameter(target, pname);
-    };
+      HEAPF32[((params)/4)] = GLctx.getTexParameter(target, pname);
+    ;
+  }
   _glGetTexParameterfv.sig = 'viip';
   var _emscripten_glGetTexParameterfv = _glGetTexParameterfv;
   _emscripten_glGetTexParameterfv.sig = 'viip';
 
+  
   /** @suppress {duplicate } */
-  var _glGetTexParameteriv = (target, pname, params) => {
+  function _glGetTexParameteriv(target, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       if (!params) {
         // GLES2 specification does not specify how to behave if params is a null
         // pointer. Since calling this function does not make sense if p == null,
@@ -12721,8 +13585,9 @@ async function createWasm() {
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
         return;
       }
-      HEAP32[((params)>>2)] = GLctx.getTexParameter(target, pname);
-    };
+      HEAP32[((params)/4)] = GLctx.getTexParameter(target, pname);
+    ;
+  }
   _glGetTexParameteriv.sig = 'viip';
   var _emscripten_glGetTexParameteriv = _glGetTexParameteriv;
   _emscripten_glGetTexParameteriv.sig = 'viip';
@@ -12776,8 +13641,12 @@ async function createWasm() {
   
   
   
+  
   /** @suppress {duplicate } */
-  var _glGetUniformLocation = (program, name) => {
+  function _glGetUniformLocation(program, name) {
+    name = bigintToI53Checked(name);
+  
+  
   
       name = UTF8ToString(name);
   
@@ -12824,7 +13693,8 @@ async function createWasm() {
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
       }
       return -1;
-    };
+    ;
+  }
   _glGetUniformLocation.sig = 'iip';
   var _emscripten_glGetUniformLocation = _glGetUniformLocation;
   _emscripten_glGetUniformLocation.sig = 'iip';
@@ -12863,38 +13733,52 @@ async function createWasm() {
       var data = GLctx.getUniform(program, webglGetUniformLocation(location));
       if (typeof data == 'number' || typeof data == 'boolean') {
         switch (type) {
-          case 0: HEAP32[((params)>>2)] = data; break;
-          case 2: HEAPF32[((params)>>2)] = data; break;
+          case 0: HEAP32[((params)/4)] = data; break;
+          case 2: HEAPF32[((params)/4)] = data; break;
         }
       } else {
         for (var i = 0; i < data.length; i++) {
           switch (type) {
-            case 0: HEAP32[(((params)+(i*4))>>2)] = data[i]; break;
-            case 2: HEAPF32[(((params)+(i*4))>>2)] = data[i]; break;
+            case 0: HEAP32[(((params)+(i*4))/4)] = data[i]; break;
+            case 2: HEAPF32[(((params)+(i*4))/4)] = data[i]; break;
           }
         }
       }
     };
   
+  
   /** @suppress {duplicate } */
-  var _glGetUniformfv = (program, location, params) => {
+  function _glGetUniformfv(program, location, params) {
+    params = bigintToI53Checked(params);
+  
+  
       emscriptenWebGLGetUniform(program, location, params, 2);
-    };
+    ;
+  }
   _glGetUniformfv.sig = 'viip';
   var _emscripten_glGetUniformfv = _glGetUniformfv;
   _emscripten_glGetUniformfv.sig = 'viip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetUniformiv = (program, location, params) => {
+  function _glGetUniformiv(program, location, params) {
+    params = bigintToI53Checked(params);
+  
+  
       emscriptenWebGLGetUniform(program, location, params, 0);
-    };
+    ;
+  }
   _glGetUniformiv.sig = 'viip';
   var _emscripten_glGetUniformiv = _glGetUniformiv;
   _emscripten_glGetUniformiv.sig = 'viip';
 
+  
   /** @suppress {duplicate } */
-  var _glGetVertexAttribPointerv = (index, pname, pointer) => {
+  function _glGetVertexAttribPointerv(index, pname, pointer) {
+    pointer = bigintToI53Checked(pointer);
+  
+  
       if (!pointer) {
         // GLES2 specification does not specify how to behave if pointer is a null
         // pointer. Since calling this function does not make sense if pointer ==
@@ -12902,8 +13786,9 @@ async function createWasm() {
         GL.recordError(0x501 /* GL_INVALID_VALUE */);
         return;
       }
-      HEAP32[((pointer)>>2)] = GLctx.getVertexAttribOffset(index, pname);
-    };
+      HEAP32[((pointer)/4)] = GLctx.getVertexAttribOffset(index, pname);
+    ;
+  }
   _glGetVertexAttribPointerv.sig = 'viip';
   var _emscripten_glGetVertexAttribPointerv = _glGetVertexAttribPointerv;
   _emscripten_glGetVertexAttribPointerv.sig = 'viip';
@@ -12919,43 +13804,53 @@ async function createWasm() {
       }
       var data = GLctx.getVertexAttrib(index, pname);
       if (pname == 0x889F/*VERTEX_ATTRIB_ARRAY_BUFFER_BINDING*/) {
-        HEAP32[((params)>>2)] = data && data["name"];
+        HEAP32[((params)/4)] = data && data["name"];
       } else if (typeof data == 'number' || typeof data == 'boolean') {
         switch (type) {
-          case 0: HEAP32[((params)>>2)] = data; break;
-          case 2: HEAPF32[((params)>>2)] = data; break;
-          case 5: HEAP32[((params)>>2)] = Math.fround(data); break;
+          case 0: HEAP32[((params)/4)] = data; break;
+          case 2: HEAPF32[((params)/4)] = data; break;
+          case 5: HEAP32[((params)/4)] = Math.fround(data); break;
         }
       } else {
         for (var i = 0; i < data.length; i++) {
           switch (type) {
-            case 0: HEAP32[(((params)+(i*4))>>2)] = data[i]; break;
-            case 2: HEAPF32[(((params)+(i*4))>>2)] = data[i]; break;
-            case 5: HEAP32[(((params)+(i*4))>>2)] = Math.fround(data[i]); break;
+            case 0: HEAP32[(((params)+(i*4))/4)] = data[i]; break;
+            case 2: HEAPF32[(((params)+(i*4))/4)] = data[i]; break;
+            case 5: HEAP32[(((params)+(i*4))/4)] = Math.fround(data[i]); break;
           }
         }
       }
     };
   
+  
   /** @suppress {duplicate } */
-  var _glGetVertexAttribfv = (index, pname, params) => {
+  function _glGetVertexAttribfv(index, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       // N.B. This function may only be called if the vertex attribute was
       // specified using the function glVertexAttrib*f(), otherwise the results
       // are undefined. (GLES3 spec 6.1.12)
       emscriptenWebGLGetVertexAttrib(index, pname, params, 2);
-    };
+    ;
+  }
   _glGetVertexAttribfv.sig = 'viip';
   var _emscripten_glGetVertexAttribfv = _glGetVertexAttribfv;
   _emscripten_glGetVertexAttribfv.sig = 'viip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glGetVertexAttribiv = (index, pname, params) => {
+  function _glGetVertexAttribiv(index, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
       // N.B. This function may only be called if the vertex attribute was
       // specified using the function glVertexAttrib*f(), otherwise the results
       // are undefined. (GLES3 spec 6.1.12)
       emscriptenWebGLGetVertexAttrib(index, pname, params, 5);
-    };
+    ;
+  }
   _glGetVertexAttribiv.sig = 'viip';
   var _emscripten_glGetVertexAttribiv = _glGetVertexAttribiv;
   _emscripten_glGetVertexAttribiv.sig = 'viip';
@@ -13164,7 +14059,7 @@ async function createWasm() {
     };
   
   var toTypedArrayIndex = (pointer, heap) =>
-      pointer >>> (31 - Math.clz32(heap.BYTES_PER_ELEMENT));
+      pointer / heap.BYTES_PER_ELEMENT;
   
   var emscriptenWebGLGetTexPixelData = (type, format, width, height, pixels, internalFormat) => {
       var heap = heapObjectForWebGLType(type);
@@ -13173,15 +14068,20 @@ async function createWasm() {
       return heap.subarray(toTypedArrayIndex(pixels, heap), toTypedArrayIndex(pixels + bytes, heap));
     };
   
+  
   /** @suppress {duplicate } */
-  var _glReadPixels = (x, y, width, height, format, type, pixels) => {
+  function _glReadPixels(x, y, width, height, format, type, pixels) {
+    pixels = bigintToI53Checked(pixels);
+  
+  
       var pixelData = emscriptenWebGLGetTexPixelData(type, format, width, height, pixels, format);
       if (!pixelData) {
         GL.recordError(0x500/*GL_INVALID_ENUM*/);
         return;
       }
       GLctx.readPixels(x, y, width, height, format, type, pixelData);
-    };
+    ;
+  }
   _glReadPixels.sig = 'viiiiiip';
   var _emscripten_glReadPixels = _glReadPixels;
   _emscripten_glReadPixels.sig = 'viiiiiip';
@@ -13214,20 +14114,32 @@ async function createWasm() {
   var _emscripten_glScissor = _glScissor;
   _emscripten_glScissor.sig = 'viiii';
 
+  
   /** @suppress {duplicate } */
-  var _glShaderBinary = (count, shaders, binaryformat, binary, length) => {
+  function _glShaderBinary(count, shaders, binaryformat, binary, length) {
+    shaders = bigintToI53Checked(shaders);
+    binary = bigintToI53Checked(binary);
+  
+  
       GL.recordError(0x500/*GL_INVALID_ENUM*/);
-    };
+    ;
+  }
   _glShaderBinary.sig = 'vipipi';
   var _emscripten_glShaderBinary = _glShaderBinary;
   _emscripten_glShaderBinary.sig = 'vipipi';
 
+  
   /** @suppress {duplicate } */
-  var _glShaderSource = (shader, count, string, length) => {
+  function _glShaderSource(shader, count, string, length) {
+    string = bigintToI53Checked(string);
+    length = bigintToI53Checked(length);
+  
+  
       var source = GL.getSource(shader, count, string, length);
   
       GLctx.shaderSource(GL.shaders[shader], source);
-    };
+    ;
+  }
   _glShaderSource.sig = 'viipp';
   var _emscripten_glShaderSource = _glShaderSource;
   _emscripten_glShaderSource.sig = 'viipp';
@@ -13269,11 +14181,16 @@ async function createWasm() {
   _emscripten_glStencilOpSeparate.sig = 'viiii';
 
   
+  
   /** @suppress {duplicate } */
-  var _glTexImage2D = (target, level, internalFormat, width, height, border, format, type, pixels) => {
+  function _glTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels) {
+    pixels = bigintToI53Checked(pixels);
+  
+  
       var pixelData = pixels ? emscriptenWebGLGetTexPixelData(type, format, width, height, pixels, internalFormat) : null;
       GLctx.texImage2D(target, level, internalFormat, width, height, border, format, type, pixelData);
-    };
+    ;
+  }
   _glTexImage2D.sig = 'viiiiiiiip';
   var _emscripten_glTexImage2D = _glTexImage2D;
   _emscripten_glTexImage2D.sig = 'viiiiiiiip';
@@ -13284,11 +14201,16 @@ async function createWasm() {
   var _emscripten_glTexParameterf = _glTexParameterf;
   _emscripten_glTexParameterf.sig = 'viif';
 
+  
   /** @suppress {duplicate } */
-  var _glTexParameterfv = (target, pname, params) => {
-      var param = HEAPF32[((params)>>2)];
+  function _glTexParameterfv(target, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
+      var param = HEAPF32[((params)/4)];
       GLctx.texParameterf(target, pname, param);
-    };
+    ;
+  }
   _glTexParameterfv.sig = 'viip';
   var _emscripten_glTexParameterfv = _glTexParameterfv;
   _emscripten_glTexParameterfv.sig = 'viip';
@@ -13299,21 +14221,31 @@ async function createWasm() {
   var _emscripten_glTexParameteri = _glTexParameteri;
   _emscripten_glTexParameteri.sig = 'viii';
 
+  
   /** @suppress {duplicate } */
-  var _glTexParameteriv = (target, pname, params) => {
-      var param = HEAP32[((params)>>2)];
+  function _glTexParameteriv(target, pname, params) {
+    params = bigintToI53Checked(params);
+  
+  
+      var param = HEAP32[((params)/4)];
       GLctx.texParameteri(target, pname, param);
-    };
+    ;
+  }
   _glTexParameteriv.sig = 'viip';
   var _emscripten_glTexParameteriv = _glTexParameteriv;
   _emscripten_glTexParameteriv.sig = 'viip';
 
   
+  
   /** @suppress {duplicate } */
-  var _glTexSubImage2D = (target, level, xoffset, yoffset, width, height, format, type, pixels) => {
+  function _glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels) {
+    pixels = bigintToI53Checked(pixels);
+  
+  
       var pixelData = pixels ? emscriptenWebGLGetTexPixelData(type, format, width, height, pixels, 0) : null;
       GLctx.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixelData);
-    };
+    ;
+  }
   _glTexSubImage2D.sig = 'viiiiiiiip';
   var _emscripten_glTexSubImage2D = _glTexSubImage2D;
   _emscripten_glTexSubImage2D.sig = 'viiiiiiiip';
@@ -13330,21 +14262,26 @@ async function createWasm() {
   
   var miniTempWebGLFloatBuffers = [];
   
+  
   /** @suppress {duplicate } */
-  var _glUniform1fv = (location, count, value) => {
+  function _glUniform1fv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 288) {
         // avoid allocation when uploading few enough uniforms
         var view = miniTempWebGLFloatBuffers[count];
         for (var i = 0; i < count; ++i) {
-          view[i] = HEAPF32[(((value)+(4*i))>>2)];
+          view[i] = HEAPF32[(((value)+(4*i))/4)];
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*4)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*4)/4));
       }
       GLctx.uniform1fv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform1fv.sig = 'viip';
   var _emscripten_glUniform1fv = _glUniform1fv;
   _emscripten_glUniform1fv.sig = 'viip';
@@ -13361,21 +14298,26 @@ async function createWasm() {
   
   var miniTempWebGLIntBuffers = [];
   
+  
   /** @suppress {duplicate } */
-  var _glUniform1iv = (location, count, value) => {
+  function _glUniform1iv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 288) {
         // avoid allocation when uploading few enough uniforms
         var view = miniTempWebGLIntBuffers[count];
         for (var i = 0; i < count; ++i) {
-          view[i] = HEAP32[(((value)+(4*i))>>2)];
+          view[i] = HEAP32[(((value)+(4*i))/4)];
         }
       } else
       {
-        var view = HEAP32.subarray((((value)>>2)), ((value+count*4)>>2));
+        var view = HEAP32.subarray((((value)/4)), ((value+count*4)/4));
       }
       GLctx.uniform1iv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform1iv.sig = 'viip';
   var _emscripten_glUniform1iv = _glUniform1iv;
   _emscripten_glUniform1iv.sig = 'viip';
@@ -13391,23 +14333,28 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniform2fv = (location, count, value) => {
+  function _glUniform2fv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 144) {
         // avoid allocation when uploading few enough uniforms
         count *= 2;
         var view = miniTempWebGLFloatBuffers[count];
         for (var i = 0; i < count; i += 2) {
-          view[i] = HEAPF32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAPF32[(((value)+(4*i+4))>>2)];
+          view[i] = HEAPF32[(((value)+(4*i))/4)];
+          view[i+1] = HEAPF32[(((value)+(4*i+4))/4)];
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*8)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*8)/4));
       }
       GLctx.uniform2fv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform2fv.sig = 'viip';
   var _emscripten_glUniform2fv = _glUniform2fv;
   _emscripten_glUniform2fv.sig = 'viip';
@@ -13423,23 +14370,28 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniform2iv = (location, count, value) => {
+  function _glUniform2iv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 144) {
         // avoid allocation when uploading few enough uniforms
         count *= 2;
         var view = miniTempWebGLIntBuffers[count];
         for (var i = 0; i < count; i += 2) {
-          view[i] = HEAP32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAP32[(((value)+(4*i+4))>>2)];
+          view[i] = HEAP32[(((value)+(4*i))/4)];
+          view[i+1] = HEAP32[(((value)+(4*i+4))/4)];
         }
       } else
       {
-        var view = HEAP32.subarray((((value)>>2)), ((value+count*8)>>2));
+        var view = HEAP32.subarray((((value)/4)), ((value+count*8)/4));
       }
       GLctx.uniform2iv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform2iv.sig = 'viip';
   var _emscripten_glUniform2iv = _glUniform2iv;
   _emscripten_glUniform2iv.sig = 'viip';
@@ -13455,24 +14407,29 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniform3fv = (location, count, value) => {
+  function _glUniform3fv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 96) {
         // avoid allocation when uploading few enough uniforms
         count *= 3;
         var view = miniTempWebGLFloatBuffers[count];
         for (var i = 0; i < count; i += 3) {
-          view[i] = HEAPF32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAPF32[(((value)+(4*i+4))>>2)];
-          view[i+2] = HEAPF32[(((value)+(4*i+8))>>2)];
+          view[i] = HEAPF32[(((value)+(4*i))/4)];
+          view[i+1] = HEAPF32[(((value)+(4*i+4))/4)];
+          view[i+2] = HEAPF32[(((value)+(4*i+8))/4)];
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*12)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*12)/4));
       }
       GLctx.uniform3fv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform3fv.sig = 'viip';
   var _emscripten_glUniform3fv = _glUniform3fv;
   _emscripten_glUniform3fv.sig = 'viip';
@@ -13488,24 +14445,29 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniform3iv = (location, count, value) => {
+  function _glUniform3iv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 96) {
         // avoid allocation when uploading few enough uniforms
         count *= 3;
         var view = miniTempWebGLIntBuffers[count];
         for (var i = 0; i < count; i += 3) {
-          view[i] = HEAP32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAP32[(((value)+(4*i+4))>>2)];
-          view[i+2] = HEAP32[(((value)+(4*i+8))>>2)];
+          view[i] = HEAP32[(((value)+(4*i))/4)];
+          view[i+1] = HEAP32[(((value)+(4*i+4))/4)];
+          view[i+2] = HEAP32[(((value)+(4*i+8))/4)];
         }
       } else
       {
-        var view = HEAP32.subarray((((value)>>2)), ((value+count*12)>>2));
+        var view = HEAP32.subarray((((value)/4)), ((value+count*12)/4));
       }
       GLctx.uniform3iv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform3iv.sig = 'viip';
   var _emscripten_glUniform3iv = _glUniform3iv;
   _emscripten_glUniform3iv.sig = 'viip';
@@ -13521,15 +14483,19 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniform4fv = (location, count, value) => {
+  function _glUniform4fv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 72) {
         // avoid allocation when uploading few enough uniforms
         var view = miniTempWebGLFloatBuffers[4*count];
         // hoist the heap out of the loop for size and for pthreads+growth.
         var heap = HEAPF32;
-        value = ((value)>>2);
+        value = ((value)/4);
         count *= 4;
         for (var i = 0; i < count; i += 4) {
           var dst = value + i;
@@ -13540,10 +14506,11 @@ async function createWasm() {
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*16)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*16)/4));
       }
       GLctx.uniform4fv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform4fv.sig = 'viip';
   var _emscripten_glUniform4fv = _glUniform4fv;
   _emscripten_glUniform4fv.sig = 'viip';
@@ -13559,95 +14526,114 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniform4iv = (location, count, value) => {
+  function _glUniform4iv(location, count, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 72) {
         // avoid allocation when uploading few enough uniforms
         count *= 4;
         var view = miniTempWebGLIntBuffers[count];
         for (var i = 0; i < count; i += 4) {
-          view[i] = HEAP32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAP32[(((value)+(4*i+4))>>2)];
-          view[i+2] = HEAP32[(((value)+(4*i+8))>>2)];
-          view[i+3] = HEAP32[(((value)+(4*i+12))>>2)];
+          view[i] = HEAP32[(((value)+(4*i))/4)];
+          view[i+1] = HEAP32[(((value)+(4*i+4))/4)];
+          view[i+2] = HEAP32[(((value)+(4*i+8))/4)];
+          view[i+3] = HEAP32[(((value)+(4*i+12))/4)];
         }
       } else
       {
-        var view = HEAP32.subarray((((value)>>2)), ((value+count*16)>>2));
+        var view = HEAP32.subarray((((value)/4)), ((value+count*16)/4));
       }
       GLctx.uniform4iv(webglGetUniformLocation(location), view);
-    };
+    ;
+  }
   _glUniform4iv.sig = 'viip';
   var _emscripten_glUniform4iv = _glUniform4iv;
   _emscripten_glUniform4iv.sig = 'viip';
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniformMatrix2fv = (location, count, transpose, value) => {
+  function _glUniformMatrix2fv(location, count, transpose, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 72) {
         // avoid allocation when uploading few enough uniforms
         count *= 4;
         var view = miniTempWebGLFloatBuffers[count];
         for (var i = 0; i < count; i += 4) {
-          view[i] = HEAPF32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAPF32[(((value)+(4*i+4))>>2)];
-          view[i+2] = HEAPF32[(((value)+(4*i+8))>>2)];
-          view[i+3] = HEAPF32[(((value)+(4*i+12))>>2)];
+          view[i] = HEAPF32[(((value)+(4*i))/4)];
+          view[i+1] = HEAPF32[(((value)+(4*i+4))/4)];
+          view[i+2] = HEAPF32[(((value)+(4*i+8))/4)];
+          view[i+3] = HEAPF32[(((value)+(4*i+12))/4)];
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*16)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*16)/4));
       }
       GLctx.uniformMatrix2fv(webglGetUniformLocation(location), !!transpose, view);
-    };
+    ;
+  }
   _glUniformMatrix2fv.sig = 'viiip';
   var _emscripten_glUniformMatrix2fv = _glUniformMatrix2fv;
   _emscripten_glUniformMatrix2fv.sig = 'viiip';
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniformMatrix3fv = (location, count, transpose, value) => {
+  function _glUniformMatrix3fv(location, count, transpose, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 32) {
         // avoid allocation when uploading few enough uniforms
         count *= 9;
         var view = miniTempWebGLFloatBuffers[count];
         for (var i = 0; i < count; i += 9) {
-          view[i] = HEAPF32[(((value)+(4*i))>>2)];
-          view[i+1] = HEAPF32[(((value)+(4*i+4))>>2)];
-          view[i+2] = HEAPF32[(((value)+(4*i+8))>>2)];
-          view[i+3] = HEAPF32[(((value)+(4*i+12))>>2)];
-          view[i+4] = HEAPF32[(((value)+(4*i+16))>>2)];
-          view[i+5] = HEAPF32[(((value)+(4*i+20))>>2)];
-          view[i+6] = HEAPF32[(((value)+(4*i+24))>>2)];
-          view[i+7] = HEAPF32[(((value)+(4*i+28))>>2)];
-          view[i+8] = HEAPF32[(((value)+(4*i+32))>>2)];
+          view[i] = HEAPF32[(((value)+(4*i))/4)];
+          view[i+1] = HEAPF32[(((value)+(4*i+4))/4)];
+          view[i+2] = HEAPF32[(((value)+(4*i+8))/4)];
+          view[i+3] = HEAPF32[(((value)+(4*i+12))/4)];
+          view[i+4] = HEAPF32[(((value)+(4*i+16))/4)];
+          view[i+5] = HEAPF32[(((value)+(4*i+20))/4)];
+          view[i+6] = HEAPF32[(((value)+(4*i+24))/4)];
+          view[i+7] = HEAPF32[(((value)+(4*i+28))/4)];
+          view[i+8] = HEAPF32[(((value)+(4*i+32))/4)];
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*36)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*36)/4));
       }
       GLctx.uniformMatrix3fv(webglGetUniformLocation(location), !!transpose, view);
-    };
+    ;
+  }
   _glUniformMatrix3fv.sig = 'viiip';
   var _emscripten_glUniformMatrix3fv = _glUniformMatrix3fv;
   _emscripten_glUniformMatrix3fv.sig = 'viiip';
 
   
   
+  
   /** @suppress {duplicate } */
-  var _glUniformMatrix4fv = (location, count, transpose, value) => {
+  function _glUniformMatrix4fv(location, count, transpose, value) {
+    value = bigintToI53Checked(value);
+  
+  
   
       if (count <= 18) {
         // avoid allocation when uploading few enough uniforms
         var view = miniTempWebGLFloatBuffers[16*count];
         // hoist the heap out of the loop for size and for pthreads+growth.
         var heap = HEAPF32;
-        value = ((value)>>2);
+        value = ((value)/4);
         count *= 16;
         for (var i = 0; i < count; i += 16) {
           var dst = value + i;
@@ -13670,10 +14656,11 @@ async function createWasm() {
         }
       } else
       {
-        var view = HEAPF32.subarray((((value)>>2)), ((value+count*64)>>2));
+        var view = HEAPF32.subarray((((value)/4)), ((value+count*64)/4));
       }
       GLctx.uniformMatrix4fv(webglGetUniformLocation(location), !!transpose, view);
-    };
+    ;
+  }
   _glUniformMatrix4fv.sig = 'viiip';
   var _emscripten_glUniformMatrix4fv = _glUniformMatrix4fv;
   _emscripten_glUniformMatrix4fv.sig = 'viiip';
@@ -13704,11 +14691,16 @@ async function createWasm() {
   var _emscripten_glVertexAttrib1f = _glVertexAttrib1f;
   _emscripten_glVertexAttrib1f.sig = 'vif';
 
+  
   /** @suppress {duplicate } */
-  var _glVertexAttrib1fv = (index, v) => {
+  function _glVertexAttrib1fv(index, v) {
+    v = bigintToI53Checked(v);
+  
+  
   
       GLctx.vertexAttrib1f(index, HEAPF32[v>>2]);
-    };
+    ;
+  }
   _glVertexAttrib1fv.sig = 'vip';
   var _emscripten_glVertexAttrib1fv = _glVertexAttrib1fv;
   _emscripten_glVertexAttrib1fv.sig = 'vip';
@@ -13719,11 +14711,16 @@ async function createWasm() {
   var _emscripten_glVertexAttrib2f = _glVertexAttrib2f;
   _emscripten_glVertexAttrib2f.sig = 'viff';
 
+  
   /** @suppress {duplicate } */
-  var _glVertexAttrib2fv = (index, v) => {
+  function _glVertexAttrib2fv(index, v) {
+    v = bigintToI53Checked(v);
+  
+  
   
       GLctx.vertexAttrib2f(index, HEAPF32[v>>2], HEAPF32[v+4>>2]);
-    };
+    ;
+  }
   _glVertexAttrib2fv.sig = 'vip';
   var _emscripten_glVertexAttrib2fv = _glVertexAttrib2fv;
   _emscripten_glVertexAttrib2fv.sig = 'vip';
@@ -13734,11 +14731,16 @@ async function createWasm() {
   var _emscripten_glVertexAttrib3f = _glVertexAttrib3f;
   _emscripten_glVertexAttrib3f.sig = 'vifff';
 
+  
   /** @suppress {duplicate } */
-  var _glVertexAttrib3fv = (index, v) => {
+  function _glVertexAttrib3fv(index, v) {
+    v = bigintToI53Checked(v);
+  
+  
   
       GLctx.vertexAttrib3f(index, HEAPF32[v>>2], HEAPF32[v+4>>2], HEAPF32[v+8>>2]);
-    };
+    ;
+  }
   _glVertexAttrib3fv.sig = 'vip';
   var _emscripten_glVertexAttrib3fv = _glVertexAttrib3fv;
   _emscripten_glVertexAttrib3fv.sig = 'vip';
@@ -13749,11 +14751,16 @@ async function createWasm() {
   var _emscripten_glVertexAttrib4f = _glVertexAttrib4f;
   _emscripten_glVertexAttrib4f.sig = 'viffff';
 
+  
   /** @suppress {duplicate } */
-  var _glVertexAttrib4fv = (index, v) => {
+  function _glVertexAttrib4fv(index, v) {
+    v = bigintToI53Checked(v);
+  
+  
   
       GLctx.vertexAttrib4f(index, HEAPF32[v>>2], HEAPF32[v+4>>2], HEAPF32[v+8>>2], HEAPF32[v+12>>2]);
-    };
+    ;
+  }
   _glVertexAttrib4fv.sig = 'vip';
   var _emscripten_glVertexAttrib4fv = _glVertexAttrib4fv;
   _emscripten_glVertexAttrib4fv.sig = 'vip';
@@ -13768,10 +14775,15 @@ async function createWasm() {
   var _glVertexAttribDivisorANGLE = _glVertexAttribDivisor;
   var _emscripten_glVertexAttribDivisorANGLE = _glVertexAttribDivisorANGLE;
 
+  
   /** @suppress {duplicate } */
-  var _glVertexAttribPointer = (index, size, type, normalized, stride, ptr) => {
+  function _glVertexAttribPointer(index, size, type, normalized, stride, ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       GLctx.vertexAttribPointer(index, size, type, !!normalized, stride, ptr);
-    };
+    ;
+  }
   _glVertexAttribPointer.sig = 'viiiiip';
   var _emscripten_glVertexAttribPointer = _glVertexAttribPointer;
   _emscripten_glVertexAttribPointer.sig = 'viiiiip';
@@ -13782,7 +14794,12 @@ async function createWasm() {
   var _emscripten_glViewport = _glViewport;
   _emscripten_glViewport.sig = 'viiii';
 
-  var _emscripten_out = (str) => out(UTF8ToString(str));
+  
+  function _emscripten_out(str) {
+    str = bigintToI53Checked(str);
+  
+  return out(UTF8ToString(str));
+  }
   _emscripten_out.sig = 'vp';
 
   class HandleAllocator {
@@ -13816,18 +14833,29 @@ async function createWasm() {
       promiseInfo.id = promiseMap.allocate(promiseInfo);
       return promiseInfo;
     };
-  var _emscripten_promise_create = () => makePromise().id;
+  
+  var _emscripten_promise_create = () => BigInt(makePromise().id);;
   _emscripten_promise_create.sig = 'p';
 
-  var _emscripten_promise_destroy = (id) => {
+  
+  function _emscripten_promise_destroy(id) {
+    id = bigintToI53Checked(id);
+  
+  
       promiseMap.free(id);
-    };
+    ;
+  }
   _emscripten_promise_destroy.sig = 'vp';
 
   
   var getPromise = (id) => promiseMap.get(id).promise;
   
-  var _emscripten_promise_resolve = (id, result, value) => {
+  
+  function _emscripten_promise_resolve(id, result, value) {
+    id = bigintToI53Checked(id);
+    value = bigintToI53Checked(value);
+  
+  
       var info = promiseMap.get(id);
       switch (result) {
         case 0:
@@ -13844,7 +14872,8 @@ async function createWasm() {
           info.reject(value);
           return;
       }
-    };
+    ;
+  }
   _emscripten_promise_resolve.sig = 'vpip';
 
   
@@ -13854,7 +14883,7 @@ async function createWasm() {
       var pages = ((size - b.byteLength + 65535) / 65536) | 0;
       try {
         // round size grow request up to wasm page size (fixed 64KB per spec)
-        wasmMemory.grow(pages); // .grow() takes a delta compared to the previous size
+        wasmMemory.grow(BigInt(pages)); // .grow() takes a delta compared to the previous size
         updateMemoryViews();
         return 1 /*success*/;
       } catch(e) {
@@ -13862,10 +14891,12 @@ async function createWasm() {
       // implicit 0 return to save code size (caller will cast "undefined" into 0
       // anyhow)
     };
-  var _emscripten_resize_heap = (requestedSize) => {
+  
+  function _emscripten_resize_heap(requestedSize) {
+    requestedSize = bigintToI53Checked(requestedSize);
+  
+  
       var oldSize = HEAPU8.length;
-      // With CAN_ADDRESS_2GB or MEMORY64, pointers are already unsigned.
-      requestedSize >>>= 0;
       // With multithreaded builds, races can happen (another thread might increase the size
       // in between), so return a failure, and let the caller retry.
   
@@ -13910,7 +14941,8 @@ async function createWasm() {
         }
       }
       return false;
-    };
+    ;
+  }
   _emscripten_resize_heap.sig = 'ip';
 
   var maybeCStringToJsString = (cString) => {
@@ -13930,18 +14962,30 @@ async function createWasm() {
       return domElement;
     };
   var findCanvasEventTarget = findEventTarget;
-  var _emscripten_set_canvas_element_size = (target, width, height) => {
+  
+  function _emscripten_set_canvas_element_size(target, width, height) {
+    target = bigintToI53Checked(target);
+  
+  
       var canvas = findCanvasEventTarget(target);
       if (!canvas) return -4;
       canvas.width = width;
       canvas.height = height;
       return 0;
-    };
+    ;
+  }
   _emscripten_set_canvas_element_size.sig = 'ipii';
 
-  var _emscripten_wget_data = (url, pbuffer, pnum, perror) => {
+  function _emscripten_wget_data(url, pbuffer, pnum, perror) {
+    url = bigintToI53Checked(url);
+    pbuffer = bigintToI53Checked(pbuffer);
+    pnum = bigintToI53Checked(pnum);
+    perror = bigintToI53Checked(perror);
+  
+  
       throw 'Please compile your program with async support in order to use asynchronous operations like emscripten_wget_data';
-    };
+    ;
+  }
   _emscripten_wget_data.sig = 'vpppp';
 
   var ENV = {
@@ -13978,30 +15022,42 @@ async function createWasm() {
       return getEnvStrings.strings;
     };
   
-  var _environ_get = (__environ, environ_buf) => {
+  
+  function _environ_get(__environ, environ_buf) {
+    __environ = bigintToI53Checked(__environ);
+    environ_buf = bigintToI53Checked(environ_buf);
+  
+  
       var bufSize = 0;
       var envp = 0;
       for (var string of getEnvStrings()) {
         var ptr = environ_buf + bufSize;
-        HEAPU32[(((__environ)+(envp))>>2)] = ptr;
+        HEAPU64[(((__environ)+(envp))/8)] = BigInt(ptr);
         bufSize += stringToUTF8(string, ptr, Infinity) + 1;
-        envp += 4;
+        envp += 8;
       }
       return 0;
-    };
+    ;
+  }
   _environ_get.sig = 'ipp';
 
   
-  var _environ_sizes_get = (penviron_count, penviron_buf_size) => {
+  
+  function _environ_sizes_get(penviron_count, penviron_buf_size) {
+    penviron_count = bigintToI53Checked(penviron_count);
+    penviron_buf_size = bigintToI53Checked(penviron_buf_size);
+  
+  
       var strings = getEnvStrings();
-      HEAPU32[((penviron_count)>>2)] = strings.length;
+      HEAPU64[((penviron_count)/8)] = BigInt(strings.length);
       var bufSize = 0;
       for (var string of strings) {
         bufSize += lengthBytesUTF8(string) + 1;
       }
-      HEAPU32[((penviron_buf_size)>>2)] = bufSize;
+      HEAPU64[((penviron_buf_size)/8)] = BigInt(bufSize);
       return 0;
-    };
+    ;
+  }
   _environ_sizes_get.sig = 'ipp';
 
 
@@ -14018,7 +15074,11 @@ async function createWasm() {
   }
   _fd_close.sig = 'ii';
 
+  
   function _fd_fdstat_get(fd, pbuf) {
+    pbuf = bigintToI53Checked(pbuf);
+  
+  
   try {
   
       var rightsBase = 0;
@@ -14034,14 +15094,15 @@ async function createWasm() {
                    4;
       }
       HEAP8[pbuf] = type;
-      HEAP16[(((pbuf)+(2))>>1)] = flags;
-      HEAP64[(((pbuf)+(8))>>3)] = BigInt(rightsBase);
-      HEAP64[(((pbuf)+(16))>>3)] = BigInt(rightsInheriting);
+      HEAP16[(((pbuf)+(2))/2)] = flags;
+      HEAP64[(((pbuf)+(8))/8)] = BigInt(rightsBase);
+      HEAP64[(((pbuf)+(16))/8)] = BigInt(rightsInheriting);
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return e.errno;
   }
+  ;
   }
   _fd_fdstat_get.sig = 'iip';
 
@@ -14049,9 +15110,9 @@ async function createWasm() {
   var doReadv = (stream, iov, iovcnt, offset) => {
       var ret = 0;
       for (var i = 0; i < iovcnt; i++) {
-        var ptr = HEAPU32[((iov)>>2)];
-        var len = HEAPU32[(((iov)+(4))>>2)];
-        iov += 8;
+        var ptr = Number(HEAPU64[((iov)/8)]);
+        var len = Number(HEAPU64[(((iov)+(8))/8)]);
+        iov += 16;
         var curr = FS.read(stream, HEAP8, ptr, len, offset);
         if (curr < 0) return -1;
         ret += curr;
@@ -14065,7 +15126,10 @@ async function createWasm() {
   
   
   function _fd_pread(fd, iov, iovcnt, offset, pnum) {
+    iov = bigintToI53Checked(iov);
+    iovcnt = bigintToI53Checked(iovcnt);
     offset = bigintToI53Checked(offset);
+    pnum = bigintToI53Checked(pnum);
   
   
   try {
@@ -14073,7 +15137,7 @@ async function createWasm() {
       if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd)
       var num = doReadv(stream, iov, iovcnt, offset);
-      HEAPU32[((pnum)>>2)] = num;
+      HEAPU64[((pnum)/8)] = BigInt(num);
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
@@ -14087,9 +15151,9 @@ async function createWasm() {
   var doWritev = (stream, iov, iovcnt, offset) => {
       var ret = 0;
       for (var i = 0; i < iovcnt; i++) {
-        var ptr = HEAPU32[((iov)>>2)];
-        var len = HEAPU32[(((iov)+(4))>>2)];
-        iov += 8;
+        var ptr = Number(HEAPU64[((iov)/8)]);
+        var len = Number(HEAPU64[(((iov)+(8))/8)]);
+        iov += 16;
         var curr = FS.write(stream, HEAP8, ptr, len, offset);
         if (curr < 0) return -1;
         ret += curr;
@@ -14106,7 +15170,10 @@ async function createWasm() {
   
   
   function _fd_pwrite(fd, iov, iovcnt, offset, pnum) {
+    iov = bigintToI53Checked(iov);
+    iovcnt = bigintToI53Checked(iovcnt);
     offset = bigintToI53Checked(offset);
+    pnum = bigintToI53Checked(pnum);
   
   
   try {
@@ -14114,7 +15181,7 @@ async function createWasm() {
       if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd)
       var num = doWritev(stream, iov, iovcnt, offset);
-      HEAPU32[((pnum)>>2)] = num;
+      HEAPU64[((pnum)/8)] = BigInt(num);
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
@@ -14125,23 +15192,31 @@ async function createWasm() {
   _fd_pwrite.sig = 'iippjp';
 
   
+  
   function _fd_read(fd, iov, iovcnt, pnum) {
+    iov = bigintToI53Checked(iov);
+    iovcnt = bigintToI53Checked(iovcnt);
+    pnum = bigintToI53Checked(pnum);
+  
+  
   try {
   
       var stream = SYSCALLS.getStreamFromFD(fd);
       var num = doReadv(stream, iov, iovcnt);
-      HEAPU32[((pnum)>>2)] = num;
+      HEAPU64[((pnum)/8)] = BigInt(num);
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return e.errno;
   }
+  ;
   }
   _fd_read.sig = 'iippp';
 
   
   function _fd_seek(fd, offset, whence, newOffset) {
     offset = bigintToI53Checked(offset);
+    newOffset = bigintToI53Checked(newOffset);
   
   
   try {
@@ -14149,7 +15224,7 @@ async function createWasm() {
       if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd);
       FS.llseek(stream, offset, whence);
-      HEAP64[((newOffset)>>3)] = BigInt(stream.position);
+      HEAP64[((newOffset)/8)] = BigInt(stream.position);
       if (stream.getdents && offset === 0 && whence === 0) stream.getdents = null; // reset readdir state
       return 0;
     } catch (e) {
@@ -14176,23 +15251,36 @@ async function createWasm() {
   _fd_sync.sig = 'ii';
 
   
+  
   function _fd_write(fd, iov, iovcnt, pnum) {
+    iov = bigintToI53Checked(iov);
+    iovcnt = bigintToI53Checked(iovcnt);
+    pnum = bigintToI53Checked(pnum);
+  
+  
   try {
   
       var stream = SYSCALLS.getStreamFromFD(fd);
       var num = doWritev(stream, iov, iovcnt);
-      HEAPU32[((pnum)>>2)] = num;
+      HEAPU64[((pnum)/8)] = BigInt(num);
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return e.errno;
   }
+  ;
   }
   _fd_write.sig = 'iippp';
 
   
   
-  var _getnameinfo = (sa, salen, node, nodelen, serv, servlen, flags) => {
+  
+  function _getnameinfo(sa, salen, node, nodelen, serv, servlen, flags) {
+    sa = bigintToI53Checked(sa);
+    node = bigintToI53Checked(node);
+    serv = bigintToI53Checked(serv);
+  
+  
       var info = readSockaddr(sa, salen);
       if (info.errno) {
         return -6;
@@ -14233,11 +15321,17 @@ async function createWasm() {
       }
   
       return 0;
-    };
+    ;
+  }
   _getnameinfo.sig = 'ipipipii';
 
 
+  
   function _random_get(buffer, size) {
+    buffer = bigintToI53Checked(buffer);
+    size = bigintToI53Checked(size);
+  
+  
   try {
   
       randomFill(HEAPU8.subarray(buffer, buffer + size));
@@ -14246,6 +15340,7 @@ async function createWasm() {
     if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
     return e.errno;
   }
+  ;
   }
   _random_get.sig = 'ipp';
 
@@ -14257,11 +15352,11 @@ async function createWasm() {
 
   var writeI53ToI64Clamped = (ptr, num) => {
       if (num > 0x7FFFFFFFFFFFFFFF) {
-        HEAPU32[((ptr)>>2)] = 4294967295;
-        HEAPU32[(((ptr)+(4))>>2)] = 2147483647;
+        HEAPU32[((ptr)/4)] = 4294967295;
+        HEAPU32[(((ptr)+(4))/4)] = 2147483647;
       } else if (num < -0x8000000000000000) {
-        HEAPU32[((ptr)>>2)] = 0;
-        HEAPU32[(((ptr)+(4))>>2)] = 2147483648;
+        HEAPU32[((ptr)/4)] = 0;
+        HEAPU32[(((ptr)+(4))/4)] = 2147483648;
       } else {
         writeI53ToI64(ptr, num);
       }
@@ -14276,11 +15371,11 @@ async function createWasm() {
 
   var writeI53ToU64Clamped = (ptr, num) => {
       if (num > 0xFFFFFFFFFFFFFFFF) {
-        HEAPU32[((ptr)>>2)] = 4294967295;
-        HEAPU32[(((ptr)+(4))>>2)] = 4294967295;
+        HEAPU32[((ptr)/4)] = 4294967295;
+        HEAPU32[(((ptr)+(4))/4)] = 4294967295;
       } else if (num < 0) {
-        HEAPU32[((ptr)>>2)] = 0;
-        HEAPU32[(((ptr)+(4))>>2)] = 0;
+        HEAPU32[((ptr)/4)] = 0;
+        HEAPU32[(((ptr)+(4))/4)] = 0;
       } else {
         writeI53ToI64(ptr, num);
       }
@@ -14295,7 +15390,7 @@ async function createWasm() {
 
 
   var readI53FromU64 = (ptr) => {
-      return HEAPU32[((ptr)>>2)] + HEAPU32[(((ptr)+(4))>>2)] * 4294967296;
+      return HEAPU32[((ptr)/4)] + HEAPU32[(((ptr)+(4))/4)] * 4294967296;
     };
 
   var convertI32PairToI53 = (lo, hi) => {
@@ -14329,8 +15424,6 @@ async function createWasm() {
 
 
   var ptrToString = (ptr) => {
-      // With CAN_ADDRESS_2GB or MEMORY64, pointers are already unsigned.
-      ptr >>>= 0;
       return '0x' + ptr.toString(16).padStart(8, '0');
     };
 
@@ -14341,9 +15434,13 @@ async function createWasm() {
 
 
 
-  var _emscripten_notify_memory_growth = (memoryIndex) => {
+  function _emscripten_notify_memory_growth(memoryIndex) {
+    memoryIndex = bigintToI53Checked(memoryIndex);
+  
+  
       updateMemoryViews();
-    };
+    ;
+  }
   _emscripten_notify_memory_growth.sig = 'vp';
 
 
@@ -14503,7 +15600,14 @@ async function createWasm() {
   
   
   
-  var _getaddrinfo = (node, service, hint, out) => {
+  
+  function _getaddrinfo(node, service, hint, out) {
+    node = bigintToI53Checked(node);
+    service = bigintToI53Checked(service);
+    hint = bigintToI53Checked(hint);
+    out = bigintToI53Checked(out);
+  
+  
       // Note getaddrinfo currently only returns a single addrinfo with ai_next defaulting to NULL. When NULL
       // hints are specified or ai_family set to AF_UNSPEC or ai_socktype or ai_protocol set to 0 then we
       // really should provide a linked list of suitable addrinfo values.
@@ -14531,27 +15635,27 @@ async function createWasm() {
         errno = writeSockaddr(sa, family, addr, port);
         assert(!errno);
   
-        ai = _malloc(32);
-        HEAP32[(((ai)+(4))>>2)] = family;
-        HEAP32[(((ai)+(8))>>2)] = type;
-        HEAP32[(((ai)+(12))>>2)] = proto;
-        HEAPU32[(((ai)+(24))>>2)] = canon;
-        HEAPU32[(((ai)+(20))>>2)] = sa;
+        ai = _malloc(48);
+        HEAP32[(((ai)+(4))/4)] = family;
+        HEAP32[(((ai)+(8))/4)] = type;
+        HEAP32[(((ai)+(12))/4)] = proto;
+        HEAPU64[(((ai)+(32))/8)] = BigInt(canon);
+        HEAPU64[(((ai)+(24))/8)] = BigInt(sa);
         if (family === 10) {
-          HEAP32[(((ai)+(16))>>2)] = 28;
+          HEAP32[(((ai)+(16))/4)] = 28;
         } else {
-          HEAP32[(((ai)+(16))>>2)] = 16;
+          HEAP32[(((ai)+(16))/4)] = 16;
         }
-        HEAP32[(((ai)+(28))>>2)] = 0;
+        HEAP32[(((ai)+(40))/4)] = 0;
   
         return ai;
       }
   
       if (hint) {
-        flags = HEAP32[((hint)>>2)];
-        family = HEAP32[(((hint)+(4))>>2)];
-        type = HEAP32[(((hint)+(8))>>2)];
-        proto = HEAP32[(((hint)+(12))>>2)];
+        flags = HEAP32[((hint)/4)];
+        family = HEAP32[(((hint)+(4))/4)];
+        type = HEAP32[(((hint)+(8))/4)];
+        proto = HEAP32[(((hint)+(12))/4)];
       }
       if (type && !proto) {
         proto = type === 2 ? 17 : 6;
@@ -14576,7 +15680,7 @@ async function createWasm() {
           1024|8|16|32)) {
         return -1;
       }
-      if (hint !== 0 && (HEAP32[((hint)>>2)] & 2) && !node) {
+      if (hint !== 0 && (HEAP32[((hint)/4)] & 2) && !node) {
         return -1;
       }
       if (flags & 32) {
@@ -14616,7 +15720,7 @@ async function createWasm() {
           }
         }
         ai = allocaddrinfo(family, type, proto, null, addr, port);
-        HEAPU32[((out)>>2)] = ai;
+        HEAPU64[((out)/8)] = BigInt(ai);
         return 0;
       }
   
@@ -14649,7 +15753,7 @@ async function createWasm() {
       }
       if (addr != null) {
         ai = allocaddrinfo(family, type, proto, node, addr, port);
-        HEAPU32[((out)>>2)] = ai;
+        HEAPU64[((out)/8)] = BigInt(ai);
         return 0;
       }
       if (flags & 4) {
@@ -14668,9 +15772,10 @@ async function createWasm() {
         addr = [0, 0, _htonl(0xffff), addr];
       }
       ai = allocaddrinfo(family, type, proto, null, addr, port);
-      HEAPU32[((out)>>2)] = ai;
+      HEAPU64[((out)/8)] = BigInt(ai);
       return 0;
-    };
+    ;
+  }
   _getaddrinfo.sig = 'ipppp';
 
 
@@ -14707,15 +15812,15 @@ async function createWasm() {
           var alias = aliases[i];
           var aliasBuf = _malloc(alias.length + 1);
           stringToAscii(alias, aliasBuf);
-          HEAPU32[(((aliasListBuf)+(j))>>2)] = aliasBuf;
+          HEAPU64[(((aliasListBuf)+(j))/8)] = BigInt(aliasBuf);
         }
-        HEAPU32[(((aliasListBuf)+(j))>>2)] = 0; // Terminating NULL pointer.
+        HEAPU64[(((aliasListBuf)+(j))/8)] = BigInt(0); // Terminating NULL pointer.
   
         // generate protoent
-        var pe = _malloc(12);
-        HEAPU32[((pe)>>2)] = nameBuf;
-        HEAPU32[(((pe)+(4))>>2)] = aliasListBuf;
-        HEAP32[(((pe)+(8))>>2)] = proto;
+        var pe = _malloc(24);
+        HEAPU64[((pe)/8)] = BigInt(nameBuf);
+        HEAPU64[(((pe)+(8))/8)] = BigInt(aliasListBuf);
+        HEAP32[(((pe)+(16))/4)] = proto;
         return pe;
       };
   
@@ -14743,7 +15848,10 @@ async function createWasm() {
   _endprotoent.sig = 'v';
 
   
-  var _getprotoent = (number) => {
+  
+  var _getprotoent = function(number) {
+  
+  var ret = (() => { 
       // struct protoent *getprotoent(void);
       // reads the  next  entry  from  the  protocols 'database' or return NULL if 'eof'
       if (_setprotoent.index === Protocols.list.length) {
@@ -14751,27 +15859,40 @@ async function createWasm() {
       }
       var result = Protocols.list[_setprotoent.index++];
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   _getprotoent.sig = 'p';
 
   
   
-  var _getprotobyname = (name) => {
+  
+  var _getprotobyname = function(name) {
+    name = bigintToI53Checked(name);
+  
+  var ret = (() => { 
       // struct protoent *getprotobyname(const char *);
       name = UTF8ToString(name);
       _setprotoent(true);
       var result = Protocols.map[name];
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   _getprotobyname.sig = 'pp';
 
   
-  var _getprotobynumber = (number) => {
+  
+  var _getprotobynumber = function(number) {
+  
+  var ret = (() => { 
       // struct protoent *getprotobynumber(int proto);
       _setprotoent(true);
       var result = Protocols.map[number];
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   _getprotobynumber.sig = 'pi';
 
   var Sockets = {
@@ -14794,21 +15915,35 @@ async function createWasm() {
 
 
 
-  var _emscripten_run_script = (ptr) => {
+  
+  function _emscripten_run_script(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       eval(UTF8ToString(ptr));
-    };
+    ;
+  }
   _emscripten_run_script.sig = 'vp';
 
+  
   /** @suppress{checkTypes} */
-  var _emscripten_run_script_int = (ptr) => {
+  function _emscripten_run_script_int(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       return eval(UTF8ToString(ptr))|0;
-    };
+    ;
+  }
   _emscripten_run_script_int.sig = 'ip';
 
   
   
   
-  var _emscripten_run_script_string = (ptr) => {
+  
+  var _emscripten_run_script_string = function(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  var ret = (() => { 
       var s = eval(UTF8ToString(ptr));
       if (s == null) {
         return 0;
@@ -14823,7 +15958,9 @@ async function createWasm() {
       }
       stringToUTF8(s, me.buffer, me.bufferSize);
       return me.buffer;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_run_script_string.sig = 'pp';
 
   var _emscripten_random = () => Math.random();
@@ -14995,15 +16132,15 @@ async function createWasm() {
         var ret;
         argIndex = prepVararg(argIndex, type);
         if (type === 'double') {
-          ret = HEAPF64[((argIndex)>>3)];
+          ret = HEAPF64[((argIndex)/8)];
           argIndex += 8;
         } else if (type == 'i64') {
-          ret = [HEAP32[((argIndex)>>2)],
-                 HEAP32[(((argIndex)+(4))>>2)]];
+          ret = [HEAP32[((argIndex)/4)],
+                 HEAP32[(((argIndex)+(4))/4)]];
           argIndex += 8;
         } else {
           type = 'i32'; // varargs are always i32, i64, or double
-          ret = HEAP32[((argIndex)>>2)];
+          ret = HEAP32[((argIndex)/4)];
           argIndex += 4;
         }
         return ret;
@@ -15348,7 +16485,7 @@ async function createWasm() {
             case 'n': {
               // Write the length written so far to the next parameter.
               var ptr = getNextArg('i32*');
-              HEAP32[((ptr)>>2)] = ret.length;
+              HEAP32[((ptr)/4)] = ret.length;
               break;
             }
             case '%': {
@@ -15374,16 +16511,27 @@ async function createWasm() {
       return ret;
     };
   
-  var _emscripten_log = (flags, format, varargs) => {
+  
+  function _emscripten_log(flags, format, varargs) {
+    format = bigintToI53Checked(format);
+    varargs = bigintToI53Checked(varargs);
+  
+  
       var result = formatString(format, varargs);
       var str = UTF8ArrayToString(result);
       emscriptenLog(flags, str);
-    };
+    ;
+  }
   _emscripten_log.sig = 'vipp';
 
-  var _emscripten_get_compiler_setting = (name) => {
+  var _emscripten_get_compiler_setting = function(name) {
+    name = bigintToI53Checked(name);
+  
+  var ret = (() => { 
       throw 'You must build with -sRETAIN_COMPILER_SETTINGS for getCompilerSetting or emscripten_get_compiler_setting to work';
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_get_compiler_setting.sig = 'pp';
 
   var _emscripten_has_asyncify = () => 0;
@@ -15393,25 +16541,45 @@ async function createWasm() {
   _emscripten_debugger.sig = 'v';
 
   
-  var _emscripten_print_double = (x, to, max) => {
+  
+  function _emscripten_print_double(x, to, max) {
+    to = bigintToI53Checked(to);
+  
+  
       var str = x + '';
       if (to) return stringToUTF8(str, to, max);
       else return lengthBytesUTF8(str);
-    };
+    ;
+  }
   _emscripten_print_double.sig = 'idpi';
 
 
 
 
 
-  var _emscripten_asm_const_double = (code, sigPtr, argbuf) => {
+  
+  function _emscripten_asm_const_double(code, sigPtr, argbuf) {
+    code = bigintToI53Checked(code);
+    sigPtr = bigintToI53Checked(sigPtr);
+    argbuf = bigintToI53Checked(argbuf);
+  
+  
       return runEmAsmFunction(code, sigPtr, argbuf);
-    };
+    ;
+  }
   _emscripten_asm_const_double.sig = 'dppp';
 
-  var _emscripten_asm_const_ptr = (code, sigPtr, argbuf) => {
+  
+  var _emscripten_asm_const_ptr = function(code, sigPtr, argbuf) {
+    code = bigintToI53Checked(code);
+    sigPtr = bigintToI53Checked(sigPtr);
+    argbuf = bigintToI53Checked(argbuf);
+  
+  var ret = (() => { 
       return runEmAsmFunction(code, sigPtr, argbuf);
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_asm_const_ptr.sig = 'pppp';
 
   var runMainThreadEmAsm = (emAsmAddr, sigPtr, argbuf, sync) => {
@@ -15419,77 +16587,113 @@ async function createWasm() {
       return ASM_CONSTS[emAsmAddr](...args);
     };
 
-  var _emscripten_asm_const_int_sync_on_main_thread = (emAsmAddr, sigPtr, argbuf) => runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 1);
+  
+  function _emscripten_asm_const_int_sync_on_main_thread(emAsmAddr, sigPtr, argbuf) {
+    emAsmAddr = bigintToI53Checked(emAsmAddr);
+    sigPtr = bigintToI53Checked(sigPtr);
+    argbuf = bigintToI53Checked(argbuf);
+  
+  return runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 1);
+  }
   _emscripten_asm_const_int_sync_on_main_thread.sig = 'ippp';
 
-  var _emscripten_asm_const_ptr_sync_on_main_thread = (emAsmAddr, sigPtr, argbuf) => runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 1);
+  
+  var _emscripten_asm_const_ptr_sync_on_main_thread = (emAsmAddr, sigPtr, argbuf) => {
+    emAsmAddr = bigintToI53Checked(emAsmAddr);
+    sigPtr = bigintToI53Checked(sigPtr);
+    argbuf = bigintToI53Checked(argbuf);
+  
+  return BigInt(runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 1));
+  };
   _emscripten_asm_const_ptr_sync_on_main_thread.sig = 'pppp';
 
   var _emscripten_asm_const_double_sync_on_main_thread = _emscripten_asm_const_int_sync_on_main_thread;
   _emscripten_asm_const_double_sync_on_main_thread.sig = 'dppp';
 
-  var _emscripten_asm_const_async_on_main_thread = (emAsmAddr, sigPtr, argbuf) => runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 0);
+  
+  function _emscripten_asm_const_async_on_main_thread(emAsmAddr, sigPtr, argbuf) {
+    emAsmAddr = bigintToI53Checked(emAsmAddr);
+    sigPtr = bigintToI53Checked(sigPtr);
+    argbuf = bigintToI53Checked(argbuf);
+  
+  return runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 0);
+  }
   _emscripten_asm_const_async_on_main_thread.sig = 'vppp';
 
 
   var jstoi_s = Number;
 
   
-  var __Unwind_Backtrace = (func, arg) => {
+  
+  function __Unwind_Backtrace(func, arg) {
+    func = bigintToI53Checked(func);
+    arg = bigintToI53Checked(arg);
+  
+  
       var trace = getCallstack();
       var parts = trace.split('\n');
       for (var i = 0; i < parts.length; i++) {
         var ret = getWasmTableEntry(func)(0, arg);
         if (ret !== 0) return;
       }
-    };
+    ;
+  }
   __Unwind_Backtrace.sig = 'ipp';
 
-  var __Unwind_GetIPInfo = (context, ipBefore) => abort('Unwind_GetIPInfo');
+  var __Unwind_GetIPInfo = (context, ipBefore) => {
+    context = bigintToI53Checked(context);
+    ipBefore = bigintToI53Checked(ipBefore);
+  
+  return BigInt(abort('Unwind_GetIPInfo'));
+  };
   __Unwind_GetIPInfo.sig = 'ppp';
 
-  var __Unwind_FindEnclosingFunction = (ip) => 0;
+  var __Unwind_FindEnclosingFunction = (ip) => {
+    ip = bigintToI53Checked(ip);
+  
+  return BigInt(0);
+  };
   __Unwind_FindEnclosingFunction.sig = 'pp';
 
   class ExceptionInfo {
       // excPtr - Thrown object pointer to wrap. Metadata pointer is calculated from it.
       constructor(excPtr) {
         this.excPtr = excPtr;
-        this.ptr = excPtr - 24;
+        this.ptr = excPtr - 48;
       }
   
       set_type(type) {
-        HEAPU32[(((this.ptr)+(4))>>2)] = type;
+        HEAPU64[(((this.ptr)+(8))/8)] = BigInt(type);
       }
   
       get_type() {
-        return HEAPU32[(((this.ptr)+(4))>>2)];
+        return Number(HEAPU64[(((this.ptr)+(8))/8)]);
       }
   
       set_destructor(destructor) {
-        HEAPU32[(((this.ptr)+(8))>>2)] = destructor;
+        HEAPU64[(((this.ptr)+(16))/8)] = BigInt(destructor);
       }
   
       get_destructor() {
-        return HEAPU32[(((this.ptr)+(8))>>2)];
+        return Number(HEAPU64[(((this.ptr)+(16))/8)]);
       }
   
       set_caught(caught) {
         caught = caught ? 1 : 0;
-        HEAP8[(this.ptr)+(12)] = caught;
+        HEAP8[(this.ptr)+(24)] = caught;
       }
   
       get_caught() {
-        return HEAP8[(this.ptr)+(12)] != 0;
+        return HEAP8[(this.ptr)+(24)] != 0;
       }
   
       set_rethrown(rethrown) {
         rethrown = rethrown ? 1 : 0;
-        HEAP8[(this.ptr)+(13)] = rethrown;
+        HEAP8[(this.ptr)+(25)] = rethrown;
       }
   
       get_rethrown() {
-        return HEAP8[(this.ptr)+(13)] != 0;
+        return HEAP8[(this.ptr)+(25)] != 0;
       }
   
       // Initialize native structure fields. Should be called once after allocated.
@@ -15500,33 +16704,49 @@ async function createWasm() {
       }
   
       set_adjusted_ptr(adjustedPtr) {
-        HEAPU32[(((this.ptr)+(16))>>2)] = adjustedPtr;
+        HEAPU64[(((this.ptr)+(32))/8)] = BigInt(adjustedPtr);
       }
   
       get_adjusted_ptr() {
-        return HEAPU32[(((this.ptr)+(16))>>2)];
+        return Number(HEAPU64[(((this.ptr)+(32))/8)]);
       }
     }
   
   var exceptionLast = 0;
   
   var uncaughtExceptionCount = 0;
-  var ___cxa_throw = (ptr, type, destructor) => {
+  
+  function ___cxa_throw(ptr, type, destructor) {
+    ptr = bigintToI53Checked(ptr);
+    type = bigintToI53Checked(type);
+    destructor = bigintToI53Checked(destructor);
+  
+  
       var info = new ExceptionInfo(ptr);
       // Initialize ExceptionInfo content after it was allocated in __cxa_allocate_exception.
       info.init(type, destructor);
       exceptionLast = ptr;
       uncaughtExceptionCount++;
       throw exceptionLast;
-    };
+    ;
+  }
   ___cxa_throw.sig = 'vppp';
-  var __Unwind_RaiseException = (ex) => {
+  
+  function __Unwind_RaiseException(ex) {
+    ex = bigintToI53Checked(ex);
+  
+  
       err('Warning: _Unwind_RaiseException is not correctly implemented');
       return ___cxa_throw(ex, 0, 0);
-    };
+    ;
+  }
   __Unwind_RaiseException.sig = 'ip';
 
-  var __Unwind_DeleteException = (ex) => err('TODO: Unwind_DeleteException');
+  function __Unwind_DeleteException(ex) {
+    ex = bigintToI53Checked(ex);
+  
+  return err('TODO: Unwind_DeleteException');
+  }
   __Unwind_DeleteException.sig = 'vp';
 
 
@@ -15556,11 +16776,23 @@ async function createWasm() {
   _emscripten_force_exit.sig = 'vi';
 
 
-  var _emscripten_outn = (str, len) => out(UTF8ToString(str, len));
+  
+  function _emscripten_outn(str, len) {
+    str = bigintToI53Checked(str);
+    len = bigintToI53Checked(len);
+  
+  return out(UTF8ToString(str, len));
+  }
   _emscripten_outn.sig = 'vpp';
 
 
-  var _emscripten_errn = (str, len) => err(UTF8ToString(str, len));
+  
+  function _emscripten_errn(str, len) {
+    str = bigintToI53Checked(str);
+    len = bigintToI53Checked(len);
+  
+  return err(UTF8ToString(str, len));
+  }
   _emscripten_errn.sig = 'vpp';
 
 
@@ -15573,9 +16805,14 @@ async function createWasm() {
     };
   _emscripten_throw_number.sig = 'vd';
 
-  var _emscripten_throw_string = (str) => {
+  
+  function _emscripten_throw_string(str) {
+    str = bigintToI53Checked(str);
+  
+  
       throw UTF8ToString(str);
-    };
+    ;
+  }
   _emscripten_throw_string.sig = 'vp';
 
 
@@ -15618,28 +16855,34 @@ async function createWasm() {
 
 
 
+
   var ___global_base = 1024;
 
   
   
-  var __emscripten_fs_load_embedded_files = (ptr) => {
+  
+  function __emscripten_fs_load_embedded_files(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       do {
-        var name_addr = HEAPU32[((ptr)>>2)];
-        ptr += 4;
-        var len = HEAPU32[((ptr)>>2)];
-        ptr += 4;
-        var content = HEAPU32[((ptr)>>2)];
-        ptr += 4;
+        var name_addr = Number(HEAPU64[((ptr)/8)]);
+        ptr += 8;
+        var len = Number(HEAPU64[((ptr)/8)]);
+        ptr += 8;
+        var content = Number(HEAPU64[((ptr)/8)]);
+        ptr += 8;
         var name = UTF8ToString(name_addr)
         FS.createPath('/', PATH.dirname(name), true, true);
         // canOwn this data in the filesystem, it is a slice of wasm memory that will never change
         FS.createDataFile(name, null, HEAP8.subarray(content, content + len), true, true, true);
-      } while (HEAPU32[((ptr)>>2)]);
-    };
+      } while (Number(HEAPU64[((ptr)/8)]));
+    ;
+  }
   __emscripten_fs_load_embedded_files.sig = 'vp';
 
 
-  var POINTER_SIZE = 4;
+  var POINTER_SIZE = 8;
   function getNativeTypeSize(type) {
     // prettier-ignore
     switch (type) {
@@ -15714,24 +16957,26 @@ async function createWasm() {
   var ccall = (ident, returnType, argTypes, args, opts) => {
       // For fast lookup of conversion functions
       var toC = {
+        'pointer': (p) => BigInt(p),
         'string': (str) => {
           var ret = 0;
           if (str !== null && str !== undefined && str !== 0) { // null string
             ret = stringToUTF8OnStack(str);
           }
-          return ret;
+          return BigInt(ret);
         },
         'array': (arr) => {
           var ret = stackAlloc(arr.length);
           writeArrayToMemory(arr, ret);
-          return ret;
+          return BigInt(ret);
         }
       };
   
       function convertReturnValue(ret) {
         if (returnType === 'string') {
-          return UTF8ToString(ret);
+          return UTF8ToString(Number(ret));
         }
+        if (returnType === 'pointer') return Number(ret);
         if (returnType === 'boolean') return Boolean(ret);
         return ret;
       }
@@ -15871,13 +17116,17 @@ async function createWasm() {
   var _emscripten_math_cosh = Math.cosh;
   _emscripten_math_cosh.sig = 'dd';
 
-  var _emscripten_math_hypot = (count, varargs) => {
+  function _emscripten_math_hypot(count, varargs) {
+    varargs = bigintToI53Checked(varargs);
+  
+  
       var args = [];
       for (var i = 0; i < count; ++i) {
-        args.push(HEAPF64[(((varargs)+(i * 8))>>3)]);
+        args.push(HEAPF64[(((varargs)+(i * 8))/8)]);
       }
       return Math.hypot(...args);
-    };
+    ;
+  }
   _emscripten_math_hypot.sig = 'dip';
 
   var _emscripten_math_sin = Math.sin;
@@ -15948,7 +17197,7 @@ async function createWasm() {
       // for-loop's condition will always evaluate to true. The loop is then
       // terminated on the first null char.
       for (var i = 0; !(i >= maxBytesToRead / 2); ++i) {
-        var codeUnit = HEAP16[(((ptr)+(i*2))>>1)];
+        var codeUnit = HEAP16[(((ptr)+(i*2))/2)];
         if (codeUnit == 0) break;
         // fromCharCode constructs a character from a UTF-16 code unit, so we can
         // pass the UTF16 string right through.
@@ -15968,11 +17217,11 @@ async function createWasm() {
       for (var i = 0; i < numCharsToWrite; ++i) {
         // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
         var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
-        HEAP16[((outPtr)>>1)] = codeUnit;
+        HEAP16[((outPtr)/2)] = codeUnit;
         outPtr += 2;
       }
       // Null-terminate the pointer to the HEAP.
-      HEAP16[((outPtr)>>1)] = 0;
+      HEAP16[((outPtr)/2)] = 0;
       return outPtr - startPtr;
     };
 
@@ -15985,7 +17234,7 @@ async function createWasm() {
       // If maxBytesToRead is not passed explicitly, it will be undefined, and this
       // will always evaluate to true. This saves on code size.
       while (!(i >= maxBytesToRead / 4)) {
-        var utf32 = HEAP32[(((ptr)+(i*4))>>2)];
+        var utf32 = HEAP32[(((ptr)+(i*4))/4)];
         if (utf32 == 0) break;
         ++i;
         // Gotcha: fromCharCode constructs a character from a UTF-16 encoded code (pair), not from a Unicode code point! So encode the code point to UTF-16 for constructing.
@@ -16014,12 +17263,12 @@ async function createWasm() {
           var trailSurrogate = str.charCodeAt(++i);
           codeUnit = 0x10000 + ((codeUnit & 0x3FF) << 10) | (trailSurrogate & 0x3FF);
         }
-        HEAP32[((outPtr)>>2)] = codeUnit;
+        HEAP32[((outPtr)/4)] = codeUnit;
         outPtr += 4;
         if (outPtr + 4 > endPtr) break;
       }
       // Null-terminate the pointer to the HEAP.
-      HEAP32[((outPtr)>>2)] = 0;
+      HEAP32[((outPtr)/4)] = 0;
       return outPtr - startPtr;
     };
 
@@ -16154,9 +17403,6 @@ async function createWasm() {
       },
   fullscreenEnabled() {
         return document.fullscreenEnabled
-        // Safari 13.0.3 on macOS Catalina 10.15.1 still ships with prefixed webkitFullscreenEnabled.
-        // TODO: If Safari at some point ships with unprefixed version, update the version check above.
-        || document.webkitFullscreenEnabled
          ;
       },
   };
@@ -16171,9 +17417,9 @@ async function createWasm() {
       var keyEventHandlerFunc = (e) => {
   
         var keyEventData = JSEvents.keyEvent;
-        HEAPF64[((keyEventData)>>3)] = e.timeStamp;
+        HEAPF64[((keyEventData)/8)] = e.timeStamp;
   
-        var idx = ((keyEventData)>>2);
+        var idx = ((keyEventData)/4);
   
         HEAP32[idx + 2] = e.location;
         HEAP8[keyEventData + 12] = e.ctrlKey;
@@ -16189,7 +17435,7 @@ async function createWasm() {
         stringToUTF8(e.char || '', keyEventData + 96, 32);
         stringToUTF8(e.locale || '', keyEventData + 128, 32);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, keyEventData, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, keyEventData, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16206,23 +17452,44 @@ async function createWasm() {
 
 
 
-  var _emscripten_set_keypress_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerKeyEventCallback(target, userData, useCapture, callbackfunc, 1, "keypress", targetThread);
+  
+  function _emscripten_set_keypress_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerKeyEventCallback(target, userData, useCapture, callbackfunc, 1, "keypress", targetThread);
+  }
   _emscripten_set_keypress_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_keydown_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerKeyEventCallback(target, userData, useCapture, callbackfunc, 2, "keydown", targetThread);
+  
+  function _emscripten_set_keydown_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerKeyEventCallback(target, userData, useCapture, callbackfunc, 2, "keydown", targetThread);
+  }
   _emscripten_set_keydown_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_keyup_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerKeyEventCallback(target, userData, useCapture, callbackfunc, 3, "keyup", targetThread);
+  
+  function _emscripten_set_keyup_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerKeyEventCallback(target, userData, useCapture, callbackfunc, 3, "keyup", targetThread);
+  }
   _emscripten_set_keyup_callback_on_thread.sig = 'ippipp';
 
   var getBoundingClientRect = (e) => specialHTMLTargets.indexOf(e) < 0 ? e.getBoundingClientRect() : {'left':0,'top':0};
 
   var fillMouseEventData = (eventStruct, e, target) => {
-      HEAPF64[((eventStruct)>>3)] = e.timeStamp;
-      var idx = ((eventStruct)>>2);
+      HEAPF64[((eventStruct)/8)] = e.timeStamp;
+      var idx = ((eventStruct)/4);
       HEAP32[idx + 2] = e.screenX;
       HEAP32[idx + 3] = e.screenY;
       HEAP32[idx + 4] = e.clientX;
@@ -16258,7 +17525,7 @@ async function createWasm() {
         // TODO: Make this access thread safe, or this could update live while app is reading it.
         fillMouseEventData(JSEvents.mouseEvent, e, target);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, JSEvents.mouseEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, JSEvents.mouseEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16272,50 +17539,118 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_click_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 4, "click", targetThread);
+  
+  function _emscripten_set_click_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 4, "click", targetThread);
+  }
   _emscripten_set_click_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mousedown_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 5, "mousedown", targetThread);
+  
+  function _emscripten_set_mousedown_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 5, "mousedown", targetThread);
+  }
   _emscripten_set_mousedown_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mouseup_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 6, "mouseup", targetThread);
+  
+  function _emscripten_set_mouseup_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 6, "mouseup", targetThread);
+  }
   _emscripten_set_mouseup_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_dblclick_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 7, "dblclick", targetThread);
+  
+  function _emscripten_set_dblclick_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 7, "dblclick", targetThread);
+  }
   _emscripten_set_dblclick_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mousemove_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 8, "mousemove", targetThread);
+  
+  function _emscripten_set_mousemove_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 8, "mousemove", targetThread);
+  }
   _emscripten_set_mousemove_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mouseenter_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 33, "mouseenter", targetThread);
+  
+  function _emscripten_set_mouseenter_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 33, "mouseenter", targetThread);
+  }
   _emscripten_set_mouseenter_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mouseleave_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 34, "mouseleave", targetThread);
+  
+  function _emscripten_set_mouseleave_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 34, "mouseleave", targetThread);
+  }
   _emscripten_set_mouseleave_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mouseover_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 35, "mouseover", targetThread);
+  
+  function _emscripten_set_mouseover_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 35, "mouseover", targetThread);
+  }
   _emscripten_set_mouseover_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_mouseout_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerMouseEventCallback(target, userData, useCapture, callbackfunc, 36, "mouseout", targetThread);
+  
+  function _emscripten_set_mouseout_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerMouseEventCallback(target, userData, useCapture, callbackfunc, 36, "mouseout", targetThread);
+  }
   _emscripten_set_mouseout_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_get_mouse_status = (mouseState) => {
+  
+  function _emscripten_get_mouse_status(mouseState) {
+    mouseState = bigintToI53Checked(mouseState);
+  
+  
       if (!JSEvents.mouseEvent) return -7;
       // HTML5 does not really have a polling API for mouse events, so implement one manually by
       // returning the data from the most recently received event. This requires that user has registered
       // at least some no-op function as an event handler to any of the mouse function.
       JSEvents.memcpy(mouseState, JSEvents.mouseEvent, 64);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_mouse_status.sig = 'ip';
 
   
@@ -16328,11 +17663,11 @@ async function createWasm() {
       var wheelHandlerFunc = (e = event) => {
         var wheelEvent = JSEvents.wheelEvent;
         fillMouseEventData(wheelEvent, e, target);
-        HEAPF64[(((wheelEvent)+(64))>>3)] = e["deltaX"];
-        HEAPF64[(((wheelEvent)+(72))>>3)] = e["deltaY"];
-        HEAPF64[(((wheelEvent)+(80))>>3)] = e["deltaZ"];
-        HEAP32[(((wheelEvent)+(88))>>2)] = e["deltaMode"];
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, wheelEvent, userData)) e.preventDefault();
+        HEAPF64[(((wheelEvent)+(64))/8)] = e["deltaX"];
+        HEAPF64[(((wheelEvent)+(72))/8)] = e["deltaY"];
+        HEAPF64[(((wheelEvent)+(80))/8)] = e["deltaZ"];
+        HEAP32[(((wheelEvent)+(88))/4)] = e["deltaMode"];
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, wheelEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16347,7 +17682,14 @@ async function createWasm() {
     };
 
   
-  var _emscripten_set_wheel_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_wheel_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       target = findEventTarget(target);
       if (!target) return -4;
       if (typeof target.onwheel != 'undefined') {
@@ -16355,7 +17697,8 @@ async function createWasm() {
       } else {
         return -1;
       }
-    };
+    ;
+  }
   _emscripten_set_wheel_callback_on_thread.sig = 'ippipp';
 
   
@@ -16380,16 +17723,16 @@ async function createWasm() {
           return;
         }
         var uiEvent = JSEvents.uiEvent;
-        HEAP32[((uiEvent)>>2)] = 0; // always zero for resize and scroll
-        HEAP32[(((uiEvent)+(4))>>2)] = b.clientWidth;
-        HEAP32[(((uiEvent)+(8))>>2)] = b.clientHeight;
-        HEAP32[(((uiEvent)+(12))>>2)] = innerWidth;
-        HEAP32[(((uiEvent)+(16))>>2)] = innerHeight;
-        HEAP32[(((uiEvent)+(20))>>2)] = outerWidth;
-        HEAP32[(((uiEvent)+(24))>>2)] = outerHeight;
-        HEAP32[(((uiEvent)+(28))>>2)] = pageXOffset | 0; // scroll offsets are float
-        HEAP32[(((uiEvent)+(32))>>2)] = pageYOffset | 0;
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, uiEvent, userData)) e.preventDefault();
+        HEAP32[((uiEvent)/4)] = 0; // always zero for resize and scroll
+        HEAP32[(((uiEvent)+(4))/4)] = b.clientWidth;
+        HEAP32[(((uiEvent)+(8))/4)] = b.clientHeight;
+        HEAP32[(((uiEvent)+(12))/4)] = innerWidth;
+        HEAP32[(((uiEvent)+(16))/4)] = innerHeight;
+        HEAP32[(((uiEvent)+(20))/4)] = outerWidth;
+        HEAP32[(((uiEvent)+(24))/4)] = outerHeight;
+        HEAP32[(((uiEvent)+(28))/4)] = pageXOffset | 0; // scroll offsets are float
+        HEAP32[(((uiEvent)+(32))/4)] = pageYOffset | 0;
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, uiEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16402,12 +17745,26 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_resize_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerUiEventCallback(target, userData, useCapture, callbackfunc, 10, "resize", targetThread);
+  
+  function _emscripten_set_resize_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerUiEventCallback(target, userData, useCapture, callbackfunc, 10, "resize", targetThread);
+  }
   _emscripten_set_resize_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_scroll_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerUiEventCallback(target, userData, useCapture, callbackfunc, 11, "scroll", targetThread);
+  
+  function _emscripten_set_scroll_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerUiEventCallback(target, userData, useCapture, callbackfunc, 11, "scroll", targetThread);
+  }
   _emscripten_set_scroll_callback_on_thread.sig = 'ippipp';
 
   
@@ -16425,7 +17782,7 @@ async function createWasm() {
         stringToUTF8(nodeName, focusEvent + 0, 128);
         stringToUTF8(id, focusEvent + 128, 128);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, focusEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, focusEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16438,26 +17795,54 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_blur_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerFocusEventCallback(target, userData, useCapture, callbackfunc, 12, "blur", targetThread);
+  
+  function _emscripten_set_blur_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerFocusEventCallback(target, userData, useCapture, callbackfunc, 12, "blur", targetThread);
+  }
   _emscripten_set_blur_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_focus_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerFocusEventCallback(target, userData, useCapture, callbackfunc, 13, "focus", targetThread);
+  
+  function _emscripten_set_focus_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerFocusEventCallback(target, userData, useCapture, callbackfunc, 13, "focus", targetThread);
+  }
   _emscripten_set_focus_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_focusin_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerFocusEventCallback(target, userData, useCapture, callbackfunc, 14, "focusin", targetThread);
+  
+  function _emscripten_set_focusin_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerFocusEventCallback(target, userData, useCapture, callbackfunc, 14, "focusin", targetThread);
+  }
   _emscripten_set_focusin_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_focusout_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerFocusEventCallback(target, userData, useCapture, callbackfunc, 15, "focusout", targetThread);
+  
+  function _emscripten_set_focusout_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerFocusEventCallback(target, userData, useCapture, callbackfunc, 15, "focusout", targetThread);
+  }
   _emscripten_set_focusout_callback_on_thread.sig = 'ippipp';
 
   var fillDeviceOrientationEventData = (eventStruct, e, target) => {
-      HEAPF64[((eventStruct)>>3)] = e.alpha;
-      HEAPF64[(((eventStruct)+(8))>>3)] = e.beta;
-      HEAPF64[(((eventStruct)+(16))>>3)] = e.gamma;
+      HEAPF64[((eventStruct)/8)] = e.alpha;
+      HEAPF64[(((eventStruct)+(8))/8)] = e.beta;
+      HEAPF64[(((eventStruct)+(16))/8)] = e.gamma;
       HEAP8[(eventStruct)+(24)] = e.absolute;
     };
 
@@ -16470,7 +17855,7 @@ async function createWasm() {
       var deviceOrientationEventHandlerFunc = (e = event) => {
         fillDeviceOrientationEventData(JSEvents.deviceOrientationEvent, e, target); // TODO: Thread-safety with respect to emscripten_get_deviceorientation_status()
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, JSEvents.deviceOrientationEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, JSEvents.deviceOrientationEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16483,19 +17868,31 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_deviceorientation_callback_on_thread = (userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_deviceorientation_callback_on_thread(userData, useCapture, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       return registerDeviceOrientationEventCallback(2, userData, useCapture, callbackfunc, 16, "deviceorientation", targetThread);
-    };
+    ;
+  }
   _emscripten_set_deviceorientation_callback_on_thread.sig = 'ipipp';
 
-  var _emscripten_get_deviceorientation_status = (orientationState) => {
+  
+  function _emscripten_get_deviceorientation_status(orientationState) {
+    orientationState = bigintToI53Checked(orientationState);
+  
+  
       if (!JSEvents.deviceOrientationEvent) return -7;
       // HTML5 does not really have a polling API for device orientation events, so implement one manually by
       // returning the data from the most recently received event. This requires that user has registered
       // at least some no-op function as an event handler.
       JSEvents.memcpy(orientationState, JSEvents.deviceOrientationEvent, 32);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_deviceorientation_status.sig = 'ip';
 
   var fillDeviceMotionEventData = (eventStruct, e, target) => {
@@ -16509,15 +17906,15 @@ async function createWasm() {
       a = a || {};
       ag = ag || {};
       rr = rr || {};
-      HEAPF64[((eventStruct)>>3)] = a["x"];
-      HEAPF64[(((eventStruct)+(8))>>3)] = a["y"];
-      HEAPF64[(((eventStruct)+(16))>>3)] = a["z"];
-      HEAPF64[(((eventStruct)+(24))>>3)] = ag["x"];
-      HEAPF64[(((eventStruct)+(32))>>3)] = ag["y"];
-      HEAPF64[(((eventStruct)+(40))>>3)] = ag["z"];
-      HEAPF64[(((eventStruct)+(48))>>3)] = rr["alpha"];
-      HEAPF64[(((eventStruct)+(56))>>3)] = rr["beta"];
-      HEAPF64[(((eventStruct)+(64))>>3)] = rr["gamma"];
+      HEAPF64[((eventStruct)/8)] = a["x"];
+      HEAPF64[(((eventStruct)+(8))/8)] = a["y"];
+      HEAPF64[(((eventStruct)+(16))/8)] = a["z"];
+      HEAPF64[(((eventStruct)+(24))/8)] = ag["x"];
+      HEAPF64[(((eventStruct)+(32))/8)] = ag["y"];
+      HEAPF64[(((eventStruct)+(40))/8)] = ag["z"];
+      HEAPF64[(((eventStruct)+(48))/8)] = rr["alpha"];
+      HEAPF64[(((eventStruct)+(56))/8)] = rr["beta"];
+      HEAPF64[(((eventStruct)+(64))/8)] = rr["gamma"];
     };
 
   
@@ -16530,7 +17927,7 @@ async function createWasm() {
       var deviceMotionEventHandlerFunc = (e = event) => {
         fillDeviceMotionEventData(JSEvents.deviceMotionEvent, e, target); // TODO: Thread-safety with respect to emscripten_get_devicemotion_status()
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, JSEvents.deviceMotionEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, JSEvents.deviceMotionEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16543,18 +17940,29 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_devicemotion_callback_on_thread = (userData, useCapture, callbackfunc, targetThread) =>
-      registerDeviceMotionEventCallback(2, userData, useCapture, callbackfunc, 17, "devicemotion", targetThread);
+  
+  function _emscripten_set_devicemotion_callback_on_thread(userData, useCapture, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerDeviceMotionEventCallback(2, userData, useCapture, callbackfunc, 17, "devicemotion", targetThread);
+  }
   _emscripten_set_devicemotion_callback_on_thread.sig = 'ipipp';
 
-  var _emscripten_get_devicemotion_status = (motionState) => {
+  
+  function _emscripten_get_devicemotion_status(motionState) {
+    motionState = bigintToI53Checked(motionState);
+  
+  
       if (!JSEvents.deviceMotionEvent) return -7;
       // HTML5 does not really have a polling API for device motion events, so implement one manually by
       // returning the data from the most recently received event. This requires that user has registered
       // at least some no-op function as an event handler.
       JSEvents.memcpy(motionState, JSEvents.deviceMotionEvent, 80);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_devicemotion_status.sig = 'ip';
 
   var screenOrientation = () => {
@@ -16581,13 +17989,9 @@ async function createWasm() {
         }
         orientationAngle = screenOrientObj.angle;
       }
-      else {
-        // fallback for Safari earlier than 16.4 (March 2023)
-        orientationAngle = window.orientation;
-      }
   
-      HEAP32[((eventStruct)>>2)] = orientationIndex;
-      HEAP32[(((eventStruct)+(4))>>2)] = orientationAngle;
+      HEAP32[((eventStruct)/4)] = orientationIndex;
+      HEAP32[(((eventStruct)+(4))/4)] = orientationAngle;
     };
 
   
@@ -16601,7 +18005,7 @@ async function createWasm() {
   
         fillOrientationChangeEventData(orientationChangeEvent);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, orientationChangeEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, orientationChangeEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16614,19 +18018,31 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_orientationchange_callback_on_thread = (userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_orientationchange_callback_on_thread(userData, useCapture, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (!window.screen || !screen.orientation) return -1;
       return registerOrientationChangeEventCallback(screen.orientation, userData, useCapture, callbackfunc, 18, 'change', targetThread);
-    };
+    ;
+  }
   _emscripten_set_orientationchange_callback_on_thread.sig = 'ipipp';
 
   
-  var _emscripten_get_orientation_status = (orientationChangeEvent) => {
+  
+  function _emscripten_get_orientation_status(orientationChangeEvent) {
+    orientationChangeEvent = bigintToI53Checked(orientationChangeEvent);
+  
+  
       // screenOrientation() resolving standard, window.orientation being the deprecated mobile-only
       if (!screenOrientation() && typeof orientation == 'undefined') return -1;
       fillOrientationChangeEventData(orientationChangeEvent);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_orientation_status.sig = 'ip';
 
   var _emscripten_lock_orientation = (allowedOrientations) => {
@@ -16681,10 +18097,10 @@ async function createWasm() {
       var id = reportedElement?.id || '';
       stringToUTF8(nodeName, eventStruct + 2, 128);
       stringToUTF8(id, eventStruct + 130, 128);
-      HEAP32[(((eventStruct)+(260))>>2)] = reportedElement ? reportedElement.clientWidth : 0;
-      HEAP32[(((eventStruct)+(264))>>2)] = reportedElement ? reportedElement.clientHeight : 0;
-      HEAP32[(((eventStruct)+(268))>>2)] = screen.width;
-      HEAP32[(((eventStruct)+(272))>>2)] = screen.height;
+      HEAP32[(((eventStruct)+(260))/4)] = reportedElement ? reportedElement.clientWidth : 0;
+      HEAP32[(((eventStruct)+(264))/4)] = reportedElement ? reportedElement.clientHeight : 0;
+      HEAP32[(((eventStruct)+(268))/4)] = screen.width;
+      HEAP32[(((eventStruct)+(272))/4)] = screen.height;
       if (isFullscreen) {
         JSEvents.previousFullscreenElement = fullscreenElement;
       }
@@ -16701,7 +18117,7 @@ async function createWasm() {
   
         fillFullscreenChangeEventData(fullscreenChangeEvent);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, fullscreenChangeEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, fullscreenChangeEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -16716,34 +18132,50 @@ async function createWasm() {
 
   
   
-  var _emscripten_set_fullscreenchange_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_fullscreenchange_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (!JSEvents.fullscreenEnabled()) return -1;
       target = findEventTarget(target);
       if (!target) return -4;
   
-      // Unprefixed Fullscreen API shipped in Chromium 71 (https://bugs.chromium.org/p/chromium/issues/detail?id=383813)
-      // As of Safari 13.0.3 on macOS Catalina 10.15.1 still ships with prefixed webkitfullscreenchange. TODO: revisit this check once Safari ships unprefixed version.
-      registerFullscreenChangeEventCallback(target, userData, useCapture, callbackfunc, 19, "webkitfullscreenchange", targetThread);
-  
       return registerFullscreenChangeEventCallback(target, userData, useCapture, callbackfunc, 19, "fullscreenchange", targetThread);
-    };
+    ;
+  }
   _emscripten_set_fullscreenchange_callback_on_thread.sig = 'ippipp';
 
   
-  var _emscripten_get_fullscreen_status = (fullscreenStatus) => {
+  
+  function _emscripten_get_fullscreen_status(fullscreenStatus) {
+    fullscreenStatus = bigintToI53Checked(fullscreenStatus);
+  
+  
       if (!JSEvents.fullscreenEnabled()) return -1;
       fillFullscreenChangeEventData(fullscreenStatus);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_fullscreen_status.sig = 'ip';
 
   
-  var _emscripten_get_canvas_element_size = (target, width, height) => {
+  
+  function _emscripten_get_canvas_element_size(target, width, height) {
+    target = bigintToI53Checked(target);
+    width = bigintToI53Checked(width);
+    height = bigintToI53Checked(height);
+  
+  
       var canvas = findCanvasEventTarget(target);
       if (!canvas) return -4;
-      HEAP32[((width)>>2)] = canvas.width;
-      HEAP32[((height)>>2)] = canvas.height;
-    };
+      HEAP32[((width)/4)] = canvas.width;
+      HEAP32[((height)/4)] = canvas.height;
+    ;
+  }
   _emscripten_get_canvas_element_size.sig = 'ippp';
   
   
@@ -16755,7 +18187,7 @@ async function createWasm() {
   
       var targetInt = stringToUTF8OnStack(target.id);
       var ret = _emscripten_get_canvas_element_size(targetInt, w, h);
-      var size = [HEAP32[((w)>>2)], HEAP32[((h)>>2)]];
+      var size = [HEAP32[((w)/4)], HEAP32[((h)/4)]];
       stackRestore(sp);
       return size;
     };
@@ -16809,10 +18241,6 @@ async function createWasm() {
         if (!fullscreenElement) {
           document.removeEventListener('fullscreenchange', restoreOldStyle);
   
-          // Unprefixed Fullscreen API shipped in Chromium 71 (https://bugs.chromium.org/p/chromium/issues/detail?id=383813)
-          // As of Safari 13.0.3 on macOS Catalina 10.15.1 still ships with prefixed webkitfullscreenchange. TODO: revisit this check once Safari ships unprefixed version.
-          document.removeEventListener('webkitfullscreenchange', restoreOldStyle);
-  
           setCanvasElementSize(canvas, oldWidth, oldHeight);
   
           canvas.style.width = oldCssWidth;
@@ -16838,14 +18266,11 @@ async function createWasm() {
           if (canvas.GLctxObject) canvas.GLctxObject.GLctx.viewport(0, 0, oldWidth, oldHeight);
   
           if (currentFullscreenStrategy.canvasResizedCallback) {
-            getWasmTableEntry(currentFullscreenStrategy.canvasResizedCallback)(37, 0, currentFullscreenStrategy.canvasResizedCallbackUserData);
+            ((a1, a2, a3) => getWasmTableEntry(currentFullscreenStrategy.canvasResizedCallback).call(null, a1, BigInt(a2), BigInt(a3)))(37, 0, currentFullscreenStrategy.canvasResizedCallbackUserData);
           }
         }
       }
       document.addEventListener('fullscreenchange', restoreOldStyle);
-      // Unprefixed Fullscreen API shipped in Chromium 71 (https://bugs.chromium.org/p/chromium/issues/detail?id=383813)
-      // As of Safari 13.0.3 on macOS Catalina 10.15.1 still ships with prefixed webkitfullscreenchange. TODO: revisit this check once Safari ships unprefixed version.
-      document.addEventListener('webkitfullscreenchange', restoreOldStyle);
       return restoreOldStyle;
     };
   
@@ -16922,8 +18347,6 @@ async function createWasm() {
   
       if (target.requestFullscreen) {
         target.requestFullscreen();
-      } else if (target.webkitRequestFullscreen) {
-        target.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
       } else {
         return JSEvents.fullscreenEnabled() ? -3 : -1;
       }
@@ -16931,7 +18354,7 @@ async function createWasm() {
       currentFullscreenStrategy = strategy;
   
       if (strategy.canvasResizedCallback) {
-        getWasmTableEntry(strategy.canvasResizedCallback)(37, 0, strategy.canvasResizedCallbackUserData);
+        ((a1, a2, a3) => getWasmTableEntry(strategy.canvasResizedCallback).call(null, a1, BigInt(a2), BigInt(a3)))(37, 0, strategy.canvasResizedCallbackUserData);
       }
   
       return 0;
@@ -17022,7 +18445,7 @@ async function createWasm() {
       }
   
       if (!inCenteredWithoutScalingFullscreenMode && currentFullscreenStrategy.canvasResizedCallback) {
-        getWasmTableEntry(currentFullscreenStrategy.canvasResizedCallback)(37, 0, currentFullscreenStrategy.canvasResizedCallbackUserData);
+        ((a1, a2, a3) => getWasmTableEntry(currentFullscreenStrategy.canvasResizedCallback).call(null, a1, BigInt(a2), BigInt(a3)))(37, 0, currentFullscreenStrategy.canvasResizedCallbackUserData);
       }
     };
 
@@ -17034,7 +18457,6 @@ async function createWasm() {
       if (!target) return -4;
   
       if (!target.requestFullscreen
-        && !target.webkitRequestFullscreen
         ) {
         return -3;
       }
@@ -17052,7 +18474,11 @@ async function createWasm() {
       return JSEvents_requestFullscreen(target, strategy);
     };
 
-  var _emscripten_request_fullscreen = (target, deferUntilInEventHandler) => {
+  
+  function _emscripten_request_fullscreen(target, deferUntilInEventHandler) {
+    target = bigintToI53Checked(target);
+  
+  
       var strategy = {
         // These options perform no added logic, but just bare request fullscreen.
         scaleMode: 0,
@@ -17062,21 +18488,28 @@ async function createWasm() {
         canvasResizedCallbackTargetThread: 2
       };
       return doRequestFullscreen(target, strategy);
-    };
+    ;
+  }
   _emscripten_request_fullscreen.sig = 'ipi';
 
-  var _emscripten_request_fullscreen_strategy = (target, deferUntilInEventHandler, fullscreenStrategy) => {
+  
+  function _emscripten_request_fullscreen_strategy(target, deferUntilInEventHandler, fullscreenStrategy) {
+    target = bigintToI53Checked(target);
+    fullscreenStrategy = bigintToI53Checked(fullscreenStrategy);
+  
+  
       var strategy = {
-        scaleMode: HEAP32[((fullscreenStrategy)>>2)],
-        canvasResolutionScaleMode: HEAP32[(((fullscreenStrategy)+(4))>>2)],
-        filteringMode: HEAP32[(((fullscreenStrategy)+(8))>>2)],
+        scaleMode: HEAP32[((fullscreenStrategy)/4)],
+        canvasResolutionScaleMode: HEAP32[(((fullscreenStrategy)+(4))/4)],
+        filteringMode: HEAP32[(((fullscreenStrategy)+(8))/4)],
         deferUntilInEventHandler,
-        canvasResizedCallback: HEAP32[(((fullscreenStrategy)+(12))>>2)],
-        canvasResizedCallbackUserData: HEAP32[(((fullscreenStrategy)+(16))>>2)]
+        canvasResizedCallback: HEAP32[(((fullscreenStrategy)+(16))/4)],
+        canvasResizedCallbackUserData: HEAP32[(((fullscreenStrategy)+(24))/4)]
       };
   
       return doRequestFullscreen(target, strategy);
-    };
+    ;
+  }
   _emscripten_request_fullscreen_strategy.sig = 'ipip';
 
   
@@ -17087,16 +18520,21 @@ async function createWasm() {
   
   
   
-  var _emscripten_enter_soft_fullscreen = (target, fullscreenStrategy) => {
+  
+  function _emscripten_enter_soft_fullscreen(target, fullscreenStrategy) {
+    target = bigintToI53Checked(target);
+    fullscreenStrategy = bigintToI53Checked(fullscreenStrategy);
+  
+  
       target = findEventTarget(target);
       if (!target) return -4;
   
       var strategy = {
-          scaleMode: HEAP32[((fullscreenStrategy)>>2)],
-          canvasResolutionScaleMode: HEAP32[(((fullscreenStrategy)+(4))>>2)],
-          filteringMode: HEAP32[(((fullscreenStrategy)+(8))>>2)],
-          canvasResizedCallback: HEAP32[(((fullscreenStrategy)+(12))>>2)],
-          canvasResizedCallbackUserData: HEAP32[(((fullscreenStrategy)+(16))>>2)],
+          scaleMode: HEAP32[((fullscreenStrategy)/4)],
+          canvasResolutionScaleMode: HEAP32[(((fullscreenStrategy)+(4))/4)],
+          filteringMode: HEAP32[(((fullscreenStrategy)+(8))/4)],
+          canvasResizedCallback: HEAP32[(((fullscreenStrategy)+(16))/4)],
+          canvasResizedCallbackUserData: HEAP32[(((fullscreenStrategy)+(24))/4)],
           target,
           softFullscreen: true
       };
@@ -17114,7 +18552,7 @@ async function createWasm() {
         restoreHiddenElements(hiddenElements);
         removeEventListener('resize', softFullscreenResizeWebGLRenderTarget);
         if (strategy.canvasResizedCallback) {
-          getWasmTableEntry(strategy.canvasResizedCallback)(37, 0, strategy.canvasResizedCallbackUserData);
+          ((a1, a2, a3) => getWasmTableEntry(strategy.canvasResizedCallback).call(null, a1, BigInt(a2), BigInt(a3)))(37, 0, strategy.canvasResizedCallbackUserData);
         }
         currentFullscreenStrategy = 0;
       }
@@ -17124,11 +18562,12 @@ async function createWasm() {
   
       // Inform the caller that the canvas size has changed.
       if (strategy.canvasResizedCallback) {
-        getWasmTableEntry(strategy.canvasResizedCallback)(37, 0, strategy.canvasResizedCallbackUserData);
+        ((a1, a2, a3) => getWasmTableEntry(strategy.canvasResizedCallback).call(null, a1, BigInt(a2), BigInt(a3)))(37, 0, strategy.canvasResizedCallbackUserData);
       }
   
       return 0;
-    };
+    ;
+  }
   _emscripten_enter_soft_fullscreen.sig = 'ipp';
 
   var _emscripten_exit_soft_fullscreen = () => {
@@ -17149,8 +18588,6 @@ async function createWasm() {
       var d = specialHTMLTargets[1];
       if (d.exitFullscreen) {
         d.fullscreenElement && d.exitFullscreen();
-      } else if (d.webkitExitFullscreen) {
-        d.webkitFullscreenElement && d.webkitExitFullscreen();
       } else {
         return -1;
       }
@@ -17182,7 +18619,7 @@ async function createWasm() {
         var pointerlockChangeEvent = JSEvents.pointerlockChangeEvent;
         fillPointerlockChangeEventData(pointerlockChangeEvent);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, pointerlockChangeEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, pointerlockChangeEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -17196,8 +18633,15 @@ async function createWasm() {
     };
 
   
+  
   /** @suppress {missingProperties} */
-  var _emscripten_set_pointerlockchange_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => {
+  function _emscripten_set_pointerlockchange_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       // TODO: Currently not supported in pthreads or in --proxy-to-worker mode. (In pthreads mode, document object is not defined)
       if (!document || !document.body || (!document.body.requestPointerLock && !document.body.mozRequestPointerLock && !document.body.webkitRequestPointerLock && !document.body.msRequestPointerLock)) {
         return -1;
@@ -17209,14 +18653,15 @@ async function createWasm() {
       registerPointerlockChangeEventCallback(target, userData, useCapture, callbackfunc, 20, "webkitpointerlockchange", targetThread);
       registerPointerlockChangeEventCallback(target, userData, useCapture, callbackfunc, 20, "mspointerlockchange", targetThread);
       return registerPointerlockChangeEventCallback(target, userData, useCapture, callbackfunc, 20, "pointerlockchange", targetThread);
-    };
+    ;
+  }
   _emscripten_set_pointerlockchange_callback_on_thread.sig = 'ippipp';
 
   
   var registerPointerlockErrorEventCallback = (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString, targetThread) => {
   
       var pointerlockErrorEventHandlerFunc = (e = event) => {
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, 0, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, 0, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -17230,8 +18675,15 @@ async function createWasm() {
     };
 
   
+  
   /** @suppress {missingProperties} */
-  var _emscripten_set_pointerlockerror_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => {
+  function _emscripten_set_pointerlockerror_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       // TODO: Currently not supported in pthreads or in --proxy-to-worker mode. (In pthreads mode, document object is not defined)
       if (!document || !document.body.requestPointerLock && !document.body.mozRequestPointerLock && !document.body.webkitRequestPointerLock && !document.body.msRequestPointerLock) {
         return -1;
@@ -17244,17 +18696,23 @@ async function createWasm() {
       registerPointerlockErrorEventCallback(target, userData, useCapture, callbackfunc, 38, "webkitpointerlockerror", targetThread);
       registerPointerlockErrorEventCallback(target, userData, useCapture, callbackfunc, 38, "mspointerlockerror", targetThread);
       return registerPointerlockErrorEventCallback(target, userData, useCapture, callbackfunc, 38, "pointerlockerror", targetThread);
-    };
+    ;
+  }
   _emscripten_set_pointerlockerror_callback_on_thread.sig = 'ippipp';
 
+  
   /** @suppress {missingProperties} */
-  var _emscripten_get_pointerlock_status = (pointerlockStatus) => {
+  function _emscripten_get_pointerlock_status(pointerlockStatus) {
+    pointerlockStatus = bigintToI53Checked(pointerlockStatus);
+  
+  
       if (pointerlockStatus) fillPointerlockChangeEventData(pointerlockStatus);
       if (!document.body || (!document.body.requestPointerLock && !document.body.mozRequestPointerLock && !document.body.webkitRequestPointerLock && !document.body.msRequestPointerLock)) {
         return -1;
       }
       return 0;
-    };
+    ;
+  }
   _emscripten_get_pointerlock_status.sig = 'ip';
 
   var requestPointerLock = (target) => {
@@ -17274,7 +18732,11 @@ async function createWasm() {
 
   
   
-  var _emscripten_request_pointerlock = (target, deferUntilInEventHandler) => {
+  
+  function _emscripten_request_pointerlock(target, deferUntilInEventHandler) {
+    target = bigintToI53Checked(target);
+  
+  
       target = findEventTarget(target);
       if (!target) return -4;
       if (!target.requestPointerLock
@@ -17293,7 +18755,8 @@ async function createWasm() {
       }
   
       return requestPointerLock(target);
-    };
+    ;
+  }
   _emscripten_request_pointerlock.sig = 'ipi';
 
   
@@ -17317,17 +18780,21 @@ async function createWasm() {
     };
   _emscripten_vibrate.sig = 'ii';
 
-  var _emscripten_vibrate_pattern = (msecsArray, numEntries) => {
+  function _emscripten_vibrate_pattern(msecsArray, numEntries) {
+    msecsArray = bigintToI53Checked(msecsArray);
+  
+  
       if (!navigator.vibrate) return -1;
   
       var vibrateList = [];
       for (var i = 0; i < numEntries; ++i) {
-        var msecs = HEAP32[(((msecsArray)+(i*4))>>2)];
+        var msecs = HEAP32[(((msecsArray)+(i*4))/4)];
         vibrateList.push(msecs);
       }
       navigator.vibrate(vibrateList);
       return 0;
-    };
+    ;
+  }
   _emscripten_vibrate_pattern.sig = 'ipi';
 
   var fillVisibilityChangeEventData = (eventStruct) => {
@@ -17337,7 +18804,7 @@ async function createWasm() {
       // Assigning a boolean to HEAP32 with expected type coercion.
       /** @suppress{checkTypes} */
       HEAP8[eventStruct] = document.hidden;
-      HEAP32[(((eventStruct)+(4))>>2)] = visibilityState;
+      HEAP32[(((eventStruct)+(4))/4)] = visibilityState;
     };
 
   
@@ -17351,7 +18818,7 @@ async function createWasm() {
   
         fillVisibilityChangeEventData(visibilityChangeEvent);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, visibilityChangeEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, visibilityChangeEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -17365,21 +18832,33 @@ async function createWasm() {
     };
 
   
-  var _emscripten_set_visibilitychange_callback_on_thread = (userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_visibilitychange_callback_on_thread(userData, useCapture, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
     if (!specialHTMLTargets[1]) {
       return -4;
     }
       return registerVisibilityChangeEventCallback(specialHTMLTargets[1], userData, useCapture, callbackfunc, 21, "visibilitychange", targetThread);
-    };
+    ;
+  }
   _emscripten_set_visibilitychange_callback_on_thread.sig = 'ipipp';
 
-  var _emscripten_get_visibility_status = (visibilityStatus) => {
+  
+  function _emscripten_get_visibility_status(visibilityStatus) {
+    visibilityStatus = bigintToI53Checked(visibilityStatus);
+  
+  
       if (typeof document.visibilityState == 'undefined' && typeof document.hidden == 'undefined') {
         return -1;
       }
       fillVisibilityChangeEventData(visibilityStatus);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_visibility_status.sig = 'ip';
 
   
@@ -17414,7 +18893,7 @@ async function createWasm() {
         }
   
         var touchEvent = JSEvents.touchEvent;
-        HEAPF64[((touchEvent)>>3)] = e.timeStamp;
+        HEAPF64[((touchEvent)/8)] = e.timeStamp;
         HEAP8[touchEvent + 12] = e.ctrlKey;
         HEAP8[touchEvent + 13] = e.shiftKey;
         HEAP8[touchEvent + 14] = e.altKey;
@@ -17423,7 +18902,7 @@ async function createWasm() {
         var targetRect = getBoundingClientRect(target);
         var numTouches = 0;
         for (let t of Object.values(touches)) {
-          var idx32 = ((idx)>>2); // Pre-shift the ptr to index to HEAP32 to save code size
+          var idx32 = ((idx)/4); // Pre-shift the ptr to index to HEAP32 to save code size
           HEAP32[idx32 + 0] = t.identifier;
           HEAP32[idx32 + 1] = t.screenX;
           HEAP32[idx32 + 2] = t.screenY;
@@ -17442,9 +18921,9 @@ async function createWasm() {
             break;
           }
         }
-        HEAP32[(((touchEvent)+(8))>>2)] = numTouches;
+        HEAP32[(((touchEvent)+(8))/4)] = numTouches;
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, touchEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, touchEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -17458,32 +18937,60 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_touchstart_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerTouchEventCallback(target, userData, useCapture, callbackfunc, 22, "touchstart", targetThread);
+  
+  function _emscripten_set_touchstart_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerTouchEventCallback(target, userData, useCapture, callbackfunc, 22, "touchstart", targetThread);
+  }
   _emscripten_set_touchstart_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_touchend_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerTouchEventCallback(target, userData, useCapture, callbackfunc, 23, "touchend", targetThread);
+  
+  function _emscripten_set_touchend_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerTouchEventCallback(target, userData, useCapture, callbackfunc, 23, "touchend", targetThread);
+  }
   _emscripten_set_touchend_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_touchmove_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerTouchEventCallback(target, userData, useCapture, callbackfunc, 24, "touchmove", targetThread);
+  
+  function _emscripten_set_touchmove_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerTouchEventCallback(target, userData, useCapture, callbackfunc, 24, "touchmove", targetThread);
+  }
   _emscripten_set_touchmove_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_set_touchcancel_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
-      registerTouchEventCallback(target, userData, useCapture, callbackfunc, 25, "touchcancel", targetThread);
+  
+  function _emscripten_set_touchcancel_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  return registerTouchEventCallback(target, userData, useCapture, callbackfunc, 25, "touchcancel", targetThread);
+  }
   _emscripten_set_touchcancel_callback_on_thread.sig = 'ippipp';
 
   var fillGamepadEventData = (eventStruct, e) => {
-      HEAPF64[((eventStruct)>>3)] = e.timestamp;
+      HEAPF64[((eventStruct)/8)] = e.timestamp;
       for (var i = 0; i < e.axes.length; ++i) {
-        HEAPF64[(((eventStruct+i*8)+(16))>>3)] = e.axes[i];
+        HEAPF64[(((eventStruct+i*8)+(16))/8)] = e.axes[i];
       }
       for (var i = 0; i < e.buttons.length; ++i) {
         if (typeof e.buttons[i] == 'object') {
-          HEAPF64[(((eventStruct+i*8)+(528))>>3)] = e.buttons[i].value;
+          HEAPF64[(((eventStruct+i*8)+(528))/8)] = e.buttons[i].value;
         } else {
-          HEAPF64[(((eventStruct+i*8)+(528))>>3)] = e.buttons[i];
+          HEAPF64[(((eventStruct+i*8)+(528))/8)] = e.buttons[i];
         }
       }
       for (var i = 0; i < e.buttons.length; ++i) {
@@ -17496,9 +19003,9 @@ async function createWasm() {
         }
       }
       HEAP8[(eventStruct)+(1104)] = e.connected;
-      HEAP32[(((eventStruct)+(1108))>>2)] = e.index;
-      HEAP32[(((eventStruct)+(8))>>2)] = e.axes.length;
-      HEAP32[(((eventStruct)+(12))>>2)] = e.buttons.length;
+      HEAP32[(((eventStruct)+(1108))/4)] = e.index;
+      HEAP32[(((eventStruct)+(8))/4)] = e.axes.length;
+      HEAP32[(((eventStruct)+(12))/4)] = e.buttons.length;
       stringToUTF8(e.id, eventStruct + 1112, 64);
       stringToUTF8(e.mapping, eventStruct + 1176, 64);
     };
@@ -17514,7 +19021,7 @@ async function createWasm() {
         var gamepadEvent = JSEvents.gamepadEvent;
         fillGamepadEventData(gamepadEvent, e["gamepad"]);
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, gamepadEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, gamepadEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -17540,17 +19047,31 @@ async function createWasm() {
       return -1;
     };
   _emscripten_sample_gamepad_data.sig = 'i';
-  var _emscripten_set_gamepadconnected_callback_on_thread = (userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_gamepadconnected_callback_on_thread(userData, useCapture, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (_emscripten_sample_gamepad_data()) return -1;
       return registerGamepadEventCallback(2, userData, useCapture, callbackfunc, 26, "gamepadconnected", targetThread);
-    };
+    ;
+  }
   _emscripten_set_gamepadconnected_callback_on_thread.sig = 'ipipp';
 
   
-  var _emscripten_set_gamepaddisconnected_callback_on_thread = (userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_gamepaddisconnected_callback_on_thread(userData, useCapture, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (_emscripten_sample_gamepad_data()) return -1;
       return registerGamepadEventCallback(2, userData, useCapture, callbackfunc, 27, "gamepaddisconnected", targetThread);
-    };
+    ;
+  }
   _emscripten_set_gamepaddisconnected_callback_on_thread.sig = 'ipipp';
 
 
@@ -17562,7 +19083,11 @@ async function createWasm() {
   _emscripten_get_num_gamepads.sig = 'i';
 
   
-  var _emscripten_get_gamepad_status = (index, gamepadState) => {
+  
+  function _emscripten_get_gamepad_status(index, gamepadState) {
+    gamepadState = bigintToI53Checked(gamepadState);
+  
+  
       // INVALID_PARAM is returned on a Gamepad index that never was there.
       if (index < 0 || index >= JSEvents.lastGamepadState.length) return -5;
   
@@ -17574,7 +19099,8 @@ async function createWasm() {
   
       fillGamepadEventData(gamepadState, JSEvents.lastGamepadState[index]);
       return 0;
-    };
+    ;
+  }
   _emscripten_get_gamepad_status.sig = 'iip';
 
   
@@ -17583,7 +19109,7 @@ async function createWasm() {
   var registerBeforeUnloadEventCallback = (target, userData, useCapture, callbackfunc, eventTypeId, eventTypeString) => {
       var beforeUnloadEventHandlerFunc = (e = event) => {
         // Note: This is always called on the main browser thread, since it needs synchronously return a value!
-        var confirmationMessage = getWasmTableEntry(callbackfunc)(eventTypeId, 0, userData);
+        var confirmationMessage = ((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, 0, userData);
   
         if (confirmationMessage) {
           confirmationMessage = UTF8ToString(confirmationMessage);
@@ -17605,19 +19131,26 @@ async function createWasm() {
       return JSEvents.registerOrRemoveHandler(eventHandler);
     };
 
-  var _emscripten_set_beforeunload_callback_on_thread = (userData, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_beforeunload_callback_on_thread(userData, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (typeof onbeforeunload == 'undefined') return -1;
       // beforeunload callback can only be registered on the main browser thread, because the page will go away immediately after returning from the handler,
       // and there is no time to start proxying it anywhere.
       if (targetThread !== 1) return -5;
       return registerBeforeUnloadEventCallback(2, userData, true, callbackfunc, 28, "beforeunload");
-    };
+    ;
+  }
   _emscripten_set_beforeunload_callback_on_thread.sig = 'ippp';
 
   var fillBatteryEventData = (eventStruct, e) => {
-      HEAPF64[((eventStruct)>>3)] = e.chargingTime;
-      HEAPF64[(((eventStruct)+(8))>>3)] = e.dischargingTime;
-      HEAPF64[(((eventStruct)+(16))>>3)] = e.level;
+      HEAPF64[((eventStruct)/8)] = e.chargingTime;
+      HEAPF64[(((eventStruct)+(8))/8)] = e.dischargingTime;
+      HEAPF64[(((eventStruct)+(16))/8)] = e.level;
       HEAP8[(eventStruct)+(24)] = e.charging;
     };
 
@@ -17635,7 +19168,7 @@ async function createWasm() {
         var batteryEvent = JSEvents.batteryEvent;
         fillBatteryEventData(batteryEvent, battery());
   
-        if (getWasmTableEntry(callbackfunc)(eventTypeId, batteryEvent, userData)) e.preventDefault();
+        if (((a1, a2, a3) => getWasmTableEntry(callbackfunc).call(null, a1, BigInt(a2), BigInt(a3)))(eventTypeId, batteryEvent, userData)) e.preventDefault();
       };
   
       var eventHandler = {
@@ -17649,32 +19182,55 @@ async function createWasm() {
     };
 
   
-  var _emscripten_set_batterychargingchange_callback_on_thread = (userData, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_batterychargingchange_callback_on_thread(userData, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (!battery()) return -1;
       return registerBatteryEventCallback(battery(), userData, true, callbackfunc, 29, "chargingchange", targetThread);
-    };
+    ;
+  }
   _emscripten_set_batterychargingchange_callback_on_thread.sig = 'ippp';
 
   
-  var _emscripten_set_batterylevelchange_callback_on_thread = (userData, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_batterylevelchange_callback_on_thread(userData, callbackfunc, targetThread) {
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       if (!battery()) return -1;
       return registerBatteryEventCallback(battery(), userData, true, callbackfunc, 30, "levelchange", targetThread);
-    };
+    ;
+  }
   _emscripten_set_batterylevelchange_callback_on_thread.sig = 'ippp';
 
   
-  var _emscripten_get_battery_status = (batteryState) => {
+  
+  function _emscripten_get_battery_status(batteryState) {
+    batteryState = bigintToI53Checked(batteryState);
+  
+  
       if (!battery()) return -1;
       fillBatteryEventData(batteryState, battery());
       return 0;
-    };
+    ;
+  }
   _emscripten_get_battery_status.sig = 'ip';
 
 
 
 
 
-  var _emscripten_set_element_css_size = (target, width, height) => {
+  
+  function _emscripten_set_element_css_size(target, width, height) {
+    target = bigintToI53Checked(target);
+  
+  
       target = findEventTarget(target);
       if (!target) return -4;
   
@@ -17682,40 +19238,59 @@ async function createWasm() {
       target.style.height = height + "px";
   
       return 0;
-    };
+    ;
+  }
   _emscripten_set_element_css_size.sig = 'ipdd';
 
   
-  var _emscripten_get_element_css_size = (target, width, height) => {
+  
+  function _emscripten_get_element_css_size(target, width, height) {
+    target = bigintToI53Checked(target);
+    width = bigintToI53Checked(width);
+    height = bigintToI53Checked(height);
+  
+  
       target = findEventTarget(target);
       if (!target) return -4;
   
       var rect = getBoundingClientRect(target);
-      HEAPF64[((width)>>3)] = rect.width;
-      HEAPF64[((height)>>3)] = rect.height;
+      HEAPF64[((width)/8)] = rect.width;
+      HEAPF64[((height)/8)] = rect.height;
   
       return 0;
-    };
+    ;
+  }
   _emscripten_get_element_css_size.sig = 'ippp';
 
   var _emscripten_html5_remove_all_event_listeners = () => JSEvents.removeAllEventListeners();
   _emscripten_html5_remove_all_event_listeners.sig = 'v';
 
-  var _emscripten_request_animation_frame = (cb, userData) =>
-      requestAnimationFrame((timeStamp) => getWasmTableEntry(cb)(timeStamp, userData));
+  
+  var _emscripten_request_animation_frame = function(cb, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  return requestAnimationFrame((timeStamp) => ((a1, a2) => getWasmTableEntry(cb).call(null, a1, BigInt(a2)))(timeStamp, userData));
+  };
   _emscripten_request_animation_frame.sig = 'ipp';
 
   var _emscripten_cancel_animation_frame = (id) => cancelAnimationFrame(id);
   _emscripten_cancel_animation_frame.sig = 'vi';
 
-  var _emscripten_request_animation_frame_loop = (cb, userData) => {
+  
+  var _emscripten_request_animation_frame_loop = function(cb, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  
       function tick(timeStamp) {
-        if (getWasmTableEntry(cb)(timeStamp, userData)) {
+        if (((a1, a2) => getWasmTableEntry(cb).call(null, a1, BigInt(a2)))(timeStamp, userData)) {
           requestAnimationFrame(tick);
         }
       }
       return requestAnimationFrame(tick);
-    };
+    ;
+  };
   _emscripten_request_animation_frame_loop.sig = 'vpp';
 
   var _emscripten_get_device_pixel_ratio = () => {
@@ -17727,7 +19302,11 @@ async function createWasm() {
 
   
   
-  var _emscripten_get_callstack = (flags, str, maxbytes) => {
+  
+  function _emscripten_get_callstack(flags, str, maxbytes) {
+    str = bigintToI53Checked(str);
+  
+  
       var callstack = getCallstack(flags);
       // User can query the required amount of bytes to hold the callstack.
       if (!str || maxbytes <= 0) {
@@ -17738,7 +19317,8 @@ async function createWasm() {
   
       // Return number of bytes written, including null.
       return bytesWrittenExcludingNull+1;
-    };
+    ;
+  }
   _emscripten_get_callstack.sig = 'iipi';
 
   /** @returns {number} */
@@ -17749,15 +19329,22 @@ async function createWasm() {
     };
 
   
-  var _emscripten_return_address = (level) => {
+  
+  var _emscripten_return_address = function(level) {
+  
+  var ret = (() => { 
       var callstack = jsStackTrace().split('\n');
       if (callstack[0] == 'Error') {
         callstack.shift();
       }
       // skip this function and the caller to get caller's return address
-      var caller = callstack[level + 3];
+      // MEMORY64 injects and extra wrapper within emscripten_return_address
+      // to handle BigInt conversions.
+      var caller = callstack[level + 4];
       return convertFrameToPC(caller);
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_return_address.sig = 'pi';
 
   var UNWIND_CACHE = {
@@ -17775,7 +19362,10 @@ async function createWasm() {
       });
     };
   
-  var _emscripten_stack_snapshot = () => {
+  
+  var _emscripten_stack_snapshot = function() {
+  
+  var ret = (() => { 
       var callstack = jsStackTrace().split('\n');
       if (callstack[0] == 'Error') {
         callstack.shift();
@@ -17787,14 +19377,21 @@ async function createWasm() {
       UNWIND_CACHE.last_addr = convertFrameToPC(callstack[3]);
       UNWIND_CACHE.last_stack = callstack;
       return UNWIND_CACHE.last_addr;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_stack_snapshot.sig = 'p';
 
 
   
   
   
-  var _emscripten_stack_unwind_buffer = (addr, buffer, count) => {
+  
+  function _emscripten_stack_unwind_buffer(addr, buffer, count) {
+    addr = bigintToI53Checked(addr);
+    buffer = bigintToI53Checked(buffer);
+  
+  
       var stack;
       if (UNWIND_CACHE.last_addr == addr) {
         stack = UNWIND_CACHE.last_stack;
@@ -17812,16 +19409,22 @@ async function createWasm() {
       }
   
       for (var i = 0; i < count && stack[i+offset]; ++i) {
-        HEAP32[(((buffer)+(i*4))>>2)] = convertFrameToPC(stack[i + offset]);
+        HEAP32[(((buffer)+(i*4))/4)] = convertFrameToPC(stack[i + offset]);
       }
       return i;
-    };
+    ;
+  }
   _emscripten_stack_unwind_buffer.sig = 'ippi';
 
-  var _emscripten_pc_get_function = (pc) => {
+  var _emscripten_pc_get_function = function(pc) {
+    pc = bigintToI53Checked(pc);
+  
+  var ret = (() => { 
       abort('Cannot use emscripten_pc_get_function without -sUSE_OFFSET_CONVERTER');
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_pc_get_function.sig = 'pp';
 
   var convertPCtoSourceLocation = (pc) => {
@@ -17848,26 +19451,42 @@ async function createWasm() {
 
   
   
-  var _emscripten_pc_get_file = (pc) => {
+  
+  var _emscripten_pc_get_file = function(pc) {
+    pc = bigintToI53Checked(pc);
+  
+  var ret = (() => { 
       var result = convertPCtoSourceLocation(pc);
       if (!result) return 0;
   
       if (_emscripten_pc_get_file.ret) _free(_emscripten_pc_get_file.ret);
       _emscripten_pc_get_file.ret = stringToNewUTF8(result.file);
       return _emscripten_pc_get_file.ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_pc_get_file.sig = 'pp';
 
-  var _emscripten_pc_get_line = (pc) => {
+  
+  function _emscripten_pc_get_line(pc) {
+    pc = bigintToI53Checked(pc);
+  
+  
       var result = convertPCtoSourceLocation(pc);
       return result ? result.line : 0;
-    };
+    ;
+  }
   _emscripten_pc_get_line.sig = 'ip';
 
-  var _emscripten_pc_get_column = (pc) => {
+  
+  function _emscripten_pc_get_column(pc) {
+    pc = bigintToI53Checked(pc);
+  
+  
       var result = convertPCtoSourceLocation(pc);
       return result ? result.column || 0 : 0;
-    };
+    ;
+  }
   _emscripten_pc_get_column.sig = 'ip';
 
 
@@ -17969,13 +19588,19 @@ async function createWasm() {
 
   
   
-  var _emscripten_set_immediate = (cb, userData) => {
+  
+  var _emscripten_set_immediate = function(cb, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  
       
       return emSetImmediate(() => {
         
-        callUserCallback(() => getWasmTableEntry(cb)(userData));
+        callUserCallback(() => ((a1) => getWasmTableEntry(cb).call(null, BigInt(a1)))(userData));
       });
-    };
+    ;
+  };
   _emscripten_set_immediate.sig = 'ipp';
 
   var _emscripten_clear_immediate = (id) => {
@@ -17986,10 +19611,15 @@ async function createWasm() {
 
   
   
-  var _emscripten_set_immediate_loop = (cb, userData) => {
+  
+  var _emscripten_set_immediate_loop = function(cb, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  
       function tick() {
         callUserCallback(() => {
-          if (getWasmTableEntry(cb)(userData)) {
+          if (((a1) => getWasmTableEntry(cb).call(null, BigInt(a1)))(userData)) {
             emSetImmediate(tick);
           } else {
             
@@ -17998,12 +19628,18 @@ async function createWasm() {
       }
       
       emSetImmediate(tick);
-    };
+    ;
+  };
   _emscripten_set_immediate_loop.sig = 'vpp';
 
   
-  var _emscripten_set_timeout = (cb, msecs, userData) =>
-      safeSetTimeout(() => getWasmTableEntry(cb)(userData), msecs);
+  
+  var _emscripten_set_timeout = function(cb, msecs, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  return safeSetTimeout(() => ((a1) => getWasmTableEntry(cb).call(null, BigInt(a1)))(userData), msecs);
+  };
   _emscripten_set_timeout.sig = 'ipdp';
 
   var _emscripten_clear_timeout = clearTimeout;
@@ -18011,13 +19647,18 @@ async function createWasm() {
 
   
   
-  var _emscripten_set_timeout_loop = (cb, msecs, userData) => {
+  
+  var _emscripten_set_timeout_loop = function(cb, msecs, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  
       function tick() {
         var t = _emscripten_get_now();
         var n = t + msecs;
         
         callUserCallback(() => {
-          if (getWasmTableEntry(cb)(t, userData)) {
+          if (((a1, a2) => getWasmTableEntry(cb).call(null, a1, BigInt(a2)))(t, userData)) {
             
             // Save a little bit of code space: modern browsers should treat
             // negative setTimeout as timeout of 0
@@ -18031,16 +19672,23 @@ async function createWasm() {
       }
       
       return setTimeout(tick, 0);
-    };
+    ;
+  };
   _emscripten_set_timeout_loop.sig = 'vpdp';
 
   
-  var _emscripten_set_interval = (cb, msecs, userData) => {
+  
+  var _emscripten_set_interval = function(cb, msecs, userData) {
+    cb = bigintToI53Checked(cb);
+    userData = bigintToI53Checked(userData);
+  
+  
       
       return setInterval(() => {
-        callUserCallback(() => getWasmTableEntry(cb)(userData));
+        callUserCallback(() => ((a1) => getWasmTableEntry(cb).call(null, BigInt(a1)))(userData));
       }, msecs);
-    };
+    ;
+  };
   _emscripten_set_interval.sig = 'ipdp';
 
   var _emscripten_clear_interval = (id) => {
@@ -18051,8 +19699,13 @@ async function createWasm() {
 
   
   
-  var _emscripten_async_call = (func, arg, millis) => {
-      var wrapper = () => getWasmTableEntry(func)(arg);
+  
+  var _emscripten_async_call = function(func, arg, millis) {
+    func = bigintToI53Checked(func);
+    arg = bigintToI53Checked(arg);
+  
+  
+      var wrapper = () => ((a1) => getWasmTableEntry(func).call(null, BigInt(a1)))(arg);
   
       if (millis >= 0
         // node does not support requestAnimationFrame
@@ -18062,7 +19715,8 @@ async function createWasm() {
       } else {
         safeRequestAnimationFrame(wrapper);
       }
-    };
+    ;
+  };
   _emscripten_async_call.sig = 'vppi';
 
   var registerPostMainLoop = (f) => {
@@ -18076,26 +19730,43 @@ async function createWasm() {
     };
 
 
-  var _emscripten_get_main_loop_timing = (mode, value) => {
-      if (mode) HEAP32[((mode)>>2)] = MainLoop.timingMode;
-      if (value) HEAP32[((value)>>2)] = MainLoop.timingValue;
-    };
+  
+  function _emscripten_get_main_loop_timing(mode, value) {
+    mode = bigintToI53Checked(mode);
+    value = bigintToI53Checked(value);
+  
+  
+      if (mode) HEAP32[((mode)/4)] = MainLoop.timingMode;
+      if (value) HEAP32[((value)/4)] = MainLoop.timingValue;
+    ;
+  }
   _emscripten_get_main_loop_timing.sig = 'vpp';
 
 
   
-  var _emscripten_set_main_loop = (func, fps, simulateInfiniteLoop) => {
+  
+  function _emscripten_set_main_loop(func, fps, simulateInfiniteLoop) {
+    func = bigintToI53Checked(func);
+  
+  
       var iterFunc = getWasmTableEntry(func);
       setMainLoop(iterFunc, fps, simulateInfiniteLoop);
-    };
+    ;
+  }
   _emscripten_set_main_loop.sig = 'vpii';
 
 
   
-  var _emscripten_set_main_loop_arg = (func, arg, fps, simulateInfiniteLoop) => {
-      var iterFunc = () => getWasmTableEntry(func)(arg);
+  
+  var _emscripten_set_main_loop_arg = function(func, arg, fps, simulateInfiniteLoop) {
+    func = bigintToI53Checked(func);
+    arg = bigintToI53Checked(arg);
+  
+  
+      var iterFunc = () => ((a1) => getWasmTableEntry(func).call(null, BigInt(a1)))(arg);
       setMainLoop(iterFunc, fps, simulateInfiniteLoop, arg);
-    };
+    ;
+  };
   _emscripten_set_main_loop_arg.sig = 'vppii';
 
   var _emscripten_cancel_main_loop = () => {
@@ -18112,22 +19783,36 @@ async function createWasm() {
 
   
   
-  var __emscripten_push_main_loop_blocker = (func, arg, name) => {
+  
+  var __emscripten_push_main_loop_blocker = function(func, arg, name) {
+    func = bigintToI53Checked(func);
+    arg = bigintToI53Checked(arg);
+    name = bigintToI53Checked(name);
+  
+  
       MainLoop.queue.push({ func: () => {
-        getWasmTableEntry(func)(arg);
+        ((a1) => getWasmTableEntry(func).call(null, BigInt(a1)))(arg);
       }, name: UTF8ToString(name), counted: true });
       MainLoop.updateStatus();
-    };
+    ;
+  };
   __emscripten_push_main_loop_blocker.sig = 'vppp';
 
   
   
-  var __emscripten_push_uncounted_main_loop_blocker = (func, arg, name) => {
+  
+  var __emscripten_push_uncounted_main_loop_blocker = function(func, arg, name) {
+    func = bigintToI53Checked(func);
+    arg = bigintToI53Checked(arg);
+    name = bigintToI53Checked(name);
+  
+  
       MainLoop.queue.push({ func: () => {
-        getWasmTableEntry(func)(arg);
+        ((a1) => getWasmTableEntry(func).call(null, BigInt(a1)))(arg);
       }, name: UTF8ToString(name), counted: false });
       MainLoop.updateStatus();
-    };
+    ;
+  };
   __emscripten_push_uncounted_main_loop_blocker.sig = 'vppp';
 
   var _emscripten_set_main_loop_expected_blockers = (num) => {
@@ -18143,7 +19828,7 @@ async function createWasm() {
   var idsToPromises = (idBuf, size) => {
       var promises = [];
       for (var i = 0; i < size; i++) {
-        var id = HEAP32[(((idBuf)+(i*4))>>2)];
+        var id = HEAP32[(((idBuf)+(i*8))/4)];
         promises[i] = getPromise(id);
       }
       return promises;
@@ -18164,19 +19849,19 @@ async function createWasm() {
         var stack = stackSave();
         // Allocate space for the result value and initialize it to NULL.
         var resultPtr = stackAlloc(POINTER_SIZE);
-        HEAPU32[((resultPtr)>>2)] = 0;
+        HEAPU64[((resultPtr)/8)] = BigInt(0);
         try {
           var result =
-              getWasmTableEntry(callback)(resultPtr, userData, value);
-          var resultVal = HEAPU32[((resultPtr)>>2)];
+              ((a1, a2, a3) => getWasmTableEntry(callback).call(null, BigInt(a1), BigInt(a2), BigInt(a3)))(resultPtr, userData, value);
+          var resultVal = Number(HEAPU64[((resultPtr)/8)]);
         } catch (e) {
           // If the thrown value is potentially a valid pointer, use it as the
           // rejection reason. Otherwise use a null pointer as the reason. If we
           // allow arbitrary objects to be thrown here, we will get a TypeError in
           // MEMORY64 mode when they are later converted to void* rejection
           // values.
-          if (typeof e != 'number') {
-            throw 0;
+          if (typeof e != 'bigint') {
+            throw 0n;
           }
           throw e;
         } finally {
@@ -18201,7 +19886,14 @@ async function createWasm() {
 
   
   
-  var _emscripten_promise_then = (id, onFulfilled, onRejected, userData) => {
+  
+  var _emscripten_promise_then = function(id, onFulfilled, onRejected, userData) {
+    id = bigintToI53Checked(id);
+    onFulfilled = bigintToI53Checked(onFulfilled);
+    onRejected = bigintToI53Checked(onRejected);
+    userData = bigintToI53Checked(userData);
+  
+  var ret = (() => { 
       ;
       var promise = getPromise(id);
       var newId = promiseMap.allocate({
@@ -18209,42 +19901,58 @@ async function createWasm() {
                               makePromiseCallback(onRejected, userData))
       });
       return newId;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_promise_then.sig = 'ppppp';
 
   
-  var _emscripten_promise_all = (idBuf, resultBuf, size) => {
+  
+  var _emscripten_promise_all = function(idBuf, resultBuf, size) {
+    idBuf = bigintToI53Checked(idBuf);
+    resultBuf = bigintToI53Checked(resultBuf);
+    size = bigintToI53Checked(size);
+  
+  var ret = (() => { 
       var promises = idsToPromises(idBuf, size);
       var id = promiseMap.allocate({
         promise: Promise.all(promises).then((results) => {
           if (resultBuf) {
             for (var i = 0; i < size; i++) {
               var result = results[i];
-              HEAPU32[(((resultBuf)+(i*4))>>2)] = result;
+              HEAPU64[(((resultBuf)+(i*8))/8)] = BigInt(result);
             }
           }
           return resultBuf;
         })
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_promise_all.sig = 'pppp';
 
   var setPromiseResult = (ptr, fulfill, value) => {
       var result = fulfill ? 0 : 3
-      HEAP32[((ptr)>>2)] = result;
-      HEAPU32[(((ptr)+(4))>>2)] = value;
+      HEAP32[((ptr)/4)] = result;
+      HEAPU64[(((ptr)+(8))/8)] = BigInt(value);
     };
 
   
   
-  var _emscripten_promise_all_settled = (idBuf, resultBuf, size) => {
+  
+  var _emscripten_promise_all_settled = function(idBuf, resultBuf, size) {
+    idBuf = bigintToI53Checked(idBuf);
+    resultBuf = bigintToI53Checked(resultBuf);
+    size = bigintToI53Checked(size);
+  
+  var ret = (() => { 
       var promises = idsToPromises(idBuf, size);
       var id = promiseMap.allocate({
         promise: Promise.allSettled(promises).then((results) => {
           if (resultBuf) {
             var offset = resultBuf;
-            for (var i = 0; i < size; i++, offset += 8) {
+            for (var i = 0; i < size; i++, offset += 16) {
               if (results[i].status === 'fulfilled') {
                 setPromiseResult(offset, true, results[i].value);
               } else {
@@ -18256,39 +19964,61 @@ async function createWasm() {
         })
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_promise_all_settled.sig = 'pppp';
 
   
-  var _emscripten_promise_any = (idBuf, errorBuf, size) => {
+  
+  var _emscripten_promise_any = function(idBuf, errorBuf, size) {
+    idBuf = bigintToI53Checked(idBuf);
+    errorBuf = bigintToI53Checked(errorBuf);
+    size = bigintToI53Checked(size);
+  
+  var ret = (() => { 
       var promises = idsToPromises(idBuf, size);
       var id = promiseMap.allocate({
         promise: Promise.any(promises).catch((err) => {
           if (errorBuf) {
             for (var i = 0; i < size; i++) {
-              HEAPU32[(((errorBuf)+(i*4))>>2)] = err.errors[i];
+              HEAPU64[(((errorBuf)+(i*8))/8)] = BigInt(err.errors[i]);
             }
           }
           throw errorBuf;
         })
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_promise_any.sig = 'pppp';
 
   
-  var _emscripten_promise_race = (idBuf, size) => {
+  
+  var _emscripten_promise_race = function(idBuf, size) {
+    idBuf = bigintToI53Checked(idBuf);
+    size = bigintToI53Checked(size);
+  
+  var ret = (() => { 
       var promises = idsToPromises(idBuf, size);
       var id = promiseMap.allocate({
         promise: Promise.race(promises)
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_promise_race.sig = 'ppp';
 
-  var _emscripten_promise_await = (returnValuePtr, id) => {
+  function _emscripten_promise_await(returnValuePtr, id) {
+    returnValuePtr = bigintToI53Checked(returnValuePtr);
+    id = bigintToI53Checked(id);
+  
+  
       abort('emscripten_promise_await is only available with ASYNCIFY');
-    };
+    ;
+  }
   _emscripten_promise_await.sig = 'vpp';
 
   
@@ -18321,7 +20051,7 @@ async function createWasm() {
           // Catch all clause matched or exactly the same type is caught
           break;
         }
-        var adjusted_ptr_addr = info.ptr + 16;
+        var adjusted_ptr_addr = info.ptr + 32;
         if (___cxa_can_catch(caughtType, thrownType, adjusted_ptr_addr)) {
           setTempRet0(caughtType);
           return thrown;
@@ -18330,13 +20060,25 @@ async function createWasm() {
       setTempRet0(thrownType);
       return thrown;
     };
-  var ___cxa_find_matching_catch_2 = () => findMatchingCatch([]);
+  
+  var ___cxa_find_matching_catch_2 = () => BigInt(findMatchingCatch([]));;
   ___cxa_find_matching_catch_2.sig = 'p';
 
-  var ___cxa_find_matching_catch_3 = (arg0) => findMatchingCatch([arg0]);
+  
+  var ___cxa_find_matching_catch_3 = (arg0) => {
+    arg0 = bigintToI53Checked(arg0);
+  
+  return BigInt(findMatchingCatch([arg0]));
+  };
   ___cxa_find_matching_catch_3.sig = 'pp';
 
-  var ___cxa_find_matching_catch_4 = (arg0,arg1) => findMatchingCatch([arg0,arg1]);
+  
+  var ___cxa_find_matching_catch_4 = (arg0,arg1) => {
+    arg0 = bigintToI53Checked(arg0);
+    arg1 = bigintToI53Checked(arg1);
+  
+  return BigInt(findMatchingCatch([arg0,arg1]));
+  };
   ___cxa_find_matching_catch_4.sig = 'ppp';
 
 
@@ -18365,13 +20107,21 @@ async function createWasm() {
     };
   ___cxa_rethrow.sig = 'v';
 
-  var _llvm_eh_typeid_for = (type) => type;
+  function _llvm_eh_typeid_for(type) {
+    type = bigintToI53Checked(type);
+  
+  return type;
+  }
   _llvm_eh_typeid_for.sig = 'vp';
 
   
   
   
-  var ___cxa_begin_catch = (ptr) => {
+  
+  var ___cxa_begin_catch = function(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  var ret = (() => { 
       var info = new ExceptionInfo(ptr);
       if (!info.get_caught()) {
         info.set_caught(true);
@@ -18381,7 +20131,9 @@ async function createWasm() {
       exceptionCaught.push(info);
       ___cxa_increment_exception_refcount(ptr);
       return ___cxa_get_exception_ptr(ptr);
-    };
+     })();
+  return BigInt(ret);
+  };
   ___cxa_begin_catch.sig = 'pp';
 
   
@@ -18399,27 +20151,40 @@ async function createWasm() {
   ___cxa_end_catch.sig = 'v';
 
 
-  var ___cxa_call_unexpected = (exception) => abort('Unexpected exception thrown, this is not properly supported - aborting');
+  function ___cxa_call_unexpected(exception) {
+    exception = bigintToI53Checked(exception);
+  
+  return abort('Unexpected exception thrown, this is not properly supported - aborting');
+  }
   ___cxa_call_unexpected.sig = 'vp';
 
 
-  function ___cxa_current_exception_type() {
+  var ___cxa_current_exception_type = function() {
+  
+  var ret = (() => { 
       if (!exceptionCaught.length) {
         return 0;
       }
       var info = exceptionCaught[exceptionCaught.length - 1];
       return info.get_type();
-    }
+     })();
+  return BigInt(ret);
+  };
   ___cxa_current_exception_type.sig = 'p';
 
 
 
-  var ___resumeException = (ptr) => {
+  
+  function ___resumeException(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       if (!exceptionLast) {
         exceptionLast = ptr;
       }
       throw exceptionLast;
-    };
+    ;
+  }
   ___resumeException.sig = 'vp';
 
   
@@ -18863,9 +20628,9 @@ async function createWasm() {
   setFullscreenCanvasSize() {
         // check if SDL is available
         if (typeof SDL != "undefined") {
-          var flags = HEAPU32[((SDL.screen)>>2)];
+          var flags = HEAPU32[((SDL.screen)/4)];
           flags = flags | 0x00800000; // set SDL_FULLSCREEN flag
-          HEAP32[((SDL.screen)>>2)] = flags;
+          HEAP32[((SDL.screen)/4)] = flags;
         }
         Browser.updateCanvasDimensions(Browser.getCanvas());
         Browser.updateResizeListeners();
@@ -18873,9 +20638,9 @@ async function createWasm() {
   setWindowedCanvasSize() {
         // check if SDL is available
         if (typeof SDL != "undefined") {
-          var flags = HEAPU32[((SDL.screen)>>2)];
+          var flags = HEAPU32[((SDL.screen)/4)];
           flags = flags & ~0x00800000; // clear SDL_FULLSCREEN flag
-          HEAP32[((SDL.screen)>>2)] = flags;
+          HEAP32[((SDL.screen)/4)] = flags;
         }
         Browser.updateCanvasDimensions(Browser.getCanvas());
         Browser.updateResizeListeners();
@@ -18930,7 +20695,13 @@ async function createWasm() {
   
   
   
-  var _emscripten_run_preload_plugins = (file, onload, onerror) => {
+  
+  var _emscripten_run_preload_plugins = function(file, onload, onerror) {
+    file = bigintToI53Checked(file);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       
   
       var _file = UTF8ToString(file);
@@ -18944,16 +20715,17 @@ async function createWasm() {
         new Uint8Array(data.object.contents), true, true,
         () => {
           
-          if (onload) getWasmTableEntry(onload)(file);
+          if (onload) ((a1) => getWasmTableEntry(onload).call(null, BigInt(a1)))(file);
         },
         () => {
           
-          if (onerror) getWasmTableEntry(onerror)(file);
+          if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(file);
         },
         true // don'tCreateFile - it's already there
       );
       return 0;
-    };
+    ;
+  };
   _emscripten_run_preload_plugins.sig = 'ippp';
 
   var Browser_asyncPrepareDataCounter = 0;
@@ -18962,7 +20734,15 @@ async function createWasm() {
   
   
   
-  var _emscripten_run_preload_plugins_data = (data, size, suffix, arg, onload, onerror) => {
+  
+  var _emscripten_run_preload_plugins_data = function(data, size, suffix, arg, onload, onerror) {
+    data = bigintToI53Checked(data);
+    suffix = bigintToI53Checked(suffix);
+    arg = bigintToI53Checked(arg);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       
   
       var _suffix = UTF8ToString(suffix);
@@ -18975,29 +20755,41 @@ async function createWasm() {
         true, true,
         () => {
           
-          if (onload) getWasmTableEntry(onload)(arg, cname);
+          if (onload) ((a1, a2) => getWasmTableEntry(onload).call(null, BigInt(a1), BigInt(a2)))(arg, cname);
         },
         () => {
           
-          if (onerror) getWasmTableEntry(onerror)(arg);
+          if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(arg);
         },
         true // don'tCreateFile - it's already there
       );
-    };
+    ;
+  };
   _emscripten_run_preload_plugins_data.sig = 'vpipppp';
 
   
   
-  var _emscripten_async_run_script = (script, millis) => {
+  
+  var _emscripten_async_run_script = function(script, millis) {
+    script = bigintToI53Checked(script);
+  
+  
       // TODO: cache these to avoid generating garbage
       safeSetTimeout(() => _emscripten_run_script(script), millis);
-    };
+    ;
+  };
   _emscripten_async_run_script.sig = 'vpi';
 
   
   
   
-  var _emscripten_async_load_script = async (url, onload, onerror) => {
+  
+  var _emscripten_async_load_script = async function(url, onload, onerror) {
+    url = bigintToI53Checked(url);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       url = UTF8ToString(url);
       
   
@@ -19036,10 +20828,14 @@ async function createWasm() {
       script.onerror = loadError;
       script.src = url;
       document.body.appendChild(script);
-    };
+    ;
+  };
   _emscripten_async_load_script.sig = 'vppp';
 
-  var _emscripten_get_window_title = () => {
+  
+  var _emscripten_get_window_title = function() {
+  
+  var ret = (() => { 
       var buflen = 256;
   
       if (!_emscripten_get_window_title.buffer) {
@@ -19049,17 +20845,30 @@ async function createWasm() {
       stringToUTF8(document.title, _emscripten_get_window_title.buffer, buflen);
   
       return _emscripten_get_window_title.buffer;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_get_window_title.sig = 'p';
 
   
-  var _emscripten_set_window_title = (title) => document.title = UTF8ToString(title);
+  
+  function _emscripten_set_window_title(title) {
+    title = bigintToI53Checked(title);
+  
+  return document.title = UTF8ToString(title);
+  }
   _emscripten_set_window_title.sig = 'vp';
 
-  var _emscripten_get_screen_size = (width, height) => {
-      HEAP32[((width)>>2)] = screen.width;
-      HEAP32[((height)>>2)] = screen.height;
-    };
+  
+  function _emscripten_get_screen_size(width, height) {
+    width = bigintToI53Checked(width);
+    height = bigintToI53Checked(height);
+  
+  
+      HEAP32[((width)/4)] = screen.width;
+      HEAP32[((height)/4)] = screen.height;
+    ;
+  }
   _emscripten_get_screen_size.sig = 'vpp';
 
   var _emscripten_hide_mouse = () => {
@@ -19078,19 +20887,30 @@ async function createWasm() {
   var _emscripten_set_canvas_size = (width, height) => Browser.setCanvasSize(width, height);
   _emscripten_set_canvas_size.sig = 'vii';
 
-  var _emscripten_get_canvas_size = (width, height, isFullscreen) => {
+  
+  function _emscripten_get_canvas_size(width, height, isFullscreen) {
+    width = bigintToI53Checked(width);
+    height = bigintToI53Checked(height);
+    isFullscreen = bigintToI53Checked(isFullscreen);
+  
+  
       var canvas = Browser.getCanvas();
-      HEAP32[((width)>>2)] = canvas.width;
-      HEAP32[((height)>>2)] = canvas.height;
-      HEAP32[((isFullscreen)>>2)] = Browser.isFullscreen ? 1 : 0;
-    };
+      HEAP32[((width)/4)] = canvas.width;
+      HEAP32[((height)/4)] = canvas.height;
+      HEAP32[((isFullscreen)/4)] = Browser.isFullscreen ? 1 : 0;
+    ;
+  }
   _emscripten_get_canvas_size.sig = 'vppp';
 
   
   
   
   
-  var _emscripten_create_worker = (url) => {
+  
+  function _emscripten_create_worker(url) {
+    url = bigintToI53Checked(url);
+  
+  
       url = UTF8ToString(url);
       var id = Browser.workers.length;
       var info = {
@@ -19129,7 +20949,8 @@ async function createWasm() {
       };
       Browser.workers.push(info);
       return id;
-    };
+    ;
+  }
   _emscripten_create_worker.sig = 'ip';
 
   
@@ -19143,7 +20964,14 @@ async function createWasm() {
 
   
   
-  var _emscripten_call_worker = (id, funcName, data, size, callback, arg) => {
+  
+  var _emscripten_call_worker = function(id, funcName, data, size, callback, arg) {
+    funcName = bigintToI53Checked(funcName);
+    data = bigintToI53Checked(data);
+    callback = bigintToI53Checked(callback);
+    arg = bigintToI53Checked(arg);
+  
+  
       funcName = UTF8ToString(funcName);
       var info = Browser.workers[id];
       var callbackId = -1;
@@ -19155,7 +20983,7 @@ async function createWasm() {
         
         callbackId = info.callbacks.length;
         info.callbacks.push({
-          func: getWasmTableEntry(callback),
+          func: ((a1, a2, a3) => getWasmTableEntry(callback).call(null, BigInt(a1), a2, BigInt(a3))),
           arg
         });
         info.awaited++;
@@ -19170,7 +20998,8 @@ async function createWasm() {
       } else {
         info.worker.postMessage(transferObject);
       }
-    };
+    ;
+  };
   _emscripten_call_worker.sig = 'vippipp';
 
   var _emscripten_get_worker_queue_size = (id) => {
@@ -19192,14 +21021,21 @@ async function createWasm() {
   
       HEAPU8.set(image.data, buf);
   
-      HEAP32[((w)>>2)] = canvas.width;
-      HEAP32[((h)>>2)] = canvas.height;
+      HEAP32[((w)/4)] = canvas.width;
+      HEAP32[((h)/4)] = canvas.height;
       return buf;
     };
   
   
   
-  var _emscripten_get_preloaded_image_data = (path, w, h) => getPreloadedImageData(UTF8ToString(path), w, h);
+  
+  var _emscripten_get_preloaded_image_data = (path, w, h) => {
+    path = bigintToI53Checked(path);
+    w = bigintToI53Checked(w);
+    h = bigintToI53Checked(h);
+  
+  return BigInt(getPreloadedImageData(UTF8ToString(path), w, h));
+  };
   _emscripten_get_preloaded_image_data.sig = 'pppp';
 
   var getPreloadedImageData__data = ["$PATH_FS","malloc"];
@@ -19207,7 +21043,13 @@ async function createWasm() {
 
   
   
-  var _emscripten_get_preloaded_image_data_from_FILE = (file, w, h) => {
+  
+  var _emscripten_get_preloaded_image_data_from_FILE = function(file, w, h) {
+    file = bigintToI53Checked(file);
+    w = bigintToI53Checked(w);
+    h = bigintToI53Checked(h);
+  
+  var ret = (() => { 
       var fd = _fileno(file);
       var stream = FS.getStream(fd);
       if (stream) {
@@ -19215,7 +21057,9 @@ async function createWasm() {
       }
   
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_get_preloaded_image_data_from_FILE.sig = 'pppp';
 
   var wget = {
@@ -19245,7 +21089,14 @@ async function createWasm() {
   var FS_unlink = (path) => FS.unlink(path);
   
   
-  var _emscripten_async_wget = (url, file, onload, onerror) => {
+  
+  var _emscripten_async_wget = function(url, file, onload, onerror) {
+    url = bigintToI53Checked(url);
+    file = bigintToI53Checked(file);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       
   
       var _url = UTF8ToString(url);
@@ -19256,7 +21107,7 @@ async function createWasm() {
           
           callUserCallback(() => {
             var sp = stackSave();
-            getWasmTableEntry(callback)(stringToUTF8OnStack(_file));
+            ((a1) => getWasmTableEntry(callback).call(null, BigInt(a1)))(stringToUTF8OnStack(_file));
             stackRestore(sp);
           });
         }
@@ -19279,7 +21130,8 @@ async function createWasm() {
           FS_mkdirTree(destinationDirectory);
         }
       );
-    };
+    ;
+  };
   _emscripten_async_wget.sig = 'vpppp';
 
   
@@ -19287,7 +21139,14 @@ async function createWasm() {
   
   
   
-  var _emscripten_async_wget_data = async (url, userdata, onload, onerror) => {
+  
+  var _emscripten_async_wget_data = async function(url, userdata, onload, onerror) {
+    url = bigintToI53Checked(url);
+    userdata = bigintToI53Checked(userdata);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       
       /* no need for run dependency, this is async but will not do any prepare etc. step */
       try {
@@ -19296,18 +21155,19 @@ async function createWasm() {
         callUserCallback(() => {
           var buffer = _malloc(byteArray.length);
           HEAPU8.set(byteArray, buffer);
-          getWasmTableEntry(onload)(userdata, buffer, byteArray.length);
+          ((a1, a2, a3) => getWasmTableEntry(onload).call(null, BigInt(a1), BigInt(a2), a3))(userdata, buffer, byteArray.length);
           _free(buffer);
         });
       } catch (e) {
         if (onerror) {
           
           callUserCallback(() => {
-            getWasmTableEntry(onerror)(userdata);
+            ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(userdata);
           });
         }
       }
-    };
+    ;
+  };
   _emscripten_async_wget_data.sig = 'vpppp';
 
   
@@ -19315,7 +21175,18 @@ async function createWasm() {
   
   
   
-  var _emscripten_async_wget2 = (url, file, request, param, userdata, onload, onerror, onprogress) => {
+  
+  var _emscripten_async_wget2 = function(url, file, request, param, userdata, onload, onerror, onprogress) {
+    url = bigintToI53Checked(url);
+    file = bigintToI53Checked(file);
+    request = bigintToI53Checked(request);
+    param = bigintToI53Checked(param);
+    userdata = bigintToI53Checked(userdata);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+    onprogress = bigintToI53Checked(onprogress);
+  
+  
       
   
       var _url = UTF8ToString(url);
@@ -19347,11 +21218,11 @@ async function createWasm() {
           FS.createDataFile( _file.slice(0, index), _file.slice(index + 1), new Uint8Array(/** @type{ArrayBuffer}*/(http.response)), true, true, false);
           if (onload) {
             var sp = stackSave();
-            getWasmTableEntry(onload)(handle, userdata, stringToUTF8OnStack(_file));
+            ((a1, a2, a3) => getWasmTableEntry(onload).call(null, a1, BigInt(a2), BigInt(a3)))(handle, userdata, stringToUTF8OnStack(_file));
             stackRestore(sp);
           }
         } else {
-          if (onerror) getWasmTableEntry(onerror)(handle, userdata, http.status);
+          if (onerror) ((a1, a2, a3) => getWasmTableEntry(onerror).call(null, a1, BigInt(a2), a3))(handle, userdata, http.status);
         }
   
         delete wget.wgetRequests[handle];
@@ -19360,7 +21231,7 @@ async function createWasm() {
       // ERROR
       http.onerror = (e) => {
         
-        if (onerror) getWasmTableEntry(onerror)(handle, userdata, http.status);
+        if (onerror) ((a1, a2, a3) => getWasmTableEntry(onerror).call(null, a1, BigInt(a2), a3))(handle, userdata, http.status);
         delete wget.wgetRequests[handle];
       };
   
@@ -19368,7 +21239,7 @@ async function createWasm() {
       http.onprogress = (e) => {
         if (e.lengthComputable || (e.lengthComputable === undefined && e.total != 0)) {
           var percentComplete = (e.loaded / e.total)*100;
-          if (onprogress) getWasmTableEntry(onprogress)(handle, userdata, percentComplete);
+          if (onprogress) ((a1, a2, a3) => getWasmTableEntry(onprogress).call(null, a1, BigInt(a2), a3))(handle, userdata, percentComplete);
         }
       };
   
@@ -19389,14 +21260,25 @@ async function createWasm() {
       wget.wgetRequests[handle] = http;
   
       return handle;
-    };
+    ;
+  };
   _emscripten_async_wget2.sig = 'ipppppppp';
 
   
   
   
   
-  var _emscripten_async_wget2_data = (url, request, param, userdata, free, onload, onerror, onprogress) => {
+  
+  function _emscripten_async_wget2_data(url, request, param, userdata, free, onload, onerror, onprogress) {
+    url = bigintToI53Checked(url);
+    request = bigintToI53Checked(request);
+    param = bigintToI53Checked(param);
+    userdata = bigintToI53Checked(userdata);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+    onprogress = bigintToI53Checked(onprogress);
+  
+  
       var _url = UTF8ToString(url);
       var _request = UTF8ToString(request);
       var _param = UTF8ToString(param);
@@ -19414,7 +21296,7 @@ async function createWasm() {
           if (http.statusText) {
             statusText = stringToUTF8OnStack(http.statusText);
           }
-          getWasmTableEntry(onerror)(handle, userdata, http.status, statusText);
+          ((a1, a2, a3, a4) => getWasmTableEntry(onerror).call(null, a1, BigInt(a2), a3, BigInt(a4)))(handle, userdata, http.status, statusText);
           stackRestore(sp);
         }
       }
@@ -19425,7 +21307,7 @@ async function createWasm() {
           var byteArray = new Uint8Array(/** @type{ArrayBuffer} */(http.response));
           var buffer = _malloc(byteArray.length);
           HEAPU8.set(byteArray, buffer);
-          if (onload) getWasmTableEntry(onload)(handle, userdata, buffer, byteArray.length);
+          if (onload) ((a1, a2, a3, a4) => getWasmTableEntry(onload).call(null, a1, BigInt(a2), BigInt(a3), a4))(handle, userdata, buffer, byteArray.length);
           if (free) _free(buffer);
         } else {
           onerrorjs();
@@ -19460,7 +21342,8 @@ async function createWasm() {
       wget.wgetRequests[handle] = http;
   
       return handle;
-    };
+    ;
+  }
   _emscripten_async_wget2_data.sig = 'ippppippp';
 
   var _emscripten_async_wget2_abort = (handle) => {
@@ -19473,15 +21356,19 @@ async function createWasm() {
 
 
 
-  var ___asctime_r = (tmPtr, buf) => {
+  var ___asctime_r = function(tmPtr, buf) {
+    tmPtr = bigintToI53Checked(tmPtr);
+    buf = bigintToI53Checked(buf);
+  
+  var ret = (() => { 
       var date = {
-        tm_sec: HEAP32[((tmPtr)>>2)],
-        tm_min: HEAP32[(((tmPtr)+(4))>>2)],
-        tm_hour: HEAP32[(((tmPtr)+(8))>>2)],
-        tm_mday: HEAP32[(((tmPtr)+(12))>>2)],
-        tm_mon: HEAP32[(((tmPtr)+(16))>>2)],
-        tm_year: HEAP32[(((tmPtr)+(20))>>2)],
-        tm_wday: HEAP32[(((tmPtr)+(24))>>2)]
+        tm_sec: HEAP32[((tmPtr)/4)],
+        tm_min: HEAP32[(((tmPtr)+(4))/4)],
+        tm_hour: HEAP32[(((tmPtr)+(8))/4)],
+        tm_mday: HEAP32[(((tmPtr)+(12))/4)],
+        tm_mon: HEAP32[(((tmPtr)+(16))/4)],
+        tm_year: HEAP32[(((tmPtr)+(20))/4)],
+        tm_wday: HEAP32[(((tmPtr)+(24))/4)]
       };
       var days = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
       var months = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -19499,7 +21386,9 @@ async function createWasm() {
       // Our undefined behavior is to truncate the write to at most 26 bytes, including null terminator.
       stringToUTF8(s, buf, 26);
       return buf;
-    };
+     })();
+  return BigInt(ret);
+  };
   ___asctime_r.sig = 'ppp';
 
 
@@ -19554,7 +21443,13 @@ async function createWasm() {
   
   
   
-  var _strptime = (buf, format, tm) => {
+  
+  var _strptime = function(buf, format, tm) {
+    buf = bigintToI53Checked(buf);
+    format = bigintToI53Checked(format);
+    tm = bigintToI53Checked(tm);
+  
+  var ret = (() => { 
       // char *strptime(const char *restrict buf, const char *restrict format, struct tm *restrict tm);
       // http://pubs.opengroup.org/onlinepubs/009695399/functions/strptime.html
       var pattern = UTF8ToString(format);
@@ -19632,12 +21527,12 @@ async function createWasm() {
           return (typeof value != 'number' || isNaN(value)) ? min : (value>=min ? (value<=max ? value: max): min);
         };
         return {
-          year: fixup(HEAP32[(((tm)+(20))>>2)] + 1900 , 1970, 9999),
-          month: fixup(HEAP32[(((tm)+(16))>>2)], 0, 11),
-          day: fixup(HEAP32[(((tm)+(12))>>2)], 1, 31),
-          hour: fixup(HEAP32[(((tm)+(8))>>2)], 0, 23),
-          min: fixup(HEAP32[(((tm)+(4))>>2)], 0, 59),
-          sec: fixup(HEAP32[((tm)>>2)], 0, 59),
+          year: fixup(HEAP32[(((tm)+(20))/4)] + 1900 , 1970, 9999),
+          month: fixup(HEAP32[(((tm)+(16))/4)], 0, 11),
+          day: fixup(HEAP32[(((tm)+(12))/4)], 1, 31),
+          hour: fixup(HEAP32[(((tm)+(8))/4)], 0, 23),
+          min: fixup(HEAP32[(((tm)+(4))/4)], 0, 59),
+          sec: fixup(HEAP32[((tm)/4)], 0, 59),
           gmtoff: 0
         };
       };
@@ -19793,16 +21688,16 @@ async function createWasm() {
         */
   
         var fullDate = new Date(date.year, date.month, date.day, date.hour, date.min, date.sec, 0);
-        HEAP32[((tm)>>2)] = fullDate.getSeconds();
-        HEAP32[(((tm)+(4))>>2)] = fullDate.getMinutes();
-        HEAP32[(((tm)+(8))>>2)] = fullDate.getHours();
-        HEAP32[(((tm)+(12))>>2)] = fullDate.getDate();
-        HEAP32[(((tm)+(16))>>2)] = fullDate.getMonth();
-        HEAP32[(((tm)+(20))>>2)] = fullDate.getFullYear()-1900;
-        HEAP32[(((tm)+(24))>>2)] = fullDate.getDay();
-        HEAP32[(((tm)+(28))>>2)] = arraySum(isLeapYear(fullDate.getFullYear()) ? MONTH_DAYS_LEAP : MONTH_DAYS_REGULAR, fullDate.getMonth()-1)+fullDate.getDate()-1;
-        HEAP32[(((tm)+(32))>>2)] = 0;
-        HEAP32[(((tm)+(36))>>2)] = date.gmtoff;
+        HEAP32[((tm)/4)] = fullDate.getSeconds();
+        HEAP32[(((tm)+(4))/4)] = fullDate.getMinutes();
+        HEAP32[(((tm)+(8))/4)] = fullDate.getHours();
+        HEAP32[(((tm)+(12))/4)] = fullDate.getDate();
+        HEAP32[(((tm)+(16))/4)] = fullDate.getMonth();
+        HEAP32[(((tm)+(20))/4)] = fullDate.getFullYear()-1900;
+        HEAP32[(((tm)+(24))/4)] = fullDate.getDay();
+        HEAP32[(((tm)+(28))/4)] = arraySum(isLeapYear(fullDate.getFullYear()) ? MONTH_DAYS_LEAP : MONTH_DAYS_REGULAR, fullDate.getMonth()-1)+fullDate.getDate()-1;
+        HEAP32[(((tm)+(32))/4)] = 0;
+        HEAP64[(((tm)+(40))/8)] = BigInt(date.gmtoff);
    
         // we need to convert the matched sequence into an integer array to take care of UTF-8 characters > 0x7F
         // TODO: not sure that intArrayFromString handles all unicode characters correctly
@@ -19810,10 +21705,20 @@ async function createWasm() {
       }
   
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _strptime.sig = 'pppp';
 
-  var _strptime_l = (buf, format, tm, locale) => _strptime(buf, format, tm);
+  
+  var _strptime_l = (buf, format, tm, locale) => {
+    buf = bigintToI53Checked(buf);
+    format = bigintToI53Checked(format);
+    tm = bigintToI53Checked(tm);
+    locale = bigintToI53Checked(locale);
+  
+  return BigInt(_strptime(buf, format, tm));
+  };
   _strptime_l.sig = 'ppppp';
 
 
@@ -19898,14 +21803,19 @@ async function createWasm() {
 
 
 
-  var __dlsym_catchup_js = (handle, symbolIndex) => {
+  var __dlsym_catchup_js = function(handle, symbolIndex) {
+    handle = bigintToI53Checked(handle);
+  
+  var ret = (() => { 
       var lib = LDSO.loadedLibsByHandle[handle];
       var symDict = lib.exports;
       var symName = Object.keys(symDict)[symbolIndex];
       var sym = symDict[symName];
       var result = addFunction(sym, sym.sig);
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   __dlsym_catchup_js.sig = 'ppi';
 
 
@@ -19955,28 +21865,58 @@ async function createWasm() {
       SOCKFS.on(event, callback ? _callback : null);
     };
 
-  var _emscripten_set_socket_error_callback = (userData, callback) =>
-      _setNetworkCallback('error', userData, callback);
+  
+  function _emscripten_set_socket_error_callback(userData, callback) {
+    userData = bigintToI53Checked(userData);
+    callback = bigintToI53Checked(callback);
+  
+  return _setNetworkCallback('error', userData, callback);
+  }
   _emscripten_set_socket_error_callback.sig = 'vpp';
 
-  var _emscripten_set_socket_open_callback = (userData, callback) =>
-      _setNetworkCallback('open', userData, callback);
+  
+  function _emscripten_set_socket_open_callback(userData, callback) {
+    userData = bigintToI53Checked(userData);
+    callback = bigintToI53Checked(callback);
+  
+  return _setNetworkCallback('open', userData, callback);
+  }
   _emscripten_set_socket_open_callback.sig = 'vpp';
 
-  var _emscripten_set_socket_listen_callback = (userData, callback) =>
-      _setNetworkCallback('listen', userData, callback);
+  
+  function _emscripten_set_socket_listen_callback(userData, callback) {
+    userData = bigintToI53Checked(userData);
+    callback = bigintToI53Checked(callback);
+  
+  return _setNetworkCallback('listen', userData, callback);
+  }
   _emscripten_set_socket_listen_callback.sig = 'vpp';
 
-  var _emscripten_set_socket_connection_callback = (userData, callback) =>
-      _setNetworkCallback('connection', userData, callback);
+  
+  function _emscripten_set_socket_connection_callback(userData, callback) {
+    userData = bigintToI53Checked(userData);
+    callback = bigintToI53Checked(callback);
+  
+  return _setNetworkCallback('connection', userData, callback);
+  }
   _emscripten_set_socket_connection_callback.sig = 'vpp';
 
-  var _emscripten_set_socket_message_callback = (userData, callback) =>
-      _setNetworkCallback('message', userData, callback);
+  
+  function _emscripten_set_socket_message_callback(userData, callback) {
+    userData = bigintToI53Checked(userData);
+    callback = bigintToI53Checked(callback);
+  
+  return _setNetworkCallback('message', userData, callback);
+  }
   _emscripten_set_socket_message_callback.sig = 'vpp';
 
-  var _emscripten_set_socket_close_callback = (userData, callback) =>
-      _setNetworkCallback('close', userData, callback);
+  
+  function _emscripten_set_socket_close_callback(userData, callback) {
+    userData = bigintToI53Checked(userData);
+    callback = bigintToI53Checked(callback);
+  
+  return _setNetworkCallback('close', userData, callback);
+  }
   _emscripten_set_socket_close_callback.sig = 'vpp';
 
 
@@ -19986,37 +21926,72 @@ async function createWasm() {
 
 
   
-  var _emscripten_webgl_enable_ANGLE_instanced_arrays = (ctx) => webgl_enable_ANGLE_instanced_arrays(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_ANGLE_instanced_arrays(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_ANGLE_instanced_arrays(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_ANGLE_instanced_arrays.sig = 'ip';
 
 
   
-  var _emscripten_webgl_enable_OES_vertex_array_object = (ctx) => webgl_enable_OES_vertex_array_object(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_OES_vertex_array_object(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_OES_vertex_array_object(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_OES_vertex_array_object.sig = 'ip';
 
 
   
-  var _emscripten_webgl_enable_WEBGL_draw_buffers = (ctx) => webgl_enable_WEBGL_draw_buffers(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_WEBGL_draw_buffers(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_WEBGL_draw_buffers(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_WEBGL_draw_buffers.sig = 'ip';
 
 
   
-  var _emscripten_webgl_enable_WEBGL_multi_draw = (ctx) => webgl_enable_WEBGL_multi_draw(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_WEBGL_multi_draw(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_WEBGL_multi_draw(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_WEBGL_multi_draw.sig = 'ip';
 
 
   
-  var _emscripten_webgl_enable_EXT_polygon_offset_clamp = (ctx) => webgl_enable_EXT_polygon_offset_clamp(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_EXT_polygon_offset_clamp(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_EXT_polygon_offset_clamp(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_EXT_polygon_offset_clamp.sig = 'ip';
 
 
   
-  var _emscripten_webgl_enable_EXT_clip_control = (ctx) => webgl_enable_EXT_clip_control(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_EXT_clip_control(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_EXT_clip_control(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_EXT_clip_control.sig = 'ip';
 
 
   
-  var _emscripten_webgl_enable_WEBGL_polygon_mode = (ctx) => webgl_enable_WEBGL_polygon_mode(GL.contexts[ctx].GLctx);
+  
+  function _emscripten_webgl_enable_WEBGL_polygon_mode(ctx) {
+    ctx = bigintToI53Checked(ctx);
+  
+  return webgl_enable_WEBGL_polygon_mode(GL.contexts[ctx].GLctx);
+  }
   _emscripten_webgl_enable_WEBGL_polygon_mode.sig = 'ip';
 
 
@@ -20138,9 +22113,14 @@ async function createWasm() {
 
 
 
-  var _glVertexPointer = (size, type, stride, ptr) => {
+  
+  function _glVertexPointer(size, type, stride, ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       throw 'Legacy GL function (glVertexPointer) called. If you want legacy GL emulation, you need to compile with -sLEGACY_GL_EMULATION to enable legacy GL emulation.';
-    };
+    ;
+  }
   _glVertexPointer.sig = 'viiip';
 
   var _glMatrixMode = () => {
@@ -20212,16 +22192,22 @@ async function createWasm() {
 
 
   
+  
   /** @suppress {duplicate } */
-  var _glMultiDrawArraysWEBGL = (mode, firsts, counts, drawcount) => {
+  function _glMultiDrawArraysWEBGL(mode, firsts, counts, drawcount) {
+    firsts = bigintToI53Checked(firsts);
+    counts = bigintToI53Checked(counts);
+  
+  
       GLctx.multiDrawWebgl['multiDrawArraysWEBGL'](
         mode,
         HEAP32,
-        ((firsts)>>2),
+        ((firsts)/4),
         HEAP32,
-        ((counts)>>2),
+        ((counts)/4),
         drawcount);
-    };
+    ;
+  }
   _glMultiDrawArraysWEBGL.sig = 'vippi';
   var _glMultiDrawArrays = _glMultiDrawArraysWEBGL;
   _glMultiDrawArrays.sig = 'vippi';
@@ -20231,34 +22217,66 @@ async function createWasm() {
 
 
   
+  
   /** @suppress {duplicate } */
-  var _glMultiDrawArraysInstancedWEBGL = (mode, firsts, counts, instanceCounts, drawcount) => {
+  function _glMultiDrawArraysInstancedWEBGL(mode, firsts, counts, instanceCounts, drawcount) {
+    firsts = bigintToI53Checked(firsts);
+    counts = bigintToI53Checked(counts);
+    instanceCounts = bigintToI53Checked(instanceCounts);
+  
+  
       GLctx.multiDrawWebgl['multiDrawArraysInstancedWEBGL'](
         mode,
         HEAP32,
-        ((firsts)>>2),
+        ((firsts)/4),
         HEAP32,
-        ((counts)>>2),
+        ((counts)/4),
         HEAP32,
-        ((instanceCounts)>>2),
+        ((instanceCounts)/4),
         drawcount);
-    };
+    ;
+  }
   _glMultiDrawArraysInstancedWEBGL.sig = 'vipppi';
   var _glMultiDrawArraysInstancedANGLE = _glMultiDrawArraysInstancedWEBGL;
 
 
   
+  var convertOffsets = (offsets, count) => {
+      var offsets32 = stackAlloc(count * 4);
+      var i64ptr = offsets >> 3;
+      var i32ptr = offsets32 >> 2;
+      for (var i = 0; i < count; i++, i32ptr++, i64ptr++) {
+        var i64val = HEAPU64[i64ptr];
+        assert(i64val >= 0 && i32ptr <= 0xffffffff);
+        HEAPU32[i32ptr] = Number(i64val);
+      }
+      return offsets32;
+    };
+
+  
+  
+  
+  
+  
   /** @suppress {duplicate } */
-  var _glMultiDrawElementsWEBGL = (mode, counts, type, offsets, drawcount) => {
+  function _glMultiDrawElementsWEBGL(mode, counts, type, offsets, drawcount) {
+    counts = bigintToI53Checked(counts);
+    offsets = bigintToI53Checked(offsets);
+  
+  
+      var stack = stackSave();
+      offsets = convertOffsets(offsets, drawcount);
       GLctx.multiDrawWebgl['multiDrawElementsWEBGL'](
         mode,
         HEAP32,
-        ((counts)>>2),
+        ((counts)/4),
         type,
         HEAP32,
-        ((offsets)>>2),
+        ((offsets)/4),
         drawcount);
-    };
+      stackRestore(stack);
+    ;
+  }
   _glMultiDrawElementsWEBGL.sig = 'vipipi';
   var _glMultiDrawElements = _glMultiDrawElementsWEBGL;
   _glMultiDrawElements.sig = 'vipipi';
@@ -20268,19 +22286,32 @@ async function createWasm() {
 
 
   
+  
+  
+  
+  
   /** @suppress {duplicate } */
-  var _glMultiDrawElementsInstancedWEBGL = (mode, counts, type, offsets, instanceCounts, drawcount) => {
+  function _glMultiDrawElementsInstancedWEBGL(mode, counts, type, offsets, instanceCounts, drawcount) {
+    counts = bigintToI53Checked(counts);
+    offsets = bigintToI53Checked(offsets);
+    instanceCounts = bigintToI53Checked(instanceCounts);
+  
+  
+      var stack = stackSave();
+      offsets = convertOffsets(offsets, drawcount);
       GLctx.multiDrawWebgl['multiDrawElementsInstancedWEBGL'](
         mode,
         HEAP32,
-        ((counts)>>2),
+        ((counts)/4),
         type,
         HEAP32,
-        ((offsets)>>2),
+        ((offsets)/4),
         HEAP32,
-        ((instanceCounts)>>2),
+        ((instanceCounts)/4),
         drawcount);
-    };
+      stackRestore(stack);
+    ;
+  }
   _glMultiDrawElementsInstancedWEBGL.sig = 'vipippi';
   var _glMultiDrawElementsInstancedANGLE = _glMultiDrawElementsInstancedWEBGL;
 
@@ -20588,7 +22619,7 @@ async function createWasm() {
       var writeLength = dstLength < len ? dstLength : len;
       var heap = heapType ? HEAPF32 : HEAP32;
       // Works because HEAPF32 and HEAP32 have the same bytes-per-element
-      dst = ((dst)>>2);
+      dst = ((dst)/4);
       for (var i = 0; i < writeLength; ++i) {
         heap[dst + i] = arr[i];
       }
@@ -20600,9 +22631,14 @@ async function createWasm() {
   
   
   
+  
   /** @suppress {duplicate } */
-  var _emscripten_webgl_do_create_context = (target, attributes) => {
-      var attr32 = ((attributes)>>2);
+  var _emscripten_webgl_do_create_context = function(target, attributes) {
+    target = bigintToI53Checked(target);
+    attributes = bigintToI53Checked(attributes);
+  
+  var ret = (() => { 
+      var attr32 = ((attributes)/4);
       var powerPreference = HEAP32[attr32 + (8>>2)];
       var contextAttributes = {
         'alpha': !!HEAP8[attributes + 0],
@@ -20634,14 +22670,17 @@ async function createWasm() {
   
       var contextHandle = GL.createContext(canvas, contextAttributes);
       return contextHandle;
-    };
+     })();
+  return BigInt(ret);
+  };
   _emscripten_webgl_do_create_context.sig = 'ppp';
   var _emscripten_webgl_create_context = _emscripten_webgl_do_create_context;
   _emscripten_webgl_create_context.sig = 'ppp';
 
   
+  
   /** @suppress {duplicate } */
-  var _emscripten_webgl_do_get_current_context = () => GL.currentContext ? GL.currentContext.handle : 0;
+  var _emscripten_webgl_do_get_current_context = () => BigInt(GL.currentContext ? GL.currentContext.handle : 0);;
   _emscripten_webgl_do_get_current_context.sig = 'p';
   var _emscripten_webgl_get_current_context = _emscripten_webgl_do_get_current_context;
   _emscripten_webgl_get_current_context.sig = 'p';
@@ -20666,28 +22705,45 @@ async function createWasm() {
   _emscripten_webgl_commit_frame.sig = 'i';
 
 
-  var _emscripten_webgl_make_context_current = (contextHandle) => {
+  
+  function _emscripten_webgl_make_context_current(contextHandle) {
+    contextHandle = bigintToI53Checked(contextHandle);
+  
+  
       var success = GL.makeContextCurrent(contextHandle);
       return success ? 0 : -5;
-    };
+    ;
+  }
   _emscripten_webgl_make_context_current.sig = 'ip';
 
 
-  var _emscripten_webgl_get_drawing_buffer_size = (contextHandle, width, height) => {
+  
+  function _emscripten_webgl_get_drawing_buffer_size(contextHandle, width, height) {
+    contextHandle = bigintToI53Checked(contextHandle);
+    width = bigintToI53Checked(width);
+    height = bigintToI53Checked(height);
+  
+  
       var GLContext = GL.getContext(contextHandle);
   
       if (!GLContext || !GLContext.GLctx || !width || !height) {
         return -5;
       }
-      HEAP32[((width)>>2)] = GLContext.GLctx.drawingBufferWidth;
-      HEAP32[((height)>>2)] = GLContext.GLctx.drawingBufferHeight;
+      HEAP32[((width)/4)] = GLContext.GLctx.drawingBufferWidth;
+      HEAP32[((height)/4)] = GLContext.GLctx.drawingBufferHeight;
       return 0;
-    };
+    ;
+  }
   _emscripten_webgl_get_drawing_buffer_size.sig = 'ippp';
 
 
   
-  var _emscripten_webgl_get_context_attributes = (c, a) => {
+  
+  function _emscripten_webgl_get_context_attributes(c, a) {
+    c = bigintToI53Checked(c);
+    a = bigintToI53Checked(a);
+  
+  
       if (!a) return -5;
       c = GL.contexts[c];
       if (!c) return -3;
@@ -20702,19 +22758,25 @@ async function createWasm() {
       HEAP8[(a)+(4)] = t.premultipliedAlpha;
       HEAP8[(a)+(5)] = t.preserveDrawingBuffer;
       var power = t['powerPreference'] && webglPowerPreferences.indexOf(t['powerPreference']);
-      HEAP32[(((a)+(8))>>2)] = power;
+      HEAP32[(((a)+(8))/4)] = power;
       HEAP8[(a)+(12)] = t.failIfMajorPerformanceCaveat;
-      HEAP32[(((a)+(16))>>2)] = c.version;
-      HEAP32[(((a)+(20))>>2)] = 0;
+      HEAP32[(((a)+(16))/4)] = c.version;
+      HEAP32[(((a)+(20))/4)] = 0;
       HEAP8[(a)+(24)] = c.attributes.enableExtensionsByDefault;
       return 0;
-    };
+    ;
+  }
   _emscripten_webgl_get_context_attributes.sig = 'ipp';
 
-  var _emscripten_webgl_destroy_context = (contextHandle) => {
+  
+  function _emscripten_webgl_destroy_context(contextHandle) {
+    contextHandle = bigintToI53Checked(contextHandle);
+  
+  
       if (GL.currentContext == contextHandle) GL.currentContext = 0;
       GL.deleteContext(contextHandle);
-    };
+    ;
+  }
   _emscripten_webgl_destroy_context.sig = 'ip';
 
   
@@ -20725,7 +22787,12 @@ async function createWasm() {
   
   
   
-  var _emscripten_webgl_enable_extension = (contextHandle, extension) => {
+  
+  function _emscripten_webgl_enable_extension(contextHandle, extension) {
+    contextHandle = bigintToI53Checked(contextHandle);
+    extension = bigintToI53Checked(extension);
+  
+  
       var context = GL.getContext(contextHandle);
       var extString = UTF8ToString(extension);
       if (extString.startsWith('GL_')) extString = extString.slice(3); // Allow enabling extensions both with "GL_" prefix and without.
@@ -20745,7 +22812,8 @@ async function createWasm() {
   
       var ext = context.GLctx.getExtension(extString);
       return !!ext;
-    };
+    ;
+  }
   _emscripten_webgl_enable_extension.sig = 'ipp';
 
   var _emscripten_supports_offscreencanvas = () =>
@@ -20774,26 +22842,46 @@ async function createWasm() {
     };
 
   
-  var _emscripten_set_webglcontextlost_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_webglcontextlost_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       registerWebGlEventCallback(target, userData, useCapture, callbackfunc, 31, "webglcontextlost", targetThread);
       return 0;
-    };
+    ;
+  }
   _emscripten_set_webglcontextlost_callback_on_thread.sig = 'ippipp';
 
   
-  var _emscripten_set_webglcontextrestored_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => {
+  
+  function _emscripten_set_webglcontextrestored_callback_on_thread(target, userData, useCapture, callbackfunc, targetThread) {
+    target = bigintToI53Checked(target);
+    userData = bigintToI53Checked(userData);
+    callbackfunc = bigintToI53Checked(callbackfunc);
+    targetThread = bigintToI53Checked(targetThread);
+  
+  
       registerWebGlEventCallback(target, userData, useCapture, callbackfunc, 32, "webglcontextrestored", targetThread);
       return 0;
-    };
+    ;
+  }
   _emscripten_set_webglcontextrestored_callback_on_thread.sig = 'ippipp';
 
-  var _emscripten_is_webgl_context_lost = (contextHandle) =>
-      !GL.contexts[contextHandle] || GL.contexts[contextHandle].GLctx.isContextLost();
+  
+  function _emscripten_is_webgl_context_lost(contextHandle) {
+    contextHandle = bigintToI53Checked(contextHandle);
+  
+  return !GL.contexts[contextHandle] || GL.contexts[contextHandle].GLctx.isContextLost();
+  }
   _emscripten_is_webgl_context_lost.sig = 'ip';
 
   
-  var _emscripten_webgl_get_supported_extensions = () =>
-      stringToNewUTF8(GLctx.getSupportedExtensions().join(' '));
+  
+  var _emscripten_webgl_get_supported_extensions = () => BigInt(stringToNewUTF8(GLctx.getSupportedExtensions().join(' ')));;
   _emscripten_webgl_get_supported_extensions.sig = 'p';
 
   var _emscripten_webgl_get_program_parameter_d = (program, param) =>
@@ -20801,8 +22889,8 @@ async function createWasm() {
   _emscripten_webgl_get_program_parameter_d.sig = 'dii';
 
   
-  var _emscripten_webgl_get_program_info_log_utf8 = (program) =>
-      stringToNewUTF8(GLctx.getProgramInfoLog(GL.programs[program]));
+  
+  var _emscripten_webgl_get_program_info_log_utf8 = (program) => BigInt(stringToNewUTF8(GLctx.getProgramInfoLog(GL.programs[program])));;
   _emscripten_webgl_get_program_info_log_utf8.sig = 'pi';
 
   var _emscripten_webgl_get_shader_parameter_d = (shader, param) =>
@@ -20810,13 +22898,13 @@ async function createWasm() {
   _emscripten_webgl_get_shader_parameter_d.sig = 'dii';
 
   
-  var _emscripten_webgl_get_shader_info_log_utf8 = (shader) =>
-      stringToNewUTF8(GLctx.getShaderInfoLog(GL.shaders[shader]));
+  
+  var _emscripten_webgl_get_shader_info_log_utf8 = (shader) => BigInt(stringToNewUTF8(GLctx.getShaderInfoLog(GL.shaders[shader])));;
   _emscripten_webgl_get_shader_info_log_utf8.sig = 'pi';
 
   
-  var _emscripten_webgl_get_shader_source_utf8 = (shader) =>
-      stringToNewUTF8(GLctx.getShaderSource(GL.shaders[shader]));
+  
+  var _emscripten_webgl_get_shader_source_utf8 = (shader) => BigInt(stringToNewUTF8(GLctx.getShaderSource(GL.shaders[shader])));;
   _emscripten_webgl_get_shader_source_utf8.sig = 'pi';
 
   var _emscripten_webgl_get_vertex_attrib_d = (index, param) =>
@@ -20830,8 +22918,12 @@ async function createWasm() {
   _emscripten_webgl_get_vertex_attrib_o.sig = 'iii';
 
   
-  var _emscripten_webgl_get_vertex_attrib_v = (index, param, dst, dstLength, dstType) =>
-      writeGLArray(GLctx.getVertexAttrib(index, param), dst, dstLength, dstType);
+  
+  function _emscripten_webgl_get_vertex_attrib_v(index, param, dst, dstLength, dstType) {
+    dst = bigintToI53Checked(dst);
+  
+  return writeGLArray(GLctx.getVertexAttrib(index, param), dst, dstLength, dstType);
+  }
   _emscripten_webgl_get_vertex_attrib_v.sig = 'iiipii';
 
   
@@ -20841,13 +22933,21 @@ async function createWasm() {
 
   
   
-  var _emscripten_webgl_get_uniform_v = (program, location, dst, dstLength, dstType) =>
-      writeGLArray(GLctx.getUniform(GL.programs[program], webglGetUniformLocation(location)), dst, dstLength, dstType);
+  
+  function _emscripten_webgl_get_uniform_v(program, location, dst, dstLength, dstType) {
+    dst = bigintToI53Checked(dst);
+  
+  return writeGLArray(GLctx.getUniform(GL.programs[program], webglGetUniformLocation(location)), dst, dstLength, dstType);
+  }
   _emscripten_webgl_get_uniform_v.sig = 'iiipii';
 
   
-  var _emscripten_webgl_get_parameter_v = (param, dst, dstLength, dstType) =>
-      writeGLArray(GLctx.getParameter(param), dst, dstLength, dstType);
+  
+  function _emscripten_webgl_get_parameter_v(param, dst, dstLength, dstType) {
+    dst = bigintToI53Checked(dst);
+  
+  return writeGLArray(GLctx.getParameter(param), dst, dstLength, dstType);
+  }
   _emscripten_webgl_get_parameter_v.sig = 'iipii';
 
   var _emscripten_webgl_get_parameter_d = (param) => GLctx.getParameter(param);
@@ -20860,11 +22960,17 @@ async function createWasm() {
   _emscripten_webgl_get_parameter_o.sig = 'ii';
 
   
-  var _emscripten_webgl_get_parameter_utf8 = (param) => stringToNewUTF8(GLctx.getParameter(param));
+  
+  var _emscripten_webgl_get_parameter_utf8 = (param) => BigInt(stringToNewUTF8(GLctx.getParameter(param)));;
   _emscripten_webgl_get_parameter_utf8.sig = 'pi';
 
   
-  var _emscripten_webgl_get_parameter_i64v = (param, dst) => writeI53ToI64(dst, GLctx.getParameter(param));
+  
+  function _emscripten_webgl_get_parameter_i64v(param, dst) {
+    dst = bigintToI53Checked(dst);
+  
+  return writeI53ToI64(dst, GLctx.getParameter(param));
+  }
   _emscripten_webgl_get_parameter_i64v.sig = 'vip';
 
 
@@ -21265,7 +23371,12 @@ async function createWasm() {
   
   
   
-  var _glutInit = (argcp, argv) => {
+  
+  function _glutInit(argcp, argv) {
+    argcp = bigintToI53Checked(argcp);
+    argv = bigintToI53Checked(argv);
+  
+  
       // Ignore arguments
       GLUT.initTime = Date.now();
   
@@ -21321,7 +23432,8 @@ async function createWasm() {
         var canvas = Browser.getCanvas();
         canvas.width = canvas.height = 1;
       });
-    };
+    ;
+  }
   _glutInit.sig = 'vpp';
 
   var _glutInitWindowSize = (width, height) => {
@@ -21375,7 +23487,11 @@ async function createWasm() {
 
   
   
-  var _glutIdleFunc = (func) => {
+  
+  function _glutIdleFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       function callback() {
         if (GLUT.idleFunc) {
           getWasmTableEntry(GLUT.idleFunc)();
@@ -21386,58 +23502,108 @@ async function createWasm() {
         safeSetTimeout(callback, 0);
       }
       GLUT.idleFunc = func;
-    };
+    ;
+  }
   _glutIdleFunc.sig = 'vp';
 
   
   
-  var _glutTimerFunc = (msec, func, value) =>
-      safeSetTimeout(() => getWasmTableEntry(func)(value), msec);
+  
+  var _glutTimerFunc = function(msec, func, value) {
+    func = bigintToI53Checked(func);
+  
+  return safeSetTimeout(() => getWasmTableEntry(func)(value), msec);
+  };
   _glutTimerFunc.sig = 'vipi';
 
-  var _glutDisplayFunc = (func) => {
+  
+  function _glutDisplayFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.displayFunc = func;
-    };
+    ;
+  }
   _glutDisplayFunc.sig = 'vp';
 
-  var _glutKeyboardFunc = (func) => {
+  
+  function _glutKeyboardFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.keyboardFunc = func;
-    };
+    ;
+  }
   _glutKeyboardFunc.sig = 'vp';
 
-  var _glutKeyboardUpFunc = (func) => {
+  
+  function _glutKeyboardUpFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.keyboardUpFunc = func;
-    };
+    ;
+  }
   _glutKeyboardUpFunc.sig = 'vp';
 
-  var _glutSpecialFunc = (func) => {
+  
+  function _glutSpecialFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.specialFunc = func;
-    };
+    ;
+  }
   _glutSpecialFunc.sig = 'vp';
 
-  var _glutSpecialUpFunc = (func) => {
+  
+  function _glutSpecialUpFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.specialUpFunc = func;
-    };
+    ;
+  }
   _glutSpecialUpFunc.sig = 'vp';
 
-  var _glutReshapeFunc = (func) => {
+  
+  function _glutReshapeFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.reshapeFunc = func;
-    };
+    ;
+  }
   _glutReshapeFunc.sig = 'vp';
 
-  var _glutMotionFunc = (func) => {
+  
+  function _glutMotionFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.motionFunc = func;
-    };
+    ;
+  }
   _glutMotionFunc.sig = 'vp';
 
-  var _glutPassiveMotionFunc = (func) => {
+  
+  function _glutPassiveMotionFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.passiveMotionFunc = func;
-    };
+    ;
+  }
   _glutPassiveMotionFunc.sig = 'vp';
 
-  var _glutMouseFunc = (func) => {
+  
+  function _glutMouseFunc(func) {
+    func = bigintToI53Checked(func);
+  
+  
       GLUT.mouseFunc = func;
-    };
+    ;
+  }
   _glutMouseFunc.sig = 'vp';
 
   var _glutSetCursor = (cursor) => {
@@ -21517,7 +23683,11 @@ async function createWasm() {
   _glutSetCursor.sig = 'vi';
 
   
-  var _glutCreateWindow = (name) => {
+  
+  function _glutCreateWindow(name) {
+    name = bigintToI53Checked(name);
+  
+  
       var contextAttributes = {
         antialias: ((GLUT.initDisplayMode & 0x0080 /*GLUT_MULTISAMPLE*/) != 0),
         depth: ((GLUT.initDisplayMode & 0x0010 /*GLUT_DEPTH*/) != 0),
@@ -21528,7 +23698,8 @@ async function createWasm() {
         return 0; // failure
       }
       return 1; // a new GLUT window ID for the created context
-    };
+    ;
+  }
   _glutCreateWindow.sig = 'ip';
 
   
@@ -21593,35 +23764,89 @@ async function createWasm() {
     };
   _glutMainLoop.sig = 'v';
 
-  var _XOpenDisplay = (name) => 1;
+  var _XOpenDisplay = (name) => {
+    name = bigintToI53Checked(name);
+  
+  return BigInt(1);
+  };
   _XOpenDisplay.sig = 'pp';
 
-  var _XCreateWindow = (display, parent, x, y, width, height, border_width, depth, class_, visual, valuemask, attributes) => {
+  
+  var _XCreateWindow = function(display, parent, x, y, width, height, border_width, depth, class_, visual, valuemask, attributes) {
+    display = bigintToI53Checked(display);
+    parent = bigintToI53Checked(parent);
+    visual = bigintToI53Checked(visual);
+    valuemask = bigintToI53Checked(valuemask);
+    attributes = bigintToI53Checked(attributes);
+  
+  var ret = (() => { 
       // All we can do is set the width and height
       Browser.setCanvasSize(width, height);
       return 2;
-    };
+     })();
+  return BigInt(ret);
+  };
   _XCreateWindow.sig = 'pppiiiiiiippp';
 
-  var _XChangeWindowAttributes = (display, window, valuemask, attributes) => {};
+  function _XChangeWindowAttributes(display, window, valuemask, attributes) {
+    display = bigintToI53Checked(display);
+    window = bigintToI53Checked(window);
+    valuemask = bigintToI53Checked(valuemask);
+    attributes = bigintToI53Checked(attributes);
+  
+  ;
+  }
   _XChangeWindowAttributes.sig = 'ipppp';
 
-  var _XSetWMHints = (display, win, hints) => {};
+  function _XSetWMHints(display, win, hints) {
+    display = bigintToI53Checked(display);
+    win = bigintToI53Checked(win);
+    hints = bigintToI53Checked(hints);
+  
+  ;
+  }
   _XSetWMHints.sig = 'ippp';
 
-  var _XMapWindow = (display, win) => {};
+  function _XMapWindow(display, win) {
+    display = bigintToI53Checked(display);
+    win = bigintToI53Checked(win);
+  
+  ;
+  }
   _XMapWindow.sig = 'ipp';
 
-  var _XStoreName = (display, win, name) => {};
+  function _XStoreName(display, win, name) {
+    display = bigintToI53Checked(display);
+    win = bigintToI53Checked(win);
+    name = bigintToI53Checked(name);
+  
+  ;
+  }
   _XStoreName.sig = 'ippp';
 
-  var _XInternAtom = (display, name_, hmm)  => 0;
+  var _XInternAtom = (display, name_, hmm) => {
+    display = bigintToI53Checked(display);
+    name_ = bigintToI53Checked(name_);
+  
+  return BigInt(0);
+  };
   _XInternAtom.sig = 'pppi';
 
-  var _XSendEvent = (display, win, propagate, event_mask, even_send) => {};
+  function _XSendEvent(display, win, propagate, event_mask, even_send) {
+    display = bigintToI53Checked(display);
+    win = bigintToI53Checked(win);
+    event_mask = bigintToI53Checked(event_mask);
+    even_send = bigintToI53Checked(even_send);
+  
+  ;
+  }
   _XSendEvent.sig = 'ippipp';
 
-  var _XPending = (display) => 0;
+  function _XPending(display) {
+    display = bigintToI53Checked(display);
+  
+  return 0;
+  }
   _XPending.sig = 'ip';
 
   
@@ -21651,24 +23876,24 @@ async function createWasm() {
         if (attribList) {
           // read attribList if it is non-null
           for (;;) {
-            var param = HEAP32[((attribList)>>2)];
+            var param = HEAP32[((attribList)/4)];
             if (param == 0x3021 /*EGL_ALPHA_SIZE*/) {
-              var alphaSize = HEAP32[(((attribList)+(4))>>2)];
+              var alphaSize = HEAP32[(((attribList)+(4))/4)];
               EGL.contextAttributes.alpha = (alphaSize > 0);
             } else if (param == 0x3025 /*EGL_DEPTH_SIZE*/) {
-              var depthSize = HEAP32[(((attribList)+(4))>>2)];
+              var depthSize = HEAP32[(((attribList)+(4))/4)];
               EGL.contextAttributes.depth = (depthSize > 0);
             } else if (param == 0x3026 /*EGL_STENCIL_SIZE*/) {
-              var stencilSize = HEAP32[(((attribList)+(4))>>2)];
+              var stencilSize = HEAP32[(((attribList)+(4))/4)];
               EGL.contextAttributes.stencil = (stencilSize > 0);
             } else if (param == 0x3031 /*EGL_SAMPLES*/) {
-              var samples = HEAP32[(((attribList)+(4))>>2)];
+              var samples = HEAP32[(((attribList)+(4))/4)];
               EGL.contextAttributes.antialias = (samples > 0);
             } else if (param == 0x3032 /*EGL_SAMPLE_BUFFERS*/) {
-              var samples = HEAP32[(((attribList)+(4))>>2)];
+              var samples = HEAP32[(((attribList)+(4))/4)];
               EGL.contextAttributes.antialias = (samples == 1);
             } else if (param == 0x3100 /*EGL_CONTEXT_PRIORITY_LEVEL_IMG*/) {
-              var requestedPriority = HEAP32[(((attribList)+(4))>>2)];
+              var requestedPriority = HEAP32[(((attribList)+(4))/4)];
               EGL.contextAttributes.lowLatency = (requestedPriority != 0x3103 /*EGL_CONTEXT_PRIORITY_LOW_IMG*/);
             } else if (param == 0x3038 /*EGL_NONE*/) {
                 break;
@@ -21682,10 +23907,10 @@ async function createWasm() {
           return 0;
         }
         if (numConfigs) {
-          HEAP32[((numConfigs)>>2)] = 1; // Total number of supported configs: 1.
+          HEAP32[((numConfigs)/4)] = 1; // Total number of supported configs: 1.
         }
         if (config && config_size > 0) {
-          HEAPU32[((config)>>2)] = 62002;
+          HEAPU64[((config)/8)] = BigInt(62002);
         }
   
         EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
@@ -21693,7 +23918,11 @@ async function createWasm() {
       },
   };
 
-  var _eglGetDisplay = (nativeDisplayType) => {
+  
+  var _eglGetDisplay = function(nativeDisplayType) {
+    nativeDisplayType = bigintToI53Checked(nativeDisplayType);
+  
+  var ret = (() => { 
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       // Emscripten EGL implementation "emulates" X11, and eglGetDisplay is
       // expected to accept/receive a pointer to an X11 Display object (or
@@ -21702,27 +23931,40 @@ async function createWasm() {
         return 0; // EGL_NO_DISPLAY
       }
       return 62000;
-    };
+     })();
+  return BigInt(ret);
+  };
   _eglGetDisplay.sig = 'pp';
 
-  var _eglInitialize = (display, majorVersion, minorVersion) => {
+  
+  function _eglInitialize(display, majorVersion, minorVersion) {
+    display = bigintToI53Checked(display);
+    majorVersion = bigintToI53Checked(majorVersion);
+    minorVersion = bigintToI53Checked(minorVersion);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
       }
       if (majorVersion) {
-        HEAP32[((majorVersion)>>2)] = 1; // Advertise EGL Major version: '1'
+        HEAP32[((majorVersion)/4)] = 1; // Advertise EGL Major version: '1'
       }
       if (minorVersion) {
-        HEAP32[((minorVersion)>>2)] = 4; // Advertise EGL Minor version: '4'
+        HEAP32[((minorVersion)/4)] = 4; // Advertise EGL Minor version: '4'
       }
       EGL.defaultDisplayInitialized = true;
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       return 1;
-    };
+    ;
+  }
   _eglInitialize.sig = 'ippp';
 
-  var _eglTerminate = (display) => {
+  
+  function _eglTerminate(display) {
+    display = bigintToI53Checked(display);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21733,18 +23975,38 @@ async function createWasm() {
       EGL.defaultDisplayInitialized = false;
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       return 1;
-    };
+    ;
+  }
   _eglTerminate.sig = 'ip';
 
-  var _eglGetConfigs = (display, configs, config_size, numConfigs) =>
-      EGL.chooseConfig(display, 0, configs, config_size, numConfigs);
+  
+  function _eglGetConfigs(display, configs, config_size, numConfigs) {
+    display = bigintToI53Checked(display);
+    configs = bigintToI53Checked(configs);
+    numConfigs = bigintToI53Checked(numConfigs);
+  
+  return EGL.chooseConfig(display, 0, configs, config_size, numConfigs);
+  }
   _eglGetConfigs.sig = 'ippip';
 
-  var _eglChooseConfig = (display, attrib_list, configs, config_size, numConfigs) =>
-      EGL.chooseConfig(display, attrib_list, configs, config_size, numConfigs);
+  
+  function _eglChooseConfig(display, attrib_list, configs, config_size, numConfigs) {
+    display = bigintToI53Checked(display);
+    attrib_list = bigintToI53Checked(attrib_list);
+    configs = bigintToI53Checked(configs);
+    numConfigs = bigintToI53Checked(numConfigs);
+  
+  return EGL.chooseConfig(display, attrib_list, configs, config_size, numConfigs);
+  }
   _eglChooseConfig.sig = 'ipppip';
 
-  var _eglGetConfigAttrib = (display, config, attribute, value) => {
+  
+  function _eglGetConfigAttrib(display, config, attribute, value) {
+    display = bigintToI53Checked(display);
+    config = bigintToI53Checked(config);
+    value = bigintToI53Checked(value);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21760,107 +24022,114 @@ async function createWasm() {
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       switch (attribute) {
       case 0x3020: // EGL_BUFFER_SIZE
-        HEAP32[((value)>>2)] = EGL.contextAttributes.alpha ? 32 : 24;
+        HEAP32[((value)/4)] = EGL.contextAttributes.alpha ? 32 : 24;
         return 1;
       case 0x3021: // EGL_ALPHA_SIZE
-        HEAP32[((value)>>2)] = EGL.contextAttributes.alpha ? 8 : 0;
+        HEAP32[((value)/4)] = EGL.contextAttributes.alpha ? 8 : 0;
         return 1;
       case 0x3022: // EGL_BLUE_SIZE
-        HEAP32[((value)>>2)] = 8;
+        HEAP32[((value)/4)] = 8;
         return 1;
       case 0x3023: // EGL_GREEN_SIZE
-        HEAP32[((value)>>2)] = 8;
+        HEAP32[((value)/4)] = 8;
         return 1;
       case 0x3024: // EGL_RED_SIZE
-        HEAP32[((value)>>2)] = 8;
+        HEAP32[((value)/4)] = 8;
         return 1;
       case 0x3025: // EGL_DEPTH_SIZE
-        HEAP32[((value)>>2)] = EGL.contextAttributes.depth ? 24 : 0;
+        HEAP32[((value)/4)] = EGL.contextAttributes.depth ? 24 : 0;
         return 1;
       case 0x3026: // EGL_STENCIL_SIZE
-        HEAP32[((value)>>2)] = EGL.contextAttributes.stencil ? 8 : 0;
+        HEAP32[((value)/4)] = EGL.contextAttributes.stencil ? 8 : 0;
         return 1;
       case 0x3027: // EGL_CONFIG_CAVEAT
         // We can return here one of EGL_NONE (0x3038), EGL_SLOW_CONFIG (0x3050) or EGL_NON_CONFORMANT_CONFIG (0x3051).
-        HEAP32[((value)>>2)] = 0x3038;
+        HEAP32[((value)/4)] = 0x3038;
         return 1;
       case 0x3028: // EGL_CONFIG_ID
-        HEAP32[((value)>>2)] = 62002;
+        HEAP32[((value)/4)] = 62002;
         return 1;
       case 0x3029: // EGL_LEVEL
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       case 0x302A: // EGL_MAX_PBUFFER_HEIGHT
-        HEAP32[((value)>>2)] = 4096;
+        HEAP32[((value)/4)] = 4096;
         return 1;
       case 0x302B: // EGL_MAX_PBUFFER_PIXELS
-        HEAP32[((value)>>2)] = 16777216;
+        HEAP32[((value)/4)] = 16777216;
         return 1;
       case 0x302C: // EGL_MAX_PBUFFER_WIDTH
-        HEAP32[((value)>>2)] = 4096;
+        HEAP32[((value)/4)] = 4096;
         return 1;
       case 0x302D: // EGL_NATIVE_RENDERABLE
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       case 0x302E: // EGL_NATIVE_VISUAL_ID
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       case 0x302F: // EGL_NATIVE_VISUAL_TYPE
-        HEAP32[((value)>>2)] = 0x3038;
+        HEAP32[((value)/4)] = 0x3038;
         return 1;
       case 0x3031: // EGL_SAMPLES
-        HEAP32[((value)>>2)] = EGL.contextAttributes.antialias ? 4 : 0;
+        HEAP32[((value)/4)] = EGL.contextAttributes.antialias ? 4 : 0;
         return 1;
       case 0x3032: // EGL_SAMPLE_BUFFERS
-        HEAP32[((value)>>2)] = EGL.contextAttributes.antialias ? 1 : 0;
+        HEAP32[((value)/4)] = EGL.contextAttributes.antialias ? 1 : 0;
         return 1;
       case 0x3033: // EGL_SURFACE_TYPE
-        HEAP32[((value)>>2)] = 0x4;
+        HEAP32[((value)/4)] = 0x4;
         return 1;
       case 0x3034: // EGL_TRANSPARENT_TYPE
         // If this returns EGL_TRANSPARENT_RGB (0x3052), transparency is used through color-keying. No such thing applies to Emscripten canvas.
-        HEAP32[((value)>>2)] = 0x3038;
+        HEAP32[((value)/4)] = 0x3038;
         return 1;
       case 0x3035: // EGL_TRANSPARENT_BLUE_VALUE
       case 0x3036: // EGL_TRANSPARENT_GREEN_VALUE
       case 0x3037: // EGL_TRANSPARENT_RED_VALUE
         // "If EGL_TRANSPARENT_TYPE is EGL_NONE, then the values for EGL_TRANSPARENT_RED_VALUE, EGL_TRANSPARENT_GREEN_VALUE, and EGL_TRANSPARENT_BLUE_VALUE are undefined."
-        HEAP32[((value)>>2)] = -1;
+        HEAP32[((value)/4)] = -1;
         return 1;
       case 0x3039: // EGL_BIND_TO_TEXTURE_RGB
       case 0x303A: // EGL_BIND_TO_TEXTURE_RGBA
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       case 0x303B: // EGL_MIN_SWAP_INTERVAL
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       case 0x303C: // EGL_MAX_SWAP_INTERVAL
-        HEAP32[((value)>>2)] = 1;
+        HEAP32[((value)/4)] = 1;
         return 1;
       case 0x303D: // EGL_LUMINANCE_SIZE
       case 0x303E: // EGL_ALPHA_MASK_SIZE
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       case 0x303F: // EGL_COLOR_BUFFER_TYPE
         // EGL has two types of buffers: EGL_RGB_BUFFER and EGL_LUMINANCE_BUFFER.
-        HEAP32[((value)>>2)] = 0x308E;
+        HEAP32[((value)/4)] = 0x308E;
         return 1;
       case 0x3040: // EGL_RENDERABLE_TYPE
         // A bit combination of EGL_OPENGL_ES_BIT,EGL_OPENVG_BIT,EGL_OPENGL_ES2_BIT and EGL_OPENGL_BIT.
-        HEAP32[((value)>>2)] = 0x4;
+        HEAP32[((value)/4)] = 0x4;
         return 1;
       case 0x3042: // EGL_CONFORMANT
         // "EGL_CONFORMANT is a mask indicating if a client API context created with respect to the corresponding EGLConfig will pass the required conformance tests for that API."
-        HEAP32[((value)>>2)] = 0;
+        HEAP32[((value)/4)] = 0;
         return 1;
       default:
         EGL.setErrorCode(0x3004 /* EGL_BAD_ATTRIBUTE */);
         return 0;
       }
-    };
+    ;
+  }
   _eglGetConfigAttrib.sig = 'ippip';
 
-  var _eglCreateWindowSurface = (display, config, win, attrib_list) => {
+  
+  var _eglCreateWindowSurface = function(display, config, win, attrib_list) {
+    display = bigintToI53Checked(display);
+    config = bigintToI53Checked(config);
+    attrib_list = bigintToI53Checked(attrib_list);
+  
+  var ret = (() => { 
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21875,10 +24144,17 @@ async function createWasm() {
       // - EGL_VG_ALPHA_FORMAT (can't be set)
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       return 62006; /* Magic ID for Emscripten 'default surface' */
-    };
+     })();
+  return BigInt(ret);
+  };
   _eglCreateWindowSurface.sig = 'pppip';
 
-  var _eglDestroySurface = (display, surface) => {
+  
+  function _eglDestroySurface(display, surface) {
+    display = bigintToI53Checked(display);
+    surface = bigintToI53Checked(surface);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21895,11 +24171,19 @@ async function createWasm() {
       }
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       return 1; /* Magic ID for Emscripten 'default surface' */
-    };
+    ;
+  }
   _eglDestroySurface.sig = 'ipp';
 
   
-  var _eglCreateContext = (display, config, hmm, contextAttribs) => {
+  
+  var _eglCreateContext = function(display, config, hmm, contextAttribs) {
+    display = bigintToI53Checked(display);
+    config = bigintToI53Checked(config);
+    hmm = bigintToI53Checked(hmm);
+    contextAttribs = bigintToI53Checked(contextAttribs);
+  
+  var ret = (() => { 
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21909,9 +24193,9 @@ async function createWasm() {
       // So user must pass EGL_CONTEXT_CLIENT_VERSION == 2 to initialize EGL.
       var glesContextVersion = 1;
       for (;;) {
-        var param = HEAP32[((contextAttribs)>>2)];
+        var param = HEAP32[((contextAttribs)/4)];
         if (param == 0x3098 /*EGL_CONTEXT_CLIENT_VERSION*/) {
-          glesContextVersion = HEAP32[(((contextAttribs)+(4))>>2)];
+          glesContextVersion = HEAP32[(((contextAttribs)+(4))/4)];
         } else if (param == 0x3038 /*EGL_NONE*/) {
           break;
         } else {
@@ -21946,11 +24230,18 @@ async function createWasm() {
         EGL.setErrorCode(0x3009 /* EGL_BAD_MATCH */); // By the EGL 1.4 spec, an implementation that does not support GLES2 (WebGL in this case), this error code is set.
         return 0; /* EGL_NO_CONTEXT */
       }
-    };
+     })();
+  return BigInt(ret);
+  };
   _eglCreateContext.sig = 'ppppp';
 
   
-  var _eglDestroyContext = (display, context) => {
+  
+  function _eglDestroyContext(display, context) {
+    display = bigintToI53Checked(display);
+    context = bigintToI53Checked(context);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21966,10 +24257,17 @@ async function createWasm() {
         EGL.currentContext = 0;
       }
       return 1 /* EGL_TRUE */;
-    };
+    ;
+  }
   _eglDestroyContext.sig = 'ipp';
 
-  var _eglQuerySurface = (display, surface, attribute, value) => {
+  
+  function _eglQuerySurface(display, surface, attribute, value) {
+    display = bigintToI53Checked(display);
+    surface = bigintToI53Checked(surface);
+    value = bigintToI53Checked(value);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -21985,39 +24283,39 @@ async function createWasm() {
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       switch (attribute) {
       case 0x3028: // EGL_CONFIG_ID
-        HEAP32[((value)>>2)] = 62002;
+        HEAP32[((value)/4)] = 62002;
           return 1;
       case 0x3058: // EGL_LARGEST_PBUFFER
         // Odd EGL API: If surface is not a pbuffer surface, 'value' should not be written to. It's not specified as an error, so true should(?) be returned.
         // Existing Android implementation seems to do so at least.
         return 1;
       case 0x3057: // EGL_WIDTH
-        HEAP32[((value)>>2)] = Browser.getCanvas().width;
+        HEAP32[((value)/4)] = Browser.getCanvas().width;
         return 1;
       case 0x3056: // EGL_HEIGHT
-        HEAP32[((value)>>2)] = Browser.getCanvas().height;
+        HEAP32[((value)/4)] = Browser.getCanvas().height;
         return 1;
       case 0x3090: // EGL_HORIZONTAL_RESOLUTION
-        HEAP32[((value)>>2)] = -1;
+        HEAP32[((value)/4)] = -1;
         return 1;
       case 0x3091: // EGL_VERTICAL_RESOLUTION
-        HEAP32[((value)>>2)] = -1;
+        HEAP32[((value)/4)] = -1;
         return 1;
       case 0x3092: // EGL_PIXEL_ASPECT_RATIO
-        HEAP32[((value)>>2)] = -1;
+        HEAP32[((value)/4)] = -1;
         return 1;
       case 0x3086: // EGL_RENDER_BUFFER
         // The main surface is bound to the visible canvas window - it's always backbuffered.
         // Alternative to EGL_BACK_BUFFER would be EGL_SINGLE_BUFFER.
-        HEAP32[((value)>>2)] = 0x3084;
+        HEAP32[((value)/4)] = 0x3084;
         return 1;
       case 0x3099: // EGL_MULTISAMPLE_RESOLVE
-        HEAP32[((value)>>2)] = 0x309A;
+        HEAP32[((value)/4)] = 0x309A;
         return 1;
       case 0x3093: // EGL_SWAP_BEHAVIOR
         // The two possibilities are EGL_BUFFER_PRESERVED and EGL_BUFFER_DESTROYED. Slightly unsure which is the
         // case for browser environment, but advertise the 'weaker' behavior to be sure.
-        HEAP32[((value)>>2)] = 0x3095;
+        HEAP32[((value)/4)] = 0x3095;
         return 1;
       case 0x3080: // EGL_TEXTURE_FORMAT
       case 0x3081: // EGL_TEXTURE_TARGET
@@ -22031,10 +24329,17 @@ async function createWasm() {
         EGL.setErrorCode(0x3004 /* EGL_BAD_ATTRIBUTE */);
         return 0;
       }
-    };
+    ;
+  }
   _eglQuerySurface.sig = 'ippip';
 
-  var _eglQueryContext = (display, context, attribute, value) => {
+  
+  function _eglQueryContext(display, context, attribute, value) {
+    display = bigintToI53Checked(display);
+    context = bigintToI53Checked(context);
+    value = bigintToI53Checked(value);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -22052,31 +24357,36 @@ async function createWasm() {
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       switch (attribute) {
         case 0x3028: // EGL_CONFIG_ID
-          HEAP32[((value)>>2)] = 62002;
+          HEAP32[((value)/4)] = 62002;
           return 1;
         case 0x3097: // EGL_CONTEXT_CLIENT_TYPE
-          HEAP32[((value)>>2)] = 0x30A0;
+          HEAP32[((value)/4)] = 0x30A0;
           return 1;
         case 0x3098: // EGL_CONTEXT_CLIENT_VERSION
-          HEAP32[((value)>>2)] = EGL.contextAttributes.majorVersion + 1;
+          HEAP32[((value)/4)] = EGL.contextAttributes.majorVersion + 1;
           return 1;
         case 0x3086: // EGL_RENDER_BUFFER
           // The context is bound to the visible canvas window - it's always backbuffered.
           // Alternative to EGL_BACK_BUFFER would be EGL_SINGLE_BUFFER.
-          HEAP32[((value)>>2)] = 0x3084;
+          HEAP32[((value)/4)] = 0x3084;
           return 1;
         default:
           EGL.setErrorCode(0x3004 /* EGL_BAD_ATTRIBUTE */);
           return 0;
       }
-    };
+    ;
+  }
   _eglQueryContext.sig = 'ippip';
 
   var _eglGetError = () => EGL.errorCode;
   _eglGetError.sig = 'i';
 
   
-  var _eglQueryString = (display, name) => {
+  
+  var _eglQueryString = function(display, name) {
+    display = bigintToI53Checked(display);
+  
+  var ret = (() => { 
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -22096,7 +24406,9 @@ async function createWasm() {
       }
       EGL.stringCache[name] = ret;
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _eglQueryString.sig = 'ppi';
 
   var _eglBindAPI = (api) => {
@@ -22133,7 +24445,11 @@ async function createWasm() {
   _eglWaitGL.sig = 'i';
 
   
-  var _eglSwapInterval = (display, interval) => {
+  
+  function _eglSwapInterval(display, interval) {
+    display = bigintToI53Checked(display);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0;
@@ -22143,11 +24459,19 @@ async function createWasm() {
   
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       return 1;
-    };
+    ;
+  }
   _eglSwapInterval.sig = 'ipi';
 
   
-  var _eglMakeCurrent = (display, draw, read, context) => {
+  
+  function _eglMakeCurrent(display, draw, read, context) {
+    display = bigintToI53Checked(display);
+    draw = bigintToI53Checked(draw);
+    read = bigintToI53Checked(read);
+    context = bigintToI53Checked(context);
+  
+  
       if (display != 62000) {
         EGL.setErrorCode(0x3008 /* EGL_BAD_DISPLAY */);
         return 0 /* EGL_FALSE */;
@@ -22169,13 +24493,18 @@ async function createWasm() {
       EGL.currentReadSurface = read;
       EGL.setErrorCode(0x3000 /* EGL_SUCCESS */);
       return 1 /* EGL_TRUE */;
-    };
+    ;
+  }
   _eglMakeCurrent.sig = 'ipppp';
 
-  var _eglGetCurrentContext = () => EGL.currentContext;
+  
+  var _eglGetCurrentContext = () => BigInt(EGL.currentContext);;
   _eglGetCurrentContext.sig = 'p';
 
-  var _eglGetCurrentSurface = (readdraw) => {
+  
+  var _eglGetCurrentSurface = function(readdraw) {
+  
+  var ret = (() => { 
       if (readdraw == 0x305A /* EGL_READ */) {
         return EGL.currentReadSurface;
       } else if (readdraw == 0x3059 /* EGL_DRAW */) {
@@ -22184,14 +24513,22 @@ async function createWasm() {
         EGL.setErrorCode(0x300C /* EGL_BAD_PARAMETER */);
         return 0 /* EGL_NO_SURFACE */;
       }
-    };
+     })();
+  return BigInt(ret);
+  };
   _eglGetCurrentSurface.sig = 'pi';
 
-  var _eglGetCurrentDisplay = () => EGL.currentContext ? 62000 : 0;
+  
+  var _eglGetCurrentDisplay = () => BigInt(EGL.currentContext ? 62000 : 0);;
   _eglGetCurrentDisplay.sig = 'p';
 
   
-  var _eglSwapBuffers = (dpy, surface) => {
+  
+  function _eglSwapBuffers(dpy, surface) {
+    dpy = bigintToI53Checked(dpy);
+    surface = bigintToI53Checked(surface);
+  
+  
   
       if (!EGL.defaultDisplayInitialized) {
         EGL.setErrorCode(0x3001 /* EGL_NOT_INITIALIZED */);
@@ -22208,7 +24545,8 @@ async function createWasm() {
         return 1 /* EGL_TRUE */;
       }
       return 0 /* EGL_FALSE */;
-    };
+    ;
+  }
   _eglSwapBuffers.sig = 'ipp';
 
   var _eglReleaseThread = () => {
@@ -22224,17 +24562,38 @@ async function createWasm() {
     };
   _eglReleaseThread.sig = 'i';
 
-  var _uuid_clear = (uu) => zeroMemory(uu, 16);
+  
+  function _uuid_clear(uu) {
+    uu = bigintToI53Checked(uu);
+  
+  return zeroMemory(uu, 16);
+  }
   _uuid_clear.sig = 'vp';
 
-  var _uuid_compare = (uu1, uu2) => _memcmp(uu1, uu2, 16);
+  
+  function _uuid_compare(uu1, uu2) {
+    uu1 = bigintToI53Checked(uu1);
+    uu2 = bigintToI53Checked(uu2);
+  
+  return _memcmp(uu1, uu2, 16);
+  }
   _uuid_compare.sig = 'ipp';
 
-  var _uuid_copy = (dst, src) => _memcpy(dst, src, 16);
+  
+  function _uuid_copy(dst, src) {
+    dst = bigintToI53Checked(dst);
+    src = bigintToI53Checked(src);
+  
+  return _memcpy(dst, src, 16);
+  }
   _uuid_copy.sig = 'vpp';
 
   
-  var _uuid_generate = (out) => {
+  
+  function _uuid_generate(out) {
+    out = bigintToI53Checked(out);
+  
+  
       // void uuid_generate(uuid_t out);
       var uuid = new Uint8Array(16);
       randomFill(uuid);
@@ -22243,22 +24602,32 @@ async function createWasm() {
       uuid[6] = (uuid[6] & 0x0F) | 0x40; // uuid version
       uuid[8] = (uuid[8] & 0x3F) | 0x80; // uuid variant
       writeArrayToMemory(uuid, out);
-    };
+    ;
+  }
   _uuid_generate.sig = 'vp';
 
-  var _uuid_is_null = (uu) => {
+  function _uuid_is_null(uu) {
+    uu = bigintToI53Checked(uu);
+  
+  
       // int uuid_is_null(const uuid_t uu);
       for (var i = 0; i < 4; i++, uu = (uu+4)|0) {
-        var val = HEAP32[((uu)>>2)];
+        var val = HEAP32[((uu)/4)];
         if (val) {
           return 0;
         }
       }
       return 1;
-    };
+    ;
+  }
   _uuid_is_null.sig = 'ip';
 
-  var _uuid_parse = (inp, uu) => {
+  
+  function _uuid_parse(inp, uu) {
+    inp = bigintToI53Checked(inp);
+    uu = bigintToI53Checked(uu);
+  
+  
       // int uuid_parse(const char *in, uuid_t uu);
       inp = UTF8ToString(inp);
       if (inp.length === 36) {
@@ -22277,11 +24646,17 @@ async function createWasm() {
         return 0;
       }
       return -1;
-    };
+    ;
+  }
   _uuid_parse.sig = 'ipp';
 
+  
   /** @param {number|boolean=} upper */
-  var _uuid_unparse = (uu, out, upper) => {
+  function _uuid_unparse(uu, out, upper) {
+    uu = bigintToI53Checked(uu);
+    out = bigintToI53Checked(out);
+  
+  
       // void uuid_unparse(const uuid_t uu, char *out);
       var i = 0;
       var uuid = 'xxxx-xx-xx-xx-xxxxxx'.replace(/[x]/g, function(c) {
@@ -22292,25 +24667,46 @@ async function createWasm() {
         return r;
       });
       stringToUTF8(uuid, out, 37); // Always fixed 36 bytes of ASCII characters and a trailing \0.
-    };
+    ;
+  }
   _uuid_unparse.sig = 'vpp';
 
-  var _uuid_unparse_lower = (uu, out) => {
+  
+  function _uuid_unparse_lower(uu, out) {
+    uu = bigintToI53Checked(uu);
+    out = bigintToI53Checked(out);
+  
+  
       // void uuid_unparse_lower(const uuid_t uu, char *out);
       _uuid_unparse(uu, out);
-    };
+    ;
+  }
   _uuid_unparse_lower.sig = 'vpp';
 
-  var _uuid_unparse_upper = (uu, out) => {
+  
+  function _uuid_unparse_upper(uu, out) {
+    uu = bigintToI53Checked(uu);
+    out = bigintToI53Checked(out);
+  
+  
       // void uuid_unparse_upper(const uuid_t uu, char *out);
       _uuid_unparse(uu, out, true);
-    };
+    ;
+  }
   _uuid_unparse_upper.sig = 'vpp';
 
-  var _uuid_type = (uu) => 4;
+  function _uuid_type(uu) {
+    uu = bigintToI53Checked(uu);
+  
+  return 4;
+  }
   _uuid_type.sig = 'ip';
 
-  var _uuid_variant = (uu) => 1;
+  function _uuid_variant(uu) {
+    uu = bigintToI53Checked(uu);
+  
+  return 1;
+  }
   _uuid_variant.sig = 'ip';
 
   
@@ -22401,23 +24797,35 @@ async function createWasm() {
   _glewInit.sig = 'i';
 
   
-  var _glewIsSupported = (name) => {
+  
+  function _glewIsSupported(name) {
+    name = bigintToI53Checked(name);
+  
+  
       var exts = UTF8ToString(name).split(' ');
       for (var ext of exts) {
         if (!GLEW.extensionIsSupported(ext)) return 0;
       }
       return 1;
-    };
+    ;
+  }
   _glewIsSupported.sig = 'ip';
 
   
-  var _glewGetExtension = (name) => GLEW.extensionIsSupported(UTF8ToString(name));
+  
+  function _glewGetExtension(name) {
+    name = bigintToI53Checked(name);
+  
+  return GLEW.extensionIsSupported(UTF8ToString(name));
+  }
   _glewGetExtension.sig = 'ip';
 
-  var _glewGetErrorString = (error) => GLEW.errorString(error);
+  
+  var _glewGetErrorString = (error) => BigInt(GLEW.errorString(error));;
   _glewGetErrorString.sig = 'pi';
 
-  var _glewGetString = (name) => GLEW.versionString(name);
+  
+  var _glewGetString = (name) => BigInt(GLEW.versionString(name));;
   _glewGetString.sig = 'pi';
 
   var IDBStore = {
@@ -22531,29 +24939,47 @@ async function createWasm() {
   
   
   
-  var _emscripten_idb_async_load = (db, id, arg, onload, onerror) => {
+  
+  var _emscripten_idb_async_load = function(db, id, arg, onload, onerror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    arg = bigintToI53Checked(arg);
+    onload = bigintToI53Checked(onload);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       ;
       IDBStore.getFile(UTF8ToString(db), UTF8ToString(id), (error, byteArray) => {
         
         callUserCallback(() => {
           if (error) {
-            if (onerror) getWasmTableEntry(onerror)(arg);
+            if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(arg);
             return;
           }
           var buffer = _malloc(byteArray.length);
           HEAPU8.set(byteArray, buffer);
-          getWasmTableEntry(onload)(arg, buffer, byteArray.length);
+          ((a1, a2, a3) => getWasmTableEntry(onload).call(null, BigInt(a1), BigInt(a2), a3))(arg, buffer, byteArray.length);
           _free(buffer);
         });
       });
-    };
+    ;
+  };
   _emscripten_idb_async_load.sig = 'vppppp';
 
   
   
   
   
-  var _emscripten_idb_async_store = (db, id, ptr, num, arg, onstore, onerror) => {
+  
+  var _emscripten_idb_async_store = function(db, id, ptr, num, arg, onstore, onerror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    ptr = bigintToI53Checked(ptr);
+    arg = bigintToI53Checked(arg);
+    onstore = bigintToI53Checked(onstore);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       // note that we copy the data here, as these are async operatins - changes
       // to HEAPU8 meanwhile should not affect us!
       ;
@@ -22561,95 +24987,160 @@ async function createWasm() {
         
         callUserCallback(() => {
           if (error) {
-            if (onerror) getWasmTableEntry(onerror)(arg);
+            if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(arg);
             return;
           }
-          if (onstore) getWasmTableEntry(onstore)(arg);
+          if (onstore) ((a1) => getWasmTableEntry(onstore).call(null, BigInt(a1)))(arg);
         });
       });
-    };
+    ;
+  };
   _emscripten_idb_async_store.sig = 'vpppippp';
 
   
   
   
   
-  var _emscripten_idb_async_delete = (db, id, arg, ondelete, onerror) => {
+  
+  var _emscripten_idb_async_delete = function(db, id, arg, ondelete, onerror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    arg = bigintToI53Checked(arg);
+    ondelete = bigintToI53Checked(ondelete);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       ;
       IDBStore.deleteFile(UTF8ToString(db), UTF8ToString(id), (error) => {
         
         callUserCallback(() => {
           if (error) {
-            if (onerror) getWasmTableEntry(onerror)(arg);
+            if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(arg);
             return;
           }
-          if (ondelete) getWasmTableEntry(ondelete)(arg);
+          if (ondelete) ((a1) => getWasmTableEntry(ondelete).call(null, BigInt(a1)))(arg);
         });
       });
-    };
+    ;
+  };
   _emscripten_idb_async_delete.sig = 'vppppp';
 
   
   
   
   
-  var _emscripten_idb_async_exists = (db, id, arg, oncheck, onerror) => {
+  
+  var _emscripten_idb_async_exists = function(db, id, arg, oncheck, onerror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    arg = bigintToI53Checked(arg);
+    oncheck = bigintToI53Checked(oncheck);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       ;
       IDBStore.existsFile(UTF8ToString(db), UTF8ToString(id), (error, exists) => {
         
         callUserCallback(() => {
           if (error) {
-            if (onerror) getWasmTableEntry(onerror)(arg);
+            if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(arg);
             return;
           }
-          if (oncheck) getWasmTableEntry(oncheck)(arg, exists);
+          if (oncheck) ((a1, a2) => getWasmTableEntry(oncheck).call(null, BigInt(a1), a2))(arg, exists);
         });
       });
-    };
+    ;
+  };
   _emscripten_idb_async_exists.sig = 'vppppp';
 
   
   
   
   
-  var _emscripten_idb_async_clear = (db, arg, onclear, onerror) => {
+  
+  var _emscripten_idb_async_clear = function(db, arg, onclear, onerror) {
+    db = bigintToI53Checked(db);
+    arg = bigintToI53Checked(arg);
+    onclear = bigintToI53Checked(onclear);
+    onerror = bigintToI53Checked(onerror);
+  
+  
       ;
       IDBStore.clearStore(UTF8ToString(db), (error) => {
         
         callUserCallback(() => {
           if (error) {
-            if (onerror) getWasmTableEntry(onerror)(arg);
+            if (onerror) ((a1) => getWasmTableEntry(onerror).call(null, BigInt(a1)))(arg);
             return;
           }
-          if (onclear) getWasmTableEntry(onclear)(arg);
+          if (onclear) ((a1) => getWasmTableEntry(onclear).call(null, BigInt(a1)))(arg);
         });
       });
-    };
+    ;
+  };
   _emscripten_idb_async_clear.sig = 'vpppp';
 
-  var _emscripten_idb_load = (db, id, pbuffer, pnum, perror) => {
+  
+  function _emscripten_idb_load(db, id, pbuffer, pnum, perror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    pbuffer = bigintToI53Checked(pbuffer);
+    pnum = bigintToI53Checked(pnum);
+    perror = bigintToI53Checked(perror);
+  
+  
       throw 'Please compile your program with async support in order to use synchronous operations like emscripten_idb_load, etc.';
-    };
+    ;
+  }
   _emscripten_idb_load.sig = 'vppppp';
 
-  var _emscripten_idb_store = (db, id, ptr, num, perror) => {
+  
+  function _emscripten_idb_store(db, id, ptr, num, perror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    ptr = bigintToI53Checked(ptr);
+    perror = bigintToI53Checked(perror);
+  
+  
       throw 'Please compile your program with async support in order to use synchronous operations like emscripten_idb_store, etc.';
-    };
+    ;
+  }
   _emscripten_idb_store.sig = 'vpppip';
 
-  var _emscripten_idb_delete = (db, id, perror) => {
+  
+  function _emscripten_idb_delete(db, id, perror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    perror = bigintToI53Checked(perror);
+  
+  
       throw 'Please compile your program with async support in order to use synchronous operations like emscripten_idb_delete, etc.';
-    };
+    ;
+  }
   _emscripten_idb_delete.sig = 'vppp';
 
-  var _emscripten_idb_exists = (db, id, pexists, perror) => {
+  
+  function _emscripten_idb_exists(db, id, pexists, perror) {
+    db = bigintToI53Checked(db);
+    id = bigintToI53Checked(id);
+    pexists = bigintToI53Checked(pexists);
+    perror = bigintToI53Checked(perror);
+  
+  
       throw 'Please compile your program with async support in order to use synchronous operations like emscripten_idb_exists, etc.';
-    };
+    ;
+  }
   _emscripten_idb_exists.sig = 'vpppp';
 
-  var _emscripten_idb_clear = (db, perror) => {
+  
+  function _emscripten_idb_clear(db, perror) {
+    db = bigintToI53Checked(db);
+    perror = bigintToI53Checked(perror);
+  
+  
       throw 'Please compile your program with async support in order to use synchronous operations like emscripten_idb_clear, etc.';
-    };
+    ;
+  }
   _emscripten_idb_clear.sig = 'vpp';
 
   var runAndAbortIfError = (func) => {
@@ -22667,14 +25158,23 @@ async function createWasm() {
 
 
 
-  var _emscripten_scan_registers = (func) => {
+  function _emscripten_scan_registers(func) {
+    func = bigintToI53Checked(func);
+  
+  
       throw 'Please compile your program with async support in order to use asynchronous operations like emscripten_scan_registers';
-    };
+    ;
+  }
   _emscripten_scan_registers.sig = 'vp';
 
-  var _emscripten_fiber_swap = (oldFiber, newFiber) => {
+  function _emscripten_fiber_swap(oldFiber, newFiber) {
+    oldFiber = bigintToI53Checked(oldFiber);
+    newFiber = bigintToI53Checked(newFiber);
+  
+  
       throw 'Please compile your program with async support in order to use asynchronous operations like emscripten_fiber_swap';
-    };
+    ;
+  }
   _emscripten_fiber_swap.sig = 'vpp';
 
   
@@ -22682,7 +25182,11 @@ async function createWasm() {
   var _SDL_GetTicks = () => (Date.now() - SDL.startTime)|0;
   _SDL_GetTicks.sig = 'i';
   
-  var _SDL_LockSurface = (surf) => {
+  
+  function _SDL_LockSurface(surf) {
+    surf = bigintToI53Checked(surf);
+  
+  
       var surfData = SDL.surfaces[surf];
   
       surfData.locked++;
@@ -22690,14 +25194,14 @@ async function createWasm() {
   
       if (!surfData.buffer) {
         surfData.buffer = _malloc(surfData.width * surfData.height * 4);
-        HEAPU32[(((surf)+(20))>>2)] = surfData.buffer;
+        HEAPU64[(((surf)+(32))/8)] = BigInt(surfData.buffer);
       }
   
       // Mark in C/C++-accessible SDL structure
       // SDL_Surface has the following fields: Uint32 flags, SDL_PixelFormat *format; int w, h; Uint16 pitch; void *pixels; ...
       // So we have fields all of the same size, and 5 of them before us.
       // TODO: Use macros like in library.js
-      HEAPU32[(((surf)+(20))>>2)] = surfData.buffer;
+      HEAPU64[(((surf)+(32))/8)] = BigInt(surfData.buffer);
   
       if (surf == SDL.screen && Module.screenIsReadOnly && surfData.image) return 0;
   
@@ -22747,7 +25251,8 @@ async function createWasm() {
       }
   
       return 0;
-    };
+    ;
+  }
   _SDL_LockSurface.sig = 'ip';
   
   
@@ -22972,17 +25477,17 @@ async function createWasm() {
   },
   loadRect(rect) {
         return {
-          x: HEAP32[((rect)>>2)],
-          y: HEAP32[(((rect)+(4))>>2)],
-          w: HEAP32[(((rect)+(8))>>2)],
-          h: HEAP32[(((rect)+(12))>>2)]
+          x: HEAP32[((rect)/4)],
+          y: HEAP32[(((rect)+(4))/4)],
+          w: HEAP32[(((rect)+(8))/4)],
+          h: HEAP32[(((rect)+(12))/4)]
         };
       },
   updateRect(rect, r) {
-        HEAP32[((rect)>>2)] = r.x;
-        HEAP32[(((rect)+(4))>>2)] = r.y;
-        HEAP32[(((rect)+(8))>>2)] = r.w;
-        HEAP32[(((rect)+(12))>>2)] = r.h;
+        HEAP32[((rect)/4)] = r.x;
+        HEAP32[(((rect)+(4))/4)] = r.y;
+        HEAP32[(((rect)+(8))/4)] = r.w;
+        HEAP32[(((rect)+(12))/4)] = r.h;
       },
   intersectionOfRects(first, second) {
         var leftX = Math.max(first.x, second.x);
@@ -23000,11 +25505,11 @@ async function createWasm() {
   checkPixelFormat(fmt) {
       },
   loadColorToCSSRGB(color) {
-        var rgba = HEAP32[((color)>>2)];
+        var rgba = HEAP32[((color)/4)];
         return 'rgb(' + (rgba&255) + ',' + ((rgba >> 8)&255) + ',' + ((rgba >> 16)&255) + ')';
       },
   loadColorToCSSRGBA(color) {
-        var rgba = HEAP32[((color)>>2)];
+        var rgba = HEAP32[((color)/4)];
         return 'rgba(' + (rgba&255) + ',' + ((rgba >> 8)&255) + ',' + ((rgba >> 16)&255) + ',' + (((rgba >> 24)&255)/255) + ')';
       },
   translateColorToCSSRGBA:(rgba) =>
@@ -23017,8 +25522,8 @@ async function createWasm() {
         var is_SDL_HWPALETTE = flags & 2097152;
         var is_SDL_OPENGL = flags & 67108864;
   
-        var surf = _malloc(60);
-        var pixelFormat = _malloc(44);
+        var surf = _malloc(96);
+        var pixelFormat = _malloc(56);
         // surface with SDL_HWPALETTE flag is 8bpp surface (1 byte)
         var bpp = is_SDL_HWPALETTE ? 1 : 4;
         var buffer = 0;
@@ -23029,31 +25534,31 @@ async function createWasm() {
           buffer = _malloc(width * height * 4);
         }
   
-        HEAP32[((surf)>>2)] = flags;
-        HEAPU32[(((surf)+(4))>>2)] = pixelFormat;
-        HEAP32[(((surf)+(8))>>2)] = width;
-        HEAP32[(((surf)+(12))>>2)] = height;
-        HEAP32[(((surf)+(16))>>2)] = width * bpp;  // assuming RGBA or indexed for now,
+        HEAP32[((surf)/4)] = flags;
+        HEAPU64[(((surf)+(8))/8)] = BigInt(pixelFormat);
+        HEAP32[(((surf)+(16))/4)] = width;
+        HEAP32[(((surf)+(20))/4)] = height;
+        HEAP32[(((surf)+(24))/4)] = width * bpp;  // assuming RGBA or indexed for now,
                                                                                           // since that is what ImageData gives us in browsers
-        HEAPU32[(((surf)+(20))>>2)] = buffer;
+        HEAPU64[(((surf)+(32))/8)] = BigInt(buffer);
   
         var canvas = Browser.getCanvas();
-        HEAP32[(((surf)+(36))>>2)] = 0;
-        HEAP32[(((surf)+(40))>>2)] = 0;
-        HEAP32[(((surf)+(44))>>2)] = canvas.width;
-        HEAP32[(((surf)+(48))>>2)] = canvas.height;
+        HEAP32[(((surf)+(64))/4)] = 0;
+        HEAP32[(((surf)+(68))/4)] = 0;
+        HEAP32[(((surf)+(72))/4)] = canvas.width;
+        HEAP32[(((surf)+(76))/4)] = canvas.height;
   
-        HEAP32[(((surf)+(56))>>2)] = 1;
+        HEAP32[(((surf)+(88))/4)] = 1;
   
-        HEAP32[((pixelFormat)>>2)] = -2042224636;
-        HEAP32[(((pixelFormat)+(4))>>2)] = 0;// TODO
-        HEAP8[(pixelFormat)+(8)] = bpp * 8;
-        HEAP8[(pixelFormat)+(9)] = bpp;
+        HEAP32[((pixelFormat)/4)] = -2042224636;
+        HEAP32[(((pixelFormat)+(8))/4)] = 0;// TODO
+        HEAP8[(pixelFormat)+(16)] = bpp * 8;
+        HEAP8[(pixelFormat)+(17)] = bpp;
   
-        HEAP32[(((pixelFormat)+(12))>>2)] = rmask || 0x000000ff;
-        HEAP32[(((pixelFormat)+(16))>>2)] = gmask || 0x0000ff00;
-        HEAP32[(((pixelFormat)+(20))>>2)] = bmask || 0x00ff0000;
-        HEAP32[(((pixelFormat)+(24))>>2)] = amask || 0xff000000;
+        HEAP32[(((pixelFormat)+(20))/4)] = rmask || 0x000000ff;
+        HEAP32[(((pixelFormat)+(24))/4)] = gmask || 0x0000ff00;
+        HEAP32[(((pixelFormat)+(28))/4)] = bmask || 0x00ff0000;
+        HEAP32[(((pixelFormat)+(32))/4)] = amask || 0xff000000;
   
         // Decide if we want to use WebGL or not
         SDL.GL = SDL.GL || is_SDL_OPENGL;
@@ -23128,10 +25633,10 @@ async function createWasm() {
         }
       },
   freeSurface(surf) {
-        var refcountPointer = surf + 56;
-        var refcount = HEAP32[((refcountPointer)>>2)];
+        var refcountPointer = surf + 88;
+        var refcount = HEAP32[((refcountPointer)/4)];
         if (refcount > 1) {
-          HEAP32[((refcountPointer)>>2)] = refcount - 1;
+          HEAP32[((refcountPointer)/4)] = refcount - 1;
           return;
         }
   
@@ -23539,7 +26044,7 @@ async function createWasm() {
         if (!SDL.eventHandler) return;
   
         while (SDL.pollEvent(SDL.eventHandlerTemp)) {
-          getWasmTableEntry(SDL.eventHandler)(SDL.eventHandlerContext, SDL.eventHandlerTemp);
+          ((a1, a2) => getWasmTableEntry(SDL.eventHandler).call(null, BigInt(a1), BigInt(a2)))(SDL.eventHandlerContext, SDL.eventHandlerTemp);
         }
       },
   pollEvent(ptr) {
@@ -23581,19 +26086,19 @@ async function createWasm() {
               scan = SDL.scanCodes[key] || key;
             }
   
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
             HEAP8[(ptr)+(8)] = down ? 1 : 0;
             HEAP8[(ptr)+(9)] = 0; // TODO
-            HEAP32[(((ptr)+(12))>>2)] = scan;
-            HEAP32[(((ptr)+(16))>>2)] = key;
-            HEAP16[(((ptr)+(20))>>1)] = SDL.modState;
+            HEAP32[(((ptr)+(12))/4)] = scan;
+            HEAP32[(((ptr)+(16))/4)] = key;
+            HEAP16[(((ptr)+(20))/2)] = SDL.modState;
             // some non-character keys (e.g. backspace and tab) won't have keypressCharCode set, fill in with the keyCode.
-            HEAP32[(((ptr)+(24))>>2)] = event.keypressCharCode || key;
+            HEAP32[(((ptr)+(24))/4)] = event.keypressCharCode || key;
   
             break;
           }
           case 'keypress': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
             // Not filling in windowID for now
             var cStr = intArrayFromString(String.fromCharCode(event.charCode));
             for (var i = 0; i < cStr.length; ++i) {
@@ -23604,31 +26109,31 @@ async function createWasm() {
           case 'mousedown': case 'mouseup': case 'mousemove': {
             if (event.type != 'mousemove') {
               var down = event.type === 'mousedown';
-              HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-              HEAP32[(((ptr)+(4))>>2)] = 0;
-              HEAP32[(((ptr)+(8))>>2)] = 0;
-              HEAP32[(((ptr)+(12))>>2)] = 0;
+              HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+              HEAP32[(((ptr)+(4))/4)] = 0;
+              HEAP32[(((ptr)+(8))/4)] = 0;
+              HEAP32[(((ptr)+(12))/4)] = 0;
               HEAP8[(ptr)+(16)] = event.button+1; // DOM buttons are 0-2, SDL 1-3
               HEAP8[(ptr)+(17)] = down ? 1 : 0;
-              HEAP32[(((ptr)+(20))>>2)] = Browser.mouseX;
-              HEAP32[(((ptr)+(24))>>2)] = Browser.mouseY;
+              HEAP32[(((ptr)+(20))/4)] = Browser.mouseX;
+              HEAP32[(((ptr)+(24))/4)] = Browser.mouseY;
             } else {
-              HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-              HEAP32[(((ptr)+(4))>>2)] = 0;
-              HEAP32[(((ptr)+(8))>>2)] = 0;
-              HEAP32[(((ptr)+(12))>>2)] = 0;
-              HEAP32[(((ptr)+(16))>>2)] = SDL.buttonState;
-              HEAP32[(((ptr)+(20))>>2)] = Browser.mouseX;
-              HEAP32[(((ptr)+(24))>>2)] = Browser.mouseY;
-              HEAP32[(((ptr)+(28))>>2)] = Browser.mouseMovementX;
-              HEAP32[(((ptr)+(32))>>2)] = Browser.mouseMovementY;
+              HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+              HEAP32[(((ptr)+(4))/4)] = 0;
+              HEAP32[(((ptr)+(8))/4)] = 0;
+              HEAP32[(((ptr)+(12))/4)] = 0;
+              HEAP32[(((ptr)+(16))/4)] = SDL.buttonState;
+              HEAP32[(((ptr)+(20))/4)] = Browser.mouseX;
+              HEAP32[(((ptr)+(24))/4)] = Browser.mouseY;
+              HEAP32[(((ptr)+(28))/4)] = Browser.mouseMovementX;
+              HEAP32[(((ptr)+(32))/4)] = Browser.mouseMovementY;
             }
             break;
           }
           case 'wheel': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(16))>>2)] = event.deltaX;
-            HEAP32[(((ptr)+(20))>>2)] = event.deltaY;
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(16))/4)] = event.deltaX;
+            HEAP32[(((ptr)+(20))/4)] = event.deltaY;
             break;
           }
           case 'touchstart': case 'touchend': case 'touchmove': {
@@ -23643,62 +26148,62 @@ async function createWasm() {
             var dy = y - ly;
             if (touch['deviceID'] === undefined) touch.deviceID = SDL.TOUCH_DEFAULT_ID;
             if (dx === 0 && dy === 0 && event.type === 'touchmove') return false; // don't send these if nothing happened
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(4))>>2)] = _SDL_GetTicks();
-            HEAP64[(((ptr)+(8))>>3)] = BigInt(touch.deviceID);
-            HEAP64[(((ptr)+(16))>>3)] = BigInt(touch.identifier);
-            HEAPF32[(((ptr)+(24))>>2)] = x;
-            HEAPF32[(((ptr)+(28))>>2)] = y;
-            HEAPF32[(((ptr)+(32))>>2)] = dx;
-            HEAPF32[(((ptr)+(36))>>2)] = dy;
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(4))/4)] = _SDL_GetTicks();
+            HEAP64[(((ptr)+(8))/8)] = BigInt(touch.deviceID);
+            HEAP64[(((ptr)+(16))/8)] = BigInt(touch.identifier);
+            HEAPF32[(((ptr)+(24))/4)] = x;
+            HEAPF32[(((ptr)+(28))/4)] = y;
+            HEAPF32[(((ptr)+(32))/4)] = dx;
+            HEAPF32[(((ptr)+(36))/4)] = dy;
             if (touch.force !== undefined) {
-              HEAPF32[(((ptr)+(40))>>2)] = touch.force;
+              HEAPF32[(((ptr)+(40))/4)] = touch.force;
             } else { // No pressure data, send a digital 0/1 pressure.
-              HEAPF32[(((ptr)+(40))>>2)] = event.type == "touchend" ? 0 : 1;
+              HEAPF32[(((ptr)+(40))/4)] = event.type == "touchend" ? 0 : 1;
             }
             break;
           }
           case 'unload': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
             break;
           }
           case 'resize': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(4))>>2)] = event.w;
-            HEAP32[(((ptr)+(8))>>2)] = event.h;
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(4))/4)] = event.w;
+            HEAP32[(((ptr)+(8))/4)] = event.h;
             break;
           }
           case 'joystick_button_up': case 'joystick_button_down': {
             var state = event.type === 'joystick_button_up' ? 0 : 1;
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
             HEAP8[(ptr)+(4)] = event.index;
             HEAP8[(ptr)+(5)] = event.button;
             HEAP8[(ptr)+(6)] = state;
             break;
           }
           case 'joystick_axis_motion': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
             HEAP8[(ptr)+(4)] = event.index;
             HEAP8[(ptr)+(5)] = event.axis;
-            HEAP32[(((ptr)+(8))>>2)] = SDL.joystickAxisValueConversion(event.value);
+            HEAP32[(((ptr)+(8))/4)] = SDL.joystickAxisValueConversion(event.value);
             break;
           }
           case 'focus': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(4))>>2)] = 0;
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(4))/4)] = 0;
             HEAP8[(ptr)+(8)] = 12;
             break;
           }
           case 'blur': {
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(4))>>2)] = 0;
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(4))/4)] = 0;
             HEAP8[(ptr)+(8)] = 13;
             break;
           }
           case 'visibilitychange': {
             var visibilityEventID = event.visible ? 1 : 2;
-            HEAP32[((ptr)>>2)] = SDL.DOMEventToSDLEvent[event.type];
-            HEAP32[(((ptr)+(4))>>2)] = 0;
+            HEAP32[((ptr)/4)] = SDL.DOMEventToSDLEvent[event.type];
+            HEAP32[(((ptr)+(4))/4)] = 0;
             HEAP8[(ptr)+(8)] = visibilityEventID;
             break;
           }
@@ -23841,7 +26346,7 @@ async function createWasm() {
           }
           if (audio.format == 32784) {
             for (var j = 0; j < sizeSamplesPerChannel; ++j) {
-              channelData[j] = (HEAP16[(((heapPtr)+((j*numChannels + c)*2))>>1)]) / 0x8000;
+              channelData[j] = (HEAP16[(((heapPtr)+((j*numChannels + c)*2))/2)]) / 0x8000;
             }
           } else if (audio.format == 8) {
             for (var j = 0; j < sizeSamplesPerChannel; ++j) {
@@ -23850,7 +26355,7 @@ async function createWasm() {
             }
           } else if (audio.format == 33056) {
             for (var j = 0; j < sizeSamplesPerChannel; ++j) {
-              channelData[j] = (HEAPF32[(((heapPtr)+((j*numChannels + c)*4))>>2)]);
+              channelData[j] = (HEAPF32[(((heapPtr)+((j*numChannels + c)*4))/4)]);
             }
           } else {
             throw 'Invalid SDL audio format ' + audio.format + '!';
@@ -23954,7 +26459,10 @@ async function createWasm() {
       },
   };
 
-  var _SDL_Linked_Version = () => {
+  
+  var _SDL_Linked_Version = function() {
+  
+  var ret = (() => { 
       if (SDL.version === null) {
         SDL.version = _malloc(3);
         HEAP8[SDL.version] = 1;
@@ -23962,7 +26470,9 @@ async function createWasm() {
         HEAP8[(SDL.version)+(2)] = 0;
       }
       return SDL.version;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_Linked_Version.sig = 'p';
 
   
@@ -24021,24 +26531,38 @@ async function createWasm() {
   _SDL_WasInit.sig = 'ii';
 
   
-  var _SDL_GetVideoInfo = () => {
-      var ret = _calloc(20, 1);
+  
+  var _SDL_GetVideoInfo = function() {
+  
+  var ret = (() => { 
+      var ret = _calloc(24, 1);
       var canvas = Browser.getCanvas();
-      HEAP32[(((ret)+(12))>>2)] = canvas.width;
-      HEAP32[(((ret)+(16))>>2)] = canvas.height;
+      HEAP32[(((ret)+(16))/4)] = canvas.width;
+      HEAP32[(((ret)+(20))/4)] = canvas.height;
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_GetVideoInfo.sig = 'p';
 
-  var _SDL_ListModes = (format, flags) => -1;
+  
+  var _SDL_ListModes = (format, flags) => {
+    format = bigintToI53Checked(format);
+  
+  return BigInt(-1);
+  };
   _SDL_ListModes.sig = 'ppi';
 
   var _SDL_VideoModeOK = (width, height, depth, flags) => depth;
   _SDL_VideoModeOK.sig = 'iiiii';
 
   
+  
   /** @suppress {duplicate } */
-  var _SDL_VideoDriverName = (buf, max_size) => {
+  var _SDL_VideoDriverName = function(buf, max_size) {
+    buf = bigintToI53Checked(buf);
+  
+  var ret = (() => { 
       if (SDL.startTime === null) {
         return 0; //return NULL
       }
@@ -24061,14 +26585,19 @@ async function createWasm() {
   
       HEAP8[(buf)+(index)] = 0;
       return buf;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_VideoDriverName.sig = 'ppi';
   var _SDL_AudioDriverName = _SDL_VideoDriverName;
   _SDL_AudioDriverName.sig = 'ppi';
 
 
   
-  var _SDL_SetVideoMode = (width, height, depth, flags) => {
+  
+  var _SDL_SetVideoMode = function(width, height, depth, flags) {
+  
+  var ret = (() => { 
       ['touchstart', 'touchend', 'touchmove',
        'mousedown', 'mouseup', 'mousemove',
        'mousewheel', 'wheel', 'mouseout',
@@ -24106,10 +26635,13 @@ async function createWasm() {
       SDL.screen = SDL.makeSurface(width, height, flags, true, 'screen');
   
       return SDL.screen;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_SetVideoMode.sig = 'piiii';
 
-  var _SDL_GetVideoSurface = () => SDL.screen;
+  
+  var _SDL_GetVideoSurface = () => BigInt(SDL.screen);;
   _SDL_GetVideoSurface.sig = 'p';
 
   var _SDL_AudioQuit = () => {
@@ -24140,7 +26672,11 @@ async function createWasm() {
   _SDL_Quit.sig = 'v';
 
 
-  var _SDL_UnlockSurface = (surf) => {
+  
+  function _SDL_UnlockSurface(surf) {
+    surf = bigintToI53Checked(surf);
+  
+  
       assert(!SDL.GL); // in GL mode we do not keep around 2D canvases and contexts
   
       var surfData = SDL.surfaces[surf];
@@ -24156,7 +26692,7 @@ async function createWasm() {
         var data = surfData.image.data;
         var buffer = surfData.buffer;
         assert(buffer % 4 == 0, 'Invalid buffer offset: ' + buffer);
-        var src = ((buffer)>>2);
+        var src = ((buffer)/4);
         var dst = 0;
         var isScreen = surf == SDL.screen;
         var num;
@@ -24167,7 +26703,7 @@ async function createWasm() {
           // browsers do not define CanvasPixelArray anymore.
           num = data.length;
           while (dst < num) {
-            var val = HEAP32[src]; // This is optimized. Instead, we could do HEAP32[(((buffer)+(dst))>>2)];
+            var val = HEAP32[src]; // This is optimized. Instead, we could do HEAP32[(((buffer)+(dst))/4)];
             data[dst  ] = val & 0xff;
             data[dst+1] = (val >> 8) & 0xff;
             data[dst+2] = (val >> 16) & 0xff;
@@ -24244,23 +26780,40 @@ async function createWasm() {
       // Copy to canvas
       surfData.ctx.putImageData(surfData.image, 0, 0);
       // Note that we save the image, so future writes are fast. But, memory is not yet released
-    };
+    ;
+  }
   _SDL_UnlockSurface.sig = 'vp';
 
-  var _SDL_Flip = (surf) => {
+  
+  function _SDL_Flip(surf) {
+    surf = bigintToI53Checked(surf);
+  
+  
       // We actually do this in Unlock, since the screen surface has as its canvas
       // backing the page canvas element
-    };
+    ;
+  }
   _SDL_Flip.sig = 'ip';
 
-  var _SDL_UpdateRect = (surf, x, y, w, h) => {
+  
+  function _SDL_UpdateRect(surf, x, y, w, h) {
+    surf = bigintToI53Checked(surf);
+  
+  
       // We actually do the whole screen in Unlock...
-    };
+    ;
+  }
   _SDL_UpdateRect.sig = 'vpiiii';
 
-  var _SDL_UpdateRects = (surf, numrects, rects) => {
+  
+  function _SDL_UpdateRects(surf, numrects, rects) {
+    surf = bigintToI53Checked(surf);
+    rects = bigintToI53Checked(rects);
+  
+  
       // We actually do the whole screen in Unlock...
-    };
+    ;
+  }
   _SDL_UpdateRects.sig = 'vpip';
 
   var _SDL_Delay = (delay) => {
@@ -24273,24 +26826,36 @@ async function createWasm() {
 
   
   
-  var _SDL_WM_SetCaption = (title, icon) => {
+  
+  function _SDL_WM_SetCaption(title, icon) {
+    title = bigintToI53Checked(title);
+    icon = bigintToI53Checked(icon);
+  
+  
       if (title) {
         _emscripten_set_window_title(title);
       }
       icon &&= UTF8ToString(icon);
-    };
+    ;
+  }
   _SDL_WM_SetCaption.sig = 'vpp';
 
   var _SDL_EnableKeyRepeat = (delay, interval) => {};
   _SDL_EnableKeyRepeat.sig = 'iii';
 
+  
   /** @param {number} numKeys */
-  var _SDL_GetKeyboardState = (numKeys) => {
+  var _SDL_GetKeyboardState = function(numKeys) {
+    numKeys = bigintToI53Checked(numKeys);
+  
+  var ret = (() => { 
       if (numKeys) {
-        HEAP32[((numKeys)>>2)] = 65536;
+        HEAP32[((numKeys)/4)] = 65536;
       }
       return SDL.keyboardState;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_GetKeyboardState.sig = 'pp';
 
   
@@ -24298,7 +26863,10 @@ async function createWasm() {
 
   
   
-  var _SDL_GetKeyName = (key) => {
+  
+  var _SDL_GetKeyName = function(key) {
+  
+  var ret = (() => { 
       var name = '';
       /* ASCII A-Z or 0-9 */
       if ((key >= 97 && key <= 122) || (key >= 48 && key <= 57)) {
@@ -24308,17 +26876,25 @@ async function createWasm() {
       SDL.keyName = _realloc(SDL.keyName, size);
       stringToUTF8(name, SDL.keyName, size);
       return SDL.keyName;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_GetKeyName.sig = 'pi';
 
   var _SDL_GetModState = () => SDL.modState;
   _SDL_GetModState.sig = 'i';
 
-  var _SDL_GetMouseState = (x, y) => {
-      if (x) HEAP32[((x)>>2)] = Browser.mouseX;
-      if (y) HEAP32[((y)>>2)] = Browser.mouseY;
+  
+  function _SDL_GetMouseState(x, y) {
+    x = bigintToI53Checked(x);
+    y = bigintToI53Checked(y);
+  
+  
+      if (x) HEAP32[((x)/4)] = Browser.mouseX;
+      if (y) HEAP32[((y)/4)] = Browser.mouseY;
       return SDL.buttonState;
-    };
+    ;
+  }
   _SDL_GetMouseState.sig = 'ipp';
 
   var _SDL_WarpMouse = (x, y) => {
@@ -24356,19 +26932,35 @@ async function createWasm() {
   _SDL_ShowCursor.sig = 'ii';
 
   
-  var _SDL_GetError = () => {
+  
+  var _SDL_GetError = function() {
+  
+  var ret = (() => { 
       SDL.errorMessage ||= stringToNewUTF8("unknown SDL-emscripten error");
       return SDL.errorMessage;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_GetError.sig = 'p';
 
-  var _SDL_SetError = (fmt, varargs) => {};
+  
+  function _SDL_SetError(fmt, varargs) {
+    fmt = bigintToI53Checked(fmt);
+    varargs = bigintToI53Checked(varargs);
+  
+  ;
+  }
   _SDL_SetError.sig = 'vpp';
 
-  var _SDL_CreateRGBSurface = (flags, width, height, depth, rmask, gmask, bmask, amask) => SDL.makeSurface(width, height, flags, false, 'CreateRGBSurface', rmask, gmask, bmask, amask);
+  
+  var _SDL_CreateRGBSurface = (flags, width, height, depth, rmask, gmask, bmask, amask) => BigInt(SDL.makeSurface(width, height, flags, false, 'CreateRGBSurface', rmask, gmask, bmask, amask));;
   _SDL_CreateRGBSurface.sig = 'piiiiiiii';
 
-  var _SDL_CreateRGBSurfaceFrom = (pixels, width, height, depth, pitch, rmask, gmask, bmask, amask) => {
+  
+  var _SDL_CreateRGBSurfaceFrom = function(pixels, width, height, depth, pitch, rmask, gmask, bmask, amask) {
+    pixels = bigintToI53Checked(pixels);
+  
+  var ret = (() => { 
       var surf = SDL.makeSurface(width, height, 0, false, 'CreateRGBSurfaceFrom', rmask, gmask, bmask, amask);
   
       if (depth !== 32) {
@@ -24394,11 +26986,18 @@ async function createWasm() {
       data.ctx.putImageData(image, 0, 0);
   
       return surf;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_CreateRGBSurfaceFrom.sig = 'ppiiiiiiii';
 
+  
   /** @param {number} format @param {number} flags */
-  var _SDL_ConvertSurface = (surf, format, flags) => {
+  var _SDL_ConvertSurface = function(surf, format, flags) {
+    surf = bigintToI53Checked(surf);
+    format = bigintToI53Checked(format);
+  
+  var ret = (() => { 
       if  (format) {
         SDL.checkPixelFormat(format);
       }
@@ -24411,24 +27010,50 @@ async function createWasm() {
       newData.ctx.drawImage(oldData.canvas, 0, 0);
       newData.ctx.globalCompositeOperation = oldData.ctx.globalCompositeOperation;
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_ConvertSurface.sig = 'pppi';
 
   
-  var _SDL_DisplayFormatAlpha = (surf) => _SDL_ConvertSurface(surf, 0, 0);
+  
+  var _SDL_DisplayFormatAlpha = (surf) => {
+    surf = bigintToI53Checked(surf);
+  
+  return BigInt(_SDL_ConvertSurface(surf, 0, 0));
+  };
   _SDL_DisplayFormatAlpha.sig = 'pp';
 
-  var _SDL_FreeSurface = (surf) => {
+  
+  function _SDL_FreeSurface(surf) {
+    surf = bigintToI53Checked(surf);
+  
+  
       if (surf) SDL.freeSurface(surf);
-    };
+    ;
+  }
   _SDL_FreeSurface.sig = 'vp';
 
-  var _SDL_UpperBlit = (src, srcrect, dst, dstrect) =>
-      SDL.blitSurface(src, srcrect, dst, dstrect, false);
+  
+  function _SDL_UpperBlit(src, srcrect, dst, dstrect) {
+    src = bigintToI53Checked(src);
+    srcrect = bigintToI53Checked(srcrect);
+    dst = bigintToI53Checked(dst);
+    dstrect = bigintToI53Checked(dstrect);
+  
+  return SDL.blitSurface(src, srcrect, dst, dstrect, false);
+  }
   _SDL_UpperBlit.sig = 'ipppp';
 
-  var _SDL_UpperBlitScaled = (src, srcrect, dst, dstrect) =>
-      SDL.blitSurface(src, srcrect, dst, dstrect, true);
+  
+  function _SDL_UpperBlitScaled(src, srcrect, dst, dstrect) {
+    src = bigintToI53Checked(src);
+    srcrect = bigintToI53Checked(srcrect);
+    dst = bigintToI53Checked(dst);
+    dstrect = bigintToI53Checked(dstrect);
+  
+  return SDL.blitSurface(src, srcrect, dst, dstrect, true);
+  }
   _SDL_UpperBlitScaled.sig = 'ipppp';
 
   
@@ -24439,16 +27064,27 @@ async function createWasm() {
   var _SDL_LowerBlitScaled = _SDL_UpperBlitScaled;
   _SDL_LowerBlitScaled.sig = 'ipppp';
 
-  var _SDL_GetClipRect = (surf, rect) => {
+  
+  function _SDL_GetClipRect(surf, rect) {
+    surf = bigintToI53Checked(surf);
+    rect = bigintToI53Checked(rect);
+  
+  
       assert(rect);
   
       var surfData = SDL.surfaces[surf];
       var r = surfData.clipRect || { x: 0, y: 0, w: surfData.width, h: surfData.height };
       SDL.updateRect(rect, r);
-    };
+    ;
+  }
   _SDL_GetClipRect.sig = 'vpp';
 
-  var _SDL_SetClipRect = (surf, rect) => {
+  
+  function _SDL_SetClipRect(surf, rect) {
+    surf = bigintToI53Checked(surf);
+    rect = bigintToI53Checked(rect);
+  
+  
       var surfData = SDL.surfaces[surf];
   
       if (rect) {
@@ -24456,10 +27092,16 @@ async function createWasm() {
       } else {
         delete surfData.clipRect;
       }
-    };
+    ;
+  }
   _SDL_SetClipRect.sig = 'ipp';
 
-  var _SDL_FillRect = (surf, rect, color) => {
+  
+  function _SDL_FillRect(surf, rect, color) {
+    surf = bigintToI53Checked(surf);
+    rect = bigintToI53Checked(rect);
+  
+  
       var surfData = SDL.surfaces[surf];
       assert(!surfData.locked); // but we could unlock and re-lock if we must..
   
@@ -24485,10 +27127,15 @@ async function createWasm() {
       surfData.ctx.fillRect(r.x, r.y, r.w, r.h);
       surfData.ctx.restore();
       return 0;
-    };
+    ;
+  }
   _SDL_FillRect.sig = 'ippi';
 
-  var _zoomSurface = (src, x, y, smooth) => {
+  
+  var _zoomSurface = function(src, x, y, smooth) {
+    src = bigintToI53Checked(src);
+  
+  var ret = (() => { 
       var srcData = SDL.surfaces[src];
       var w = srcData.width * x;
       var h = srcData.height * y;
@@ -24505,11 +27152,17 @@ async function createWasm() {
         dstData.ctx.restore();
       }
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _zoomSurface.sig = 'ppddi';
 
   
-  var _rotozoomSurface = (src, angle, zoom, smooth) => {
+  
+  var _rotozoomSurface = function(src, angle, zoom, smooth) {
+    src = bigintToI53Checked(src);
+  
+  var ret = (() => { 
       if (angle % 360 === 0) {
         return _zoomSurface(src, zoom, zoom, smooth);
       }
@@ -24523,41 +27176,67 @@ async function createWasm() {
       dstData.ctx.rotate(-angle * Math.PI / 180);
       dstData.ctx.drawImage(srcData.canvas, -w / 2, -h / 2, w, h);
       return ret;
-    };
+     })();
+  return BigInt(ret);
+  };
   _rotozoomSurface.sig = 'ppddi';
 
-  var _SDL_SetAlpha = (surf, flag, alpha) => {
+  
+  function _SDL_SetAlpha(surf, flag, alpha) {
+    surf = bigintToI53Checked(surf);
+  
+  
       var surfData = SDL.surfaces[surf];
       surfData.alpha = alpha;
   
       if (!(flag & 65536)) { // !SDL_SRCALPHA
         surfData.alpha = 255;
       }
-    };
+    ;
+  }
   _SDL_SetAlpha.sig = 'ipii';
 
-  var _SDL_SetColorKey = (surf, flag, key) => {
+  
+  function _SDL_SetColorKey(surf, flag, key) {
+    surf = bigintToI53Checked(surf);
+  
+  
       // SetColorKey assigns one color to be rendered as transparent. I don't
       // think the canvas API allows for anything like this, and iterating through
       // each pixel to replace that color seems prohibitively expensive.
       warnOnce('SDL_SetColorKey is a no-op for performance reasons');
       return 0;
-    };
+    ;
+  }
   _SDL_SetColorKey.sig = 'ipii';
 
 
-  var _SDL_PollEvent = (ptr) => SDL.pollEvent(ptr);
+  
+  function _SDL_PollEvent(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  return SDL.pollEvent(ptr);
+  }
   _SDL_PollEvent.sig = 'ip';
 
-  var _SDL_PushEvent = (ptr) => {
+  
+  function _SDL_PushEvent(ptr) {
+    ptr = bigintToI53Checked(ptr);
+  
+  
       var copy = _malloc(28);
       _memcpy(copy, ptr, 28);
       SDL.events.push(copy);
       return 0;
-    };
+    ;
+  }
   _SDL_PushEvent.sig = 'ip';
 
-  var _SDL_PeepEvents = (events, requestedEventCount, action, from, to) => {
+  
+  function _SDL_PeepEvents(events, requestedEventCount, action, from, to) {
+    events = bigintToI53Checked(events);
+  
+  
       switch (action) {
         case 2: { // SDL_GETEVENT
           // We only handle 1 event right now
@@ -24585,22 +27264,34 @@ async function createWasm() {
         }
         default: throw 'SDL_PeepEvents does not yet support that action: ' + action;
       }
-    };
+    ;
+  }
   _SDL_PeepEvents.sig = 'ipiiii';
 
   var _SDL_PumpEvents = () => SDL.events.forEach(SDL.handleEvent);
   _SDL_PumpEvents.sig = 'v';
 
-  var _emscripten_SDL_SetEventHandler = (handler, userdata) => {
+  
+  function _emscripten_SDL_SetEventHandler(handler, userdata) {
+    handler = bigintToI53Checked(handler);
+    userdata = bigintToI53Checked(userdata);
+  
+  
       SDL.eventHandler = handler;
       SDL.eventHandlerContext = userdata;
   
       // All SDLEvents take the same amount of memory
       SDL.eventHandlerTemp ||= _malloc(28);
-    };
+    ;
+  }
   _emscripten_SDL_SetEventHandler.sig = 'vpp';
 
-  var _SDL_SetColors = (surf, colors, firstColor, nColors) => {
+  
+  function _SDL_SetColors(surf, colors, firstColor, nColors) {
+    surf = bigintToI53Checked(surf);
+    colors = bigintToI53Checked(colors);
+  
+  
       var surfData = SDL.surfaces[surf];
   
       // we should create colors array
@@ -24622,29 +27313,52 @@ async function createWasm() {
       }
   
       return 1;
-    };
+    ;
+  }
   _SDL_SetColors.sig = 'ippii';
 
   
-  var _SDL_SetPalette = (surf, flags, colors, firstColor, nColors) =>
-      _SDL_SetColors(surf, colors, firstColor, nColors);
+  
+  function _SDL_SetPalette(surf, flags, colors, firstColor, nColors) {
+    surf = bigintToI53Checked(surf);
+    colors = bigintToI53Checked(colors);
+  
+  return _SDL_SetColors(surf, colors, firstColor, nColors);
+  }
   _SDL_SetPalette.sig = 'ipipii';
 
-  var _SDL_MapRGB = (fmt, r, g, b) => {
+  
+  function _SDL_MapRGB(fmt, r, g, b) {
+    fmt = bigintToI53Checked(fmt);
+  
+  
       SDL.checkPixelFormat(fmt);
       // We assume the machine is little-endian.
       return r&0xff|(g&0xff)<<8|(b&0xff)<<16|0xff000000;
-    };
+    ;
+  }
   _SDL_MapRGB.sig = 'ipiii';
 
-  var _SDL_MapRGBA = (fmt, r, g, b, a) => {
+  
+  function _SDL_MapRGBA(fmt, r, g, b, a) {
+    fmt = bigintToI53Checked(fmt);
+  
+  
       SDL.checkPixelFormat(fmt);
       // We assume the machine is little-endian.
       return r&0xff|(g&0xff)<<8|(b&0xff)<<16|(a&0xff)<<24;
-    };
+    ;
+  }
   _SDL_MapRGBA.sig = 'ipiiii';
 
-  var _SDL_GetRGB = (pixel, fmt, r, g, b) => {
+  
+  function _SDL_GetRGB(pixel, fmt, r, g, b) {
+    fmt = bigintToI53Checked(fmt);
+    r = bigintToI53Checked(r);
+    g = bigintToI53Checked(g);
+    b = bigintToI53Checked(b);
+  
+  
       SDL.checkPixelFormat(fmt);
       // We assume the machine is little-endian.
       if (r) {
@@ -24656,10 +27370,19 @@ async function createWasm() {
       if (b) {
         HEAP8[b] = (pixel>>16)&0xff;
       }
-    };
+    ;
+  }
   _SDL_GetRGB.sig = 'vipppp';
 
-  var _SDL_GetRGBA = (pixel, fmt, r, g, b, a) => {
+  
+  function _SDL_GetRGBA(pixel, fmt, r, g, b, a) {
+    fmt = bigintToI53Checked(fmt);
+    r = bigintToI53Checked(r);
+    g = bigintToI53Checked(g);
+    b = bigintToI53Checked(b);
+    a = bigintToI53Checked(a);
+  
+  
       SDL.checkPixelFormat(fmt);
       // We assume the machine is little-endian.
       if (r) {
@@ -24674,7 +27397,8 @@ async function createWasm() {
       if (a) {
         HEAP8[a] = (pixel>>24)&0xff;
       }
-    };
+    ;
+  }
   _SDL_GetRGBA.sig = 'vippppp';
 
   var _SDL_GetAppState = () => {
@@ -24695,7 +27419,11 @@ async function createWasm() {
   var _SDL_WM_GrabInput = () => {};
   _SDL_WM_GrabInput.sig = 'ii';
 
-  var _SDL_WM_ToggleFullScreen = (surf) => {
+  
+  function _SDL_WM_ToggleFullScreen(surf) {
+    surf = bigintToI53Checked(surf);
+  
+  
       if (Browser.exitFullscreen()) {
         return 1;
       }
@@ -24704,7 +27432,8 @@ async function createWasm() {
       }
       SDL.isRequestingFullscreen = true;
       return 1;
-    };
+    ;
+  }
   _SDL_WM_ToggleFullScreen.sig = 'ip';
 
   var _IMG_Init = (flags) => flags;
@@ -24712,19 +27441,28 @@ async function createWasm() {
 
   
   
-  var _SDL_FreeRW = (rwopsID) => {
+  
+  function _SDL_FreeRW(rwopsID) {
+    rwopsID = bigintToI53Checked(rwopsID);
+  
+  
       SDL.rwops[rwopsID] = null;
       while (SDL.rwops.length > 0 && SDL.rwops[SDL.rwops.length-1] === null) {
         SDL.rwops.pop();
       }
-    };
+    ;
+  }
   _SDL_FreeRW.sig = 'vp';
   
   
   
   
   
-  var _IMG_Load_RW = (rwopsID, freeSrc) => {
+  
+  var _IMG_Load_RW = function(rwopsID, freeSrc) {
+    rwopsID = bigintToI53Checked(rwopsID);
+  
+  var ret = (() => { 
       var sp = stackSave();
       try {
         // stb_image integration support
@@ -24749,10 +27487,10 @@ async function createWasm() {
           return {
             rawData: true,
             data,
-            width: HEAP32[((x)>>2)],
-            height: HEAP32[((y)>>2)],
-            size: HEAP32[((x)>>2)] * HEAP32[((y)>>2)] * HEAP32[((comp)>>2)],
-            bpp: HEAP32[((comp)>>2)]
+            width: HEAP32[((x)/4)],
+            height: HEAP32[((y)/4)],
+            size: HEAP32[((x)/4)] * HEAP32[((y)/4)] * HEAP32[((comp)/4)],
+            bpp: HEAP32[((comp)/4)]
           };
         };
   
@@ -24851,7 +27589,9 @@ async function createWasm() {
       } finally {
         cleanup();
       }
-    };
+     })();
+  return BigInt(ret);
+  };
   _IMG_Load_RW.sig = 'ppi';
 
   
@@ -24860,20 +27600,33 @@ async function createWasm() {
 
   
   
+  
   /** @param {number} mode */
-  var _SDL_RWFromFile = (_name, mode) => {
+  var _SDL_RWFromFile = function(_name, mode) {
+    _name = bigintToI53Checked(_name);
+    mode = bigintToI53Checked(mode);
+  
+  var ret = (() => { 
       var id = SDL.rwops.length; // TODO: recycle ids when they are null
       var filename = UTF8ToString(_name);
       SDL.rwops.push({ filename, mimetype: Browser.getMimetype(filename) });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_RWFromFile.sig = 'ppp';
   
-  var _IMG_Load = (filename) => {
+  
+  var _IMG_Load = function(filename) {
+    filename = bigintToI53Checked(filename);
+  
+  var ret = (() => { 
       var rwops = _SDL_RWFromFile(filename, 0);
       var result = _IMG_Load_RW(rwops, 1);
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   _IMG_Load.sig = 'pp';
 
   var _IMG_Quit = () => out('IMG_Quit called (and ignored)');
@@ -24883,15 +27636,20 @@ async function createWasm() {
   
   
   
-  var _SDL_OpenAudio = (desired, obtained) => {
+  
+  function _SDL_OpenAudio(desired, obtained) {
+    desired = bigintToI53Checked(desired);
+    obtained = bigintToI53Checked(obtained);
+  
+  
       try {
         SDL.audio = {
-          freq: HEAPU32[((desired)>>2)],
-          format: HEAPU16[(((desired)+(4))>>1)],
+          freq: HEAPU32[((desired)/4)],
+          format: HEAPU16[(((desired)+(4))/2)],
           channels: HEAPU8[(desired)+(6)],
-          samples: HEAPU16[(((desired)+(8))>>1)], // Samples in the CB buffer per single sound channel.
-          callback: HEAPU32[(((desired)+(16))>>2)],
-          userdata: HEAPU32[(((desired)+(20))>>2)],
+          samples: HEAPU16[(((desired)+(8))/2)], // Samples in the CB buffer per single sound channel.
+          callback: Number(HEAPU64[(((desired)+(16))/8)]),
+          userdata: Number(HEAPU64[(((desired)+(24))/8)]),
           paused: true,
           timer: null
         };
@@ -24974,7 +27732,7 @@ async function createWasm() {
             if (secsUntilNextPlayStart >= SDL.audio.bufferingDelay + SDL.audio.bufferDurationSecs*SDL.audio.numSimultaneouslyQueuedBuffers) return;
   
             // Ask SDL audio data from the user code.
-            getWasmTableEntry(SDL.audio.callback)(SDL.audio.userdata, SDL.audio.buffer, SDL.audio.bufferSize);
+            ((a1, a2, a3) => getWasmTableEntry(SDL.audio.callback).call(null, BigInt(a1), BigInt(a2), a3))(SDL.audio.userdata, SDL.audio.buffer, SDL.audio.bufferSize);
             // And queue it to be played after the currently playing audio stream.
             SDL.audio.pushAudio(SDL.audio.buffer, SDL.audio.bufferSize);
           }
@@ -25063,13 +27821,13 @@ async function createWasm() {
   
         if (obtained) {
           // Report back the initialized audio parameters.
-          HEAP32[((obtained)>>2)] = SDL.audio.freq;
-          HEAP16[(((obtained)+(4))>>1)] = SDL.audio.format;
+          HEAP32[((obtained)/4)] = SDL.audio.freq;
+          HEAP16[(((obtained)+(4))/2)] = SDL.audio.format;
           HEAP8[(obtained)+(6)] = SDL.audio.channels;
           HEAP8[(obtained)+(7)] = SDL.audio.silence;
-          HEAP16[(((obtained)+(8))>>1)] = SDL.audio.samples;
-          HEAPU32[(((obtained)+(16))>>2)] = SDL.audio.callback;
-          HEAPU32[(((obtained)+(20))>>2)] = SDL.audio.userdata;
+          HEAP16[(((obtained)+(8))/2)] = SDL.audio.samples;
+          HEAPU64[(((obtained)+(16))/8)] = BigInt(SDL.audio.callback);
+          HEAPU64[(((obtained)+(24))/8)] = BigInt(SDL.audio.userdata);
         }
         SDL.allocateChannels(32);
   
@@ -25078,20 +27836,21 @@ async function createWasm() {
         SDL.audio = null;
         SDL.allocateChannels(0);
         if (obtained) {
-          HEAP32[((obtained)>>2)] = 0;
-          HEAP16[(((obtained)+(4))>>1)] = 0;
+          HEAP32[((obtained)/4)] = 0;
+          HEAP16[(((obtained)+(4))/2)] = 0;
           HEAP8[(obtained)+(6)] = 0;
           HEAP8[(obtained)+(7)] = 0;
-          HEAP16[(((obtained)+(8))>>1)] = 0;
-          HEAPU32[(((obtained)+(16))>>2)] = 0;
-          HEAPU32[(((obtained)+(20))>>2)] = 0;
+          HEAP16[(((obtained)+(8))/2)] = 0;
+          HEAPU64[(((obtained)+(16))/8)] = BigInt(0);
+          HEAPU64[(((obtained)+(24))/8)] = BigInt(0);
         }
       }
       if (!SDL.audio) {
         return -1;
       }
       return 0;
-    };
+    ;
+  }
   _SDL_OpenAudio.sig = 'ipp';
 
   
@@ -25135,28 +27894,61 @@ async function createWasm() {
   var _SDL_UnlockAudio = () => {};
   _SDL_UnlockAudio.sig = 'v';
 
-  var _SDL_CreateMutex = () => 0;
+  
+  var _SDL_CreateMutex = () => BigInt(0);;
   _SDL_CreateMutex.sig = 'p';
 
-  var _SDL_mutexP = (mutex) => 0;
+  
+  function _SDL_mutexP(mutex) {
+    mutex = bigintToI53Checked(mutex);
+  
+  return 0;
+  }
   _SDL_mutexP.sig = 'ip';
 
-  var _SDL_mutexV = (mutex) => 0;
+  
+  function _SDL_mutexV(mutex) {
+    mutex = bigintToI53Checked(mutex);
+  
+  return 0;
+  }
   _SDL_mutexV.sig = 'ip';
 
-  var _SDL_DestroyMutex = (mutex) => {};
+  
+  function _SDL_DestroyMutex(mutex) {
+    mutex = bigintToI53Checked(mutex);
+  
+  ;
+  }
   _SDL_DestroyMutex.sig = 'vp';
 
-  var _SDL_CreateCond = () => 0;
+  
+  var _SDL_CreateCond = () => BigInt(0);;
   _SDL_CreateCond.sig = 'p';
 
-  var _SDL_CondSignal = (cond) => {};
+  
+  function _SDL_CondSignal(cond) {
+    cond = bigintToI53Checked(cond);
+  
+  ;
+  }
   _SDL_CondSignal.sig = 'ip';
 
-  var _SDL_CondWait = (cond, mutex) => {};
+  
+  function _SDL_CondWait(cond, mutex) {
+    cond = bigintToI53Checked(cond);
+    mutex = bigintToI53Checked(mutex);
+  
+  ;
+  }
   _SDL_CondWait.sig = 'ipp';
 
-  var _SDL_DestroyCond = (cond) => {};
+  
+  function _SDL_DestroyCond(cond) {
+    cond = bigintToI53Checked(cond);
+  
+  ;
+  }
   _SDL_DestroyCond.sig = 'vp';
 
   var _SDL_StartTextInput = () => {
@@ -25202,9 +27994,14 @@ async function createWasm() {
     };
   _Mix_AllocateChannels.sig = 'ii';
 
-  var _Mix_ChannelFinished = (func) => {
+  
+  function _Mix_ChannelFinished(func) {
+    func = bigintToI53Checked(func);
+  
+  
       SDL.channelFinished = func;
-    };
+    ;
+  }
   _Mix_ChannelFinished.sig = 'vp';
 
   var _Mix_Volume = (channel, volume) => {
@@ -25234,8 +28031,12 @@ async function createWasm() {
 
   
   
+  
   /** @param {number} freesrc */
-  var _Mix_LoadWAV_RW = (rwopsID, freesrc) => {
+  var _Mix_LoadWAV_RW = function(rwopsID, freesrc) {
+    rwopsID = bigintToI53Checked(rwopsID);
+  
+  var ret = (() => { 
       var rwops = SDL.rwops[rwopsID];
   
       if (rwops === undefined)
@@ -25320,28 +28121,40 @@ async function createWasm() {
         webAudio // Points to a Web Audio -specific resource object, if loaded
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _Mix_LoadWAV_RW.sig = 'ppi';
 
   
   
   
-  var _Mix_LoadWAV = (filename) => {
+  
+  var _Mix_LoadWAV = function(filename) {
+    filename = bigintToI53Checked(filename);
+  
+  var ret = (() => { 
       var rwops = _SDL_RWFromFile(filename, 0);
       var result = _Mix_LoadWAV_RW(rwops, 0);
       _SDL_FreeRW(rwops);
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   _Mix_LoadWAV.sig = 'pp';
 
-  var _Mix_QuickLoad_RAW = (mem, len) => {
+  
+  var _Mix_QuickLoad_RAW = function(mem, len) {
+    mem = bigintToI53Checked(mem);
+  
+  var ret = (() => { 
       var audio;
       var webAudio;
   
       var numSamples = len >> 1; // len is the length in bytes, and the array contains 16-bit PCM values
       var buffer = new Float32Array(numSamples);
       for (var i = 0; i < numSamples; ++i) {
-        buffer[i] = (HEAP16[(((mem)+(i*2))>>1)]) / 0x8000; // hardcoded 16-bit audio, signed (TODO: reSign if not ta2?)
+        buffer[i] = (HEAP16[(((mem)+(i*2))/2)]) / 0x8000; // hardcoded 16-bit audio, signed (TODO: reSign if not ta2?)
       }
   
       if (SDL.webAudioAvailable()) {
@@ -25363,12 +28176,19 @@ async function createWasm() {
         buffer
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _Mix_QuickLoad_RAW.sig = 'ppi';
 
-  var _Mix_FreeChunk = (id) => {
+  
+  function _Mix_FreeChunk(id) {
+    id = bigintToI53Checked(id);
+  
+  
       SDL.audios[id] = null;
-    };
+    ;
+  }
   _Mix_FreeChunk.sig = 'vp';
 
   var _Mix_ReserveChannels = (num) => {
@@ -25398,7 +28218,11 @@ async function createWasm() {
   _Mix_HaltChannel.sig = 'ii';
   
   
-  var _Mix_PlayChannelTimed = (channel, id, loops, ticks) => {
+  
+  function _Mix_PlayChannelTimed(channel, id, loops, ticks) {
+    id = bigintToI53Checked(id);
+  
+  
       // TODO: handle fixed amount of N loops. Currently loops either 0 or infinite times.
       assert(ticks == -1);
   
@@ -25455,7 +28279,8 @@ async function createWasm() {
       audio.volume = channelInfo.volume;
       audio.play();
       return channel;
-    };
+    ;
+  }
   _Mix_PlayChannelTimed.sig = 'iipii';
 
   var _Mix_FadingChannel = (channel) => 0;
@@ -25478,30 +28303,46 @@ async function createWasm() {
     };
   _Mix_HaltMusic.sig = 'i';
   
-  var _Mix_HookMusicFinished = (func) => {
+  
+  function _Mix_HookMusicFinished(func) {
+    func = bigintToI53Checked(func);
+  
+  
       SDL.hookMusicFinished = func;
       if (SDL.music.audio) { // ensure the callback will be called, if a music is already playing
         SDL.music.audio['onended'] = _Mix_HaltMusic;
       }
-    };
+    ;
+  }
   _Mix_HookMusicFinished.sig = 'vp';
 
   var _Mix_VolumeMusic = (volume) => SDL.setGetVolume(SDL.music, volume);
   _Mix_VolumeMusic.sig = 'ii';
 
   
-  var _Mix_LoadMUS_RW = (filename) => _Mix_LoadWAV_RW(filename, 0);
+  
+  var _Mix_LoadMUS_RW = (filename) => {
+    filename = bigintToI53Checked(filename);
+  
+  return BigInt(_Mix_LoadWAV_RW(filename, 0));
+  };
   _Mix_LoadMUS_RW.sig = 'pp';
 
   
   
   
-  var _Mix_LoadMUS = (filename) => {
+  
+  var _Mix_LoadMUS = function(filename) {
+    filename = bigintToI53Checked(filename);
+  
+  var ret = (() => { 
       var rwops = _SDL_RWFromFile(filename, 0);
       var result = _Mix_LoadMUS_RW(rwops);
       _SDL_FreeRW(rwops);
       return result;
-    };
+     })();
+  return BigInt(ret);
+  };
   _Mix_LoadMUS.sig = 'pp';
 
   
@@ -25509,7 +28350,11 @@ async function createWasm() {
   _Mix_FreeMusic.sig = 'vp';
 
   
-  var _Mix_PlayMusic = (id, loops) => {
+  
+  function _Mix_PlayMusic(id, loops) {
+    id = bigintToI53Checked(id);
+  
+  
       // Pause old music if it exists.
       if (SDL.music.audio) {
         if (!SDL.music.audio.paused) err(`Music is already playing. ${SDL.music.source}`);
@@ -25539,7 +28384,8 @@ async function createWasm() {
       SDL.music.audio = audio;
       audio.play();
       return 0;
-    };
+    ;
+  }
   _Mix_PlayMusic.sig = 'ipi';
 
   var _Mix_PauseMusic = () => {
@@ -25649,7 +28495,11 @@ async function createWasm() {
   _TTF_Init.sig = 'i';
 
   
-  var _TTF_OpenFont = (name, size) => {
+  
+  var _TTF_OpenFont = function(name, size) {
+    name = bigintToI53Checked(name);
+  
+  var ret = (() => { 
       name = PATH.normalize(UTF8ToString(name));
       var id = SDL.fonts.length;
       SDL.fonts.push({
@@ -25657,16 +28507,29 @@ async function createWasm() {
         size
       });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _TTF_OpenFont.sig = 'ppi';
 
-  var _TTF_CloseFont = (font) => {
+  
+  function _TTF_CloseFont(font) {
+    font = bigintToI53Checked(font);
+  
+  
       SDL.fonts[font] = null;
-    };
+    ;
+  }
   _TTF_CloseFont.sig = 'vp';
 
   
-  var _TTF_RenderText_Solid = (font, text, color) => {
+  
+  var _TTF_RenderText_Solid = function(font, text, color) {
+    font = bigintToI53Checked(font);
+    text = bigintToI53Checked(text);
+    color = bigintToI53Checked(color);
+  
+  var ret = (() => { 
       // XXX the font and color are ignored
       text = UTF8ToString(text) || ' '; // if given an empty string, still return a valid surface
       var fontData = SDL.fonts[font];
@@ -25686,7 +28549,9 @@ async function createWasm() {
       surfData.ctx.fillText(text, 0, h|0);
       surfData.ctx.restore();
       return surf;
-    };
+     })();
+  return BigInt(ret);
+  };
   _TTF_RenderText_Solid.sig = 'pppp';
 
   
@@ -25703,60 +28568,93 @@ async function createWasm() {
 
   
   
+  
   /** @suppress {duplicate } */
-  var _TTF_SizeText = (font, text, w, h) => {
+  function _TTF_SizeText(font, text, w, h) {
+    font = bigintToI53Checked(font);
+    text = bigintToI53Checked(text);
+    w = bigintToI53Checked(w);
+    h = bigintToI53Checked(h);
+  
+  
       var fontData = SDL.fonts[font];
       if (w) {
-        HEAP32[((w)>>2)] = SDL.estimateTextWidth(fontData, UTF8ToString(text));
+        HEAP32[((w)/4)] = SDL.estimateTextWidth(fontData, UTF8ToString(text));
       }
       if (h) {
-        HEAP32[((h)>>2)] = fontData.size;
+        HEAP32[((h)/4)] = fontData.size;
       }
       return 0;
-    };
+    ;
+  }
   _TTF_SizeText.sig = 'ipppp';
   var _TTF_SizeUTF8 = _TTF_SizeText;
   _TTF_SizeUTF8.sig = 'ipppp';
 
 
-  var _TTF_GlyphMetrics = (font, ch, minx, maxx, miny, maxy, advance) => {
+  
+  function _TTF_GlyphMetrics(font, ch, minx, maxx, miny, maxy, advance) {
+    font = bigintToI53Checked(font);
+    minx = bigintToI53Checked(minx);
+    maxx = bigintToI53Checked(maxx);
+    miny = bigintToI53Checked(miny);
+    maxy = bigintToI53Checked(maxy);
+    advance = bigintToI53Checked(advance);
+  
+  
       var fontData = SDL.fonts[font];
       var width = SDL.estimateTextWidth(fontData,  String.fromCharCode(ch));
   
       if (advance) {
-        HEAP32[((advance)>>2)] = width;
+        HEAP32[((advance)/4)] = width;
       }
       if (minx) {
-        HEAP32[((minx)>>2)] = 0;
+        HEAP32[((minx)/4)] = 0;
       }
       if (maxx) {
-        HEAP32[((maxx)>>2)] = width;
+        HEAP32[((maxx)/4)] = width;
       }
       if (miny) {
-        HEAP32[((miny)>>2)] = 0;
+        HEAP32[((miny)/4)] = 0;
       }
       if (maxy) {
-        HEAP32[((maxy)>>2)] = fontData.size;
+        HEAP32[((maxy)/4)] = fontData.size;
       }
-    };
+    ;
+  }
   _TTF_GlyphMetrics.sig = 'ipippppp';
 
-  var _TTF_FontAscent = (font) => {
+  
+  function _TTF_FontAscent(font) {
+    font = bigintToI53Checked(font);
+  
+  
       var fontData = SDL.fonts[font];
       return (fontData.size*0.98)|0; // XXX
-    };
+    ;
+  }
   _TTF_FontAscent.sig = 'ip';
 
-  var _TTF_FontDescent = (font) => {
+  
+  function _TTF_FontDescent(font) {
+    font = bigintToI53Checked(font);
+  
+  
       var fontData = SDL.fonts[font];
       return (fontData.size*0.02)|0; // XXX
-    };
+    ;
+  }
   _TTF_FontDescent.sig = 'ip';
 
-  var _TTF_FontHeight = (font) => {
+  
+  function _TTF_FontHeight(font) {
+    font = bigintToI53Checked(font);
+  
+  
       var fontData = SDL.fonts[font];
       return fontData.size;
-    };
+    ;
+  }
   _TTF_FontHeight.sig = 'ip';
 
   
@@ -25823,57 +28721,102 @@ async function createWasm() {
   };
 
   
-  var _boxColor = (surf, x1, y1, x2, y2, color) =>
-      SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'fill', SDL_gfx.translateColorToCSSRGBA(color));
+  
+  function _boxColor(surf, x1, y1, x2, y2, color) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'fill', SDL_gfx.translateColorToCSSRGBA(color));
+  }
   _boxColor.sig = 'ipiiiii';
 
   
-  var _boxRGBA = (surf, x1, y1, x2, y2, r, g, b, a) =>
-      SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'fill', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  
+  function _boxRGBA(surf, x1, y1, x2, y2, r, g, b, a) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'fill', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  }
   _boxRGBA.sig = 'ipiiiiiiii';
 
   
-  var _rectangleColor = (surf, x1, y1, x2, y2, color) =>
-      SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'stroke', SDL_gfx.translateColorToCSSRGBA(color));
+  
+  function _rectangleColor(surf, x1, y1, x2, y2, color) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'stroke', SDL_gfx.translateColorToCSSRGBA(color));
+  }
   _rectangleColor.sig = 'ipiiiii';
 
   
-  var _rectangleRGBA = (surf, x1, y1, x2, y2, r, g, b, a) =>
-      SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'stroke', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  
+  function _rectangleRGBA(surf, x1, y1, x2, y2, r, g, b, a) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawRectangle(surf, x1, y1, x2, y2, 'stroke', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  }
   _rectangleRGBA.sig = 'ipiiiiiiii';
 
   
-  var _ellipseColor = (surf, x, y, rx, ry, color) =>
-      SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'stroke', SDL_gfx.translateColorToCSSRGBA(color));
+  
+  function _ellipseColor(surf, x, y, rx, ry, color) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'stroke', SDL_gfx.translateColorToCSSRGBA(color));
+  }
   _ellipseColor.sig = 'ipiiiii';
 
   
-  var _ellipseRGBA = (surf, x, y, rx, ry, r, g, b, a) =>
-      SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'stroke', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  
+  function _ellipseRGBA(surf, x, y, rx, ry, r, g, b, a) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'stroke', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  }
   _ellipseRGBA.sig = 'ipiiiiiiii';
 
   
-  var _filledEllipseColor = (surf, x, y, rx, ry, color) =>
-      SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'fill', SDL_gfx.translateColorToCSSRGBA(color));
+  
+  function _filledEllipseColor(surf, x, y, rx, ry, color) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'fill', SDL_gfx.translateColorToCSSRGBA(color));
+  }
   _filledEllipseColor.sig = 'ipiiiii';
 
   
-  var _filledEllipseRGBA = (surf, x, y, rx, ry, r, g, b, a) =>
-      SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'fill', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  
+  function _filledEllipseRGBA(surf, x, y, rx, ry, r, g, b, a) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawEllipse(surf, x, y, rx, ry, 'fill', SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  }
   _filledEllipseRGBA.sig = 'ipiiiiiiii';
 
   
-  var _lineColor = (surf, x1, y1, x2, y2, color) =>
-      SDL_gfx.drawLine(surf, x1, y1, x2, y2, SDL_gfx.translateColorToCSSRGBA(color));
+  
+  function _lineColor(surf, x1, y1, x2, y2, color) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawLine(surf, x1, y1, x2, y2, SDL_gfx.translateColorToCSSRGBA(color));
+  }
   _lineColor.sig = 'ipiiiii';
 
   
-  var _lineRGBA = (surf, x1, y1, x2, y2, r, g, b, a) =>
-      SDL_gfx.drawLine(surf, x1, y1, x2, y2, SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  
+  function _lineRGBA(surf, x1, y1, x2, y2, r, g, b, a) {
+    surf = bigintToI53Checked(surf);
+  
+  return SDL_gfx.drawLine(surf, x1, y1, x2, y2, SDL.translateRGBAToCSSRGBA(r, g, b, a));
+  }
   _lineRGBA.sig = 'ipiiiiiiii';
 
   
-  var _pixelRGBA = (surf, x1, y1, r, g, b, a) => _boxRGBA(surf, x1, y1, x1, y1, r, g, b, a);
+  
+  function _pixelRGBA(surf, x1, y1, r, g, b, a) {
+    surf = bigintToI53Checked(surf);
+  
+  return _boxRGBA(surf, x1, y1, x1, y1, r, g, b, a);
+  }
   _pixelRGBA.sig = 'ipiiiiii';
 
   var _SDL_GL_SetAttribute = (attr, value) => {
@@ -25885,15 +28828,20 @@ async function createWasm() {
     };
   _SDL_GL_SetAttribute.sig = 'iii';
 
-  var _SDL_GL_GetAttribute = (attr, value) => {
+  
+  function _SDL_GL_GetAttribute(attr, value) {
+    value = bigintToI53Checked(value);
+  
+  
       if (!(attr in SDL.glAttributes)) {
         abort('Unknown SDL GL attribute (' + attr + '). Please check if your SDL version is supported.');
       }
   
-      if (value) HEAP32[((value)>>2)] = SDL.glAttributes[attr];
+      if (value) HEAP32[((value)/4)] = SDL.glAttributes[attr];
   
       return 0;
-    };
+    ;
+  }
   _SDL_GL_GetAttribute.sig = 'iip';
 
   var _SDL_GL_SwapBuffers = () => Browser.doSwapBuffers?.();
@@ -25902,31 +28850,67 @@ async function createWasm() {
   
   
   
-  var _SDL_GL_ExtensionSupported = (extension) => GLctx?.getExtension(UTF8ToString(extension)) ? 1 : 0;
+  
+  function _SDL_GL_ExtensionSupported(extension) {
+    extension = bigintToI53Checked(extension);
+  
+  return GLctx?.getExtension(UTF8ToString(extension)) ? 1 : 0;
+  }
   _SDL_GL_ExtensionSupported.sig = 'ip';
 
-  var _SDL_DestroyWindow = (window) => {};
+  
+  function _SDL_DestroyWindow(window) {
+    window = bigintToI53Checked(window);
+  
+  ;
+  }
   _SDL_DestroyWindow.sig = 'vp';
 
-  var _SDL_DestroyRenderer = (renderer) => {};
+  
+  function _SDL_DestroyRenderer(renderer) {
+    renderer = bigintToI53Checked(renderer);
+  
+  ;
+  }
   _SDL_DestroyRenderer.sig = 'vp';
 
-  var _SDL_GetWindowFlags = (window) => {
+  
+  function _SDL_GetWindowFlags(window) {
+    window = bigintToI53Checked(window);
+  
+  
       if (Browser.isFullscreen) {
          return 1;
       }
   
       return 0;
-    };
+    ;
+  }
   _SDL_GetWindowFlags.sig = 'ip';
 
-  var _SDL_GL_SwapWindow = (window) => {};
+  
+  function _SDL_GL_SwapWindow(window) {
+    window = bigintToI53Checked(window);
+  
+  ;
+  }
   _SDL_GL_SwapWindow.sig = 'vp';
 
-  var _SDL_GL_MakeCurrent = (window, context) => {};
+  
+  function _SDL_GL_MakeCurrent(window, context) {
+    window = bigintToI53Checked(window);
+    context = bigintToI53Checked(context);
+  
+  ;
+  }
   _SDL_GL_MakeCurrent.sig = 'ipp';
 
-  var _SDL_GL_DeleteContext = (context) => {};
+  
+  function _SDL_GL_DeleteContext(context) {
+    context = bigintToI53Checked(context);
+  
+  ;
+  }
   _SDL_GL_DeleteContext.sig = 'vp';
 
   var _SDL_GL_GetSwapInterval = () => {
@@ -25943,28 +28927,52 @@ async function createWasm() {
   _SDL_GL_SetSwapInterval.sig = 'ii';
 
   
-  var _SDL_SetWindowTitle = (window, title) => {
+  
+  function _SDL_SetWindowTitle(window, title) {
+    window = bigintToI53Checked(window);
+    title = bigintToI53Checked(title);
+  
+  
       if (title) document.title = UTF8ToString(title);
-    };
+    ;
+  }
   _SDL_SetWindowTitle.sig = 'vpp';
 
-  var _SDL_GetWindowSize = (window, width, height) => {
+  
+  function _SDL_GetWindowSize(window, width, height) {
+    window = bigintToI53Checked(window);
+    width = bigintToI53Checked(width);
+    height = bigintToI53Checked(height);
+  
+  
       var canvas = Browser.getCanvas();
-      if (width) HEAP32[((width)>>2)] = canvas.width;
-      if (height) HEAP32[((height)>>2)] = canvas.height;
-    };
+      if (width) HEAP32[((width)/4)] = canvas.width;
+      if (height) HEAP32[((height)/4)] = canvas.height;
+    ;
+  }
   _SDL_GetWindowSize.sig = 'vppp';
 
-  var _SDL_LogSetOutputFunction = (callback, userdata) => {};
+  
+  function _SDL_LogSetOutputFunction(callback, userdata) {
+    callback = bigintToI53Checked(callback);
+    userdata = bigintToI53Checked(userdata);
+  
+  ;
+  }
   _SDL_LogSetOutputFunction.sig = 'vpp';
 
-  var _SDL_SetWindowFullscreen = (window, fullscreen) => {
+  
+  function _SDL_SetWindowFullscreen(window, fullscreen) {
+    window = bigintToI53Checked(window);
+  
+  
       if (Browser.isFullscreen) {
         Browser.getCanvas().exitFullscreen();
         return 1;
       }
       return 0;
-    };
+    ;
+  }
   _SDL_SetWindowFullscreen.sig = 'ipi';
 
   var _SDL_ClearError = () => {};
@@ -25973,7 +28981,14 @@ async function createWasm() {
   var _SDL_SetGamma = (r, g, b) => -1;
   _SDL_SetGamma.sig = 'ifff';
 
-  var _SDL_SetGammaRamp = (redTable, greenTable, blueTable) => -1;
+  
+  function _SDL_SetGammaRamp(redTable, greenTable, blueTable) {
+    redTable = bigintToI53Checked(redTable);
+    greenTable = bigintToI53Checked(greenTable);
+    blueTable = bigintToI53Checked(blueTable);
+  
+  return -1;
+  }
   _SDL_SetGammaRamp.sig = 'ippp';
 
   var _SDL_NumJoysticks = () => {
@@ -25988,7 +29003,10 @@ async function createWasm() {
   _SDL_NumJoysticks.sig = 'i';
 
   
-  var _SDL_JoystickName = (deviceIndex) => {
+  
+  var _SDL_JoystickName = function(deviceIndex) {
+  
+  var ret = (() => { 
       var gamepad = SDL.getGamepad(deviceIndex);
       if (gamepad) {
         var name = gamepad.id;
@@ -25998,10 +29016,15 @@ async function createWasm() {
         return SDL.joystickNamePool[name] = stringToNewUTF8(name);
       }
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_JoystickName.sig = 'pi';
 
-  var _SDL_JoystickOpen = (deviceIndex) => {
+  
+  var _SDL_JoystickOpen = function(deviceIndex) {
+  
+  var ret = (() => { 
       var gamepad = SDL.getGamepad(deviceIndex);
       if (gamepad) {
         // Use this as a unique 'pointer' for this joystick.
@@ -26010,37 +29033,64 @@ async function createWasm() {
         return joystick;
       }
       return 0;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_JoystickOpen.sig = 'pi';
 
   var _SDL_JoystickOpened = (deviceIndex) => SDL.lastJoystickState.hasOwnProperty(deviceIndex+1) ? 1 : 0;
   _SDL_JoystickOpened.sig = 'ii';
 
-  var _SDL_JoystickIndex = (joystick) => joystick - 1;
+  
+  function _SDL_JoystickIndex(joystick) {
+    joystick = bigintToI53Checked(joystick);
+  
+  return joystick - 1;
+  }
   _SDL_JoystickIndex.sig = 'ip';
 
-  var _SDL_JoystickNumAxes = (joystick) => {
+  
+  function _SDL_JoystickNumAxes(joystick) {
+    joystick = bigintToI53Checked(joystick);
+  
+  
       var gamepad = SDL.getGamepad(joystick - 1);
       if (gamepad) {
         return gamepad.axes.length;
       }
       return 0;
-    };
+    ;
+  }
   _SDL_JoystickNumAxes.sig = 'ip';
 
-  var _SDL_JoystickNumBalls = (joystick) => 0;
+  
+  function _SDL_JoystickNumBalls(joystick) {
+    joystick = bigintToI53Checked(joystick);
+  
+  return 0;
+  }
   _SDL_JoystickNumBalls.sig = 'ip';
 
-  var _SDL_JoystickNumHats = (joystick) => 0;
+  
+  function _SDL_JoystickNumHats(joystick) {
+    joystick = bigintToI53Checked(joystick);
+  
+  return 0;
+  }
   _SDL_JoystickNumHats.sig = 'ip';
 
-  var _SDL_JoystickNumButtons = (joystick) => {
+  
+  function _SDL_JoystickNumButtons(joystick) {
+    joystick = bigintToI53Checked(joystick);
+  
+  
       var gamepad = SDL.getGamepad(joystick - 1);
       if (gamepad) {
         return gamepad.buttons.length;
       }
       return 0;
-    };
+    ;
+  }
   _SDL_JoystickNumButtons.sig = 'ip';
 
   var _SDL_JoystickUpdate = () => SDL.queryJoysticks();
@@ -26055,43 +29105,76 @@ async function createWasm() {
     };
   _SDL_JoystickEventState.sig = 'ii';
 
-  var _SDL_JoystickGetAxis = (joystick, axis) => {
+  
+  function _SDL_JoystickGetAxis(joystick, axis) {
+    joystick = bigintToI53Checked(joystick);
+  
+  
       var gamepad = SDL.getGamepad(joystick - 1);
       if (gamepad?.axes.length > axis) {
         return SDL.joystickAxisValueConversion(gamepad.axes[axis]);
       }
       return 0;
-    };
+    ;
+  }
   _SDL_JoystickGetAxis.sig = 'ipi';
 
-  var _SDL_JoystickGetHat = (joystick, hat) => 0;
+  
+  function _SDL_JoystickGetHat(joystick, hat) {
+    joystick = bigintToI53Checked(joystick);
+  
+  return 0;
+  }
   _SDL_JoystickGetHat.sig = 'ipi';
 
-  var _SDL_JoystickGetBall = (joystick, ball, dxptr, dyptr) => -1;
+  
+  function _SDL_JoystickGetBall(joystick, ball, dxptr, dyptr) {
+    joystick = bigintToI53Checked(joystick);
+    dxptr = bigintToI53Checked(dxptr);
+    dyptr = bigintToI53Checked(dyptr);
+  
+  return -1;
+  }
   _SDL_JoystickGetBall.sig = 'ipipp';
 
-  var _SDL_JoystickGetButton = (joystick, button) => {
+  
+  function _SDL_JoystickGetButton(joystick, button) {
+    joystick = bigintToI53Checked(joystick);
+  
+  
       var gamepad = SDL.getGamepad(joystick - 1);
       if (gamepad?.buttons.length > button) {
         return SDL.getJoystickButtonState(gamepad.buttons[button]) ? 1 : 0;
       }
       return 0;
-    };
+    ;
+  }
   _SDL_JoystickGetButton.sig = 'ipi';
 
-  var _SDL_JoystickClose = (joystick) => {
+  
+  function _SDL_JoystickClose(joystick) {
+    joystick = bigintToI53Checked(joystick);
+  
+  
       delete SDL.lastJoystickState[joystick];
-    };
+    ;
+  }
   _SDL_JoystickClose.sig = 'vp';
 
   var _SDL_InitSubSystem = (flags) => 0;
   _SDL_InitSubSystem.sig = 'ii';
 
-  var _SDL_RWFromConstMem = (mem, size) => {
+  
+  var _SDL_RWFromConstMem = function(mem, size) {
+    mem = bigintToI53Checked(mem);
+  
+  var ret = (() => { 
       var id = SDL.rwops.length; // TODO: recycle ids when they are null
       SDL.rwops.push({ bytes: mem, count: size });
       return id;
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_RWFromConstMem.sig = 'ppi';
 
   
@@ -26104,14 +29187,16 @@ async function createWasm() {
   _SDL_GetNumAudioDrivers.sig = 'i';
 
   
-  var _SDL_GetCurrentAudioDriver = () => stringToNewUTF8('Emscripten Audio');
+  
+  var _SDL_GetCurrentAudioDriver = () => BigInt(stringToNewUTF8('Emscripten Audio'));;
   _SDL_GetCurrentAudioDriver.sig = 'p';
 
   var _SDL_GetScancodeFromKey = (key) => SDL.scanCodes[key];
   _SDL_GetScancodeFromKey.sig = 'ii';
 
   
-  var _SDL_GetAudioDriver = (index) => _SDL_GetCurrentAudioDriver();
+  
+  var _SDL_GetAudioDriver = (index) => BigInt(_SDL_GetCurrentAudioDriver());;
   _SDL_GetAudioDriver.sig = 'pi';
 
   var _SDL_EnableUNICODE = (on) => {
@@ -26123,10 +29208,15 @@ async function createWasm() {
 
   
   
-  var _SDL_AddTimer = (interval, callback, param) =>
-      safeSetTimeout(
-        () => getWasmTableEntry(callback)(interval, param),
+  
+  var _SDL_AddTimer = function(interval, callback, param) {
+    callback = bigintToI53Checked(callback);
+    param = bigintToI53Checked(param);
+  
+  return safeSetTimeout(
+        () => ((a1, a2) => getWasmTableEntry(callback).call(null, a1, BigInt(a2)))(interval, param),
         interval);
+  };
   _SDL_AddTimer.sig = 'iipp';
 
   var _SDL_RemoveTimer = (id) => {
@@ -26135,57 +29225,133 @@ async function createWasm() {
     };
   _SDL_RemoveTimer.sig = 'ii';
 
-  var _SDL_CreateThread = (fs, data, pfnBeginThread, pfnEndThread) => {
+  
+  var _SDL_CreateThread = function(fs, data, pfnBeginThread, pfnEndThread) {
+    fs = bigintToI53Checked(fs);
+    data = bigintToI53Checked(data);
+  
+  var ret = (() => { 
       throw 'SDL threads cannot be supported in the web platform because they assume shared state. See emscripten_create_worker etc. for a message-passing concurrency model that does let you run code in another thread.'
-    };
+     })();
+  return BigInt(ret);
+  };
   _SDL_CreateThread.sig = 'ppp';
 
-  var _SDL_WaitThread = (thread, status) => { throw 'SDL_WaitThread' };
+  
+  function _SDL_WaitThread(thread, status) {
+    thread = bigintToI53Checked(thread);
+    status = bigintToI53Checked(status);
+  
+   throw 'SDL_WaitThread' ;
+  }
   _SDL_WaitThread.sig = 'vpp';
 
-  var _SDL_GetThreadID = (thread) => { throw 'SDL_GetThreadID' };
+  
+  var _SDL_GetThreadID = function(thread) {
+    thread = bigintToI53Checked(thread);
+  
+  var ret = (() => {  throw 'SDL_GetThreadID'  })();
+  return BigInt(ret);
+  };
   _SDL_GetThreadID.sig = 'pp';
 
-  var _SDL_ThreadID = () => 0;
+  
+  var _SDL_ThreadID = () => BigInt(0);;
   _SDL_ThreadID.sig = 'p';
 
-  var _SDL_AllocRW = () => { throw 'SDL_AllocRW: TODO' };
+  
+  var _SDL_AllocRW = function() {
+  
+  var ret = (() => {  throw 'SDL_AllocRW: TODO'  })();
+  return BigInt(ret);
+  };
   _SDL_AllocRW.sig = 'p';
 
-  var _SDL_CondBroadcast = (cond) => { throw 'SDL_CondBroadcast: TODO' };
+  
+  function _SDL_CondBroadcast(cond) {
+    cond = bigintToI53Checked(cond);
+  
+   throw 'SDL_CondBroadcast: TODO' ;
+  }
   _SDL_CondBroadcast.sig = 'ip';
 
-  var _SDL_CondWaitTimeout = (cond, mutex, ms) => { throw 'SDL_CondWaitTimeout: TODO' };
+  
+  function _SDL_CondWaitTimeout(cond, mutex, ms) {
+    cond = bigintToI53Checked(cond);
+    mutex = bigintToI53Checked(mutex);
+  
+   throw 'SDL_CondWaitTimeout: TODO' ;
+  }
   _SDL_CondWaitTimeout.sig = 'ippi';
 
   var _SDL_WM_IconifyWindow = () => { throw 'SDL_WM_IconifyWindow TODO' };
   _SDL_WM_IconifyWindow.sig = 'i';
 
-  var _Mix_SetPostMix = (func, arg) => warnOnce('Mix_SetPostMix: TODO');
+  
+  function _Mix_SetPostMix(func, arg) {
+    func = bigintToI53Checked(func);
+    arg = bigintToI53Checked(arg);
+  
+  return warnOnce('Mix_SetPostMix: TODO');
+  }
   _Mix_SetPostMix.sig = 'vpp';
 
-  var _Mix_VolumeChunk = (chunk, volume) => { throw 'Mix_VolumeChunk: TODO' };
+  
+  function _Mix_VolumeChunk(chunk, volume) {
+    chunk = bigintToI53Checked(chunk);
+  
+   throw 'Mix_VolumeChunk: TODO' ;
+  }
   _Mix_VolumeChunk.sig = 'ipi';
 
   var _Mix_SetPosition = (channel, angle, distance) => { throw 'Mix_SetPosition: TODO' };
   _Mix_SetPosition.sig = 'iiii';
 
-  var _Mix_QuerySpec = (frequency, format, channels) => { throw 'Mix_QuerySpec: TODO' };
+  
+  function _Mix_QuerySpec(frequency, format, channels) {
+    frequency = bigintToI53Checked(frequency);
+    format = bigintToI53Checked(format);
+    channels = bigintToI53Checked(channels);
+  
+   throw 'Mix_QuerySpec: TODO' ;
+  }
   _Mix_QuerySpec.sig = 'ippp';
 
-  var _Mix_FadeInChannelTimed = (channel, chunk, loop, ms, ticks) => { throw 'Mix_FadeInChannelTimed' };
+  
+  function _Mix_FadeInChannelTimed(channel, chunk, loop, ms, ticks) {
+    chunk = bigintToI53Checked(chunk);
+  
+   throw 'Mix_FadeInChannelTimed' ;
+  }
   _Mix_FadeInChannelTimed.sig = 'iipiii';
 
   var _Mix_FadeOutChannel = () => { throw 'Mix_FadeOutChannel' };
   _Mix_FadeOutChannel.sig = 'iii';
 
-  var _Mix_Linked_Version = () => { throw 'Mix_Linked_Version: TODO' };
+  
+  var _Mix_Linked_Version = function() {
+  
+  var ret = (() => {  throw 'Mix_Linked_Version: TODO'  })();
+  return BigInt(ret);
+  };
   _Mix_Linked_Version.sig = 'p';
 
-  var _SDL_SaveBMP_RW = (surface, dst, freedst) => { throw 'SDL_SaveBMP_RW: TODO' };
+  
+  function _SDL_SaveBMP_RW(surface, dst, freedst) {
+    surface = bigintToI53Checked(surface);
+    dst = bigintToI53Checked(dst);
+  
+   throw 'SDL_SaveBMP_RW: TODO' ;
+  }
   _SDL_SaveBMP_RW.sig = 'ippi';
 
-  var _SDL_WM_SetIcon = (icon, mask) => {};
+  
+  function _SDL_WM_SetIcon(icon, mask) {
+    icon = bigintToI53Checked(icon);
+    mask = bigintToI53Checked(mask);
+  
+  ;
+  }
   _SDL_WM_SetIcon.sig = 'vpp';
 
   var _SDL_HasRDTSC = () => 0;
@@ -26281,7 +29447,7 @@ async function createWasm() {
           var buf = stringToUTF8OnStack(s);
           var status = stackAlloc(4);
           var ret = ___cxa_demangle(buf, 0, 0, status);
-          if (HEAP32[((status)>>2)] === 0 && ret) {
+          if (HEAP32[((status)/4)] === 0 && ret) {
             return UTF8ToString(ret);
           }
           // otherwise, libcxxabi failed
@@ -26460,6 +29626,9 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   Module['noExitRuntime'] = noExitRuntime;
   Module['setValue'] = setValue;
   Module['___assert_fail'] = ___assert_fail;
+  Module['bigintToI53Checked'] = bigintToI53Checked;
+  Module['INT53_MAX'] = INT53_MAX;
+  Module['INT53_MIN'] = INT53_MIN;
   Module['___call_sighandler'] = ___call_sighandler;
   Module['___memory_base'] = ___memory_base;
   Module['___stack_high'] = ___stack_high;
@@ -26506,9 +29675,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   Module['___syscall_faccessat'] = ___syscall_faccessat;
   Module['___syscall_fadvise64'] = ___syscall_fadvise64;
   Module['___syscall_fallocate'] = ___syscall_fallocate;
-  Module['bigintToI53Checked'] = bigintToI53Checked;
-  Module['INT53_MAX'] = INT53_MAX;
-  Module['INT53_MIN'] = INT53_MIN;
   Module['___syscall_fchdir'] = ___syscall_fchdir;
   Module['___syscall_fchmod'] = ___syscall_fchmod;
   Module['___syscall_fchmodat2'] = ___syscall_fchmodat2;
@@ -26553,6 +29719,7 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   Module['___syscall_utimensat'] = ___syscall_utimensat;
   Module['readI53FromI64'] = readI53FromI64;
   Module['___table_base'] = ___table_base;
+  Module['___table_base32'] = ___table_base32;
   Module['__abort_js'] = __abort_js;
   Module['__dlopen_js'] = __dlopen_js;
   Module['dlopenInternal'] = dlopenInternal;
@@ -27479,6 +30646,7 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   Module['_glMultiDrawArraysANGLE'] = _glMultiDrawArraysANGLE;
   Module['_glMultiDrawArraysInstancedANGLE'] = _glMultiDrawArraysInstancedANGLE;
   Module['_glMultiDrawArraysInstancedWEBGL'] = _glMultiDrawArraysInstancedWEBGL;
+  Module['convertOffsets'] = convertOffsets;
   Module['_glMultiDrawElements'] = _glMultiDrawElements;
   Module['_glMultiDrawElementsWEBGL'] = _glMultiDrawElementsWEBGL;
   Module['_glMultiDrawElementsANGLE'] = _glMultiDrawElementsANGLE;
@@ -27881,8 +31049,8 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
 // end include: postlibrary.js
 
 var ASM_CONSTS = {
-  401928: ($0) => { if (!$0) { AL.alcErr = 0xA004 ; return 1; } },  
- 401976: ($0) => { if (!AL.currentCtx) { err("alGetProcAddress() called without a valid context"); return 1; } if (!$0) { AL.currentCtx.err = 0xA003 ; return 1; } }
+  424736: ($0) => { if (!$0) { AL.alcErr = 0xA004 ; return 1; } },  
+ 424784: ($0) => { if (!AL.currentCtx) { err("alGetProcAddress() called without a valid context"); return 1; } if (!$0) { AL.currentCtx.err = 0xA003 ; return 1; } }
 };
 var wasmImports = {
   /** @export */
@@ -28451,6 +31619,8 @@ var wasmImports = {
   __syscall_utimensat: ___syscall_utimensat,
   /** @export */
   __table_base: ___table_base,
+  /** @export */
+  __table_base32: ___table_base32,
   /** @export */
   _abort_js: __abort_js,
   /** @export */
@@ -30140,7 +33310,7 @@ var wasmImports = {
   /** @export */
   glutTimerFunc: _glutTimerFunc,
   /** @export */
-  invoke_vii,
+  invoke_vjj,
   /** @export */
   lineColor: _lineColor,
   /** @export */
@@ -30954,6 +34124,7 @@ var _catanl = Module['_catanl'] = (a0, a1) => (_catanl = Module['_catanl'] = was
 var _logl = Module['_logl'] = (a0, a1, a2) => (_logl = Module['_logl'] = wasmExports['logl'])(a0, a1, a2);
 var ___trunctfsf2 = Module['___trunctfsf2'] = (a0, a1) => (___trunctfsf2 = Module['___trunctfsf2'] = wasmExports['__trunctfsf2'])(a0, a1);
 var ___extendsftf2 = Module['___extendsftf2'] = (a0, a1) => (___extendsftf2 = Module['___extendsftf2'] = wasmExports['__extendsftf2'])(a0, a1);
+var ___floatditf = Module['___floatditf'] = (a0, a1) => (___floatditf = Module['___floatditf'] = wasmExports['__floatditf'])(a0, a1);
 var _catclose = Module['_catclose'] = (a0) => (_catclose = Module['_catclose'] = wasmExports['catclose'])(a0);
 var _catgets = Module['_catgets'] = (a0, a1, a2, a3) => (_catgets = Module['_catgets'] = wasmExports['catgets'])(a0, a1, a2, a3);
 var _catopen = Module['_catopen'] = (a0, a1) => (_catopen = Module['_catopen'] = wasmExports['catopen'])(a0, a1);
@@ -32304,7 +35475,6 @@ var ___fixunstfsi = Module['___fixunstfsi'] = (a0, a1) => (___fixunstfsi = Modul
 var ___fixunstfti = Module['___fixunstfti'] = (a0, a1, a2) => (___fixunstfti = Module['___fixunstfti'] = wasmExports['__fixunstfti'])(a0, a1, a2);
 var ___floatdidf = Module['___floatdidf'] = (a0) => (___floatdidf = Module['___floatdidf'] = wasmExports['__floatdidf'])(a0);
 var ___floatdisf = Module['___floatdisf'] = (a0) => (___floatdisf = Module['___floatdisf'] = wasmExports['__floatdisf'])(a0);
-var ___floatditf = Module['___floatditf'] = (a0, a1) => (___floatditf = Module['___floatditf'] = wasmExports['__floatditf'])(a0, a1);
 var ___floatsidf = Module['___floatsidf'] = (a0) => (___floatsidf = Module['___floatsidf'] = wasmExports['__floatsidf'])(a0);
 var ___floatsisf = Module['___floatsisf'] = (a0) => (___floatsisf = Module['___floatsisf'] = wasmExports['__floatsisf'])(a0);
 var ___floattidf = Module['___floattidf'] = (a0, a1) => (___floattidf = Module['___floattidf'] = wasmExports['__floattidf'])(a0, a1);
@@ -32886,8 +36056,19 @@ var __ZNSt3__223__cxx_atomic_notify_oneEPVKNS_17__cxx_atomic_implIxNS_22__cxx_at
 var __ZNSt3__223__cxx_atomic_notify_allEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE = Module['__ZNSt3__223__cxx_atomic_notify_allEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE'] = (a0) => (__ZNSt3__223__cxx_atomic_notify_allEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE = Module['__ZNSt3__223__cxx_atomic_notify_allEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE'] = wasmExports['_ZNSt3__223__cxx_atomic_notify_allEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE'])(a0);
 var __ZNSt3__223__libcpp_atomic_monitorEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE = Module['__ZNSt3__223__libcpp_atomic_monitorEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE'] = (a0) => (__ZNSt3__223__libcpp_atomic_monitorEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE = Module['__ZNSt3__223__libcpp_atomic_monitorEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE'] = wasmExports['_ZNSt3__223__libcpp_atomic_monitorEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEE'])(a0);
 var __ZNSt3__220__libcpp_atomic_waitEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEEx = Module['__ZNSt3__220__libcpp_atomic_waitEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEEx'] = (a0, a1) => (__ZNSt3__220__libcpp_atomic_waitEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEEx = Module['__ZNSt3__220__libcpp_atomic_waitEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEEx'] = wasmExports['_ZNSt3__220__libcpp_atomic_waitEPVKNS_17__cxx_atomic_implIxNS_22__cxx_atomic_base_implIxEEEEx'])(a0, a1);
-var __ZNKSt3__221__murmur2_or_cityhashImLm32EEclB8nn190106EPKvm = Module['__ZNKSt3__221__murmur2_or_cityhashImLm32EEclB8nn190106EPKvm'] = (a0, a1, a2) => (__ZNKSt3__221__murmur2_or_cityhashImLm32EEclB8nn190106EPKvm = Module['__ZNKSt3__221__murmur2_or_cityhashImLm32EEclB8nn190106EPKvm'] = wasmExports['_ZNKSt3__221__murmur2_or_cityhashImLm32EEclB8nn190106EPKvm'])(a0, a1, a2);
+var __ZNKSt3__221__murmur2_or_cityhashImLm64EEclB8nn190106EPKvm = Module['__ZNKSt3__221__murmur2_or_cityhashImLm64EEclB8nn190106EPKvm'] = (a0, a1, a2) => (__ZNKSt3__221__murmur2_or_cityhashImLm64EEclB8nn190106EPKvm = Module['__ZNKSt3__221__murmur2_or_cityhashImLm64EEclB8nn190106EPKvm'] = wasmExports['_ZNKSt3__221__murmur2_or_cityhashImLm64EEclB8nn190106EPKvm'])(a0, a1, a2);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE18__hash_len_0_to_16B8nn190106EPKcm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE18__hash_len_0_to_16B8nn190106EPKcm'] = (a0, a1) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE18__hash_len_0_to_16B8nn190106EPKcm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE18__hash_len_0_to_16B8nn190106EPKcm'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE18__hash_len_0_to_16B8nn190106EPKcm'])(a0, a1);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_17_to_32B8nn190106EPKcm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_17_to_32B8nn190106EPKcm'] = (a0, a1) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_17_to_32B8nn190106EPKcm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_17_to_32B8nn190106EPKcm'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_17_to_32B8nn190106EPKcm'])(a0, a1);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_33_to_64B8nn190106EPKcm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_33_to_64B8nn190106EPKcm'] = (a0, a1) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_33_to_64B8nn190106EPKcm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_33_to_64B8nn190106EPKcm'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE19__hash_len_33_to_64B8nn190106EPKcm'])(a0, a1);
 var __ZNSt3__210__loadwordB8nn190106ImEET_PKv = Module['__ZNSt3__210__loadwordB8nn190106ImEET_PKv'] = (a0) => (__ZNSt3__210__loadwordB8nn190106ImEET_PKv = Module['__ZNSt3__210__loadwordB8nn190106ImEET_PKv'] = wasmExports['_ZNSt3__210__loadwordB8nn190106ImEET_PKv'])(a0);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE13__hash_len_16B8nn190106Emm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE13__hash_len_16B8nn190106Emm'] = (a0, a1) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE13__hash_len_16B8nn190106Emm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE13__hash_len_16B8nn190106Emm'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE13__hash_len_16B8nn190106Emm'])(a0, a1);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106EPKcmm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106EPKcmm'] = (a0, a1, a2, a3) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106EPKcmm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106EPKcmm'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106EPKcmm'])(a0, a1, a2, a3);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE8__rotateB8nn190106Emi = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE8__rotateB8nn190106Emi'] = (a0, a1) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE8__rotateB8nn190106Emi = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE8__rotateB8nn190106Emi'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE8__rotateB8nn190106Emi'])(a0, a1);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE11__shift_mixB8nn190106Em = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE11__shift_mixB8nn190106Em'] = (a0) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE11__shift_mixB8nn190106Em = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE11__shift_mixB8nn190106Em'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE11__shift_mixB8nn190106Em'])(a0);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE22__rotate_by_at_least_1B8nn190106Emi = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE22__rotate_by_at_least_1B8nn190106Emi'] = (a0, a1) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE22__rotate_by_at_least_1B8nn190106Emi = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE22__rotate_by_at_least_1B8nn190106Emi'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE22__rotate_by_at_least_1B8nn190106Emi'])(a0, a1);
+var __ZNSt3__210__loadwordB8nn190106IjEET_PKv = Module['__ZNSt3__210__loadwordB8nn190106IjEET_PKv'] = (a0) => (__ZNSt3__210__loadwordB8nn190106IjEET_PKv = Module['__ZNSt3__210__loadwordB8nn190106IjEET_PKv'] = wasmExports['_ZNSt3__210__loadwordB8nn190106IjEET_PKv'])(a0);
+var __ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106Emmmmmm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106Emmmmmm'] = (a0, a1, a2, a3, a4, a5, a6) => (__ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106Emmmmmm = Module['__ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106Emmmmmm'] = wasmExports['_ZNSt3__221__murmur2_or_cityhashImLm64EE29__weak_hash_len_32_with_seedsB8nn190106Emmmmmm'])(a0, a1, a2, a3, a4, a5, a6);
+var __ZNSt3__24pairImmEC2B8nn190106ImmTnNS_9enable_ifIXclsr10_CheckArgsE23__is_pair_constructibleIT_T0_EEEiE4typeELi0EEEOS4_OS5_ = Module['__ZNSt3__24pairImmEC2B8nn190106ImmTnNS_9enable_ifIXclsr10_CheckArgsE23__is_pair_constructibleIT_T0_EEEiE4typeELi0EEEOS4_OS5_'] = (a0, a1, a2) => (__ZNSt3__24pairImmEC2B8nn190106ImmTnNS_9enable_ifIXclsr10_CheckArgsE23__is_pair_constructibleIT_T0_EEEiE4typeELi0EEEOS4_OS5_ = Module['__ZNSt3__24pairImmEC2B8nn190106ImmTnNS_9enable_ifIXclsr10_CheckArgsE23__is_pair_constructibleIT_T0_EEEiE4typeELi0EEEOS4_OS5_'] = wasmExports['_ZNSt3__24pairImmEC2B8nn190106ImmTnNS_9enable_ifIXclsr10_CheckArgsE23__is_pair_constructibleIT_T0_EEEiE4typeELi0EEEOS4_OS5_'])(a0, a1, a2);
 var __ZNSt3__26chrono8durationIxNS_5ratioILx1ELx1000000000EEEE4zeroB8nn190106Ev = Module['__ZNSt3__26chrono8durationIxNS_5ratioILx1ELx1000000000EEEE4zeroB8nn190106Ev'] = () => (__ZNSt3__26chrono8durationIxNS_5ratioILx1ELx1000000000EEEE4zeroB8nn190106Ev = Module['__ZNSt3__26chrono8durationIxNS_5ratioILx1ELx1000000000EEEE4zeroB8nn190106Ev'] = wasmExports['_ZNSt3__26chrono8durationIxNS_5ratioILx1ELx1000000000EEEE4zeroB8nn190106Ev'])();
 var __ZNSt3__26chrono12steady_clock3nowEv = Module['__ZNSt3__26chrono12steady_clock3nowEv'] = () => (__ZNSt3__26chrono12steady_clock3nowEv = Module['__ZNSt3__26chrono12steady_clock3nowEv'] = wasmExports['_ZNSt3__26chrono12steady_clock3nowEv'])();
 var __ZNSt3__26chronomiB8nn190106INS0_12steady_clockENS0_8durationIxNS_5ratioILx1ELx1000000000EEEEES6_EENS_11common_typeIJT0_T1_EE4typeERKNS0_10time_pointIT_S8_EERKNSC_ISD_S9_EE = Module['__ZNSt3__26chronomiB8nn190106INS0_12steady_clockENS0_8durationIxNS_5ratioILx1ELx1000000000EEEEES6_EENS_11common_typeIJT0_T1_EE4typeERKNS0_10time_pointIT_S8_EERKNSC_ISD_S9_EE'] = (a0, a1) => (__ZNSt3__26chronomiB8nn190106INS0_12steady_clockENS0_8durationIxNS_5ratioILx1ELx1000000000EEEEES6_EENS_11common_typeIJT0_T1_EE4typeERKNS0_10time_pointIT_S8_EERKNSC_ISD_S9_EE = Module['__ZNSt3__26chronomiB8nn190106INS0_12steady_clockENS0_8durationIxNS_5ratioILx1ELx1000000000EEEEES6_EENS_11common_typeIJT0_T1_EE4typeERKNS0_10time_pointIT_S8_EERKNSC_ISD_S9_EE'] = wasmExports['_ZNSt3__26chronomiB8nn190106INS0_12steady_clockENS0_8durationIxNS_5ratioILx1ELx1000000000EEEEES6_EENS_11common_typeIJT0_T1_EE4typeERKNS0_10time_pointIT_S8_EERKNSC_ISD_S9_EE'])(a0, a1);
@@ -33850,7 +37031,7 @@ var __ZNSt3__27promiseIvED1Ev = Module['__ZNSt3__27promiseIvED1Ev'] = (a0) => (_
 var __ZNSt3__213shared_futureIvED1Ev = Module['__ZNSt3__213shared_futureIvED1Ev'] = (a0) => (__ZNSt3__213shared_futureIvED1Ev = Module['__ZNSt3__213shared_futureIvED1Ev'] = wasmExports['_ZNSt3__213shared_futureIvED1Ev'])(a0);
 var __ZNSt3__212__next_primeEm = Module['__ZNSt3__212__next_primeEm'] = (a0) => (__ZNSt3__212__next_primeEm = Module['__ZNSt3__212__next_primeEm'] = wasmExports['_ZNSt3__212__next_primeEm'])(a0);
 var __ZNSt3__211lower_boundB8nn190106IPKjmEET_S3_S3_RKT0_ = Module['__ZNSt3__211lower_boundB8nn190106IPKjmEET_S3_S3_RKT0_'] = (a0, a1, a2) => (__ZNSt3__211lower_boundB8nn190106IPKjmEET_S3_S3_RKT0_ = Module['__ZNSt3__211lower_boundB8nn190106IPKjmEET_S3_S3_RKT0_'] = wasmExports['_ZNSt3__211lower_boundB8nn190106IPKjmEET_S3_S3_RKT0_'])(a0, a1, a2);
-var __ZNSt3__220__check_for_overflowB8nn190106ILm4EEENS_9enable_ifIXeqT_Li4EEvE4typeEm = Module['__ZNSt3__220__check_for_overflowB8nn190106ILm4EEENS_9enable_ifIXeqT_Li4EEvE4typeEm'] = (a0) => (__ZNSt3__220__check_for_overflowB8nn190106ILm4EEENS_9enable_ifIXeqT_Li4EEvE4typeEm = Module['__ZNSt3__220__check_for_overflowB8nn190106ILm4EEENS_9enable_ifIXeqT_Li4EEvE4typeEm'] = wasmExports['_ZNSt3__220__check_for_overflowB8nn190106ILm4EEENS_9enable_ifIXeqT_Li4EEvE4typeEm'])(a0);
+var __ZNSt3__220__check_for_overflowB8nn190106ILm8EEENS_9enable_ifIXeqT_Li8EEvE4typeEm = Module['__ZNSt3__220__check_for_overflowB8nn190106ILm8EEENS_9enable_ifIXeqT_Li8EEvE4typeEm'] = (a0) => (__ZNSt3__220__check_for_overflowB8nn190106ILm8EEENS_9enable_ifIXeqT_Li8EEvE4typeEm = Module['__ZNSt3__220__check_for_overflowB8nn190106ILm8EEENS_9enable_ifIXeqT_Li8EEvE4typeEm'] = wasmExports['_ZNSt3__220__check_for_overflowB8nn190106ILm8EEENS_9enable_ifIXeqT_Li8EEvE4typeEm'])(a0);
 var __ZNSt3__211lower_boundB8nn190106IPKjmNS_6__lessIvvEEEET_S5_S5_RKT0_T1_ = Module['__ZNSt3__211lower_boundB8nn190106IPKjmNS_6__lessIvvEEEET_S5_S5_RKT0_T1_'] = (a0, a1, a2) => (__ZNSt3__211lower_boundB8nn190106IPKjmNS_6__lessIvvEEEET_S5_S5_RKT0_T1_ = Module['__ZNSt3__211lower_boundB8nn190106IPKjmNS_6__lessIvvEEEET_S5_S5_RKT0_T1_'] = wasmExports['_ZNSt3__211lower_boundB8nn190106IPKjmNS_6__lessIvvEEEET_S5_S5_RKT0_T1_'])(a0, a1, a2);
 var __ZNSt3__222__throw_overflow_errorB8nn190106EPKc = Module['__ZNSt3__222__throw_overflow_errorB8nn190106EPKc'] = (a0) => (__ZNSt3__222__throw_overflow_errorB8nn190106EPKc = Module['__ZNSt3__222__throw_overflow_errorB8nn190106EPKc'] = wasmExports['_ZNSt3__222__throw_overflow_errorB8nn190106EPKc'])(a0);
 var __ZNSt3__213__lower_boundB8nn190106INS_17_ClassicAlgPolicyEPKjS3_mNS_10__identityENS_6__lessIvvEEEET0_S7_T1_RKT2_RT4_RT3_ = Module['__ZNSt3__213__lower_boundB8nn190106INS_17_ClassicAlgPolicyEPKjS3_mNS_10__identityENS_6__lessIvvEEEET0_S7_T1_RKT2_RT4_RT3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__213__lower_boundB8nn190106INS_17_ClassicAlgPolicyEPKjS3_mNS_10__identityENS_6__lessIvvEEEET0_S7_T1_RKT2_RT4_RT3_ = Module['__ZNSt3__213__lower_boundB8nn190106INS_17_ClassicAlgPolicyEPKjS3_mNS_10__identityENS_6__lessIvvEEEET0_S7_T1_RKT2_RT4_RT3_'] = wasmExports['_ZNSt3__213__lower_boundB8nn190106INS_17_ClassicAlgPolicyEPKjS3_mNS_10__identityENS_6__lessIvvEEEET0_S7_T1_RKT2_RT4_RT3_'])(a0, a1, a2, a3, a4);
@@ -33910,9 +37091,9 @@ var __ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE6xsputnEPKcl = Module['__Z
 var __ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE8overflowEi = Module['__ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE8overflowEi'] = (a0, a1) => (__ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE8overflowEi = Module['__ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE8overflowEi'] = wasmExports['_ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE8overflowEi'])(a0, a1);
 var __ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED2Ev'] = (a0, a1) => (__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED2Ev'] = wasmExports['_ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED2Ev'])(a0, a1);
 var __ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED1Ev'])(a0);
 var __ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZNSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_istreamIcNS_11char_traitsIcEEED0Ev'])(a0);
 var __ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE6sentryC2ERS3_b = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE6sentryC2ERS3_b'] = (a0, a1, a2) => (__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE6sentryC2ERS3_b = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE6sentryC2ERS3_b'] = wasmExports['_ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE6sentryC2ERS3_b'])(a0, a1, a2);
 var __ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE4goodB8nn190106Ev = Module['__ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE4goodB8nn190106Ev'] = (a0) => (__ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE4goodB8nn190106Ev = Module['__ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE4goodB8nn190106Ev'] = wasmExports['_ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE4goodB8nn190106Ev'])(a0);
 var __ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE3tieB8nn190106Ev = Module['__ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE3tieB8nn190106Ev'] = (a0) => (__ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE3tieB8nn190106Ev = Module['__ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE3tieB8nn190106Ev'] = wasmExports['_ZNKSt3__29basic_iosIcNS_11char_traitsIcEEE3tieB8nn190106Ev'])(a0);
@@ -34018,9 +37199,9 @@ var __ZNKSt3__24fposI11__mbstate_tEcvxB8nn190106Ev = Module['__ZNKSt3__24fposI11
 var __ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE5seekgExNS_8ios_base7seekdirE = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE5seekgExNS_8ios_base7seekdirE'] = (a0, a1, a2) => (__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE5seekgExNS_8ios_base7seekdirE = Module['__ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE5seekgExNS_8ios_base7seekdirE'] = wasmExports['_ZNSt3__213basic_istreamIcNS_11char_traitsIcEEE5seekgExNS_8ios_base7seekdirE'])(a0, a1, a2);
 var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED2Ev'] = (a0, a1) => (__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED2Ev'] = wasmExports['_ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED2Ev'])(a0, a1);
 var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
 var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_ostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
 var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryC2ERS3_ = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryC2ERS3_'] = (a0, a1) => (__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryC2ERS3_ = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryC2ERS3_'] = wasmExports['_ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryC2ERS3_'])(a0, a1);
 var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryD2Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryD2Ev'] = (a0) => (__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryD2Ev = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryD2Ev'] = wasmExports['_ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE6sentryD2Ev'])(a0);
 var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEElsEb = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEElsEb'] = (a0, a1) => (__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEElsEb = Module['__ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEElsEb'] = wasmExports['_ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEElsEb'])(a0, a1);
@@ -34062,11 +37243,11 @@ var __ZNSt3__213basic_ostreamIcNS_11char_traitsIcEEE5writeEPKcl = Module['__ZNSt
 var __ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE5sputnB8nn190106EPKcl = Module['__ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE5sputnB8nn190106EPKcl'] = (a0, a1, a2) => (__ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE5sputnB8nn190106EPKcl = Module['__ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE5sputnB8nn190106EPKcl'] = wasmExports['_ZNSt3__215basic_streambufIcNS_11char_traitsIcEEE5sputnB8nn190106EPKcl'])(a0, a1, a2);
 var __ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED2Ev'] = (a0, a1) => (__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED2Ev'] = wasmExports['_ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED2Ev'])(a0, a1);
 var __ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
-var __ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
+var __ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED1Ev'])(a0);
 var __ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZNSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
-var __ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZThn8_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
+var __ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZThn16_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__214basic_iostreamIcNS_11char_traitsIcEEED0Ev'])(a0);
 var __ZNSt3__29basic_iosIwNS_11char_traitsIwEEED2Ev = Module['__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED2Ev'] = (a0) => (__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED2Ev = Module['__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED2Ev'] = wasmExports['_ZNSt3__29basic_iosIwNS_11char_traitsIwEEED2Ev'])(a0);
 var __ZNSt3__29basic_iosIwNS_11char_traitsIwEEED0Ev = Module['__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED0Ev = Module['__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZNSt3__29basic_iosIwNS_11char_traitsIwEEED0Ev'])(a0);
 var __ZNSt3__29basic_iosIwNS_11char_traitsIwEEED1Ev = Module['__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED1Ev = Module['__ZNSt3__29basic_iosIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZNSt3__29basic_iosIwNS_11char_traitsIwEEED1Ev'])(a0);
@@ -34101,9 +37282,9 @@ var __ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE6xsputnEPKwl = Module['__Z
 var __ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE8overflowEi = Module['__ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE8overflowEi'] = (a0, a1) => (__ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE8overflowEi = Module['__ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE8overflowEi'] = wasmExports['_ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE8overflowEi'])(a0, a1);
 var __ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED2Ev = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED2Ev'] = (a0, a1) => (__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED2Ev = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED2Ev'] = wasmExports['_ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED2Ev'])(a0, a1);
 var __ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED1Ev'])(a0);
 var __ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZNSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_istreamIwNS_11char_traitsIwEEED0Ev'])(a0);
 var __ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE6sentryC2ERS3_b = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE6sentryC2ERS3_b'] = (a0, a1, a2) => (__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE6sentryC2ERS3_b = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE6sentryC2ERS3_b'] = wasmExports['_ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE6sentryC2ERS3_b'])(a0, a1, a2);
 var __ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE4goodB8nn190106Ev = Module['__ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE4goodB8nn190106Ev'] = (a0) => (__ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE4goodB8nn190106Ev = Module['__ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE4goodB8nn190106Ev'] = wasmExports['_ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE4goodB8nn190106Ev'])(a0);
 var __ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE3tieB8nn190106Ev = Module['__ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE3tieB8nn190106Ev'] = (a0) => (__ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE3tieB8nn190106Ev = Module['__ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE3tieB8nn190106Ev'] = wasmExports['_ZNKSt3__29basic_iosIwNS_11char_traitsIwEEE3tieB8nn190106Ev'])(a0);
@@ -34193,9 +37374,9 @@ var __ZNSt3__215basic_streambufIwNS_11char_traitsIwEEE10pubseekposB8nn190106ENS_
 var __ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE5seekgExNS_8ios_base7seekdirE = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE5seekgExNS_8ios_base7seekdirE'] = (a0, a1, a2) => (__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE5seekgExNS_8ios_base7seekdirE = Module['__ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE5seekgExNS_8ios_base7seekdirE'] = wasmExports['_ZNSt3__213basic_istreamIwNS_11char_traitsIwEEE5seekgExNS_8ios_base7seekdirE'])(a0, a1, a2);
 var __ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED2Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED2Ev'] = (a0, a1) => (__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED2Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED2Ev'] = wasmExports['_ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED2Ev'])(a0, a1);
 var __ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED1Ev'])(a0);
 var __ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev = Module['__ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__213basic_ostreamIwNS_11char_traitsIwEEED0Ev'])(a0);
 var __ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryC2ERS3_ = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryC2ERS3_'] = (a0, a1) => (__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryC2ERS3_ = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryC2ERS3_'] = wasmExports['_ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryC2ERS3_'])(a0, a1);
 var __ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryD2Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryD2Ev'] = (a0) => (__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryD2Ev = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryD2Ev'] = wasmExports['_ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEE6sentryD2Ev'])(a0);
 var __ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEElsEb = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEElsEb'] = (a0, a1) => (__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEElsEb = Module['__ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEElsEb'] = wasmExports['_ZNSt3__213basic_ostreamIwNS_11char_traitsIwEEElsEb'])(a0, a1);
@@ -34340,30 +37521,30 @@ var __ZNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEE7seekposE
 var __ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
 var __ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev = Module['__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'] = (a0, a1) => (__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev = Module['__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'] = wasmExports['_ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'])(a0, a1);
 var __ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
-var __ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
-var __ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZThn8_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
+var __ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
+var __ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZThn16_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
 var __ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
 var __ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev = Module['__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'] = (a0, a1) => (__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev = Module['__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'] = wasmExports['_ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'])(a0, a1);
 var __ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
 var __ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
 var __ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev = Module['__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'] = (a0, a1) => (__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev = Module['__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'] = wasmExports['_ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED2Ev'])(a0, a1);
 var __ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev = Module['__ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev = Module['__ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev'])(a0);
 var __ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'])(a0);
 var __ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED2Ev'] = (a0, a1) => (__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED2Ev'] = wasmExports['_ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED2Ev'])(a0, a1);
 var __ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZNSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__214basic_ifstreamIcNS_11char_traitsIcEEED0Ev'])(a0);
 var __ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'])(a0);
 var __ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED2Ev'] = (a0, a1) => (__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED2Ev = Module['__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED2Ev'] = wasmExports['_ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED2Ev'])(a0, a1);
 var __ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZNSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'])(a0);
-var __ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'])(a0);
-var __ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n12_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'])(a0);
+var __ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'] = (a0) => (__ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev = Module['__ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'] = wasmExports['_ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED1Ev'])(a0);
+var __ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'] = (a0) => (__ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev = Module['__ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'] = wasmExports['_ZTv0_n24_NSt3__214basic_ofstreamIcNS_11char_traitsIcEEED0Ev'])(a0);
 var __ZNKSt3__26__lessIvvEclB8nn190106IllEEbRKT_RKT0_ = Module['__ZNKSt3__26__lessIvvEclB8nn190106IllEEbRKT_RKT0_'] = (a0, a1, a2) => (__ZNKSt3__26__lessIvvEclB8nn190106IllEEbRKT_RKT0_ = Module['__ZNKSt3__26__lessIvvEclB8nn190106IllEEbRKT_RKT0_'] = wasmExports['_ZNKSt3__26__lessIvvEclB8nn190106IllEEbRKT_RKT0_'])(a0, a1, a2);
 var __ZNSt3__216__swap_allocatorB8nn190106INS_9allocatorIcEEEEvRT_S4_NS_17integral_constantIbLb0EEE = Module['__ZNSt3__216__swap_allocatorB8nn190106INS_9allocatorIcEEEEvRT_S4_NS_17integral_constantIbLb0EEE'] = (a0, a1) => (__ZNSt3__216__swap_allocatorB8nn190106INS_9allocatorIcEEEEvRT_S4_NS_17integral_constantIbLb0EEE = Module['__ZNSt3__216__swap_allocatorB8nn190106INS_9allocatorIcEEEEvRT_S4_NS_17integral_constantIbLb0EEE'] = wasmExports['_ZNSt3__216__swap_allocatorB8nn190106INS_9allocatorIcEEEEvRT_S4_NS_17integral_constantIbLb0EEE'])(a0, a1);
 var __ZNSt3__28distanceB8nn190106IPcEENS_15iterator_traitsIT_E15difference_typeES3_S3_ = Module['__ZNSt3__28distanceB8nn190106IPcEENS_15iterator_traitsIT_E15difference_typeES3_S3_'] = (a0, a1) => (__ZNSt3__28distanceB8nn190106IPcEENS_15iterator_traitsIT_E15difference_typeES3_S3_ = Module['__ZNSt3__28distanceB8nn190106IPcEENS_15iterator_traitsIT_E15difference_typeES3_S3_'] = wasmExports['_ZNSt3__28distanceB8nn190106IPcEENS_15iterator_traitsIT_E15difference_typeES3_S3_'])(a0, a1);
@@ -35665,13 +38846,13 @@ var __ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEE
 var __ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv = Module['__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'] = (a0) => (__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv = Module['__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'] = wasmExports['_ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'])(a0);
 var __ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv = Module['__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'] = (a0) => (__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv = Module['__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'] = wasmExports['_ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'])(a0);
 var __ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv = Module['__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'] = (a0) => (__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv = Module['__ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'] = wasmExports['_ZNKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv = Module['__ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__weeksEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE8__monthsEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE7__am_pmEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__cEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__rEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__xEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv = Module['__ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE3__XEv'])(a0);
 var __ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED2Ev = Module['__ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED2Ev'] = (a0) => (__ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED2Ev = Module['__ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED2Ev'] = wasmExports['_ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED2Ev'])(a0);
 var __ZNSt3__218__time_get_storageIwED2B8nn190106Ev = Module['__ZNSt3__218__time_get_storageIwED2B8nn190106Ev'] = (a0) => (__ZNSt3__218__time_get_storageIwED2B8nn190106Ev = Module['__ZNSt3__218__time_get_storageIwED2B8nn190106Ev'] = wasmExports['_ZNSt3__218__time_get_storageIwED2B8nn190106Ev'])(a0);
 var __ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev = Module['__ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev'] = (a0) => (__ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev = Module['__ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev'] = wasmExports['_ZNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev'])(a0);
@@ -35683,13 +38864,13 @@ var __ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEE
 var __ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv = Module['__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'] = (a0) => (__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv = Module['__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'] = wasmExports['_ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'])(a0);
 var __ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv = Module['__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'] = (a0) => (__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv = Module['__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'] = wasmExports['_ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'])(a0);
 var __ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv = Module['__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'] = (a0) => (__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv = Module['__ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'] = wasmExports['_ZNKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'])(a0);
-var __ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'] = (a0) => (__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv = Module['__ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'] = wasmExports['_ZThn8_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__weeksEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE8__monthsEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE7__am_pmEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__cEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__rEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__xEv'])(a0);
+var __ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'] = (a0) => (__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv = Module['__ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'] = wasmExports['_ZThn16_NKSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE3__XEv'])(a0);
 var __ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev = Module['__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev'] = (a0) => (__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev = Module['__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev'] = wasmExports['_ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED0Ev'])(a0);
 var __ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED2Ev = Module['__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED2Ev'] = (a0) => (__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED2Ev = Module['__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED2Ev'] = wasmExports['_ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEED2Ev'])(a0);
 var __ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev = Module['__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev'] = (a0) => (__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev = Module['__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev'] = wasmExports['_ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEED0Ev'])(a0);
@@ -36607,7 +39788,7 @@ var __ZNSt3__210filesystem4path8iterator11__incrementEv = Module['__ZNSt3__210fi
 var __ZNSt3__210filesystem6parser10PathParserC2ENS_17basic_string_viewIcNS_11char_traitsIcEEEES6_h = Module['__ZNSt3__210filesystem6parser10PathParserC2ENS_17basic_string_viewIcNS_11char_traitsIcEEEES6_h'] = (a0, a1, a2, a3) => (__ZNSt3__210filesystem6parser10PathParserC2ENS_17basic_string_viewIcNS_11char_traitsIcEEEES6_h = Module['__ZNSt3__210filesystem6parser10PathParserC2ENS_17basic_string_viewIcNS_11char_traitsIcEEEES6_h'] = wasmExports['_ZNSt3__210filesystem6parser10PathParserC2ENS_17basic_string_viewIcNS_11char_traitsIcEEEES6_h'])(a0, a1, a2, a3);
 var __ZNSt3__210filesystem4path8iterator11__decrementEv = Module['__ZNSt3__210filesystem4path8iterator11__decrementEv'] = (a0) => (__ZNSt3__210filesystem4path8iterator11__decrementEv = Module['__ZNSt3__210filesystem4path8iterator11__decrementEv'] = wasmExports['_ZNSt3__210filesystem4path8iterator11__decrementEv'])(a0);
 var __ZNKSt3__217basic_string_viewIcNS_11char_traitsIcEEE5rfindB8nn190106Ecm = Module['__ZNKSt3__217basic_string_viewIcNS_11char_traitsIcEEE5rfindB8nn190106Ecm'] = (a0, a1, a2) => (__ZNKSt3__217basic_string_viewIcNS_11char_traitsIcEEE5rfindB8nn190106Ecm = Module['__ZNKSt3__217basic_string_viewIcNS_11char_traitsIcEEE5rfindB8nn190106Ecm'] = wasmExports['_ZNKSt3__217basic_string_viewIcNS_11char_traitsIcEEE5rfindB8nn190106Ecm'])(a0, a1, a2);
-var __ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
+var __ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
 var __ZNSt3__222__compressed_pair_elemIPNS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEELi0ELb0EEC2B8nn190106IDnTnNS_9enable_ifIXntsr7is_sameISA_u7__decayIT_EEE5valueEiE4typeELi0EEEOSD_ = Module['__ZNSt3__222__compressed_pair_elemIPNS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEELi0ELb0EEC2B8nn190106IDnTnNS_9enable_ifIXntsr7is_sameISA_u7__decayIT_EEE5valueEiE4typeELi0EEEOSD_'] = (a0, a1) => (__ZNSt3__222__compressed_pair_elemIPNS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEELi0ELb0EEC2B8nn190106IDnTnNS_9enable_ifIXntsr7is_sameISA_u7__decayIT_EEE5valueEiE4typeELi0EEEOSD_ = Module['__ZNSt3__222__compressed_pair_elemIPNS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEELi0ELb0EEC2B8nn190106IDnTnNS_9enable_ifIXntsr7is_sameISA_u7__decayIT_EEE5valueEiE4typeELi0EEEOSD_'] = wasmExports['_ZNSt3__222__compressed_pair_elemIPNS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEELi0ELb0EEC2B8nn190106IDnTnNS_9enable_ifIXntsr7is_sameISA_u7__decayIT_EEE5valueEiE4typeELi0EEEOSD_'])(a0, a1);
 var __ZNSt3__222__compressed_pair_elemINS_9allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEELi1ELb1EEC2B8nn190106ENS_18__default_init_tagE = Module['__ZNSt3__222__compressed_pair_elemINS_9allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEELi1ELb1EEC2B8nn190106ENS_18__default_init_tagE'] = (a0) => (__ZNSt3__222__compressed_pair_elemINS_9allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEELi1ELb1EEC2B8nn190106ENS_18__default_init_tagE = Module['__ZNSt3__222__compressed_pair_elemINS_9allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEELi1ELb1EEC2B8nn190106ENS_18__default_init_tagE'] = wasmExports['_ZNSt3__222__compressed_pair_elemINS_9allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEELi1ELb1EEC2B8nn190106ENS_18__default_init_tagE'])(a0);
 var __ZNSt3__29allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEC2B8nn190106Ev = Module['__ZNSt3__29allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEC2B8nn190106Ev'] = (a0) => (__ZNSt3__29allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEC2B8nn190106Ev = Module['__ZNSt3__29allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEC2B8nn190106Ev'] = wasmExports['_ZNSt3__29allocatorINS_4pairINS_17basic_string_viewIcNS_11char_traitsIcEEEENS_10filesystem12PathPartKindEEEEC2B8nn190106Ev'])(a0);
@@ -36745,21 +39926,21 @@ var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmP
 var __ZNSt3__211char_traitsIcE4moveB8nn190106EPcPKcm = Module['__ZNSt3__211char_traitsIcE4moveB8nn190106EPcPKcm'] = (a0, a1, a2) => (__ZNSt3__211char_traitsIcE4moveB8nn190106EPcPKcm = Module['__ZNSt3__211char_traitsIcE4moveB8nn190106EPcPKcm'] = wasmExports['_ZNSt3__211char_traitsIcE4moveB8nn190106EPcPKcm'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE21__grow_by_and_replaceEmmmmmmPKc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE21__grow_by_and_replaceEmmmmmmPKc'] = (a0, a1, a2, a3, a4, a5, a6, a7) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE21__grow_by_and_replaceEmmmmmmPKc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE21__grow_by_and_replaceEmmmmmmPKc'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE21__grow_by_and_replaceEmmmmmmPKc'])(a0, a1, a2, a3, a4, a5, a6, a7);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEPKcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEPKcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEPKcmm'])(a0, a1, a2, a3);
-var __ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__find_end_classicB8nn190106IPKcS2_DoFbccEEET_S4_S4_T0_S5_RT1_ = Module['__ZNSt3__218__find_end_classicB8nn190106IPKcS2_DoFbccEEET_S4_S4_T0_S5_RT1_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__find_end_classicB8nn190106IPKcS2_DoFbccEEET_S4_S4_T0_S5_RT1_ = Module['__ZNSt3__218__find_end_classicB8nn190106IPKcS2_DoFbccEEET_S4_S4_T0_S5_RT1_'] = wasmExports['_ZNSt3__218__find_end_classicB8nn190106IPKcS2_DoFbccEEET_S4_S4_T0_S5_RT1_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__initEPKcmm = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__initEPKcmm'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__initEPKcmm = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__initEPKcmm'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__initEPKcmm'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmPKc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmPKc'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmPKc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmPKc'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmPKc'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE16find_last_not_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE16find_last_not_ofEPKcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE16find_last_not_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE16find_last_not_ofEPKcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE16find_last_not_ofEPKcmm'])(a0, a1, a2, a3);
-var __ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__222__str_find_last_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__211char_traitsIcE4findB8nn190106EPKcmRS2_ = Module['__ZNSt3__211char_traitsIcE4findB8nn190106EPKcmRS2_'] = (a0, a1, a2) => (__ZNSt3__211char_traitsIcE4findB8nn190106EPKcmRS2_ = Module['__ZNSt3__211char_traitsIcE4findB8nn190106EPKcmRS2_'] = wasmExports['_ZNSt3__211char_traitsIcE4findB8nn190106EPKcmRS2_'])(a0, a1, a2);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17find_first_not_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17find_first_not_ofEPKcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17find_first_not_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17find_first_not_ofEPKcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE17find_first_not_ofEPKcmm'])(a0, a1, a2, a3);
-var __ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__223__str_find_first_not_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__211char_traitsIcE6assignB8nn190106EPcmc = Module['__ZNSt3__211char_traitsIcE6assignB8nn190106EPcmc'] = (a0, a1, a2) => (__ZNSt3__211char_traitsIcE6assignB8nn190106EPcmc = Module['__ZNSt3__211char_traitsIcE6assignB8nn190106EPcmc'] = wasmExports['_ZNSt3__211char_traitsIcE6assignB8nn190106EPcmc'])(a0, a1, a2);
 var __ZNSt3__26fill_nB8nn190106IPcmcEET_S2_T0_RKT1_ = Module['__ZNSt3__26fill_nB8nn190106IPcmcEET_S2_T0_RKT1_'] = (a0, a1, a2) => (__ZNSt3__26fill_nB8nn190106IPcmcEET_S2_T0_RKT1_ = Module['__ZNSt3__26fill_nB8nn190106IPcmcEET_S2_T0_RKT1_'] = wasmExports['_ZNSt3__26fill_nB8nn190106IPcmcEET_S2_T0_RKT1_'])(a0, a1, a2);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm'] = (a0, a1) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm'])(a0, a1);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKcm = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKcm'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKcm = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKcm'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKcm'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE13find_first_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE13find_first_ofEPKcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE13find_first_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE13find_first_ofEPKcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE13find_first_ofEPKcmm'])(a0, a1, a2, a3);
-var __ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__219__str_find_first_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__find_first_of_ceB8nn190106IPKcS2_RDoFbccEEET_S5_S5_T0_S6_OT1_ = Module['__ZNSt3__218__find_first_of_ceB8nn190106IPKcS2_RDoFbccEEET_S5_S5_T0_S6_OT1_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__find_first_of_ceB8nn190106IPKcS2_RDoFbccEEET_S5_S5_T0_S6_OT1_ = Module['__ZNSt3__218__find_first_of_ceB8nn190106IPKcS2_RDoFbccEEET_S5_S5_T0_S6_OT1_'] = wasmExports['_ZNSt3__218__find_first_of_ceB8nn190106IPKcS2_RDoFbccEEET_S5_S5_T0_S6_OT1_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmmc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmmc'] = (a0, a1, a2, a3, a4) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmmc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmmc'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7replaceEmmmc'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE18__shrink_or_extendB8nn190106Em = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE18__shrink_or_extendB8nn190106Em'] = (a0, a1) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE18__shrink_or_extendB8nn190106Em = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE18__shrink_or_extendB8nn190106Em'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE18__shrink_or_extendB8nn190106Em'])(a0, a1);
@@ -36767,9 +39948,9 @@ var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignERKS5
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4copyEPcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4copyEPcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4copyEPcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4copyEPcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4copyEPcmm'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2ERKS5_mmRKS4_ = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2ERKS5_mmRKS4_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2ERKS5_mmRKS4_ = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2ERKS5_mmRKS4_'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2ERKS5_mmRKS4_'])(a0, a1, a2, a3, a4);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEcm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEcm'] = (a0, a1, a2) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEcm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEcm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEcm'])(a0, a1, a2);
-var __ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
+var __ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE12find_last_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE12find_last_ofEPKcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE12find_last_ofEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE12find_last_ofEPKcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE12find_last_ofEPKcmm'])(a0, a1, a2, a3);
-var __ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__218__str_find_last_ofB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEmc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEmc'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEmc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEmc'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEmc'])(a0, a1, a2);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEcm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEcm'] = (a0, a1, a2) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEcm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEcm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE5rfindEcm'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEmc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEmc'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEmc = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEmc'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6assignEmc'])(a0, a1, a2);
@@ -36779,7 +39960,7 @@ var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmm
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKc = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKc'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKc = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKc'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKc'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm'] = (a0, a1) => (__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm'] = wasmExports['_ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE2atEm'])(a0, a1);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEPKcmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEPKcmm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEPKcmm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4findEPKcmm'])(a0, a1, a2, a3);
-var __ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IcmNS_11char_traitsIcEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__search_substringB8nn190106IcNS_11char_traitsIcEEEEPKT_S5_S5_S5_S5_ = Module['__ZNSt3__218__search_substringB8nn190106IcNS_11char_traitsIcEEEEPKT_S5_S5_S5_S5_'] = (a0, a1, a2, a3) => (__ZNSt3__218__search_substringB8nn190106IcNS_11char_traitsIcEEEEPKT_S5_S5_S5_S5_ = Module['__ZNSt3__218__search_substringB8nn190106IcNS_11char_traitsIcEEEEPKT_S5_S5_S5_S5_'] = wasmExports['_ZNSt3__218__search_substringB8nn190106IcNS_11char_traitsIcEEEEPKT_S5_S5_S5_S5_'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmRKS5_mm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmRKS5_mm'] = (a0, a1, a2, a3, a4, a5) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmRKS5_mm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmRKS5_mm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmRKS5_mm'])(a0, a1, a2, a3, a4, a5);
 var __ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareB8nn190106INS_17basic_string_viewIcS2_EETnNS_9enable_ifIXaasr33__can_be_converted_to_string_viewIcS2_T_EE5valuentsr17__is_same_uncvrefISA_S5_EE5valueEiE4typeELi0EEEimmRKSA_mm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareB8nn190106INS_17basic_string_viewIcS2_EETnNS_9enable_ifIXaasr33__can_be_converted_to_string_viewIcS2_T_EE5valuentsr17__is_same_uncvrefISA_S5_EE5valueEiE4typeELi0EEEimmRKSA_mm'] = (a0, a1, a2, a3, a4, a5) => (__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareB8nn190106INS_17basic_string_viewIcS2_EETnNS_9enable_ifIXaasr33__can_be_converted_to_string_viewIcS2_T_EE5valuentsr17__is_same_uncvrefISA_S5_EE5valueEiE4typeELi0EEEimmRKSA_mm = Module['__ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareB8nn190106INS_17basic_string_viewIcS2_EETnNS_9enable_ifIXaasr33__can_be_converted_to_string_viewIcS2_T_EE5valuentsr17__is_same_uncvrefISA_S5_EE5valueEiE4typeELi0EEEimmRKSA_mm'] = wasmExports['_ZNKSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareB8nn190106INS_17basic_string_viewIcS2_EETnNS_9enable_ifIXaasr33__can_be_converted_to_string_viewIcS2_T_EE5valuentsr17__is_same_uncvrefISA_S5_EE5valueEiE4typeELi0EEEimmRKSA_mm'])(a0, a1, a2, a3, a4, a5);
@@ -36790,22 +39971,22 @@ var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmP
 var __ZNSt3__218__char_traits_baseIwiLin1EE4moveB8nn190106EPwPKwm = Module['__ZNSt3__218__char_traits_baseIwiLin1EE4moveB8nn190106EPwPKwm'] = (a0, a1, a2) => (__ZNSt3__218__char_traits_baseIwiLin1EE4moveB8nn190106EPwPKwm = Module['__ZNSt3__218__char_traits_baseIwiLin1EE4moveB8nn190106EPwPKwm'] = wasmExports['_ZNSt3__218__char_traits_baseIwiLin1EE4moveB8nn190106EPwPKwm'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE21__grow_by_and_replaceEmmmmmmPKw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE21__grow_by_and_replaceEmmmmmmPKw'] = (a0, a1, a2, a3, a4, a5, a6, a7) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE21__grow_by_and_replaceEmmmmmmPKw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE21__grow_by_and_replaceEmmmmmmPKw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE21__grow_by_and_replaceEmmmmmmPKw'])(a0, a1, a2, a3, a4, a5, a6, a7);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEPKwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEPKwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEPKwmm'])(a0, a1, a2, a3);
-var __ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__find_end_classicB8nn190106IPKwS2_DoFbwwEEET_S4_S4_T0_S5_RT1_ = Module['__ZNSt3__218__find_end_classicB8nn190106IPKwS2_DoFbwwEEET_S4_S4_T0_S5_RT1_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__find_end_classicB8nn190106IPKwS2_DoFbwwEEET_S4_S4_T0_S5_RT1_ = Module['__ZNSt3__218__find_end_classicB8nn190106IPKwS2_DoFbwwEEET_S4_S4_T0_S5_RT1_'] = wasmExports['_ZNSt3__218__find_end_classicB8nn190106IPKwS2_DoFbwwEEET_S4_S4_T0_S5_RT1_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6__initEPKwmm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6__initEPKwmm'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6__initEPKwmm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6__initEPKwmm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6__initEPKwmm'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmPKw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmPKw'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmPKw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmPKw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmPKw'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE16find_last_not_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE16find_last_not_ofEPKwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE16find_last_not_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE16find_last_not_ofEPKwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE16find_last_not_ofEPKwmm'])(a0, a1, a2, a3);
-var __ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__222__str_find_last_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__211char_traitsIwE4findB8nn190106EPKwmRS2_ = Module['__ZNSt3__211char_traitsIwE4findB8nn190106EPKwmRS2_'] = (a0, a1, a2) => (__ZNSt3__211char_traitsIwE4findB8nn190106EPKwmRS2_ = Module['__ZNSt3__211char_traitsIwE4findB8nn190106EPKwmRS2_'] = wasmExports['_ZNSt3__211char_traitsIwE4findB8nn190106EPKwmRS2_'])(a0, a1, a2);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17find_first_not_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17find_first_not_ofEPKwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17find_first_not_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17find_first_not_ofEPKwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17find_first_not_ofEPKwmm'])(a0, a1, a2, a3);
-var __ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__223__str_find_first_not_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__char_traits_baseIwiLin1EE6assignB8nn190106EPwmw = Module['__ZNSt3__218__char_traits_baseIwiLin1EE6assignB8nn190106EPwmw'] = (a0, a1, a2) => (__ZNSt3__218__char_traits_baseIwiLin1EE6assignB8nn190106EPwmw = Module['__ZNSt3__218__char_traits_baseIwiLin1EE6assignB8nn190106EPwmw'] = wasmExports['_ZNSt3__218__char_traits_baseIwiLin1EE6assignB8nn190106EPwmw'])(a0, a1, a2);
 var __ZNSt3__26fill_nB8nn190106IPwmwEET_S2_T0_RKT1_ = Module['__ZNSt3__26fill_nB8nn190106IPwmwEET_S2_T0_RKT1_'] = (a0, a1, a2) => (__ZNSt3__26fill_nB8nn190106IPwmwEET_S2_T0_RKT1_ = Module['__ZNSt3__26fill_nB8nn190106IPwmwEET_S2_T0_RKT1_'] = wasmExports['_ZNSt3__26fill_nB8nn190106IPwmwEET_S2_T0_RKT1_'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEaSEw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEaSEw'] = (a0, a1) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEaSEw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEaSEw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEaSEw'])(a0, a1);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm'] = (a0, a1) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm'])(a0, a1);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKwm'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKwm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKwm'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE13find_first_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE13find_first_ofEPKwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE13find_first_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE13find_first_ofEPKwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE13find_first_ofEPKwmm'])(a0, a1, a2, a3);
-var __ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__219__str_find_first_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__find_first_of_ceB8nn190106IPKwS2_RDoFbwwEEET_S5_S5_T0_S6_OT1_ = Module['__ZNSt3__218__find_first_of_ceB8nn190106IPKwS2_RDoFbwwEEET_S5_S5_T0_S6_OT1_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__find_first_of_ceB8nn190106IPKwS2_RDoFbwwEEET_S5_S5_T0_S6_OT1_ = Module['__ZNSt3__218__find_first_of_ceB8nn190106IPKwS2_RDoFbwwEEET_S5_S5_T0_S6_OT1_'] = wasmExports['_ZNSt3__218__find_first_of_ceB8nn190106IPKwS2_RDoFbwwEEET_S5_S5_T0_S6_OT1_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmmw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmmw'] = (a0, a1, a2, a3, a4) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmmw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmmw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7replaceEmmmw'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_externalEPKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_externalEPKwm'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_externalEPKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_externalEPKwm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_externalEPKwm'])(a0, a1, a2);
@@ -36816,15 +39997,15 @@ var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6assignEPKwm
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4copyEPwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4copyEPwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4copyEPwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4copyEPwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4copyEPwmm'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEC2ERKS5_mmRKS4_ = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEC2ERKS5_mmRKS4_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEC2ERKS5_mmRKS4_ = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEC2ERKS5_mmRKS4_'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEC2ERKS5_mmRKS4_'])(a0, a1, a2, a3, a4);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEwm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEwm'] = (a0, a1, a2) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEwm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEwm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEwm'])(a0, a1, a2);
-var __ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
+var __ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKw'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6insertEmPKw'])(a0, a1, a2);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE12find_last_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE12find_last_ofEPKwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE12find_last_ofEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE12find_last_ofEPKwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE12find_last_ofEPKwmm'])(a0, a1, a2, a3);
-var __ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__218__str_find_last_ofB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb0EEERS5_PKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb0EEERS5_PKwm'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb0EEERS5_PKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb0EEERS5_PKwm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb0EEERS5_PKwm'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb1EEERS5_PKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb1EEERS5_PKwm'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb1EEERS5_PKwm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb1EEERS5_PKwm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE17__assign_no_aliasILb1EEERS5_PKwm'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendEmw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendEmw'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendEmw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendEmw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendEmw'])(a0, a1, a2);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEwm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEwm'] = (a0, a1, a2) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEwm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEwm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE5rfindEwm'])(a0, a1, a2);
-var __ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
+var __ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = (a0, a1, a2, a3) => (__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_ = Module['__ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'] = wasmExports['_ZNSt3__211__str_rfindB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S4_S3_'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6assignEmw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6assignEmw'] = (a0, a1, a2) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6assignEmw = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6assignEmw'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6assignEmw'])(a0, a1, a2);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendERKS5_mm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendERKS5_mm'] = (a0, a1, a2, a3) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendERKS5_mm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendERKS5_mm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE6appendERKS5_mm'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEPKw = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEPKw'] = (a0, a1) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEPKw = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEPKw'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEPKw'])(a0, a1);
@@ -36833,7 +40014,7 @@ var __ZNSt3__211char_traitsIwE7compareB8nn190106EPKwS3_m = Module['__ZNSt3__211c
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmPKw = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmPKw'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmPKw = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmPKw'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmPKw'])(a0, a1, a2, a3);
 var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm'] = (a0, a1) => (__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm'] = wasmExports['_ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE2atEm'])(a0, a1);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEPKwmm'] = (a0, a1, a2, a3) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEPKwmm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEPKwmm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4findEPKwmm'])(a0, a1, a2, a3);
-var __ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm4294967295EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
+var __ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = (a0, a1, a2, a3, a4) => (__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_ = Module['__ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'] = wasmExports['_ZNSt3__210__str_findB8nn190106IwmNS_11char_traitsIwEETnT0_Lm18446744073709551615EEES3_PKT_S3_S6_S3_S3_'])(a0, a1, a2, a3, a4);
 var __ZNSt3__218__search_substringB8nn190106IwNS_11char_traitsIwEEEEPKT_S5_S5_S5_S5_ = Module['__ZNSt3__218__search_substringB8nn190106IwNS_11char_traitsIwEEEEPKT_S5_S5_S5_S5_'] = (a0, a1, a2, a3) => (__ZNSt3__218__search_substringB8nn190106IwNS_11char_traitsIwEEEEPKT_S5_S5_S5_S5_ = Module['__ZNSt3__218__search_substringB8nn190106IwNS_11char_traitsIwEEEEPKT_S5_S5_S5_S5_'] = wasmExports['_ZNSt3__218__search_substringB8nn190106IwNS_11char_traitsIwEEEEPKT_S5_S5_S5_S5_'])(a0, a1, a2, a3);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmRKS5_mm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmRKS5_mm'] = (a0, a1, a2, a3, a4, a5) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmRKS5_mm = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmRKS5_mm'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE7compareEmmRKS5_mm'])(a0, a1, a2, a3, a4, a5);
 var __ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEcvNS_17basic_string_viewIwS2_EEB8nn190106Ev = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEcvNS_17basic_string_viewIwS2_EEB8nn190106Ev'] = (a0, a1) => (__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEcvNS_17basic_string_viewIwS2_EEB8nn190106Ev = Module['__ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEcvNS_17basic_string_viewIwS2_EEB8nn190106Ev'] = wasmExports['_ZNKSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEEcvNS_17basic_string_viewIwS2_EEB8nn190106Ev'])(a0, a1);
@@ -36958,21 +40139,21 @@ var __ZNSt3__23minB8nn190106IPcNS_6__lessIvvEEEERKT_S6_S6_T0_ = Module['__ZNSt3_
 var __ZNSt3__212strstreambuf7seekposENS_4fposI11__mbstate_tEEj = Module['__ZNSt3__212strstreambuf7seekposENS_4fposI11__mbstate_tEEj'] = (a0, a1, a2, a3) => (__ZNSt3__212strstreambuf7seekposENS_4fposI11__mbstate_tEEj = Module['__ZNSt3__212strstreambuf7seekposENS_4fposI11__mbstate_tEEj'] = wasmExports['_ZNSt3__212strstreambuf7seekposENS_4fposI11__mbstate_tEEj'])(a0, a1, a2, a3);
 var __ZNSt3__210istrstreamD2Ev = Module['__ZNSt3__210istrstreamD2Ev'] = (a0, a1) => (__ZNSt3__210istrstreamD2Ev = Module['__ZNSt3__210istrstreamD2Ev'] = wasmExports['_ZNSt3__210istrstreamD2Ev'])(a0, a1);
 var __ZNSt3__210istrstreamD1Ev = Module['__ZNSt3__210istrstreamD1Ev'] = (a0) => (__ZNSt3__210istrstreamD1Ev = Module['__ZNSt3__210istrstreamD1Ev'] = wasmExports['_ZNSt3__210istrstreamD1Ev'])(a0);
-var __ZTv0_n12_NSt3__210istrstreamD1Ev = Module['__ZTv0_n12_NSt3__210istrstreamD1Ev'] = (a0) => (__ZTv0_n12_NSt3__210istrstreamD1Ev = Module['__ZTv0_n12_NSt3__210istrstreamD1Ev'] = wasmExports['_ZTv0_n12_NSt3__210istrstreamD1Ev'])(a0);
+var __ZTv0_n24_NSt3__210istrstreamD1Ev = Module['__ZTv0_n24_NSt3__210istrstreamD1Ev'] = (a0) => (__ZTv0_n24_NSt3__210istrstreamD1Ev = Module['__ZTv0_n24_NSt3__210istrstreamD1Ev'] = wasmExports['_ZTv0_n24_NSt3__210istrstreamD1Ev'])(a0);
 var __ZNSt3__210istrstreamD0Ev = Module['__ZNSt3__210istrstreamD0Ev'] = (a0) => (__ZNSt3__210istrstreamD0Ev = Module['__ZNSt3__210istrstreamD0Ev'] = wasmExports['_ZNSt3__210istrstreamD0Ev'])(a0);
-var __ZTv0_n12_NSt3__210istrstreamD0Ev = Module['__ZTv0_n12_NSt3__210istrstreamD0Ev'] = (a0) => (__ZTv0_n12_NSt3__210istrstreamD0Ev = Module['__ZTv0_n12_NSt3__210istrstreamD0Ev'] = wasmExports['_ZTv0_n12_NSt3__210istrstreamD0Ev'])(a0);
+var __ZTv0_n24_NSt3__210istrstreamD0Ev = Module['__ZTv0_n24_NSt3__210istrstreamD0Ev'] = (a0) => (__ZTv0_n24_NSt3__210istrstreamD0Ev = Module['__ZTv0_n24_NSt3__210istrstreamD0Ev'] = wasmExports['_ZTv0_n24_NSt3__210istrstreamD0Ev'])(a0);
 var __ZNSt3__210ostrstreamD2Ev = Module['__ZNSt3__210ostrstreamD2Ev'] = (a0, a1) => (__ZNSt3__210ostrstreamD2Ev = Module['__ZNSt3__210ostrstreamD2Ev'] = wasmExports['_ZNSt3__210ostrstreamD2Ev'])(a0, a1);
 var __ZNSt3__210ostrstreamD1Ev = Module['__ZNSt3__210ostrstreamD1Ev'] = (a0) => (__ZNSt3__210ostrstreamD1Ev = Module['__ZNSt3__210ostrstreamD1Ev'] = wasmExports['_ZNSt3__210ostrstreamD1Ev'])(a0);
-var __ZTv0_n12_NSt3__210ostrstreamD1Ev = Module['__ZTv0_n12_NSt3__210ostrstreamD1Ev'] = (a0) => (__ZTv0_n12_NSt3__210ostrstreamD1Ev = Module['__ZTv0_n12_NSt3__210ostrstreamD1Ev'] = wasmExports['_ZTv0_n12_NSt3__210ostrstreamD1Ev'])(a0);
+var __ZTv0_n24_NSt3__210ostrstreamD1Ev = Module['__ZTv0_n24_NSt3__210ostrstreamD1Ev'] = (a0) => (__ZTv0_n24_NSt3__210ostrstreamD1Ev = Module['__ZTv0_n24_NSt3__210ostrstreamD1Ev'] = wasmExports['_ZTv0_n24_NSt3__210ostrstreamD1Ev'])(a0);
 var __ZNSt3__210ostrstreamD0Ev = Module['__ZNSt3__210ostrstreamD0Ev'] = (a0) => (__ZNSt3__210ostrstreamD0Ev = Module['__ZNSt3__210ostrstreamD0Ev'] = wasmExports['_ZNSt3__210ostrstreamD0Ev'])(a0);
-var __ZTv0_n12_NSt3__210ostrstreamD0Ev = Module['__ZTv0_n12_NSt3__210ostrstreamD0Ev'] = (a0) => (__ZTv0_n12_NSt3__210ostrstreamD0Ev = Module['__ZTv0_n12_NSt3__210ostrstreamD0Ev'] = wasmExports['_ZTv0_n12_NSt3__210ostrstreamD0Ev'])(a0);
+var __ZTv0_n24_NSt3__210ostrstreamD0Ev = Module['__ZTv0_n24_NSt3__210ostrstreamD0Ev'] = (a0) => (__ZTv0_n24_NSt3__210ostrstreamD0Ev = Module['__ZTv0_n24_NSt3__210ostrstreamD0Ev'] = wasmExports['_ZTv0_n24_NSt3__210ostrstreamD0Ev'])(a0);
 var __ZNSt3__29strstreamD2Ev = Module['__ZNSt3__29strstreamD2Ev'] = (a0, a1) => (__ZNSt3__29strstreamD2Ev = Module['__ZNSt3__29strstreamD2Ev'] = wasmExports['_ZNSt3__29strstreamD2Ev'])(a0, a1);
 var __ZNSt3__29strstreamD1Ev = Module['__ZNSt3__29strstreamD1Ev'] = (a0) => (__ZNSt3__29strstreamD1Ev = Module['__ZNSt3__29strstreamD1Ev'] = wasmExports['_ZNSt3__29strstreamD1Ev'])(a0);
-var __ZThn8_NSt3__29strstreamD1Ev = Module['__ZThn8_NSt3__29strstreamD1Ev'] = (a0) => (__ZThn8_NSt3__29strstreamD1Ev = Module['__ZThn8_NSt3__29strstreamD1Ev'] = wasmExports['_ZThn8_NSt3__29strstreamD1Ev'])(a0);
-var __ZTv0_n12_NSt3__29strstreamD1Ev = Module['__ZTv0_n12_NSt3__29strstreamD1Ev'] = (a0) => (__ZTv0_n12_NSt3__29strstreamD1Ev = Module['__ZTv0_n12_NSt3__29strstreamD1Ev'] = wasmExports['_ZTv0_n12_NSt3__29strstreamD1Ev'])(a0);
+var __ZThn16_NSt3__29strstreamD1Ev = Module['__ZThn16_NSt3__29strstreamD1Ev'] = (a0) => (__ZThn16_NSt3__29strstreamD1Ev = Module['__ZThn16_NSt3__29strstreamD1Ev'] = wasmExports['_ZThn16_NSt3__29strstreamD1Ev'])(a0);
+var __ZTv0_n24_NSt3__29strstreamD1Ev = Module['__ZTv0_n24_NSt3__29strstreamD1Ev'] = (a0) => (__ZTv0_n24_NSt3__29strstreamD1Ev = Module['__ZTv0_n24_NSt3__29strstreamD1Ev'] = wasmExports['_ZTv0_n24_NSt3__29strstreamD1Ev'])(a0);
 var __ZNSt3__29strstreamD0Ev = Module['__ZNSt3__29strstreamD0Ev'] = (a0) => (__ZNSt3__29strstreamD0Ev = Module['__ZNSt3__29strstreamD0Ev'] = wasmExports['_ZNSt3__29strstreamD0Ev'])(a0);
-var __ZThn8_NSt3__29strstreamD0Ev = Module['__ZThn8_NSt3__29strstreamD0Ev'] = (a0) => (__ZThn8_NSt3__29strstreamD0Ev = Module['__ZThn8_NSt3__29strstreamD0Ev'] = wasmExports['_ZThn8_NSt3__29strstreamD0Ev'])(a0);
-var __ZTv0_n12_NSt3__29strstreamD0Ev = Module['__ZTv0_n12_NSt3__29strstreamD0Ev'] = (a0) => (__ZTv0_n12_NSt3__29strstreamD0Ev = Module['__ZTv0_n12_NSt3__29strstreamD0Ev'] = wasmExports['_ZTv0_n12_NSt3__29strstreamD0Ev'])(a0);
+var __ZThn16_NSt3__29strstreamD0Ev = Module['__ZThn16_NSt3__29strstreamD0Ev'] = (a0) => (__ZThn16_NSt3__29strstreamD0Ev = Module['__ZThn16_NSt3__29strstreamD0Ev'] = wasmExports['_ZThn16_NSt3__29strstreamD0Ev'])(a0);
+var __ZTv0_n24_NSt3__29strstreamD0Ev = Module['__ZTv0_n24_NSt3__29strstreamD0Ev'] = (a0) => (__ZTv0_n24_NSt3__29strstreamD0Ev = Module['__ZTv0_n24_NSt3__29strstreamD0Ev'] = wasmExports['_ZTv0_n24_NSt3__29strstreamD0Ev'])(a0);
 var __ZNSt3__212strstreambufC1El = Module['__ZNSt3__212strstreambufC1El'] = (a0, a1) => (__ZNSt3__212strstreambufC1El = Module['__ZNSt3__212strstreambufC1El'] = wasmExports['_ZNSt3__212strstreambufC1El'])(a0, a1);
 var __ZNSt3__212strstreambufC1EPFPvmEPFvS1_E = Module['__ZNSt3__212strstreambufC1EPFPvmEPFvS1_E'] = (a0, a1, a2) => (__ZNSt3__212strstreambufC1EPFPvmEPFvS1_E = Module['__ZNSt3__212strstreambufC1EPFPvmEPFvS1_E'] = wasmExports['_ZNSt3__212strstreambufC1EPFPvmEPFvS1_E'])(a0, a1, a2);
 var __ZNSt3__212strstreambufC1EPclS1_ = Module['__ZNSt3__212strstreambufC1EPclS1_'] = (a0, a1, a2, a3) => (__ZNSt3__212strstreambufC1EPclS1_ = Module['__ZNSt3__212strstreambufC1EPclS1_'] = wasmExports['_ZNSt3__212strstreambufC1EPclS1_'])(a0, a1, a2, a3);
@@ -37281,896 +40462,896 @@ var _recvfrom = Module['_recvfrom'] = (a0, a1, a2, a3, a4, a5) => (_recvfrom = M
 var _shutdown = Module['_shutdown'] = (a0, a1) => (_shutdown = Module['_shutdown'] = wasmExports['shutdown'])(a0, a1);
 var _socketpair = Module['_socketpair'] = (a0, a1, a2, a3) => (_socketpair = Module['_socketpair'] = wasmExports['socketpair'])(a0, a1, a2, a3);
 var ___wasm_apply_data_relocs = () => (___wasm_apply_data_relocs = wasmExports['__wasm_apply_data_relocs'])();
-var _luaT_typenames_ = Module['_luaT_typenames_'] = 379280;
+var _luaT_typenames_ = Module['_luaT_typenames_'] = 380448;
 var _lua_ident = Module['_lua_ident'] = 1024;
-var _luaP_opmodes = Module['_luaP_opmodes'] = 36560;
-var _luai_ctype_ = Module['_luai_ctype_'] = 36032;
-var ___THREW__ = Module['___THREW__'] = 425408;
-var ___threwValue = Module['___threwValue'] = 425412;
-var _stdin = Module['_stdin'] = 383968;
-var _stderr = Module['_stderr'] = 383816;
-var _stdout = Module['_stdout'] = 384120;
-var _ctype_mt_key = Module['_ctype_mt_key'] = 402192;
-var _cdata_mt_key = Module['_cdata_mt_key'] = 402204;
-var _callback_mt_key = Module['_callback_mt_key'] = 402208;
-var _jit_key = Module['_jit_key'] = 402180;
-var _callbacks_key = Module['_callbacks_key'] = 402196;
-var _niluv_key = Module['_niluv_key'] = 402188;
-var _gc_key = Module['_gc_key'] = 402200;
-var _cmodule_mt_key = Module['_cmodule_mt_key'] = 402212;
-var _constants_key = Module['_constants_key'] = 402216;
-var _types_key = Module['_types_key'] = 402220;
-var _functions_key = Module['_functions_key'] = 402224;
-var _asmname_key = Module['_asmname_key'] = 402228;
-var _abi_key = Module['_abi_key'] = 402232;
-var _next_unnamed_key = Module['_next_unnamed_key'] = 402236;
-var ___environ = Module['___environ'] = 402252;
-var ____environ = Module['____environ'] = 402252;
-var __environ = Module['__environ'] = 402252;
-var _environ = Module['_environ'] = 402252;
-var ___stack_chk_guard = Module['___stack_chk_guard'] = 402264;
-var _daylight = Module['_daylight'] = 402272;
-var _timezone = Module['_timezone'] = 402268;
-var ___tzname = Module['___tzname'] = 402276;
-var ___timezone = Module['___timezone'] = 402268;
-var ___daylight = Module['___daylight'] = 402272;
-var _tzname = Module['_tzname'] = 402276;
-var ___progname = Module['___progname'] = 404208;
-var ___optreset = Module['___optreset'] = 403172;
-var _optind = Module['_optind'] = 383096;
-var ___optpos = Module['___optpos'] = 403176;
-var _optarg = Module['_optarg'] = 403180;
-var _optopt = Module['_optopt'] = 403184;
-var _opterr = Module['_opterr'] = 383100;
-var _optreset = Module['_optreset'] = 403172;
-var _h_errno = Module['_h_errno'] = 403308;
-var ___signgam = Module['___signgam'] = 418604;
-var __ns_flagdata = Module['__ns_flagdata'] = 224576;
-var ___progname_full = Module['___progname_full'] = 404212;
-var _program_invocation_short_name = Module['_program_invocation_short_name'] = 404208;
-var _program_invocation_name = Module['_program_invocation_name'] = 404212;
-var ___sig_pending = Module['___sig_pending'] = 408584;
-var ___sig_actions = Module['___sig_actions'] = 409504;
-var _signgam = Module['_signgam'] = 418604;
-var __ZTVSt12bad_any_cast = Module['__ZTVSt12bad_any_cast'] = 384292;
-var __ZTISt12bad_any_cast = Module['__ZTISt12bad_any_cast'] = 384312;
-var __ZTVN10__cxxabiv120__si_class_type_infoE = Module['__ZTVN10__cxxabiv120__si_class_type_infoE'] = 401240;
-var __ZTSSt12bad_any_cast = Module['__ZTSSt12bad_any_cast'] = 243776;
-var __ZTISt8bad_cast = Module['__ZTISt8bad_cast'] = 401904;
-var __ZTVNSt12experimental15fundamentals_v112bad_any_castE = Module['__ZTVNSt12experimental15fundamentals_v112bad_any_castE'] = 384324;
-var __ZTINSt12experimental15fundamentals_v112bad_any_castE = Module['__ZTINSt12experimental15fundamentals_v112bad_any_castE'] = 384344;
-var __ZTSNSt12experimental15fundamentals_v112bad_any_castE = Module['__ZTSNSt12experimental15fundamentals_v112bad_any_castE'] = 243793;
-var __ZNSt3__212placeholders2_1E = Module['__ZNSt3__212placeholders2_1E'] = 243843;
-var __ZNSt3__212placeholders2_2E = Module['__ZNSt3__212placeholders2_2E'] = 243844;
-var __ZNSt3__212placeholders2_3E = Module['__ZNSt3__212placeholders2_3E'] = 243845;
-var __ZNSt3__212placeholders2_4E = Module['__ZNSt3__212placeholders2_4E'] = 243846;
-var __ZNSt3__212placeholders2_5E = Module['__ZNSt3__212placeholders2_5E'] = 243847;
-var __ZNSt3__212placeholders2_6E = Module['__ZNSt3__212placeholders2_6E'] = 243848;
-var __ZNSt3__212placeholders2_7E = Module['__ZNSt3__212placeholders2_7E'] = 243849;
-var __ZNSt3__212placeholders2_8E = Module['__ZNSt3__212placeholders2_8E'] = 243850;
-var __ZNSt3__212placeholders2_9E = Module['__ZNSt3__212placeholders2_9E'] = 243851;
-var __ZNSt3__212placeholders3_10E = Module['__ZNSt3__212placeholders3_10E'] = 243852;
-var __ZNSt3__26__itoa16_Charconv_digitsE = Module['__ZNSt3__26__itoa16_Charconv_digitsE'] = 243856;
-var __ZNSt3__26__itoa10__pow10_32E = Module['__ZNSt3__26__itoa10__pow10_32E'] = 243904;
-var __ZNSt3__26__itoa16__digits_base_10E = Module['__ZNSt3__26__itoa16__digits_base_10E'] = 243952;
-var __ZNSt3__225_General_precision_tablesIfE6_Max_PE = Module['__ZNSt3__225_General_precision_tablesIfE6_Max_PE'] = 244592;
-var __ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE = Module['__ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE'] = 244416;
-var __ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE = Module['__ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE'] = 244160;
-var __ZNSt3__225_General_precision_tablesIdE6_Max_PE = Module['__ZNSt3__225_General_precision_tablesIdE6_Max_PE'] = 248688;
-var __ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE = Module['__ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE'] = 246176;
-var __ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE = Module['__ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE'] = 244608;
-var __ZNSt3__26chrono12system_clock9is_steadyE = Module['__ZNSt3__26chrono12system_clock9is_steadyE'] = 248692;
-var __ZNSt3__26chrono12steady_clock9is_steadyE = Module['__ZNSt3__26chrono12steady_clock9is_steadyE'] = 248693;
-var __ZTVNSt3__26chrono22nonexistent_local_timeE = Module['__ZTVNSt3__26chrono22nonexistent_local_timeE'] = 384356;
-var __ZTINSt3__26chrono22nonexistent_local_timeE = Module['__ZTINSt3__26chrono22nonexistent_local_timeE'] = 384376;
-var __ZTSNSt3__26chrono22nonexistent_local_timeE = Module['__ZTSNSt3__26chrono22nonexistent_local_timeE'] = 248694;
-var __ZTISt13runtime_error = Module['__ZTISt13runtime_error'] = 401764;
-var __ZTVNSt3__26chrono20ambiguous_local_timeE = Module['__ZTVNSt3__26chrono20ambiguous_local_timeE'] = 384388;
-var __ZTINSt3__26chrono20ambiguous_local_timeE = Module['__ZTINSt3__26chrono20ambiguous_local_timeE'] = 384408;
-var __ZTSNSt3__26chrono20ambiguous_local_timeE = Module['__ZTSNSt3__26chrono20ambiguous_local_timeE'] = 248734;
-var __ZNSt3__214__POW10_OFFSETE = Module['__ZNSt3__214__POW10_OFFSETE'] = 278160;
-var __ZNSt3__213__POW10_SPLITE = Module['__ZNSt3__213__POW10_SPLITE'] = 248784;
-var __ZNSt3__213__MIN_BLOCK_2E = Module['__ZNSt3__213__MIN_BLOCK_2E'] = 278288;
-var __ZNSt3__216__POW10_OFFSET_2E = Module['__ZNSt3__216__POW10_OFFSET_2E'] = 278368;
-var __ZNSt3__215__POW10_SPLIT_2E = Module['__ZNSt3__215__POW10_SPLIT_2E'] = 278512;
-var __ZNSt3__223__DOUBLE_POW5_INV_SPLITE = Module['__ZNSt3__223__DOUBLE_POW5_INV_SPLITE'] = 353712;
-var __ZNSt3__219__DOUBLE_POW5_SPLITE = Module['__ZNSt3__219__DOUBLE_POW5_SPLITE'] = 358384;
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment'] = 363600;
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa'] = 363920;
-var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module['__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE'] = 384420;
-var __ZTVNSt3__219__shared_weak_countE = Module['__ZTVNSt3__219__shared_weak_countE'] = 392124;
-var __ZTVNSt3__214__shared_countE = Module['__ZTVNSt3__214__shared_countE'] = 392096;
-var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module['__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE'] = 384460;
-var __ZNSt3__26ranges5__cpo9iter_moveE = Module['__ZNSt3__26ranges5__cpo9iter_moveE'] = 364310;
-var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module['__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE'] = 384448;
-var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module['__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE'] = 364116;
-var __ZTINSt3__219__shared_weak_countE = Module['__ZTINSt3__219__shared_weak_countE'] = 392152;
-var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module['__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE'] = 384488;
-var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module['__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE'] = 364198;
-var __ZTVNSt3__214error_categoryE = Module['__ZTVNSt3__214error_categoryE'] = 384500;
-var __ZTINSt3__214error_categoryE = Module['__ZTINSt3__214error_categoryE'] = 384536;
-var __ZTVN10__cxxabiv117__class_type_infoE = Module['__ZTVN10__cxxabiv117__class_type_infoE'] = 401200;
-var __ZTSNSt3__214error_categoryE = Module['__ZTSNSt3__214error_categoryE'] = 364323;
-var __ZTVSt16nested_exception = Module['__ZTVSt16nested_exception'] = 384544;
-var __ZTISt16nested_exception = Module['__ZTISt16nested_exception'] = 384560;
-var __ZTSSt16nested_exception = Module['__ZTSSt16nested_exception'] = 364348;
-var __ZTVNSt3__219bad_expected_accessIvEE = Module['__ZTVNSt3__219bad_expected_accessIvEE'] = 384568;
-var __ZTINSt3__219bad_expected_accessIvEE = Module['__ZTINSt3__219bad_expected_accessIvEE'] = 384588;
-var __ZTSNSt3__219bad_expected_accessIvEE = Module['__ZTSNSt3__219bad_expected_accessIvEE'] = 364369;
-var __ZTISt9exception = Module['__ZTISt9exception'] = 401488;
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment'] = 365056;
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa'] = 365104;
-var __ZNSt3__222__FLOAT_POW5_INV_SPLITE = Module['__ZNSt3__222__FLOAT_POW5_INV_SPLITE'] = 364416;
-var __ZNSt3__218__FLOAT_POW5_SPLITE = Module['__ZNSt3__218__FLOAT_POW5_SPLITE'] = 364672;
-var __ZNSt3__210filesystem16_FilesystemClock9is_steadyE = Module['__ZNSt3__210filesystem16_FilesystemClock9is_steadyE'] = 365148;
-var __ZTVNSt3__210filesystem16filesystem_errorE = Module['__ZTVNSt3__210filesystem16filesystem_errorE'] = 384600;
-var __ZTINSt3__210filesystem16filesystem_errorE = Module['__ZTINSt3__210filesystem16filesystem_errorE'] = 384620;
-var __ZTSNSt3__210filesystem16filesystem_errorE = Module['__ZTSNSt3__210filesystem16filesystem_errorE'] = 365149;
-var __ZTINSt3__212system_errorE = Module['__ZTINSt3__212system_errorE'] = 394388;
-var __ZTVNSt3__217bad_function_callE = Module['__ZTVNSt3__217bad_function_callE'] = 384632;
-var __ZTINSt3__217bad_function_callE = Module['__ZTINSt3__217bad_function_callE'] = 384652;
-var __ZTSNSt3__217bad_function_callE = Module['__ZTSNSt3__217bad_function_callE'] = 365188;
-var __ZTVNSt3__212future_errorE = Module['__ZTVNSt3__212future_errorE'] = 384704;
-var __ZTVNSt3__217__assoc_sub_stateE = Module['__ZTVNSt3__217__assoc_sub_stateE'] = 384736;
-var __ZTVNSt3__223__future_error_categoryE = Module['__ZTVNSt3__223__future_error_categoryE'] = 384668;
-var __ZTINSt3__223__future_error_categoryE = Module['__ZTINSt3__223__future_error_categoryE'] = 384772;
-var __ZTINSt3__212future_errorE = Module['__ZTINSt3__212future_errorE'] = 384724;
-var __ZTSNSt3__212future_errorE = Module['__ZTSNSt3__212future_errorE'] = 365216;
-var __ZTISt11logic_error = Module['__ZTISt11logic_error'] = 401624;
-var __ZTINSt3__217__assoc_sub_stateE = Module['__ZTINSt3__217__assoc_sub_stateE'] = 384760;
-var __ZTSNSt3__217__assoc_sub_stateE = Module['__ZTSNSt3__217__assoc_sub_stateE'] = 365239;
-var __ZTINSt3__214__shared_countE = Module['__ZTINSt3__214__shared_countE'] = 392116;
-var __ZTSNSt3__223__future_error_categoryE = Module['__ZTSNSt3__223__future_error_categoryE'] = 365267;
-var __ZTINSt3__212__do_messageE = Module['__ZTINSt3__212__do_messageE'] = 394352;
-var __ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE'] = 384804;
-var __ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 384908;
-var __ZNSt3__25ctypeIcE2idE = Module['__ZNSt3__25ctypeIcE2idE'] = 443368;
-var __ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 384956;
-var __ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 443048;
-var __ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 385024;
-var __ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE'] = 385052;
-var __ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 385156;
-var __ZNSt3__25ctypeIwE2idE = Module['__ZNSt3__25ctypeIwE2idE'] = 443360;
-var __ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 385204;
-var __ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 443056;
-var __ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385212;
-var __ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE'] = 385276;
-var __ZNSt3__27codecvtIcc11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIcc11__mbstate_tE2idE'] = 443376;
-var __ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385692;
-var __ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385924;
-var __ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 386032;
-var __ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 386140;
-var __ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 386248;
-var __ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 443032;
-var __ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 443040;
-var __ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE'] = 385368;
-var __ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 384868;
-var __ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 385376;
-var __ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 384916;
-var __ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 385400;
-var __ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 384964;
-var __ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 385504;
-var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE'] = 385424;
-var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE8_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE8_NS_13basic_ostreamIcS2_EE'] = 385464;
-var __ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE'] = 385564;
-var __ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 385116;
-var __ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 385572;
-var __ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 385164;
-var __ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 385596;
-var __ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385620;
-var __ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE'] = 386316;
-var __ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE'] = 385340;
-var __ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE'] = 385356;
-var __ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE'] = 365696;
-var __ZTINSt3__28ios_baseE = Module['__ZTINSt3__28ios_baseE'] = 386408;
-var __ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE'] = 365738;
-var __ZTVN10__cxxabiv121__vmi_class_type_infoE = Module['__ZTVN10__cxxabiv121__vmi_class_type_infoE'] = 401292;
-var __ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 365787;
-var __ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 365834;
-var __ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 365881;
-var __ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE'] = 385536;
-var __ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE'] = 385552;
-var __ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE'] = 365929;
-var __ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE'] = 365971;
-var __ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 366020;
-var __ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 366067;
-var __ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366114;
-var __ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385632;
-var __ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385872;
-var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE = Module['__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE'] = 385732;
-var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE'] = 385792;
-var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE8_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE8_NS_13basic_ostreamIcS2_EE'] = 385832;
-var __ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366180;
-var __ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385884;
-var __ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385980;
-var __ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE'] = 385940;
-var __ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366249;
-var __ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 385992;
-var __ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 386088;
-var __ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE'] = 386048;
-var __ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366319;
-var __ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 386100;
-var __ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 386196;
-var __ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE'] = 386156;
-var __ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 366389;
-var __ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 386208;
-var __ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 386304;
-var __ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE'] = 386264;
-var __ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 366437;
-var __ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE'] = 366485;
-var __ZTVNSt3__28ios_base7failureE = Module['__ZTVNSt3__28ios_base7failureE'] = 386368;
-var __ZNSt3__28ios_base9__xindex_E = Module['__ZNSt3__28ios_base9__xindex_E'] = 441932;
-var __ZTVNSt3__28ios_baseE = Module['__ZTVNSt3__28ios_baseE'] = 386388;
-var __ZTVNSt3__219__iostream_categoryE = Module['__ZTVNSt3__219__iostream_categoryE'] = 386332;
-var __ZTINSt3__219__iostream_categoryE = Module['__ZTINSt3__219__iostream_categoryE'] = 386416;
-var __ZTINSt3__28ios_base7failureE = Module['__ZTINSt3__28ios_base7failureE'] = 386428;
-var __ZNSt3__28ios_base9boolalphaE = Module['__ZNSt3__28ios_base9boolalphaE'] = 366532;
-var __ZNSt3__28ios_base3decE = Module['__ZNSt3__28ios_base3decE'] = 366536;
-var __ZNSt3__28ios_base5fixedE = Module['__ZNSt3__28ios_base5fixedE'] = 366540;
-var __ZNSt3__28ios_base3hexE = Module['__ZNSt3__28ios_base3hexE'] = 366544;
-var __ZNSt3__28ios_base8internalE = Module['__ZNSt3__28ios_base8internalE'] = 366548;
-var __ZNSt3__28ios_base4leftE = Module['__ZNSt3__28ios_base4leftE'] = 366552;
-var __ZNSt3__28ios_base3octE = Module['__ZNSt3__28ios_base3octE'] = 366556;
-var __ZNSt3__28ios_base5rightE = Module['__ZNSt3__28ios_base5rightE'] = 366560;
-var __ZNSt3__28ios_base10scientificE = Module['__ZNSt3__28ios_base10scientificE'] = 366564;
-var __ZNSt3__28ios_base8showbaseE = Module['__ZNSt3__28ios_base8showbaseE'] = 366568;
-var __ZNSt3__28ios_base9showpointE = Module['__ZNSt3__28ios_base9showpointE'] = 366572;
-var __ZNSt3__28ios_base7showposE = Module['__ZNSt3__28ios_base7showposE'] = 366576;
-var __ZNSt3__28ios_base6skipwsE = Module['__ZNSt3__28ios_base6skipwsE'] = 366580;
-var __ZNSt3__28ios_base7unitbufE = Module['__ZNSt3__28ios_base7unitbufE'] = 366584;
-var __ZNSt3__28ios_base9uppercaseE = Module['__ZNSt3__28ios_base9uppercaseE'] = 366588;
-var __ZNSt3__28ios_base11adjustfieldE = Module['__ZNSt3__28ios_base11adjustfieldE'] = 366592;
-var __ZNSt3__28ios_base9basefieldE = Module['__ZNSt3__28ios_base9basefieldE'] = 366596;
-var __ZNSt3__28ios_base10floatfieldE = Module['__ZNSt3__28ios_base10floatfieldE'] = 366600;
-var __ZNSt3__28ios_base6badbitE = Module['__ZNSt3__28ios_base6badbitE'] = 366604;
-var __ZNSt3__28ios_base6eofbitE = Module['__ZNSt3__28ios_base6eofbitE'] = 366608;
-var __ZNSt3__28ios_base7failbitE = Module['__ZNSt3__28ios_base7failbitE'] = 366612;
-var __ZNSt3__28ios_base7goodbitE = Module['__ZNSt3__28ios_base7goodbitE'] = 366616;
-var __ZNSt3__28ios_base3appE = Module['__ZNSt3__28ios_base3appE'] = 366620;
-var __ZNSt3__28ios_base3ateE = Module['__ZNSt3__28ios_base3ateE'] = 366624;
-var __ZNSt3__28ios_base6binaryE = Module['__ZNSt3__28ios_base6binaryE'] = 366628;
-var __ZNSt3__28ios_base2inE = Module['__ZNSt3__28ios_base2inE'] = 366632;
-var __ZNSt3__28ios_base3outE = Module['__ZNSt3__28ios_base3outE'] = 366636;
-var __ZNSt3__28ios_base5truncE = Module['__ZNSt3__28ios_base5truncE'] = 366640;
-var __ZTSNSt3__28ios_baseE = Module['__ZTSNSt3__28ios_baseE'] = 366644;
-var __ZTSNSt3__219__iostream_categoryE = Module['__ZTSNSt3__219__iostream_categoryE'] = 366662;
-var __ZTSNSt3__28ios_base7failureE = Module['__ZTSNSt3__28ios_base7failureE'] = 366692;
-var __ZNSt3__219__start_std_streamsE = Module['__ZNSt3__219__start_std_streamsE'] = 442656;
-var __ZNSt3__23cinE = Module['__ZNSt3__23cinE'] = 441944;
-var __ZNSt3__24coutE = Module['__ZNSt3__24coutE'] = 442128;
-var __ZNSt3__24cerrE = Module['__ZNSt3__24cerrE'] = 442304;
-var __ZNSt3__24clogE = Module['__ZNSt3__24clogE'] = 442480;
-var __ZNSt3__24wcinE = Module['__ZNSt3__24wcinE'] = 442036;
-var __ZNSt3__25wcoutE = Module['__ZNSt3__25wcoutE'] = 442216;
-var __ZNSt3__25wcerrE = Module['__ZNSt3__25wcerrE'] = 442392;
-var __ZNSt3__25wclogE = Module['__ZNSt3__25wclogE'] = 442568;
-var __ZTVNSt3__210__stdinbufIcEE = Module['__ZTVNSt3__210__stdinbufIcEE'] = 386440;
-var __ZTVNSt3__211__stdoutbufIcEE = Module['__ZTVNSt3__211__stdoutbufIcEE'] = 386516;
-var __ZTVNSt3__210__stdinbufIwEE = Module['__ZTVNSt3__210__stdinbufIwEE'] = 386592;
-var __ZTVNSt3__211__stdoutbufIwEE = Module['__ZTVNSt3__211__stdoutbufIwEE'] = 386668;
-var __ZNSt3__27codecvtIwc11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIwc11__mbstate_tE2idE'] = 443384;
-var __ZTINSt3__210__stdinbufIcEE = Module['__ZTINSt3__210__stdinbufIcEE'] = 386504;
-var __ZTSNSt3__210__stdinbufIcEE = Module['__ZTSNSt3__210__stdinbufIcEE'] = 366718;
-var __ZTINSt3__211__stdoutbufIcEE = Module['__ZTINSt3__211__stdoutbufIcEE'] = 386580;
-var __ZTSNSt3__211__stdoutbufIcEE = Module['__ZTSNSt3__211__stdoutbufIcEE'] = 366742;
-var __ZTINSt3__210__stdinbufIwEE = Module['__ZTINSt3__210__stdinbufIwEE'] = 386656;
-var __ZTSNSt3__210__stdinbufIwEE = Module['__ZTSNSt3__210__stdinbufIwEE'] = 366767;
-var __ZTINSt3__211__stdoutbufIwEE = Module['__ZTINSt3__211__stdoutbufIwEE'] = 386732;
-var __ZTSNSt3__211__stdoutbufIwEE = Module['__ZTSNSt3__211__stdoutbufIwEE'] = 366791;
-var __ZNSt3__28numpunctIcE2idE = Module['__ZNSt3__28numpunctIcE2idE'] = 443424;
-var __ZNSt3__214__num_get_base5__srcE = Module['__ZNSt3__214__num_get_base5__srcE'] = 366816;
-var __ZNSt3__28numpunctIwE2idE = Module['__ZNSt3__28numpunctIwE2idE'] = 443432;
-var __ZNSt3__210moneypunctIcLb1EE2idE = Module['__ZNSt3__210moneypunctIcLb1EE2idE'] = 443104;
-var __ZNSt3__210moneypunctIcLb0EE2idE = Module['__ZNSt3__210moneypunctIcLb0EE2idE'] = 443096;
-var __ZNSt3__210moneypunctIwLb1EE2idE = Module['__ZNSt3__210moneypunctIwLb1EE2idE'] = 443120;
-var __ZNSt3__210moneypunctIwLb0EE2idE = Module['__ZNSt3__210moneypunctIwLb0EE2idE'] = 443112;
-var __ZTVNSt3__26locale5__impE = Module['__ZTVNSt3__26locale5__impE'] = 386744;
-var __ZTVNSt3__26locale5facetE = Module['__ZTVNSt3__26locale5facetE'] = 387232;
-var __ZNSt3__27collateIcE2idE = Module['__ZNSt3__27collateIcE2idE'] = 443016;
-var __ZNSt3__27collateIwE2idE = Module['__ZNSt3__27collateIwE2idE'] = 443024;
-var __ZNSt3__27codecvtIDsc11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDsc11__mbstate_tE2idE'] = 443392;
-var __ZNSt3__27codecvtIDic11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDic11__mbstate_tE2idE'] = 443408;
-var __ZNSt3__27codecvtIDsDu11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDsDu11__mbstate_tE2idE'] = 443400;
-var __ZNSt3__27codecvtIDiDu11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDiDu11__mbstate_tE2idE'] = 443416;
-var __ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 443128;
-var __ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 443136;
-var __ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 443144;
-var __ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 443152;
-var __ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 443064;
-var __ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 443072;
-var __ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 443080;
-var __ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 443088;
-var __ZNSt3__28messagesIcE2idE = Module['__ZNSt3__28messagesIcE2idE'] = 443160;
-var __ZNSt3__28messagesIwE2idE = Module['__ZNSt3__28messagesIwE2idE'] = 443168;
-var __ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE'] = 391384;
-var __ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE'] = 391444;
-var __ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE'] = 391504;
-var __ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE'] = 391564;
-var __ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE'] = 391624;
-var __ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE'] = 391684;
-var __ZTVNSt3__217moneypunct_bynameIcLb0EEE = Module['__ZTVNSt3__217moneypunct_bynameIcLb0EEE'] = 390616;
-var __ZTVNSt3__217moneypunct_bynameIcLb1EEE = Module['__ZTVNSt3__217moneypunct_bynameIcLb1EEE'] = 390684;
-var __ZTVNSt3__217moneypunct_bynameIwLb0EEE = Module['__ZTVNSt3__217moneypunct_bynameIwLb0EEE'] = 390752;
-var __ZTVNSt3__217moneypunct_bynameIwLb1EEE = Module['__ZTVNSt3__217moneypunct_bynameIwLb1EEE'] = 390820;
-var __ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389744;
-var __ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389908;
-var __ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 390184;
-var __ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390220;
-var __ZTVNSt3__215messages_bynameIcEE = Module['__ZTVNSt3__215messages_bynameIcEE'] = 391296;
-var __ZTVNSt3__215messages_bynameIwEE = Module['__ZTVNSt3__215messages_bynameIwEE'] = 391340;
-var __ZNSt3__26locale5__imp19classic_locale_imp_E = Module['__ZNSt3__26locale5__imp19classic_locale_imp_E'] = 443184;
-var __ZTVNSt3__214collate_bynameIcEE = Module['__ZTVNSt3__214collate_bynameIcEE'] = 386764;
-var __ZTVNSt3__214collate_bynameIwEE = Module['__ZTVNSt3__214collate_bynameIwEE'] = 386796;
-var __ZTVNSt3__25ctypeIcEE = Module['__ZTVNSt3__25ctypeIcEE'] = 386828;
-var __ZTVNSt3__212ctype_bynameIcEE = Module['__ZTVNSt3__212ctype_bynameIcEE'] = 386880;
-var __ZTVNSt3__212ctype_bynameIwEE = Module['__ZTVNSt3__212ctype_bynameIwEE'] = 386932;
-var __ZTVNSt3__27codecvtIwc11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIwc11__mbstate_tEE'] = 387000;
-var __ZTVNSt3__28numpunctIcEE = Module['__ZTVNSt3__28numpunctIcEE'] = 387048;
-var __ZTVNSt3__28numpunctIwEE = Module['__ZTVNSt3__28numpunctIwEE'] = 387088;
-var __ZTVNSt3__215numpunct_bynameIcEE = Module['__ZTVNSt3__215numpunct_bynameIcEE'] = 387128;
-var __ZTVNSt3__215numpunct_bynameIwEE = Module['__ZTVNSt3__215numpunct_bynameIwEE'] = 387168;
-var __ZTVNSt3__215__time_get_tempIcEE = Module['__ZTVNSt3__215__time_get_tempIcEE'] = 391816;
-var __ZTVNSt3__215__time_get_tempIwEE = Module['__ZTVNSt3__215__time_get_tempIwEE'] = 391880;
-var __ZTVNSt3__27collateIcEE = Module['__ZTVNSt3__27collateIcEE'] = 388936;
-var __ZTVNSt3__27collateIwEE = Module['__ZTVNSt3__27collateIwEE'] = 388968;
-var __ZTVNSt3__25ctypeIwEE = Module['__ZTVNSt3__25ctypeIwEE'] = 387264;
-var __ZTVNSt3__27codecvtIcc11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIcc11__mbstate_tEE'] = 387372;
-var __ZTVNSt3__27codecvtIDsc11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDsc11__mbstate_tEE'] = 387460;
-var __ZTVNSt3__27codecvtIDic11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDic11__mbstate_tEE'] = 387620;
-var __ZTVNSt3__27codecvtIDsDu11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDsDu11__mbstate_tEE'] = 387540;
-var __ZTVNSt3__27codecvtIDiDu11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDiDu11__mbstate_tEE'] = 387700;
-var __ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389000;
-var __ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389128;
-var __ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389248;
-var __ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389364;
-var __ZTVNSt3__210moneypunctIcLb0EEE = Module['__ZTVNSt3__210moneypunctIcLb0EEE'] = 390256;
-var __ZTVNSt3__210moneypunctIcLb1EEE = Module['__ZTVNSt3__210moneypunctIcLb1EEE'] = 390352;
-var __ZTVNSt3__210moneypunctIwLb0EEE = Module['__ZTVNSt3__210moneypunctIwLb0EEE'] = 390440;
-var __ZTVNSt3__210moneypunctIwLb1EEE = Module['__ZTVNSt3__210moneypunctIwLb1EEE'] = 390528;
-var __ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 390888;
-var __ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390956;
-var __ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 391024;
-var __ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 391092;
-var __ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389472;
-var __ZTVNSt3__220__time_get_c_storageIcEE = Module['__ZTVNSt3__220__time_get_c_storageIcEE'] = 391744;
-var __ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389612;
-var __ZTVNSt3__220__time_get_c_storageIwEE = Module['__ZTVNSt3__220__time_get_c_storageIwEE'] = 391780;
-var __ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 390064;
-var __ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390128;
-var __ZTVNSt3__28messagesIcEE = Module['__ZTVNSt3__28messagesIcEE'] = 391160;
-var __ZTVNSt3__28messagesIwEE = Module['__ZTVNSt3__28messagesIwEE'] = 391232;
-var __ZNSt3__26locale2id9__next_idE = Module['__ZNSt3__26locale2id9__next_idE'] = 443356;
-var __ZNSt3__210moneypunctIcLb0EE4intlE = Module['__ZNSt3__210moneypunctIcLb0EE4intlE'] = 367056;
-var __ZNSt3__210moneypunctIcLb1EE4intlE = Module['__ZNSt3__210moneypunctIcLb1EE4intlE'] = 367057;
-var __ZNSt3__210moneypunctIwLb0EE4intlE = Module['__ZNSt3__210moneypunctIwLb0EE4intlE'] = 367058;
-var __ZNSt3__210moneypunctIwLb1EE4intlE = Module['__ZNSt3__210moneypunctIwLb1EE4intlE'] = 367059;
-var __ZNSt3__26locale4noneE = Module['__ZNSt3__26locale4noneE'] = 367060;
-var __ZNSt3__26locale7collateE = Module['__ZNSt3__26locale7collateE'] = 367064;
-var __ZNSt3__26locale5ctypeE = Module['__ZNSt3__26locale5ctypeE'] = 367068;
-var __ZNSt3__26locale8monetaryE = Module['__ZNSt3__26locale8monetaryE'] = 367072;
-var __ZNSt3__26locale7numericE = Module['__ZNSt3__26locale7numericE'] = 367076;
-var __ZNSt3__26locale4timeE = Module['__ZNSt3__26locale4timeE'] = 367080;
-var __ZNSt3__26locale8messagesE = Module['__ZNSt3__26locale8messagesE'] = 367084;
-var __ZNSt3__26locale3allE = Module['__ZNSt3__26locale3allE'] = 367088;
-var __ZTINSt3__26locale5__impE = Module['__ZTINSt3__26locale5__impE'] = 388772;
-var __ZTINSt3__214collate_bynameIcEE = Module['__ZTINSt3__214collate_bynameIcEE'] = 388784;
-var __ZTINSt3__214collate_bynameIwEE = Module['__ZTINSt3__214collate_bynameIwEE'] = 388808;
-var __ZNSt3__210ctype_base5spaceE = Module['__ZNSt3__210ctype_base5spaceE'] = 367092;
-var __ZNSt3__210ctype_base5printE = Module['__ZNSt3__210ctype_base5printE'] = 367096;
-var __ZNSt3__210ctype_base5cntrlE = Module['__ZNSt3__210ctype_base5cntrlE'] = 367100;
-var __ZNSt3__210ctype_base5upperE = Module['__ZNSt3__210ctype_base5upperE'] = 367104;
-var __ZNSt3__210ctype_base5lowerE = Module['__ZNSt3__210ctype_base5lowerE'] = 367108;
-var __ZNSt3__210ctype_base5alphaE = Module['__ZNSt3__210ctype_base5alphaE'] = 367112;
-var __ZNSt3__210ctype_base5digitE = Module['__ZNSt3__210ctype_base5digitE'] = 367116;
-var __ZNSt3__210ctype_base5punctE = Module['__ZNSt3__210ctype_base5punctE'] = 367120;
-var __ZNSt3__210ctype_base6xdigitE = Module['__ZNSt3__210ctype_base6xdigitE'] = 367124;
-var __ZNSt3__210ctype_base5blankE = Module['__ZNSt3__210ctype_base5blankE'] = 367128;
-var __ZNSt3__210ctype_base5alnumE = Module['__ZNSt3__210ctype_base5alnumE'] = 367132;
-var __ZNSt3__210ctype_base5graphE = Module['__ZNSt3__210ctype_base5graphE'] = 367136;
-var __ZNSt3__25ctypeIcE10table_sizeE = Module['__ZNSt3__25ctypeIcE10table_sizeE'] = 367140;
-var __ZTINSt3__25ctypeIcEE = Module['__ZTINSt3__25ctypeIcEE'] = 388832;
-var __ZTINSt3__212ctype_bynameIcEE = Module['__ZTINSt3__212ctype_bynameIcEE'] = 388864;
-var __ZTINSt3__212ctype_bynameIwEE = Module['__ZTINSt3__212ctype_bynameIwEE'] = 388876;
-var __ZTINSt3__27codecvtIwc11__mbstate_tEE = Module['__ZTINSt3__27codecvtIwc11__mbstate_tEE'] = 388080;
-var __ZTINSt3__28numpunctIcEE = Module['__ZTINSt3__28numpunctIcEE'] = 388888;
-var __ZTINSt3__28numpunctIwEE = Module['__ZTINSt3__28numpunctIwEE'] = 388900;
-var __ZTINSt3__215numpunct_bynameIcEE = Module['__ZTINSt3__215numpunct_bynameIcEE'] = 388912;
-var __ZTINSt3__215numpunct_bynameIwEE = Module['__ZTINSt3__215numpunct_bynameIwEE'] = 388924;
-var __ZTINSt3__26locale5facetE = Module['__ZTINSt3__26locale5facetE'] = 387252;
-var __ZTSNSt3__26locale5facetE = Module['__ZTSNSt3__26locale5facetE'] = 368436;
-var __ZTINSt3__25ctypeIwEE = Module['__ZTINSt3__25ctypeIwEE'] = 387332;
-var __ZTSNSt3__25ctypeIwEE = Module['__ZTSNSt3__25ctypeIwEE'] = 368458;
-var __ZTINSt3__210ctype_baseE = Module['__ZTINSt3__210ctype_baseE'] = 387364;
-var __ZTSNSt3__210ctype_baseE = Module['__ZTSNSt3__210ctype_baseE'] = 368476;
-var __ZTINSt3__27codecvtIcc11__mbstate_tEE = Module['__ZTINSt3__27codecvtIcc11__mbstate_tEE'] = 387420;
-var __ZTSNSt3__27codecvtIcc11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIcc11__mbstate_tEE'] = 368497;
-var __ZTINSt3__212codecvt_baseE = Module['__ZTINSt3__212codecvt_baseE'] = 387452;
-var __ZTSNSt3__212codecvt_baseE = Module['__ZTSNSt3__212codecvt_baseE'] = 368531;
-var __ZTINSt3__27codecvtIDsc11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDsc11__mbstate_tEE'] = 387508;
-var __ZTSNSt3__27codecvtIDsc11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDsc11__mbstate_tEE'] = 368554;
-var __ZTINSt3__27codecvtIDsDu11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDsDu11__mbstate_tEE'] = 387588;
-var __ZTSNSt3__27codecvtIDsDu11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDsDu11__mbstate_tEE'] = 368589;
-var __ZTINSt3__27codecvtIDic11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDic11__mbstate_tEE'] = 387668;
-var __ZTSNSt3__27codecvtIDic11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDic11__mbstate_tEE'] = 368625;
-var __ZTINSt3__27codecvtIDiDu11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDiDu11__mbstate_tEE'] = 387748;
-var __ZTSNSt3__27codecvtIDiDu11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDiDu11__mbstate_tEE'] = 368660;
-var __ZTVNSt3__216__narrow_to_utf8ILm16EEE = Module['__ZTVNSt3__216__narrow_to_utf8ILm16EEE'] = 387780;
-var __ZTINSt3__216__narrow_to_utf8ILm16EEE = Module['__ZTINSt3__216__narrow_to_utf8ILm16EEE'] = 387828;
-var __ZTSNSt3__216__narrow_to_utf8ILm16EEE = Module['__ZTSNSt3__216__narrow_to_utf8ILm16EEE'] = 368696;
-var __ZTVNSt3__216__narrow_to_utf8ILm32EEE = Module['__ZTVNSt3__216__narrow_to_utf8ILm32EEE'] = 387840;
-var __ZTINSt3__216__narrow_to_utf8ILm32EEE = Module['__ZTINSt3__216__narrow_to_utf8ILm32EEE'] = 387888;
-var __ZTSNSt3__216__narrow_to_utf8ILm32EEE = Module['__ZTSNSt3__216__narrow_to_utf8ILm32EEE'] = 368730;
-var __ZTVNSt3__217__widen_from_utf8ILm16EEE = Module['__ZTVNSt3__217__widen_from_utf8ILm16EEE'] = 387900;
-var __ZTINSt3__217__widen_from_utf8ILm16EEE = Module['__ZTINSt3__217__widen_from_utf8ILm16EEE'] = 387948;
-var __ZTSNSt3__217__widen_from_utf8ILm16EEE = Module['__ZTSNSt3__217__widen_from_utf8ILm16EEE'] = 368764;
-var __ZTVNSt3__217__widen_from_utf8ILm32EEE = Module['__ZTVNSt3__217__widen_from_utf8ILm32EEE'] = 387960;
-var __ZTINSt3__217__widen_from_utf8ILm32EEE = Module['__ZTINSt3__217__widen_from_utf8ILm32EEE'] = 388008;
-var __ZTSNSt3__217__widen_from_utf8ILm32EEE = Module['__ZTSNSt3__217__widen_from_utf8ILm32EEE'] = 368799;
-var __ZTVNSt3__214__codecvt_utf8IwEE = Module['__ZTVNSt3__214__codecvt_utf8IwEE'] = 388020;
-var __ZTINSt3__214__codecvt_utf8IwEE = Module['__ZTINSt3__214__codecvt_utf8IwEE'] = 388068;
-var __ZTSNSt3__214__codecvt_utf8IwEE = Module['__ZTSNSt3__214__codecvt_utf8IwEE'] = 368834;
-var __ZTSNSt3__27codecvtIwc11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIwc11__mbstate_tEE'] = 368862;
-var __ZTVNSt3__214__codecvt_utf8IDsEE = Module['__ZTVNSt3__214__codecvt_utf8IDsEE'] = 388112;
-var __ZTINSt3__214__codecvt_utf8IDsEE = Module['__ZTINSt3__214__codecvt_utf8IDsEE'] = 388160;
-var __ZTSNSt3__214__codecvt_utf8IDsEE = Module['__ZTSNSt3__214__codecvt_utf8IDsEE'] = 368896;
-var __ZTVNSt3__214__codecvt_utf8IDiEE = Module['__ZTVNSt3__214__codecvt_utf8IDiEE'] = 388172;
-var __ZTINSt3__214__codecvt_utf8IDiEE = Module['__ZTINSt3__214__codecvt_utf8IDiEE'] = 388220;
-var __ZTSNSt3__214__codecvt_utf8IDiEE = Module['__ZTSNSt3__214__codecvt_utf8IDiEE'] = 368925;
-var __ZTVNSt3__215__codecvt_utf16IwLb0EEE = Module['__ZTVNSt3__215__codecvt_utf16IwLb0EEE'] = 388232;
-var __ZTINSt3__215__codecvt_utf16IwLb0EEE = Module['__ZTINSt3__215__codecvt_utf16IwLb0EEE'] = 388280;
-var __ZTSNSt3__215__codecvt_utf16IwLb0EEE = Module['__ZTSNSt3__215__codecvt_utf16IwLb0EEE'] = 368954;
-var __ZTVNSt3__215__codecvt_utf16IwLb1EEE = Module['__ZTVNSt3__215__codecvt_utf16IwLb1EEE'] = 388292;
-var __ZTINSt3__215__codecvt_utf16IwLb1EEE = Module['__ZTINSt3__215__codecvt_utf16IwLb1EEE'] = 388340;
-var __ZTSNSt3__215__codecvt_utf16IwLb1EEE = Module['__ZTSNSt3__215__codecvt_utf16IwLb1EEE'] = 368987;
-var __ZTVNSt3__215__codecvt_utf16IDsLb0EEE = Module['__ZTVNSt3__215__codecvt_utf16IDsLb0EEE'] = 388352;
-var __ZTINSt3__215__codecvt_utf16IDsLb0EEE = Module['__ZTINSt3__215__codecvt_utf16IDsLb0EEE'] = 388400;
-var __ZTSNSt3__215__codecvt_utf16IDsLb0EEE = Module['__ZTSNSt3__215__codecvt_utf16IDsLb0EEE'] = 369020;
-var __ZTVNSt3__215__codecvt_utf16IDsLb1EEE = Module['__ZTVNSt3__215__codecvt_utf16IDsLb1EEE'] = 388412;
-var __ZTINSt3__215__codecvt_utf16IDsLb1EEE = Module['__ZTINSt3__215__codecvt_utf16IDsLb1EEE'] = 388460;
-var __ZTSNSt3__215__codecvt_utf16IDsLb1EEE = Module['__ZTSNSt3__215__codecvt_utf16IDsLb1EEE'] = 369054;
-var __ZTVNSt3__215__codecvt_utf16IDiLb0EEE = Module['__ZTVNSt3__215__codecvt_utf16IDiLb0EEE'] = 388472;
-var __ZTINSt3__215__codecvt_utf16IDiLb0EEE = Module['__ZTINSt3__215__codecvt_utf16IDiLb0EEE'] = 388520;
-var __ZTSNSt3__215__codecvt_utf16IDiLb0EEE = Module['__ZTSNSt3__215__codecvt_utf16IDiLb0EEE'] = 369088;
-var __ZTVNSt3__215__codecvt_utf16IDiLb1EEE = Module['__ZTVNSt3__215__codecvt_utf16IDiLb1EEE'] = 388532;
-var __ZTINSt3__215__codecvt_utf16IDiLb1EEE = Module['__ZTINSt3__215__codecvt_utf16IDiLb1EEE'] = 388580;
-var __ZTSNSt3__215__codecvt_utf16IDiLb1EEE = Module['__ZTSNSt3__215__codecvt_utf16IDiLb1EEE'] = 369122;
-var __ZTVNSt3__220__codecvt_utf8_utf16IwEE = Module['__ZTVNSt3__220__codecvt_utf8_utf16IwEE'] = 388592;
-var __ZTINSt3__220__codecvt_utf8_utf16IwEE = Module['__ZTINSt3__220__codecvt_utf8_utf16IwEE'] = 388640;
-var __ZTSNSt3__220__codecvt_utf8_utf16IwEE = Module['__ZTSNSt3__220__codecvt_utf8_utf16IwEE'] = 369156;
-var __ZTVNSt3__220__codecvt_utf8_utf16IDiEE = Module['__ZTVNSt3__220__codecvt_utf8_utf16IDiEE'] = 388652;
-var __ZTINSt3__220__codecvt_utf8_utf16IDiEE = Module['__ZTINSt3__220__codecvt_utf8_utf16IDiEE'] = 388700;
-var __ZTSNSt3__220__codecvt_utf8_utf16IDiEE = Module['__ZTSNSt3__220__codecvt_utf8_utf16IDiEE'] = 369190;
-var __ZTVNSt3__220__codecvt_utf8_utf16IDsEE = Module['__ZTVNSt3__220__codecvt_utf8_utf16IDsEE'] = 388712;
-var __ZTINSt3__220__codecvt_utf8_utf16IDsEE = Module['__ZTINSt3__220__codecvt_utf8_utf16IDsEE'] = 388760;
-var __ZTSNSt3__220__codecvt_utf8_utf16IDsEE = Module['__ZTSNSt3__220__codecvt_utf8_utf16IDsEE'] = 369225;
-var __ZTSNSt3__26locale5__impE = Module['__ZTSNSt3__26locale5__impE'] = 369260;
-var __ZTSNSt3__214collate_bynameIcEE = Module['__ZTSNSt3__214collate_bynameIcEE'] = 369282;
-var __ZTINSt3__27collateIcEE = Module['__ZTINSt3__27collateIcEE'] = 388796;
-var __ZTSNSt3__27collateIcEE = Module['__ZTSNSt3__27collateIcEE'] = 369310;
-var __ZTSNSt3__214collate_bynameIwEE = Module['__ZTSNSt3__214collate_bynameIwEE'] = 369330;
-var __ZTINSt3__27collateIwEE = Module['__ZTINSt3__27collateIwEE'] = 388820;
-var __ZTSNSt3__27collateIwEE = Module['__ZTSNSt3__27collateIwEE'] = 369358;
-var __ZTSNSt3__25ctypeIcEE = Module['__ZTSNSt3__25ctypeIcEE'] = 369378;
-var __ZTSNSt3__212ctype_bynameIcEE = Module['__ZTSNSt3__212ctype_bynameIcEE'] = 369396;
-var __ZTSNSt3__212ctype_bynameIwEE = Module['__ZTSNSt3__212ctype_bynameIwEE'] = 369422;
-var __ZTSNSt3__28numpunctIcEE = Module['__ZTSNSt3__28numpunctIcEE'] = 369448;
-var __ZTSNSt3__28numpunctIwEE = Module['__ZTSNSt3__28numpunctIwEE'] = 369469;
-var __ZTSNSt3__215numpunct_bynameIcEE = Module['__ZTSNSt3__215numpunct_bynameIcEE'] = 369490;
-var __ZTSNSt3__215numpunct_bynameIwEE = Module['__ZTSNSt3__215numpunct_bynameIwEE'] = 369519;
-var __ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389064;
-var __ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 369548;
-var __ZTINSt3__29__num_getIcEE = Module['__ZTINSt3__29__num_getIcEE'] = 389096;
-var __ZTSNSt3__29__num_getIcEE = Module['__ZTSNSt3__29__num_getIcEE'] = 369616;
-var __ZTINSt3__214__num_get_baseE = Module['__ZTINSt3__214__num_get_baseE'] = 389120;
-var __ZTSNSt3__214__num_get_baseE = Module['__ZTSNSt3__214__num_get_baseE'] = 369638;
-var __ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389192;
-var __ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 369663;
-var __ZTINSt3__29__num_getIwEE = Module['__ZTINSt3__29__num_getIwEE'] = 389224;
-var __ZTSNSt3__29__num_getIwEE = Module['__ZTSNSt3__29__num_getIwEE'] = 369731;
-var __ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389300;
-var __ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 369753;
-var __ZTINSt3__29__num_putIcEE = Module['__ZTINSt3__29__num_putIcEE'] = 389332;
-var __ZTSNSt3__29__num_putIcEE = Module['__ZTSNSt3__29__num_putIcEE'] = 369821;
-var __ZTINSt3__214__num_put_baseE = Module['__ZTINSt3__214__num_put_baseE'] = 389356;
-var __ZTSNSt3__214__num_put_baseE = Module['__ZTSNSt3__214__num_put_baseE'] = 369843;
-var __ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389416;
-var __ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 369868;
-var __ZTINSt3__29__num_putIwEE = Module['__ZTINSt3__29__num_putIwEE'] = 389448;
-var __ZTSNSt3__29__num_putIwEE = Module['__ZTSNSt3__29__num_putIwEE'] = 369936;
-var __ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389556;
-var __ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 369958;
-var __ZTINSt3__29time_baseE = Module['__ZTINSt3__29time_baseE'] = 389596;
-var __ZTINSt3__220__time_get_c_storageIcEE = Module['__ZTINSt3__220__time_get_c_storageIcEE'] = 389604;
-var __ZTSNSt3__29time_baseE = Module['__ZTSNSt3__29time_baseE'] = 370027;
-var __ZTSNSt3__220__time_get_c_storageIcEE = Module['__ZTSNSt3__220__time_get_c_storageIcEE'] = 370046;
-var __ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 389696;
-var __ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 370080;
-var __ZTINSt3__220__time_get_c_storageIwEE = Module['__ZTINSt3__220__time_get_c_storageIwEE'] = 389736;
-var __ZTSNSt3__220__time_get_c_storageIwEE = Module['__ZTSNSt3__220__time_get_c_storageIwEE'] = 370149;
-var __ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 389856;
-var __ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 370183;
-var __ZTINSt3__218__time_get_storageIcEE = Module['__ZTINSt3__218__time_get_storageIcEE'] = 389888;
-var __ZTSNSt3__218__time_get_storageIcEE = Module['__ZTSNSt3__218__time_get_storageIcEE'] = 370260;
-var __ZTINSt3__210__time_getE = Module['__ZTINSt3__210__time_getE'] = 389900;
-var __ZTSNSt3__210__time_getE = Module['__ZTSNSt3__210__time_getE'] = 370292;
-var __ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390020;
-var __ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 370313;
-var __ZTINSt3__218__time_get_storageIwEE = Module['__ZTINSt3__218__time_get_storageIwEE'] = 390052;
-var __ZTSNSt3__218__time_get_storageIwEE = Module['__ZTSNSt3__218__time_get_storageIwEE'] = 370390;
-var __ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 390088;
-var __ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 370422;
-var __ZTINSt3__210__time_putE = Module['__ZTINSt3__210__time_putE'] = 390120;
-var __ZTSNSt3__210__time_putE = Module['__ZTSNSt3__210__time_putE'] = 370491;
-var __ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390152;
-var __ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 370512;
-var __ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 390208;
-var __ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 370581;
-var __ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390244;
-var __ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 370658;
-var __ZTINSt3__210moneypunctIcLb0EEE = Module['__ZTINSt3__210moneypunctIcLb0EEE'] = 390312;
-var __ZTSNSt3__210moneypunctIcLb0EEE = Module['__ZTSNSt3__210moneypunctIcLb0EEE'] = 370735;
-var __ZTINSt3__210money_baseE = Module['__ZTINSt3__210money_baseE'] = 390344;
-var __ZTSNSt3__210money_baseE = Module['__ZTSNSt3__210money_baseE'] = 370763;
-var __ZTINSt3__210moneypunctIcLb1EEE = Module['__ZTINSt3__210moneypunctIcLb1EEE'] = 390408;
-var __ZTSNSt3__210moneypunctIcLb1EEE = Module['__ZTSNSt3__210moneypunctIcLb1EEE'] = 370784;
-var __ZTINSt3__210moneypunctIwLb0EEE = Module['__ZTINSt3__210moneypunctIwLb0EEE'] = 390496;
-var __ZTSNSt3__210moneypunctIwLb0EEE = Module['__ZTSNSt3__210moneypunctIwLb0EEE'] = 370812;
-var __ZTINSt3__210moneypunctIwLb1EEE = Module['__ZTINSt3__210moneypunctIwLb1EEE'] = 390584;
-var __ZTSNSt3__210moneypunctIwLb1EEE = Module['__ZTSNSt3__210moneypunctIwLb1EEE'] = 370840;
-var __ZTINSt3__217moneypunct_bynameIcLb0EEE = Module['__ZTINSt3__217moneypunct_bynameIcLb0EEE'] = 390672;
-var __ZTSNSt3__217moneypunct_bynameIcLb0EEE = Module['__ZTSNSt3__217moneypunct_bynameIcLb0EEE'] = 370868;
-var __ZTINSt3__217moneypunct_bynameIcLb1EEE = Module['__ZTINSt3__217moneypunct_bynameIcLb1EEE'] = 390740;
-var __ZTSNSt3__217moneypunct_bynameIcLb1EEE = Module['__ZTSNSt3__217moneypunct_bynameIcLb1EEE'] = 370903;
-var __ZTINSt3__217moneypunct_bynameIwLb0EEE = Module['__ZTINSt3__217moneypunct_bynameIwLb0EEE'] = 390808;
-var __ZTSNSt3__217moneypunct_bynameIwLb0EEE = Module['__ZTSNSt3__217moneypunct_bynameIwLb0EEE'] = 370938;
-var __ZTINSt3__217moneypunct_bynameIwLb1EEE = Module['__ZTINSt3__217moneypunct_bynameIwLb1EEE'] = 390876;
-var __ZTSNSt3__217moneypunct_bynameIwLb1EEE = Module['__ZTSNSt3__217moneypunct_bynameIwLb1EEE'] = 370973;
-var __ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 390916;
-var __ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 371008;
-var __ZTINSt3__211__money_getIcEE = Module['__ZTINSt3__211__money_getIcEE'] = 390948;
-var __ZTSNSt3__211__money_getIcEE = Module['__ZTSNSt3__211__money_getIcEE'] = 371078;
-var __ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 390984;
-var __ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 371103;
-var __ZTINSt3__211__money_getIwEE = Module['__ZTINSt3__211__money_getIwEE'] = 391016;
-var __ZTSNSt3__211__money_getIwEE = Module['__ZTSNSt3__211__money_getIwEE'] = 371173;
-var __ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 391052;
-var __ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 371198;
-var __ZTINSt3__211__money_putIcEE = Module['__ZTINSt3__211__money_putIcEE'] = 391084;
-var __ZTSNSt3__211__money_putIcEE = Module['__ZTSNSt3__211__money_putIcEE'] = 371268;
-var __ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 391120;
-var __ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 371293;
-var __ZTINSt3__211__money_putIwEE = Module['__ZTINSt3__211__money_putIwEE'] = 391152;
-var __ZTSNSt3__211__money_putIwEE = Module['__ZTSNSt3__211__money_putIwEE'] = 371363;
-var __ZTINSt3__28messagesIcEE = Module['__ZTINSt3__28messagesIcEE'] = 391192;
-var __ZTSNSt3__28messagesIcEE = Module['__ZTSNSt3__28messagesIcEE'] = 371388;
-var __ZTINSt3__213messages_baseE = Module['__ZTINSt3__213messages_baseE'] = 391224;
-var __ZTSNSt3__213messages_baseE = Module['__ZTSNSt3__213messages_baseE'] = 371409;
-var __ZTINSt3__28messagesIwEE = Module['__ZTINSt3__28messagesIwEE'] = 391264;
-var __ZTSNSt3__28messagesIwEE = Module['__ZTSNSt3__28messagesIwEE'] = 371433;
-var __ZTINSt3__215messages_bynameIcEE = Module['__ZTINSt3__215messages_bynameIcEE'] = 391328;
-var __ZTSNSt3__215messages_bynameIcEE = Module['__ZTSNSt3__215messages_bynameIcEE'] = 371454;
-var __ZTINSt3__215messages_bynameIwEE = Module['__ZTINSt3__215messages_bynameIwEE'] = 391372;
-var __ZTSNSt3__215messages_bynameIwEE = Module['__ZTSNSt3__215messages_bynameIwEE'] = 371483;
-var __ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE'] = 391432;
-var __ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE'] = 371512;
-var __ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE'] = 391492;
-var __ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE'] = 371554;
-var __ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE'] = 391552;
-var __ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE'] = 371596;
-var __ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE'] = 391612;
-var __ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE'] = 371639;
-var __ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE'] = 391672;
-var __ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE'] = 371682;
-var __ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE'] = 391732;
-var __ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE'] = 371726;
-var __ZTINSt3__215__time_get_tempIcEE = Module['__ZTINSt3__215__time_get_tempIcEE'] = 391868;
-var __ZTSNSt3__215__time_get_tempIcEE = Module['__ZTSNSt3__215__time_get_tempIcEE'] = 372656;
-var __ZTINSt3__215__time_get_tempIwEE = Module['__ZTINSt3__215__time_get_tempIwEE'] = 391948;
-var __ZTSNSt3__215__time_get_tempIwEE = Module['__ZTSNSt3__215__time_get_tempIwEE'] = 372685;
-var __ZTSNSt3__214__shared_countE = Module['__ZTSNSt3__214__shared_countE'] = 372714;
-var __ZTSNSt3__219__shared_weak_countE = Module['__ZTSNSt3__219__shared_weak_countE'] = 372739;
-var __ZTVNSt3__212bad_weak_ptrE = Module['__ZTVNSt3__212bad_weak_ptrE'] = 392176;
-var __ZTINSt3__212bad_weak_ptrE = Module['__ZTINSt3__212bad_weak_ptrE'] = 392196;
-var __ZTSNSt3__212bad_weak_ptrE = Module['__ZTSNSt3__212bad_weak_ptrE'] = 372769;
-var __ZTVNSt3__23pmr28unsynchronized_pool_resourceE = Module['__ZTVNSt3__23pmr28unsynchronized_pool_resourceE'] = 392272;
-var __ZTVNSt3__23pmr15memory_resourceE = Module['__ZTVNSt3__23pmr15memory_resourceE'] = 392348;
-var __ZTVNSt3__23pmr25monotonic_buffer_resourceE = Module['__ZTVNSt3__23pmr25monotonic_buffer_resourceE'] = 392300;
-var __ZTVNSt3__23pmr26synchronized_pool_resourceE = Module['__ZTVNSt3__23pmr26synchronized_pool_resourceE'] = 392388;
-var __ZTVNSt3__23pmr32__new_delete_memory_resource_impE = Module['__ZTVNSt3__23pmr32__new_delete_memory_resource_impE'] = 392208;
-var __ZTINSt3__23pmr32__new_delete_memory_resource_impE = Module['__ZTINSt3__23pmr32__new_delete_memory_resource_impE'] = 392428;
-var __ZTVNSt3__23pmr26__null_memory_resource_impE = Module['__ZTVNSt3__23pmr26__null_memory_resource_impE'] = 392236;
-var __ZTINSt3__23pmr26__null_memory_resource_impE = Module['__ZTINSt3__23pmr26__null_memory_resource_impE'] = 392440;
-var __ZTINSt3__23pmr28unsynchronized_pool_resourceE = Module['__ZTINSt3__23pmr28unsynchronized_pool_resourceE'] = 392376;
-var __ZTINSt3__23pmr25monotonic_buffer_resourceE = Module['__ZTINSt3__23pmr25monotonic_buffer_resourceE'] = 392328;
-var __ZTSNSt3__23pmr25monotonic_buffer_resourceE = Module['__ZTSNSt3__23pmr25monotonic_buffer_resourceE'] = 372792;
-var __ZTINSt3__23pmr15memory_resourceE = Module['__ZTINSt3__23pmr15memory_resourceE'] = 392340;
-var __ZTSNSt3__23pmr15memory_resourceE = Module['__ZTSNSt3__23pmr15memory_resourceE'] = 372832;
-var __ZTSNSt3__23pmr28unsynchronized_pool_resourceE = Module['__ZTSNSt3__23pmr28unsynchronized_pool_resourceE'] = 372862;
-var __ZTINSt3__23pmr26synchronized_pool_resourceE = Module['__ZTINSt3__23pmr26synchronized_pool_resourceE'] = 392416;
-var __ZTSNSt3__23pmr26synchronized_pool_resourceE = Module['__ZTSNSt3__23pmr26synchronized_pool_resourceE'] = 372905;
-var __ZTSNSt3__23pmr32__new_delete_memory_resource_impE = Module['__ZTSNSt3__23pmr32__new_delete_memory_resource_impE'] = 372946;
-var __ZTSNSt3__23pmr26__null_memory_resource_impE = Module['__ZTSNSt3__23pmr26__null_memory_resource_impE'] = 372993;
-var __ZSt7nothrow = Module['__ZSt7nothrow'] = 373034;
-var __ZTVSt19bad_optional_access = Module['__ZTVSt19bad_optional_access'] = 392480;
-var __ZTISt19bad_optional_access = Module['__ZTISt19bad_optional_access'] = 392500;
-var __ZTSSt19bad_optional_access = Module['__ZTSSt19bad_optional_access'] = 373035;
-var __ZTVNSt12experimental19bad_optional_accessE = Module['__ZTVNSt12experimental19bad_optional_accessE'] = 392512;
-var __ZTINSt12experimental19bad_optional_accessE = Module['__ZTINSt12experimental19bad_optional_accessE'] = 392532;
-var __ZTSNSt12experimental19bad_optional_accessE = Module['__ZTSNSt12experimental19bad_optional_accessE'] = 373059;
-var __ZNSt3__210filesystem4path19preferred_separatorE = Module['__ZNSt3__210filesystem4path19preferred_separatorE'] = 373099;
-var __ZNSt3__212__rs_default4__c_E = Module['__ZNSt3__212__rs_default4__c_E'] = 445680;
-var __ZTVNSt3__211regex_errorE = Module['__ZTVNSt3__211regex_errorE'] = 392544;
-var __ZTINSt3__211regex_errorE = Module['__ZTINSt3__211regex_errorE'] = 393592;
-var __ZTSNSt3__211regex_errorE = Module['__ZTSNSt3__211regex_errorE'] = 373100;
-var __ZTVSt11logic_error = Module['__ZTVSt11logic_error'] = 401552;
-var __ZTVSt9exception = Module['__ZTVSt9exception'] = 401468;
-var __ZTVSt13runtime_error = Module['__ZTVSt13runtime_error'] = 401572;
-var __ZNSt3__26__itoa10__pow10_64E = Module['__ZNSt3__26__itoa10__pow10_64E'] = 373168;
-var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE'] = 373124;
-var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE'] = 373128;
-var __ZTVNSt3__212strstreambufE = Module['__ZTVNSt3__212strstreambufE'] = 393672;
-var __ZTTNSt3__210istrstreamE = Module['__ZTTNSt3__210istrstreamE'] = 393776;
-var __ZTTNSt3__210ostrstreamE = Module['__ZTTNSt3__210ostrstreamE'] = 393832;
-var __ZTTNSt3__29strstreamE = Module['__ZTTNSt3__29strstreamE'] = 393908;
-var __ZTINSt3__212strstreambufE = Module['__ZTINSt3__212strstreambufE'] = 393948;
-var __ZTVNSt3__210istrstreamE = Module['__ZTVNSt3__210istrstreamE'] = 393736;
-var __ZTINSt3__210istrstreamE = Module['__ZTINSt3__210istrstreamE'] = 394000;
-var __ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE'] = 393960;
-var __ZTVNSt3__210ostrstreamE = Module['__ZTVNSt3__210ostrstreamE'] = 393792;
-var __ZTINSt3__210ostrstreamE = Module['__ZTINSt3__210ostrstreamE'] = 394052;
-var __ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE'] = 394012;
-var __ZTVNSt3__29strstreamE = Module['__ZTVNSt3__29strstreamE'] = 393848;
-var __ZTINSt3__29strstreamE = Module['__ZTINSt3__29strstreamE'] = 394204;
-var __ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE'] = 394064;
-var __ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE'] = 394124;
-var __ZTCNSt3__29strstreamE8_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__29strstreamE8_NS_13basic_ostreamIcNS_11char_traitsIcEEEE'] = 394164;
-var __ZTSNSt3__212strstreambufE = Module['__ZTSNSt3__212strstreambufE'] = 373328;
-var __ZTSNSt3__210istrstreamE = Module['__ZTSNSt3__210istrstreamE'] = 373351;
-var __ZTSNSt3__210ostrstreamE = Module['__ZTSNSt3__210ostrstreamE'] = 373372;
-var __ZTSNSt3__29strstreamE = Module['__ZTSNSt3__29strstreamE'] = 373393;
-var __ZTVNSt3__212system_errorE = Module['__ZTVNSt3__212system_errorE'] = 394296;
-var __ZTVNSt3__224__generic_error_categoryE = Module['__ZTVNSt3__224__generic_error_categoryE'] = 394220;
-var __ZTINSt3__224__generic_error_categoryE = Module['__ZTINSt3__224__generic_error_categoryE'] = 394364;
-var __ZTVNSt3__223__system_error_categoryE = Module['__ZTVNSt3__223__system_error_categoryE'] = 394260;
-var __ZTINSt3__223__system_error_categoryE = Module['__ZTINSt3__223__system_error_categoryE'] = 394376;
-var __ZTVNSt3__212__do_messageE = Module['__ZTVNSt3__212__do_messageE'] = 394316;
-var __ZTSNSt3__212__do_messageE = Module['__ZTSNSt3__212__do_messageE'] = 373412;
-var __ZTSNSt3__224__generic_error_categoryE = Module['__ZTSNSt3__224__generic_error_categoryE'] = 373435;
-var __ZTSNSt3__223__system_error_categoryE = Module['__ZTSNSt3__223__system_error_categoryE'] = 373470;
-var __ZTSNSt3__212system_errorE = Module['__ZTSNSt3__212system_errorE'] = 373504;
-var __ZTVSt18bad_variant_access = Module['__ZTVSt18bad_variant_access'] = 394400;
-var __ZTISt18bad_variant_access = Module['__ZTISt18bad_variant_access'] = 394420;
-var __ZTSSt18bad_variant_access = Module['__ZTSSt18bad_variant_access'] = 373527;
-var ___cxa_unexpected_handler = Module['___cxa_unexpected_handler'] = 394436;
-var ___cxa_terminate_handler = Module['___cxa_terminate_handler'] = 394432;
-var ___cxa_new_handler = Module['___cxa_new_handler'] = 448224;
-var __ZTIN10__cxxabiv117__class_type_infoE = Module['__ZTIN10__cxxabiv117__class_type_infoE'] = 399964;
-var __ZTIN10__cxxabiv116__shim_type_infoE = Module['__ZTIN10__cxxabiv116__shim_type_infoE'] = 399952;
-var __ZTIN10__cxxabiv117__pbase_type_infoE = Module['__ZTIN10__cxxabiv117__pbase_type_infoE'] = 399976;
-var __ZTIDn = Module['__ZTIDn'] = 400132;
-var __ZTIN10__cxxabiv119__pointer_type_infoE = Module['__ZTIN10__cxxabiv119__pointer_type_infoE'] = 399988;
-var __ZTIv = Module['__ZTIv'] = 400092;
-var __ZTIN10__cxxabiv120__function_type_infoE = Module['__ZTIN10__cxxabiv120__function_type_infoE'] = 400000;
-var __ZTIN10__cxxabiv129__pointer_to_member_type_infoE = Module['__ZTIN10__cxxabiv129__pointer_to_member_type_infoE'] = 400012;
-var __ZTISt9type_info = Module['__ZTISt9type_info'] = 401896;
-var __ZTSN10__cxxabiv116__shim_type_infoE = Module['__ZTSN10__cxxabiv116__shim_type_infoE'] = 378161;
-var __ZTSN10__cxxabiv117__class_type_infoE = Module['__ZTSN10__cxxabiv117__class_type_infoE'] = 378194;
-var __ZTSN10__cxxabiv117__pbase_type_infoE = Module['__ZTSN10__cxxabiv117__pbase_type_infoE'] = 378228;
-var __ZTSN10__cxxabiv119__pointer_type_infoE = Module['__ZTSN10__cxxabiv119__pointer_type_infoE'] = 378262;
-var __ZTSN10__cxxabiv120__function_type_infoE = Module['__ZTSN10__cxxabiv120__function_type_infoE'] = 378298;
-var __ZTSN10__cxxabiv129__pointer_to_member_type_infoE = Module['__ZTSN10__cxxabiv129__pointer_to_member_type_infoE'] = 378335;
-var __ZTVN10__cxxabiv116__shim_type_infoE = Module['__ZTVN10__cxxabiv116__shim_type_infoE'] = 400024;
-var __ZTVN10__cxxabiv123__fundamental_type_infoE = Module['__ZTVN10__cxxabiv123__fundamental_type_infoE'] = 400052;
-var __ZTIN10__cxxabiv123__fundamental_type_infoE = Module['__ZTIN10__cxxabiv123__fundamental_type_infoE'] = 400080;
-var __ZTSN10__cxxabiv123__fundamental_type_infoE = Module['__ZTSN10__cxxabiv123__fundamental_type_infoE'] = 378396;
-var __ZTSv = Module['__ZTSv'] = 378436;
-var __ZTIPv = Module['__ZTIPv'] = 400100;
-var __ZTVN10__cxxabiv119__pointer_type_infoE = Module['__ZTVN10__cxxabiv119__pointer_type_infoE'] = 401372;
-var __ZTSPv = Module['__ZTSPv'] = 378438;
-var __ZTIPKv = Module['__ZTIPKv'] = 400116;
-var __ZTSPKv = Module['__ZTSPKv'] = 378441;
-var __ZTSDn = Module['__ZTSDn'] = 378445;
-var __ZTIPDn = Module['__ZTIPDn'] = 400140;
-var __ZTSPDn = Module['__ZTSPDn'] = 378448;
-var __ZTIPKDn = Module['__ZTIPKDn'] = 400156;
-var __ZTSPKDn = Module['__ZTSPKDn'] = 378452;
-var __ZTIb = Module['__ZTIb'] = 400172;
-var __ZTSb = Module['__ZTSb'] = 378457;
-var __ZTIPb = Module['__ZTIPb'] = 400180;
-var __ZTSPb = Module['__ZTSPb'] = 378459;
-var __ZTIPKb = Module['__ZTIPKb'] = 400196;
-var __ZTSPKb = Module['__ZTSPKb'] = 378462;
-var __ZTIw = Module['__ZTIw'] = 400212;
-var __ZTSw = Module['__ZTSw'] = 378466;
-var __ZTIPw = Module['__ZTIPw'] = 400220;
-var __ZTSPw = Module['__ZTSPw'] = 378468;
-var __ZTIPKw = Module['__ZTIPKw'] = 400236;
-var __ZTSPKw = Module['__ZTSPKw'] = 378471;
-var __ZTIc = Module['__ZTIc'] = 400252;
-var __ZTSc = Module['__ZTSc'] = 378475;
-var __ZTIPc = Module['__ZTIPc'] = 400260;
-var __ZTSPc = Module['__ZTSPc'] = 378477;
-var __ZTIPKc = Module['__ZTIPKc'] = 400276;
-var __ZTSPKc = Module['__ZTSPKc'] = 378480;
-var __ZTIh = Module['__ZTIh'] = 400292;
-var __ZTSh = Module['__ZTSh'] = 378484;
-var __ZTIPh = Module['__ZTIPh'] = 400300;
-var __ZTSPh = Module['__ZTSPh'] = 378486;
-var __ZTIPKh = Module['__ZTIPKh'] = 400316;
-var __ZTSPKh = Module['__ZTSPKh'] = 378489;
-var __ZTIa = Module['__ZTIa'] = 400332;
-var __ZTSa = Module['__ZTSa'] = 378493;
-var __ZTIPa = Module['__ZTIPa'] = 400340;
-var __ZTSPa = Module['__ZTSPa'] = 378495;
-var __ZTIPKa = Module['__ZTIPKa'] = 400356;
-var __ZTSPKa = Module['__ZTSPKa'] = 378498;
-var __ZTIs = Module['__ZTIs'] = 400372;
-var __ZTSs = Module['__ZTSs'] = 378502;
-var __ZTIPs = Module['__ZTIPs'] = 400380;
-var __ZTSPs = Module['__ZTSPs'] = 378504;
-var __ZTIPKs = Module['__ZTIPKs'] = 400396;
-var __ZTSPKs = Module['__ZTSPKs'] = 378507;
-var __ZTIt = Module['__ZTIt'] = 400412;
-var __ZTSt = Module['__ZTSt'] = 378511;
-var __ZTIPt = Module['__ZTIPt'] = 400420;
-var __ZTSPt = Module['__ZTSPt'] = 378513;
-var __ZTIPKt = Module['__ZTIPKt'] = 400436;
-var __ZTSPKt = Module['__ZTSPKt'] = 378516;
-var __ZTIi = Module['__ZTIi'] = 400452;
-var __ZTSi = Module['__ZTSi'] = 378520;
-var __ZTIPi = Module['__ZTIPi'] = 400460;
-var __ZTSPi = Module['__ZTSPi'] = 378522;
-var __ZTIPKi = Module['__ZTIPKi'] = 400476;
-var __ZTSPKi = Module['__ZTSPKi'] = 378525;
-var __ZTIj = Module['__ZTIj'] = 400492;
-var __ZTSj = Module['__ZTSj'] = 378529;
-var __ZTIPj = Module['__ZTIPj'] = 400500;
-var __ZTSPj = Module['__ZTSPj'] = 378531;
-var __ZTIPKj = Module['__ZTIPKj'] = 400516;
-var __ZTSPKj = Module['__ZTSPKj'] = 378534;
-var __ZTIl = Module['__ZTIl'] = 400532;
-var __ZTSl = Module['__ZTSl'] = 378538;
-var __ZTIPl = Module['__ZTIPl'] = 400540;
-var __ZTSPl = Module['__ZTSPl'] = 378540;
-var __ZTIPKl = Module['__ZTIPKl'] = 400556;
-var __ZTSPKl = Module['__ZTSPKl'] = 378543;
-var __ZTIm = Module['__ZTIm'] = 400572;
-var __ZTSm = Module['__ZTSm'] = 378547;
-var __ZTIPm = Module['__ZTIPm'] = 400580;
-var __ZTSPm = Module['__ZTSPm'] = 378549;
-var __ZTIPKm = Module['__ZTIPKm'] = 400596;
-var __ZTSPKm = Module['__ZTSPKm'] = 378552;
-var __ZTIx = Module['__ZTIx'] = 400612;
-var __ZTSx = Module['__ZTSx'] = 378556;
-var __ZTIPx = Module['__ZTIPx'] = 400620;
-var __ZTSPx = Module['__ZTSPx'] = 378558;
-var __ZTIPKx = Module['__ZTIPKx'] = 400636;
-var __ZTSPKx = Module['__ZTSPKx'] = 378561;
-var __ZTIy = Module['__ZTIy'] = 400652;
-var __ZTSy = Module['__ZTSy'] = 378565;
-var __ZTIPy = Module['__ZTIPy'] = 400660;
-var __ZTSPy = Module['__ZTSPy'] = 378567;
-var __ZTIPKy = Module['__ZTIPKy'] = 400676;
-var __ZTSPKy = Module['__ZTSPKy'] = 378570;
-var __ZTIn = Module['__ZTIn'] = 400692;
-var __ZTSn = Module['__ZTSn'] = 378574;
-var __ZTIPn = Module['__ZTIPn'] = 400700;
-var __ZTSPn = Module['__ZTSPn'] = 378576;
-var __ZTIPKn = Module['__ZTIPKn'] = 400716;
-var __ZTSPKn = Module['__ZTSPKn'] = 378579;
-var __ZTIo = Module['__ZTIo'] = 400732;
-var __ZTSo = Module['__ZTSo'] = 378583;
-var __ZTIPo = Module['__ZTIPo'] = 400740;
-var __ZTSPo = Module['__ZTSPo'] = 378585;
-var __ZTIPKo = Module['__ZTIPKo'] = 400756;
-var __ZTSPKo = Module['__ZTSPKo'] = 378588;
-var __ZTIDh = Module['__ZTIDh'] = 400772;
-var __ZTSDh = Module['__ZTSDh'] = 378592;
-var __ZTIPDh = Module['__ZTIPDh'] = 400780;
-var __ZTSPDh = Module['__ZTSPDh'] = 378595;
-var __ZTIPKDh = Module['__ZTIPKDh'] = 400796;
-var __ZTSPKDh = Module['__ZTSPKDh'] = 378599;
-var __ZTIf = Module['__ZTIf'] = 400812;
-var __ZTSf = Module['__ZTSf'] = 378604;
-var __ZTIPf = Module['__ZTIPf'] = 400820;
-var __ZTSPf = Module['__ZTSPf'] = 378606;
-var __ZTIPKf = Module['__ZTIPKf'] = 400836;
-var __ZTSPKf = Module['__ZTSPKf'] = 378609;
-var __ZTId = Module['__ZTId'] = 400852;
-var __ZTSd = Module['__ZTSd'] = 378613;
-var __ZTIPd = Module['__ZTIPd'] = 400860;
-var __ZTSPd = Module['__ZTSPd'] = 378615;
-var __ZTIPKd = Module['__ZTIPKd'] = 400876;
-var __ZTSPKd = Module['__ZTSPKd'] = 378618;
-var __ZTIe = Module['__ZTIe'] = 400892;
-var __ZTSe = Module['__ZTSe'] = 378622;
-var __ZTIPe = Module['__ZTIPe'] = 400900;
-var __ZTSPe = Module['__ZTSPe'] = 378624;
-var __ZTIPKe = Module['__ZTIPKe'] = 400916;
-var __ZTSPKe = Module['__ZTSPKe'] = 378627;
-var __ZTIg = Module['__ZTIg'] = 400932;
-var __ZTSg = Module['__ZTSg'] = 378631;
-var __ZTIPg = Module['__ZTIPg'] = 400940;
-var __ZTSPg = Module['__ZTSPg'] = 378633;
-var __ZTIPKg = Module['__ZTIPKg'] = 400956;
-var __ZTSPKg = Module['__ZTSPKg'] = 378636;
-var __ZTIDu = Module['__ZTIDu'] = 400972;
-var __ZTSDu = Module['__ZTSDu'] = 378640;
-var __ZTIPDu = Module['__ZTIPDu'] = 400980;
-var __ZTSPDu = Module['__ZTSPDu'] = 378643;
-var __ZTIPKDu = Module['__ZTIPKDu'] = 400996;
-var __ZTSPKDu = Module['__ZTSPKDu'] = 378647;
-var __ZTIDs = Module['__ZTIDs'] = 401012;
-var __ZTSDs = Module['__ZTSDs'] = 378652;
-var __ZTIPDs = Module['__ZTIPDs'] = 401020;
-var __ZTSPDs = Module['__ZTSPDs'] = 378655;
-var __ZTIPKDs = Module['__ZTIPKDs'] = 401036;
-var __ZTSPKDs = Module['__ZTSPKDs'] = 378659;
-var __ZTIDi = Module['__ZTIDi'] = 401052;
-var __ZTSDi = Module['__ZTSDi'] = 378664;
-var __ZTIPDi = Module['__ZTIPDi'] = 401060;
-var __ZTSPDi = Module['__ZTSPDi'] = 378667;
-var __ZTIPKDi = Module['__ZTIPKDi'] = 401076;
-var __ZTSPKDi = Module['__ZTSPKDi'] = 378671;
-var __ZTVN10__cxxabiv117__array_type_infoE = Module['__ZTVN10__cxxabiv117__array_type_infoE'] = 401092;
-var __ZTIN10__cxxabiv117__array_type_infoE = Module['__ZTIN10__cxxabiv117__array_type_infoE'] = 401120;
-var __ZTSN10__cxxabiv117__array_type_infoE = Module['__ZTSN10__cxxabiv117__array_type_infoE'] = 378676;
-var __ZTVN10__cxxabiv120__function_type_infoE = Module['__ZTVN10__cxxabiv120__function_type_infoE'] = 401132;
-var __ZTVN10__cxxabiv116__enum_type_infoE = Module['__ZTVN10__cxxabiv116__enum_type_infoE'] = 401160;
-var __ZTIN10__cxxabiv116__enum_type_infoE = Module['__ZTIN10__cxxabiv116__enum_type_infoE'] = 401188;
-var __ZTSN10__cxxabiv116__enum_type_infoE = Module['__ZTSN10__cxxabiv116__enum_type_infoE'] = 378710;
-var __ZTIN10__cxxabiv120__si_class_type_infoE = Module['__ZTIN10__cxxabiv120__si_class_type_infoE'] = 401280;
-var __ZTSN10__cxxabiv120__si_class_type_infoE = Module['__ZTSN10__cxxabiv120__si_class_type_infoE'] = 378743;
-var __ZTIN10__cxxabiv121__vmi_class_type_infoE = Module['__ZTIN10__cxxabiv121__vmi_class_type_infoE'] = 401332;
-var __ZTSN10__cxxabiv121__vmi_class_type_infoE = Module['__ZTSN10__cxxabiv121__vmi_class_type_infoE'] = 378780;
-var __ZTVN10__cxxabiv117__pbase_type_infoE = Module['__ZTVN10__cxxabiv117__pbase_type_infoE'] = 401344;
-var __ZTVN10__cxxabiv129__pointer_to_member_type_infoE = Module['__ZTVN10__cxxabiv129__pointer_to_member_type_infoE'] = 401400;
-var __ZTVSt9bad_alloc = Module['__ZTVSt9bad_alloc'] = 401428;
-var __ZTVSt20bad_array_new_length = Module['__ZTVSt20bad_array_new_length'] = 401448;
-var __ZTISt9bad_alloc = Module['__ZTISt9bad_alloc'] = 401528;
-var __ZTISt20bad_array_new_length = Module['__ZTISt20bad_array_new_length'] = 401540;
-var __ZTSSt9exception = Module['__ZTSSt9exception'] = 378818;
-var __ZTVSt13bad_exception = Module['__ZTVSt13bad_exception'] = 401496;
-var __ZTISt13bad_exception = Module['__ZTISt13bad_exception'] = 401516;
-var __ZTSSt13bad_exception = Module['__ZTSSt13bad_exception'] = 378831;
-var __ZTSSt9bad_alloc = Module['__ZTSSt9bad_alloc'] = 378849;
-var __ZTSSt20bad_array_new_length = Module['__ZTSSt20bad_array_new_length'] = 378862;
-var __ZTVSt12domain_error = Module['__ZTVSt12domain_error'] = 401592;
-var __ZTISt12domain_error = Module['__ZTISt12domain_error'] = 401612;
-var __ZTSSt12domain_error = Module['__ZTSSt12domain_error'] = 378887;
-var __ZTSSt11logic_error = Module['__ZTSSt11logic_error'] = 378904;
-var __ZTVSt16invalid_argument = Module['__ZTVSt16invalid_argument'] = 401636;
-var __ZTISt16invalid_argument = Module['__ZTISt16invalid_argument'] = 401656;
-var __ZTSSt16invalid_argument = Module['__ZTSSt16invalid_argument'] = 378920;
-var __ZTVSt12length_error = Module['__ZTVSt12length_error'] = 401668;
-var __ZTISt12length_error = Module['__ZTISt12length_error'] = 401688;
-var __ZTSSt12length_error = Module['__ZTSSt12length_error'] = 378941;
-var __ZTVSt12out_of_range = Module['__ZTVSt12out_of_range'] = 401700;
-var __ZTISt12out_of_range = Module['__ZTISt12out_of_range'] = 401720;
-var __ZTSSt12out_of_range = Module['__ZTSSt12out_of_range'] = 378958;
-var __ZTVSt11range_error = Module['__ZTVSt11range_error'] = 401732;
-var __ZTISt11range_error = Module['__ZTISt11range_error'] = 401752;
-var __ZTSSt11range_error = Module['__ZTSSt11range_error'] = 378975;
-var __ZTSSt13runtime_error = Module['__ZTSSt13runtime_error'] = 378991;
-var __ZTVSt14overflow_error = Module['__ZTVSt14overflow_error'] = 401776;
-var __ZTISt14overflow_error = Module['__ZTISt14overflow_error'] = 401796;
-var __ZTSSt14overflow_error = Module['__ZTSSt14overflow_error'] = 379009;
-var __ZTVSt15underflow_error = Module['__ZTVSt15underflow_error'] = 401808;
-var __ZTISt15underflow_error = Module['__ZTISt15underflow_error'] = 401828;
-var __ZTSSt15underflow_error = Module['__ZTSSt15underflow_error'] = 379028;
-var __ZTVSt8bad_cast = Module['__ZTVSt8bad_cast'] = 401840;
-var __ZTVSt10bad_typeid = Module['__ZTVSt10bad_typeid'] = 401860;
-var __ZTISt10bad_typeid = Module['__ZTISt10bad_typeid'] = 401916;
-var __ZTVSt9type_info = Module['__ZTVSt9type_info'] = 401880;
-var __ZTSSt9type_info = Module['__ZTSSt9type_info'] = 379048;
-var __ZTSSt8bad_cast = Module['__ZTSSt8bad_cast'] = 379061;
-var __ZTSSt10bad_typeid = Module['__ZTSSt10bad_typeid'] = 379073;
-var _in6addr_any = Module['_in6addr_any'] = 379088;
-var _in6addr_loopback = Module['_in6addr_loopback'] = 379104;
-function invoke_vii(index,a1,a2) {
+var _luaP_opmodes = Module['_luaP_opmodes'] = 36496;
+var _luai_ctype_ = Module['_luai_ctype_'] = 35968;
+var ___THREW__ = Module['___THREW__'] = 454960;
+var ___threwValue = Module['___threwValue'] = 454968;
+var _stdin = Module['_stdin'] = 389280;
+var _stderr = Module['_stderr'] = 389032;
+var _stdout = Module['_stdout'] = 389520;
+var _ctype_mt_key = Module['_ctype_mt_key'] = 424976;
+var _cdata_mt_key = Module['_cdata_mt_key'] = 424988;
+var _callback_mt_key = Module['_callback_mt_key'] = 424992;
+var _jit_key = Module['_jit_key'] = 424964;
+var _callbacks_key = Module['_callbacks_key'] = 424980;
+var _niluv_key = Module['_niluv_key'] = 424972;
+var _gc_key = Module['_gc_key'] = 424984;
+var _cmodule_mt_key = Module['_cmodule_mt_key'] = 424996;
+var _constants_key = Module['_constants_key'] = 425000;
+var _types_key = Module['_types_key'] = 425004;
+var _functions_key = Module['_functions_key'] = 425008;
+var _asmname_key = Module['_asmname_key'] = 425012;
+var _abi_key = Module['_abi_key'] = 425016;
+var _next_unnamed_key = Module['_next_unnamed_key'] = 425020;
+var ___environ = Module['___environ'] = 425040;
+var ____environ = Module['____environ'] = 425040;
+var __environ = Module['__environ'] = 425040;
+var _environ = Module['_environ'] = 425040;
+var ___stack_chk_guard = Module['___stack_chk_guard'] = 425056;
+var _daylight = Module['_daylight'] = 425072;
+var _timezone = Module['_timezone'] = 425064;
+var ___tzname = Module['___tzname'] = 425088;
+var ___timezone = Module['___timezone'] = 425064;
+var ___daylight = Module['___daylight'] = 425072;
+var _tzname = Module['_tzname'] = 425088;
+var ___progname = Module['___progname'] = 428208;
+var ___optreset = Module['___optreset'] = 426452;
+var _optind = Module['_optind'] = 387808;
+var ___optpos = Module['___optpos'] = 426456;
+var _optarg = Module['_optarg'] = 426464;
+var _optopt = Module['_optopt'] = 426472;
+var _opterr = Module['_opterr'] = 387812;
+var _optreset = Module['_optreset'] = 426452;
+var _h_errno = Module['_h_errno'] = 426648;
+var ___signgam = Module['___signgam'] = 443544;
+var __ns_flagdata = Module['__ns_flagdata'] = 224480;
+var ___progname_full = Module['___progname_full'] = 428216;
+var _program_invocation_short_name = Module['_program_invocation_short_name'] = 428208;
+var _program_invocation_name = Module['_program_invocation_name'] = 428216;
+var ___sig_pending = Module['___sig_pending'] = 432688;
+var ___sig_actions = Module['___sig_actions'] = 433664;
+var _signgam = Module['_signgam'] = 443544;
+var __ZTVSt12bad_any_cast = Module['__ZTVSt12bad_any_cast'] = 389792;
+var __ZTISt12bad_any_cast = Module['__ZTISt12bad_any_cast'] = 389832;
+var __ZTVN10__cxxabiv120__si_class_type_infoE = Module['__ZTVN10__cxxabiv120__si_class_type_infoE'] = 423360;
+var __ZTSSt12bad_any_cast = Module['__ZTSSt12bad_any_cast'] = 243696;
+var __ZTISt8bad_cast = Module['__ZTISt8bad_cast'] = 424688;
+var __ZTVNSt12experimental15fundamentals_v112bad_any_castE = Module['__ZTVNSt12experimental15fundamentals_v112bad_any_castE'] = 389856;
+var __ZTINSt12experimental15fundamentals_v112bad_any_castE = Module['__ZTINSt12experimental15fundamentals_v112bad_any_castE'] = 389896;
+var __ZTSNSt12experimental15fundamentals_v112bad_any_castE = Module['__ZTSNSt12experimental15fundamentals_v112bad_any_castE'] = 243713;
+var __ZNSt3__212placeholders2_1E = Module['__ZNSt3__212placeholders2_1E'] = 243763;
+var __ZNSt3__212placeholders2_2E = Module['__ZNSt3__212placeholders2_2E'] = 243764;
+var __ZNSt3__212placeholders2_3E = Module['__ZNSt3__212placeholders2_3E'] = 243765;
+var __ZNSt3__212placeholders2_4E = Module['__ZNSt3__212placeholders2_4E'] = 243766;
+var __ZNSt3__212placeholders2_5E = Module['__ZNSt3__212placeholders2_5E'] = 243767;
+var __ZNSt3__212placeholders2_6E = Module['__ZNSt3__212placeholders2_6E'] = 243768;
+var __ZNSt3__212placeholders2_7E = Module['__ZNSt3__212placeholders2_7E'] = 243769;
+var __ZNSt3__212placeholders2_8E = Module['__ZNSt3__212placeholders2_8E'] = 243770;
+var __ZNSt3__212placeholders2_9E = Module['__ZNSt3__212placeholders2_9E'] = 243771;
+var __ZNSt3__212placeholders3_10E = Module['__ZNSt3__212placeholders3_10E'] = 243772;
+var __ZNSt3__26__itoa16_Charconv_digitsE = Module['__ZNSt3__26__itoa16_Charconv_digitsE'] = 243776;
+var __ZNSt3__26__itoa10__pow10_32E = Module['__ZNSt3__26__itoa10__pow10_32E'] = 243824;
+var __ZNSt3__26__itoa16__digits_base_10E = Module['__ZNSt3__26__itoa16__digits_base_10E'] = 243872;
+var __ZNSt3__225_General_precision_tablesIfE6_Max_PE = Module['__ZNSt3__225_General_precision_tablesIfE6_Max_PE'] = 244512;
+var __ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE = Module['__ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE'] = 244336;
+var __ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE = Module['__ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE'] = 244080;
+var __ZNSt3__225_General_precision_tablesIdE6_Max_PE = Module['__ZNSt3__225_General_precision_tablesIdE6_Max_PE'] = 248608;
+var __ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE = Module['__ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE'] = 246096;
+var __ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE = Module['__ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE'] = 244528;
+var __ZNSt3__26chrono12system_clock9is_steadyE = Module['__ZNSt3__26chrono12system_clock9is_steadyE'] = 248612;
+var __ZNSt3__26chrono12steady_clock9is_steadyE = Module['__ZNSt3__26chrono12steady_clock9is_steadyE'] = 248613;
+var __ZTVNSt3__26chrono22nonexistent_local_timeE = Module['__ZTVNSt3__26chrono22nonexistent_local_timeE'] = 389920;
+var __ZTINSt3__26chrono22nonexistent_local_timeE = Module['__ZTINSt3__26chrono22nonexistent_local_timeE'] = 389960;
+var __ZTSNSt3__26chrono22nonexistent_local_timeE = Module['__ZTSNSt3__26chrono22nonexistent_local_timeE'] = 248614;
+var __ZTISt13runtime_error = Module['__ZTISt13runtime_error'] = 424408;
+var __ZTVNSt3__26chrono20ambiguous_local_timeE = Module['__ZTVNSt3__26chrono20ambiguous_local_timeE'] = 389984;
+var __ZTINSt3__26chrono20ambiguous_local_timeE = Module['__ZTINSt3__26chrono20ambiguous_local_timeE'] = 390024;
+var __ZTSNSt3__26chrono20ambiguous_local_timeE = Module['__ZTSNSt3__26chrono20ambiguous_local_timeE'] = 248654;
+var __ZNSt3__214__POW10_OFFSETE = Module['__ZNSt3__214__POW10_OFFSETE'] = 278080;
+var __ZNSt3__213__POW10_SPLITE = Module['__ZNSt3__213__POW10_SPLITE'] = 248704;
+var __ZNSt3__213__MIN_BLOCK_2E = Module['__ZNSt3__213__MIN_BLOCK_2E'] = 278208;
+var __ZNSt3__216__POW10_OFFSET_2E = Module['__ZNSt3__216__POW10_OFFSET_2E'] = 278288;
+var __ZNSt3__215__POW10_SPLIT_2E = Module['__ZNSt3__215__POW10_SPLIT_2E'] = 278432;
+var __ZNSt3__223__DOUBLE_POW5_INV_SPLITE = Module['__ZNSt3__223__DOUBLE_POW5_INV_SPLITE'] = 353632;
+var __ZNSt3__219__DOUBLE_POW5_SPLITE = Module['__ZNSt3__219__DOUBLE_POW5_SPLITE'] = 358304;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment'] = 363520;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa'] = 363840;
+var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module['__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE'] = 390048;
+var __ZTVNSt3__219__shared_weak_countE = Module['__ZTVNSt3__219__shared_weak_countE'] = 405192;
+var __ZTVNSt3__214__shared_countE = Module['__ZTVNSt3__214__shared_countE'] = 405136;
+var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module['__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE'] = 390128;
+var __ZNSt3__26ranges5__cpo9iter_moveE = Module['__ZNSt3__26ranges5__cpo9iter_moveE'] = 364230;
+var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module['__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE'] = 390104;
+var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module['__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE'] = 364036;
+var __ZTINSt3__219__shared_weak_countE = Module['__ZTINSt3__219__shared_weak_countE'] = 405248;
+var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module['__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE'] = 390184;
+var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module['__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE'] = 364118;
+var __ZTVNSt3__214error_categoryE = Module['__ZTVNSt3__214error_categoryE'] = 390208;
+var __ZTINSt3__214error_categoryE = Module['__ZTINSt3__214error_categoryE'] = 390280;
+var __ZTVN10__cxxabiv117__class_type_infoE = Module['__ZTVN10__cxxabiv117__class_type_infoE'] = 423280;
+var __ZTSNSt3__214error_categoryE = Module['__ZTSNSt3__214error_categoryE'] = 364243;
+var __ZTVSt16nested_exception = Module['__ZTVSt16nested_exception'] = 390296;
+var __ZTISt16nested_exception = Module['__ZTISt16nested_exception'] = 390328;
+var __ZTSSt16nested_exception = Module['__ZTSSt16nested_exception'] = 364268;
+var __ZTVNSt3__219bad_expected_accessIvEE = Module['__ZTVNSt3__219bad_expected_accessIvEE'] = 390344;
+var __ZTINSt3__219bad_expected_accessIvEE = Module['__ZTINSt3__219bad_expected_accessIvEE'] = 390384;
+var __ZTSNSt3__219bad_expected_accessIvEE = Module['__ZTSNSt3__219bad_expected_accessIvEE'] = 364289;
+var __ZTISt9exception = Module['__ZTISt9exception'] = 423856;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment'] = 364976;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa = Module['__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa'] = 365024;
+var __ZNSt3__222__FLOAT_POW5_INV_SPLITE = Module['__ZNSt3__222__FLOAT_POW5_INV_SPLITE'] = 364336;
+var __ZNSt3__218__FLOAT_POW5_SPLITE = Module['__ZNSt3__218__FLOAT_POW5_SPLITE'] = 364592;
+var __ZNSt3__210filesystem16_FilesystemClock9is_steadyE = Module['__ZNSt3__210filesystem16_FilesystemClock9is_steadyE'] = 365068;
+var __ZTVNSt3__210filesystem16filesystem_errorE = Module['__ZTVNSt3__210filesystem16filesystem_errorE'] = 390408;
+var __ZTINSt3__210filesystem16filesystem_errorE = Module['__ZTINSt3__210filesystem16filesystem_errorE'] = 390448;
+var __ZTSNSt3__210filesystem16filesystem_errorE = Module['__ZTSNSt3__210filesystem16filesystem_errorE'] = 365069;
+var __ZTINSt3__212system_errorE = Module['__ZTINSt3__212system_errorE'] = 409672;
+var __ZTVNSt3__217bad_function_callE = Module['__ZTVNSt3__217bad_function_callE'] = 390472;
+var __ZTINSt3__217bad_function_callE = Module['__ZTINSt3__217bad_function_callE'] = 390512;
+var __ZTSNSt3__217bad_function_callE = Module['__ZTSNSt3__217bad_function_callE'] = 365108;
+var __ZTVNSt3__212future_errorE = Module['__ZTVNSt3__212future_errorE'] = 390616;
+var __ZTVNSt3__217__assoc_sub_stateE = Module['__ZTVNSt3__217__assoc_sub_stateE'] = 390680;
+var __ZTVNSt3__223__future_error_categoryE = Module['__ZTVNSt3__223__future_error_categoryE'] = 390544;
+var __ZTINSt3__223__future_error_categoryE = Module['__ZTINSt3__223__future_error_categoryE'] = 390752;
+var __ZTINSt3__212future_errorE = Module['__ZTINSt3__212future_errorE'] = 390656;
+var __ZTSNSt3__212future_errorE = Module['__ZTSNSt3__212future_errorE'] = 365136;
+var __ZTISt11logic_error = Module['__ZTISt11logic_error'] = 424128;
+var __ZTINSt3__217__assoc_sub_stateE = Module['__ZTINSt3__217__assoc_sub_stateE'] = 390728;
+var __ZTSNSt3__217__assoc_sub_stateE = Module['__ZTSNSt3__217__assoc_sub_stateE'] = 365159;
+var __ZTINSt3__214__shared_countE = Module['__ZTINSt3__214__shared_countE'] = 405176;
+var __ZTSNSt3__223__future_error_categoryE = Module['__ZTSNSt3__223__future_error_categoryE'] = 365187;
+var __ZTINSt3__212__do_messageE = Module['__ZTINSt3__212__do_messageE'] = 409600;
+var __ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE'] = 390816;
+var __ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 391024;
+var __ZNSt3__25ctypeIcE2idE = Module['__ZNSt3__25ctypeIcE2idE'] = 474304;
+var __ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 391120;
+var __ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 473672;
+var __ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 391256;
+var __ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE'] = 391312;
+var __ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 391520;
+var __ZNSt3__25ctypeIwE2idE = Module['__ZNSt3__25ctypeIwE2idE'] = 474288;
+var __ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 391616;
+var __ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 473688;
+var __ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 391632;
+var __ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE'] = 391760;
+var __ZNSt3__27codecvtIcc11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIcc11__mbstate_tE2idE'] = 474320;
+var __ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 392552;
+var __ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 393016;
+var __ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 393232;
+var __ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 393448;
+var __ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 393664;
+var __ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 473640;
+var __ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 473656;
+var __ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE'] = 391944;
+var __ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 390944;
+var __ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 391960;
+var __ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 391040;
+var __ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 392000;
+var __ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 391136;
+var __ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 392200;
+var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE'] = 392040;
+var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE16_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE16_NS_13basic_ostreamIcS2_EE'] = 392120;
+var __ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE'] = 392312;
+var __ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 391440;
+var __ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 392328;
+var __ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 391536;
+var __ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 392368;
+var __ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 392408;
+var __ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE'] = 393800;
+var __ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE'] = 391888;
+var __ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE'] = 391920;
+var __ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE'] = 365616;
+var __ZTINSt3__28ios_baseE = Module['__ZTINSt3__28ios_baseE'] = 393984;
+var __ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE'] = 365658;
+var __ZTVN10__cxxabiv121__vmi_class_type_infoE = Module['__ZTVN10__cxxabiv121__vmi_class_type_infoE'] = 423464;
+var __ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE'] = 365707;
+var __ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE'] = 365754;
+var __ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE'] = 365801;
+var __ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module['__ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE'] = 392256;
+var __ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module['__ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE'] = 392288;
+var __ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE'] = 365849;
+var __ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE'] = 365891;
+var __ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE'] = 365940;
+var __ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module['__ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE'] = 365987;
+var __ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366034;
+var __ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 392432;
+var __ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 392912;
+var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE = Module['__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE'] = 392632;
+var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE'] = 392752;
+var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE16_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE16_NS_13basic_ostreamIcS2_EE'] = 392832;
+var __ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366100;
+var __ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 392936;
+var __ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 393128;
+var __ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE'] = 393048;
+var __ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366169;
+var __ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 393152;
+var __ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 393344;
+var __ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE'] = 393264;
+var __ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module['__ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE'] = 366239;
+var __ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 393368;
+var __ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 393560;
+var __ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module['__ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE'] = 393480;
+var __ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE'] = 366309;
+var __ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 393584;
+var __ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 393776;
+var __ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE = Module['__ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE'] = 393696;
+var __ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE'] = 366357;
+var __ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module['__ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE'] = 366405;
+var __ZTVNSt3__28ios_base7failureE = Module['__ZTVNSt3__28ios_base7failureE'] = 393904;
+var __ZNSt3__28ios_base9__xindex_E = Module['__ZNSt3__28ios_base9__xindex_E'] = 471636;
+var __ZTVNSt3__28ios_baseE = Module['__ZTVNSt3__28ios_baseE'] = 393944;
+var __ZTVNSt3__219__iostream_categoryE = Module['__ZTVNSt3__219__iostream_categoryE'] = 393832;
+var __ZTINSt3__219__iostream_categoryE = Module['__ZTINSt3__219__iostream_categoryE'] = 394000;
+var __ZTINSt3__28ios_base7failureE = Module['__ZTINSt3__28ios_base7failureE'] = 394024;
+var __ZNSt3__28ios_base9boolalphaE = Module['__ZNSt3__28ios_base9boolalphaE'] = 366452;
+var __ZNSt3__28ios_base3decE = Module['__ZNSt3__28ios_base3decE'] = 366456;
+var __ZNSt3__28ios_base5fixedE = Module['__ZNSt3__28ios_base5fixedE'] = 366460;
+var __ZNSt3__28ios_base3hexE = Module['__ZNSt3__28ios_base3hexE'] = 366464;
+var __ZNSt3__28ios_base8internalE = Module['__ZNSt3__28ios_base8internalE'] = 366468;
+var __ZNSt3__28ios_base4leftE = Module['__ZNSt3__28ios_base4leftE'] = 366472;
+var __ZNSt3__28ios_base3octE = Module['__ZNSt3__28ios_base3octE'] = 366476;
+var __ZNSt3__28ios_base5rightE = Module['__ZNSt3__28ios_base5rightE'] = 366480;
+var __ZNSt3__28ios_base10scientificE = Module['__ZNSt3__28ios_base10scientificE'] = 366484;
+var __ZNSt3__28ios_base8showbaseE = Module['__ZNSt3__28ios_base8showbaseE'] = 366488;
+var __ZNSt3__28ios_base9showpointE = Module['__ZNSt3__28ios_base9showpointE'] = 366492;
+var __ZNSt3__28ios_base7showposE = Module['__ZNSt3__28ios_base7showposE'] = 366496;
+var __ZNSt3__28ios_base6skipwsE = Module['__ZNSt3__28ios_base6skipwsE'] = 366500;
+var __ZNSt3__28ios_base7unitbufE = Module['__ZNSt3__28ios_base7unitbufE'] = 366504;
+var __ZNSt3__28ios_base9uppercaseE = Module['__ZNSt3__28ios_base9uppercaseE'] = 366508;
+var __ZNSt3__28ios_base11adjustfieldE = Module['__ZNSt3__28ios_base11adjustfieldE'] = 366512;
+var __ZNSt3__28ios_base9basefieldE = Module['__ZNSt3__28ios_base9basefieldE'] = 366516;
+var __ZNSt3__28ios_base10floatfieldE = Module['__ZNSt3__28ios_base10floatfieldE'] = 366520;
+var __ZNSt3__28ios_base6badbitE = Module['__ZNSt3__28ios_base6badbitE'] = 366524;
+var __ZNSt3__28ios_base6eofbitE = Module['__ZNSt3__28ios_base6eofbitE'] = 366528;
+var __ZNSt3__28ios_base7failbitE = Module['__ZNSt3__28ios_base7failbitE'] = 366532;
+var __ZNSt3__28ios_base7goodbitE = Module['__ZNSt3__28ios_base7goodbitE'] = 366536;
+var __ZNSt3__28ios_base3appE = Module['__ZNSt3__28ios_base3appE'] = 366540;
+var __ZNSt3__28ios_base3ateE = Module['__ZNSt3__28ios_base3ateE'] = 366544;
+var __ZNSt3__28ios_base6binaryE = Module['__ZNSt3__28ios_base6binaryE'] = 366548;
+var __ZNSt3__28ios_base2inE = Module['__ZNSt3__28ios_base2inE'] = 366552;
+var __ZNSt3__28ios_base3outE = Module['__ZNSt3__28ios_base3outE'] = 366556;
+var __ZNSt3__28ios_base5truncE = Module['__ZNSt3__28ios_base5truncE'] = 366560;
+var __ZTSNSt3__28ios_baseE = Module['__ZTSNSt3__28ios_baseE'] = 366564;
+var __ZTSNSt3__219__iostream_categoryE = Module['__ZTSNSt3__219__iostream_categoryE'] = 366582;
+var __ZTSNSt3__28ios_base7failureE = Module['__ZTSNSt3__28ios_base7failureE'] = 366612;
+var __ZNSt3__219__start_std_streamsE = Module['__ZNSt3__219__start_std_streamsE'] = 472952;
+var __ZNSt3__23cinE = Module['__ZNSt3__23cinE'] = 471656;
+var __ZNSt3__24coutE = Module['__ZNSt3__24coutE'] = 471992;
+var __ZNSt3__24cerrE = Module['__ZNSt3__24cerrE'] = 472312;
+var __ZNSt3__24clogE = Module['__ZNSt3__24clogE'] = 472632;
+var __ZNSt3__24wcinE = Module['__ZNSt3__24wcinE'] = 471824;
+var __ZNSt3__25wcoutE = Module['__ZNSt3__25wcoutE'] = 472152;
+var __ZNSt3__25wcerrE = Module['__ZNSt3__25wcerrE'] = 472472;
+var __ZNSt3__25wclogE = Module['__ZNSt3__25wclogE'] = 472792;
+var __ZTVNSt3__210__stdinbufIcEE = Module['__ZTVNSt3__210__stdinbufIcEE'] = 394048;
+var __ZTVNSt3__211__stdoutbufIcEE = Module['__ZTVNSt3__211__stdoutbufIcEE'] = 394200;
+var __ZTVNSt3__210__stdinbufIwEE = Module['__ZTVNSt3__210__stdinbufIwEE'] = 394352;
+var __ZTVNSt3__211__stdoutbufIwEE = Module['__ZTVNSt3__211__stdoutbufIwEE'] = 394504;
+var __ZNSt3__27codecvtIwc11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIwc11__mbstate_tE2idE'] = 474336;
+var __ZTINSt3__210__stdinbufIcEE = Module['__ZTINSt3__210__stdinbufIcEE'] = 394176;
+var __ZTSNSt3__210__stdinbufIcEE = Module['__ZTSNSt3__210__stdinbufIcEE'] = 366638;
+var __ZTINSt3__211__stdoutbufIcEE = Module['__ZTINSt3__211__stdoutbufIcEE'] = 394328;
+var __ZTSNSt3__211__stdoutbufIcEE = Module['__ZTSNSt3__211__stdoutbufIcEE'] = 366662;
+var __ZTINSt3__210__stdinbufIwEE = Module['__ZTINSt3__210__stdinbufIwEE'] = 394480;
+var __ZTSNSt3__210__stdinbufIwEE = Module['__ZTSNSt3__210__stdinbufIwEE'] = 366687;
+var __ZTINSt3__211__stdoutbufIwEE = Module['__ZTINSt3__211__stdoutbufIwEE'] = 394632;
+var __ZTSNSt3__211__stdoutbufIwEE = Module['__ZTSNSt3__211__stdoutbufIwEE'] = 366711;
+var __ZNSt3__28numpunctIcE2idE = Module['__ZNSt3__28numpunctIcE2idE'] = 474416;
+var __ZNSt3__214__num_get_base5__srcE = Module['__ZNSt3__214__num_get_base5__srcE'] = 366736;
+var __ZNSt3__28numpunctIwE2idE = Module['__ZNSt3__28numpunctIwE2idE'] = 474432;
+var __ZNSt3__210moneypunctIcLb1EE2idE = Module['__ZNSt3__210moneypunctIcLb1EE2idE'] = 473784;
+var __ZNSt3__210moneypunctIcLb0EE2idE = Module['__ZNSt3__210moneypunctIcLb0EE2idE'] = 473768;
+var __ZNSt3__210moneypunctIwLb1EE2idE = Module['__ZNSt3__210moneypunctIwLb1EE2idE'] = 473816;
+var __ZNSt3__210moneypunctIwLb0EE2idE = Module['__ZNSt3__210moneypunctIwLb0EE2idE'] = 473800;
+var __ZTVNSt3__26locale5__impE = Module['__ZTVNSt3__26locale5__impE'] = 394656;
+var __ZTVNSt3__26locale5facetE = Module['__ZTVNSt3__26locale5facetE'] = 395680;
+var __ZNSt3__27collateIcE2idE = Module['__ZNSt3__27collateIcE2idE'] = 473608;
+var __ZNSt3__27collateIwE2idE = Module['__ZNSt3__27collateIwE2idE'] = 473624;
+var __ZNSt3__27codecvtIDsc11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDsc11__mbstate_tE2idE'] = 474352;
+var __ZNSt3__27codecvtIDic11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDic11__mbstate_tE2idE'] = 474384;
+var __ZNSt3__27codecvtIDsDu11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDsDu11__mbstate_tE2idE'] = 474368;
+var __ZNSt3__27codecvtIDiDu11__mbstate_tE2idE = Module['__ZNSt3__27codecvtIDiDu11__mbstate_tE2idE'] = 474400;
+var __ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 473832;
+var __ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 473848;
+var __ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 473864;
+var __ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 473880;
+var __ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 473704;
+var __ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 473720;
+var __ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module['__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE'] = 473736;
+var __ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module['__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE'] = 473752;
+var __ZNSt3__28messagesIcE2idE = Module['__ZNSt3__28messagesIcE2idE'] = 473896;
+var __ZNSt3__28messagesIwE2idE = Module['__ZNSt3__28messagesIwE2idE'] = 473912;
+var __ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE'] = 403728;
+var __ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE'] = 403848;
+var __ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE'] = 403968;
+var __ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE'] = 404088;
+var __ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE'] = 404208;
+var __ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module['__ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE'] = 404328;
+var __ZTVNSt3__217moneypunct_bynameIcLb0EEE = Module['__ZTVNSt3__217moneypunct_bynameIcLb0EEE'] = 402240;
+var __ZTVNSt3__217moneypunct_bynameIcLb1EEE = Module['__ZTVNSt3__217moneypunct_bynameIcLb1EEE'] = 402376;
+var __ZTVNSt3__217moneypunct_bynameIwLb0EEE = Module['__ZTVNSt3__217moneypunct_bynameIwLb0EEE'] = 402512;
+var __ZTVNSt3__217moneypunct_bynameIwLb1EEE = Module['__ZTVNSt3__217moneypunct_bynameIwLb1EEE'] = 402648;
+var __ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 400560;
+var __ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 400880;
+var __ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 401408;
+var __ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 401480;
+var __ZTVNSt3__215messages_bynameIcEE = Module['__ZTVNSt3__215messages_bynameIcEE'] = 403552;
+var __ZTVNSt3__215messages_bynameIwEE = Module['__ZTVNSt3__215messages_bynameIwEE'] = 403640;
+var __ZNSt3__26locale5__imp19classic_locale_imp_E = Module['__ZNSt3__26locale5__imp19classic_locale_imp_E'] = 473944;
+var __ZTVNSt3__214collate_bynameIcEE = Module['__ZTVNSt3__214collate_bynameIcEE'] = 394696;
+var __ZTVNSt3__214collate_bynameIwEE = Module['__ZTVNSt3__214collate_bynameIwEE'] = 394760;
+var __ZTVNSt3__25ctypeIcEE = Module['__ZTVNSt3__25ctypeIcEE'] = 394824;
+var __ZTVNSt3__212ctype_bynameIcEE = Module['__ZTVNSt3__212ctype_bynameIcEE'] = 394928;
+var __ZTVNSt3__212ctype_bynameIwEE = Module['__ZTVNSt3__212ctype_bynameIwEE'] = 395032;
+var __ZTVNSt3__27codecvtIwc11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIwc11__mbstate_tEE'] = 395168;
+var __ZTVNSt3__28numpunctIcEE = Module['__ZTVNSt3__28numpunctIcEE'] = 395264;
+var __ZTVNSt3__28numpunctIwEE = Module['__ZTVNSt3__28numpunctIwEE'] = 395344;
+var __ZTVNSt3__215numpunct_bynameIcEE = Module['__ZTVNSt3__215numpunct_bynameIcEE'] = 395424;
+var __ZTVNSt3__215numpunct_bynameIwEE = Module['__ZTVNSt3__215numpunct_bynameIwEE'] = 395504;
+var __ZTVNSt3__215__time_get_tempIcEE = Module['__ZTVNSt3__215__time_get_tempIcEE'] = 404592;
+var __ZTVNSt3__215__time_get_tempIwEE = Module['__ZTVNSt3__215__time_get_tempIwEE'] = 404720;
+var __ZTVNSt3__27collateIcEE = Module['__ZTVNSt3__27collateIcEE'] = 399024;
+var __ZTVNSt3__27collateIwEE = Module['__ZTVNSt3__27collateIwEE'] = 399088;
+var __ZTVNSt3__25ctypeIwEE = Module['__ZTVNSt3__25ctypeIwEE'] = 395744;
+var __ZTVNSt3__27codecvtIcc11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIcc11__mbstate_tEE'] = 395952;
+var __ZTVNSt3__27codecvtIDsc11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDsc11__mbstate_tEE'] = 396120;
+var __ZTVNSt3__27codecvtIDic11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDic11__mbstate_tEE'] = 396424;
+var __ZTVNSt3__27codecvtIDsDu11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDsDu11__mbstate_tEE'] = 396272;
+var __ZTVNSt3__27codecvtIDiDu11__mbstate_tEE = Module['__ZTVNSt3__27codecvtIDiDu11__mbstate_tEE'] = 396576;
+var __ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 399152;
+var __ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 399392;
+var __ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 399616;
+var __ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 399832;
+var __ZTVNSt3__210moneypunctIcLb0EEE = Module['__ZTVNSt3__210moneypunctIcLb0EEE'] = 401552;
+var __ZTVNSt3__210moneypunctIcLb1EEE = Module['__ZTVNSt3__210moneypunctIcLb1EEE'] = 401736;
+var __ZTVNSt3__210moneypunctIwLb0EEE = Module['__ZTVNSt3__210moneypunctIwLb0EEE'] = 401904;
+var __ZTVNSt3__210moneypunctIwLb1EEE = Module['__ZTVNSt3__210moneypunctIwLb1EEE'] = 402072;
+var __ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 402784;
+var __ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 402912;
+var __ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 403040;
+var __ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 403168;
+var __ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 400032;
+var __ZTVNSt3__220__time_get_c_storageIcEE = Module['__ZTVNSt3__220__time_get_c_storageIcEE'] = 404448;
+var __ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 400304;
+var __ZTVNSt3__220__time_get_c_storageIwEE = Module['__ZTVNSt3__220__time_get_c_storageIwEE'] = 404520;
+var __ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 401184;
+var __ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 401304;
+var __ZTVNSt3__28messagesIcEE = Module['__ZTVNSt3__28messagesIcEE'] = 403296;
+var __ZTVNSt3__28messagesIwEE = Module['__ZTVNSt3__28messagesIwEE'] = 403432;
+var __ZNSt3__26locale2id9__next_idE = Module['__ZNSt3__26locale2id9__next_idE'] = 474284;
+var __ZNSt3__210moneypunctIcLb0EE4intlE = Module['__ZNSt3__210moneypunctIcLb0EE4intlE'] = 366976;
+var __ZNSt3__210moneypunctIcLb1EE4intlE = Module['__ZNSt3__210moneypunctIcLb1EE4intlE'] = 366977;
+var __ZNSt3__210moneypunctIwLb0EE4intlE = Module['__ZNSt3__210moneypunctIwLb0EE4intlE'] = 366978;
+var __ZNSt3__210moneypunctIwLb1EE4intlE = Module['__ZNSt3__210moneypunctIwLb1EE4intlE'] = 366979;
+var __ZNSt3__26locale4noneE = Module['__ZNSt3__26locale4noneE'] = 366980;
+var __ZNSt3__26locale7collateE = Module['__ZNSt3__26locale7collateE'] = 366984;
+var __ZNSt3__26locale5ctypeE = Module['__ZNSt3__26locale5ctypeE'] = 366988;
+var __ZNSt3__26locale8monetaryE = Module['__ZNSt3__26locale8monetaryE'] = 366992;
+var __ZNSt3__26locale7numericE = Module['__ZNSt3__26locale7numericE'] = 366996;
+var __ZNSt3__26locale4timeE = Module['__ZNSt3__26locale4timeE'] = 367000;
+var __ZNSt3__26locale8messagesE = Module['__ZNSt3__26locale8messagesE'] = 367004;
+var __ZNSt3__26locale3allE = Module['__ZNSt3__26locale3allE'] = 367008;
+var __ZTINSt3__26locale5__impE = Module['__ZTINSt3__26locale5__impE'] = 398704;
+var __ZTINSt3__214collate_bynameIcEE = Module['__ZTINSt3__214collate_bynameIcEE'] = 398728;
+var __ZTINSt3__214collate_bynameIwEE = Module['__ZTINSt3__214collate_bynameIwEE'] = 398776;
+var __ZNSt3__210ctype_base5spaceE = Module['__ZNSt3__210ctype_base5spaceE'] = 367016;
+var __ZNSt3__210ctype_base5printE = Module['__ZNSt3__210ctype_base5printE'] = 367024;
+var __ZNSt3__210ctype_base5cntrlE = Module['__ZNSt3__210ctype_base5cntrlE'] = 367032;
+var __ZNSt3__210ctype_base5upperE = Module['__ZNSt3__210ctype_base5upperE'] = 367040;
+var __ZNSt3__210ctype_base5lowerE = Module['__ZNSt3__210ctype_base5lowerE'] = 367048;
+var __ZNSt3__210ctype_base5alphaE = Module['__ZNSt3__210ctype_base5alphaE'] = 367056;
+var __ZNSt3__210ctype_base5digitE = Module['__ZNSt3__210ctype_base5digitE'] = 367064;
+var __ZNSt3__210ctype_base5punctE = Module['__ZNSt3__210ctype_base5punctE'] = 367072;
+var __ZNSt3__210ctype_base6xdigitE = Module['__ZNSt3__210ctype_base6xdigitE'] = 367080;
+var __ZNSt3__210ctype_base5blankE = Module['__ZNSt3__210ctype_base5blankE'] = 367088;
+var __ZNSt3__210ctype_base5alnumE = Module['__ZNSt3__210ctype_base5alnumE'] = 367096;
+var __ZNSt3__210ctype_base5graphE = Module['__ZNSt3__210ctype_base5graphE'] = 367104;
+var __ZNSt3__25ctypeIcE10table_sizeE = Module['__ZNSt3__25ctypeIcE10table_sizeE'] = 367112;
+var __ZTINSt3__25ctypeIcEE = Module['__ZTINSt3__25ctypeIcEE'] = 398824;
+var __ZTINSt3__212ctype_bynameIcEE = Module['__ZTINSt3__212ctype_bynameIcEE'] = 398880;
+var __ZTINSt3__212ctype_bynameIwEE = Module['__ZTINSt3__212ctype_bynameIwEE'] = 398904;
+var __ZTINSt3__27codecvtIwc11__mbstate_tEE = Module['__ZTINSt3__27codecvtIwc11__mbstate_tEE'] = 397328;
+var __ZTINSt3__28numpunctIcEE = Module['__ZTINSt3__28numpunctIcEE'] = 398928;
+var __ZTINSt3__28numpunctIwEE = Module['__ZTINSt3__28numpunctIwEE'] = 398952;
+var __ZTINSt3__215numpunct_bynameIcEE = Module['__ZTINSt3__215numpunct_bynameIcEE'] = 398976;
+var __ZTINSt3__215numpunct_bynameIwEE = Module['__ZTINSt3__215numpunct_bynameIwEE'] = 399000;
+var __ZTINSt3__26locale5facetE = Module['__ZTINSt3__26locale5facetE'] = 395720;
+var __ZTSNSt3__26locale5facetE = Module['__ZTSNSt3__26locale5facetE'] = 369428;
+var __ZTINSt3__25ctypeIwEE = Module['__ZTINSt3__25ctypeIwEE'] = 395880;
+var __ZTSNSt3__25ctypeIwEE = Module['__ZTSNSt3__25ctypeIwEE'] = 369450;
+var __ZTINSt3__210ctype_baseE = Module['__ZTINSt3__210ctype_baseE'] = 395936;
+var __ZTSNSt3__210ctype_baseE = Module['__ZTSNSt3__210ctype_baseE'] = 369468;
+var __ZTINSt3__27codecvtIcc11__mbstate_tEE = Module['__ZTINSt3__27codecvtIcc11__mbstate_tEE'] = 396048;
+var __ZTSNSt3__27codecvtIcc11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIcc11__mbstate_tEE'] = 369489;
+var __ZTINSt3__212codecvt_baseE = Module['__ZTINSt3__212codecvt_baseE'] = 396104;
+var __ZTSNSt3__212codecvt_baseE = Module['__ZTSNSt3__212codecvt_baseE'] = 369523;
+var __ZTINSt3__27codecvtIDsc11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDsc11__mbstate_tEE'] = 396216;
+var __ZTSNSt3__27codecvtIDsc11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDsc11__mbstate_tEE'] = 369546;
+var __ZTINSt3__27codecvtIDsDu11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDsDu11__mbstate_tEE'] = 396368;
+var __ZTSNSt3__27codecvtIDsDu11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDsDu11__mbstate_tEE'] = 369581;
+var __ZTINSt3__27codecvtIDic11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDic11__mbstate_tEE'] = 396520;
+var __ZTSNSt3__27codecvtIDic11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDic11__mbstate_tEE'] = 369617;
+var __ZTINSt3__27codecvtIDiDu11__mbstate_tEE = Module['__ZTINSt3__27codecvtIDiDu11__mbstate_tEE'] = 396672;
+var __ZTSNSt3__27codecvtIDiDu11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIDiDu11__mbstate_tEE'] = 369652;
+var __ZTVNSt3__216__narrow_to_utf8ILm16EEE = Module['__ZTVNSt3__216__narrow_to_utf8ILm16EEE'] = 396728;
+var __ZTINSt3__216__narrow_to_utf8ILm16EEE = Module['__ZTINSt3__216__narrow_to_utf8ILm16EEE'] = 396824;
+var __ZTSNSt3__216__narrow_to_utf8ILm16EEE = Module['__ZTSNSt3__216__narrow_to_utf8ILm16EEE'] = 369688;
+var __ZTVNSt3__216__narrow_to_utf8ILm32EEE = Module['__ZTVNSt3__216__narrow_to_utf8ILm32EEE'] = 396848;
+var __ZTINSt3__216__narrow_to_utf8ILm32EEE = Module['__ZTINSt3__216__narrow_to_utf8ILm32EEE'] = 396944;
+var __ZTSNSt3__216__narrow_to_utf8ILm32EEE = Module['__ZTSNSt3__216__narrow_to_utf8ILm32EEE'] = 369722;
+var __ZTVNSt3__217__widen_from_utf8ILm16EEE = Module['__ZTVNSt3__217__widen_from_utf8ILm16EEE'] = 396968;
+var __ZTINSt3__217__widen_from_utf8ILm16EEE = Module['__ZTINSt3__217__widen_from_utf8ILm16EEE'] = 397064;
+var __ZTSNSt3__217__widen_from_utf8ILm16EEE = Module['__ZTSNSt3__217__widen_from_utf8ILm16EEE'] = 369756;
+var __ZTVNSt3__217__widen_from_utf8ILm32EEE = Module['__ZTVNSt3__217__widen_from_utf8ILm32EEE'] = 397088;
+var __ZTINSt3__217__widen_from_utf8ILm32EEE = Module['__ZTINSt3__217__widen_from_utf8ILm32EEE'] = 397184;
+var __ZTSNSt3__217__widen_from_utf8ILm32EEE = Module['__ZTSNSt3__217__widen_from_utf8ILm32EEE'] = 369791;
+var __ZTVNSt3__214__codecvt_utf8IwEE = Module['__ZTVNSt3__214__codecvt_utf8IwEE'] = 397208;
+var __ZTINSt3__214__codecvt_utf8IwEE = Module['__ZTINSt3__214__codecvt_utf8IwEE'] = 397304;
+var __ZTSNSt3__214__codecvt_utf8IwEE = Module['__ZTSNSt3__214__codecvt_utf8IwEE'] = 369826;
+var __ZTSNSt3__27codecvtIwc11__mbstate_tEE = Module['__ZTSNSt3__27codecvtIwc11__mbstate_tEE'] = 369854;
+var __ZTVNSt3__214__codecvt_utf8IDsEE = Module['__ZTVNSt3__214__codecvt_utf8IDsEE'] = 397384;
+var __ZTINSt3__214__codecvt_utf8IDsEE = Module['__ZTINSt3__214__codecvt_utf8IDsEE'] = 397480;
+var __ZTSNSt3__214__codecvt_utf8IDsEE = Module['__ZTSNSt3__214__codecvt_utf8IDsEE'] = 369888;
+var __ZTVNSt3__214__codecvt_utf8IDiEE = Module['__ZTVNSt3__214__codecvt_utf8IDiEE'] = 397504;
+var __ZTINSt3__214__codecvt_utf8IDiEE = Module['__ZTINSt3__214__codecvt_utf8IDiEE'] = 397600;
+var __ZTSNSt3__214__codecvt_utf8IDiEE = Module['__ZTSNSt3__214__codecvt_utf8IDiEE'] = 369917;
+var __ZTVNSt3__215__codecvt_utf16IwLb0EEE = Module['__ZTVNSt3__215__codecvt_utf16IwLb0EEE'] = 397624;
+var __ZTINSt3__215__codecvt_utf16IwLb0EEE = Module['__ZTINSt3__215__codecvt_utf16IwLb0EEE'] = 397720;
+var __ZTSNSt3__215__codecvt_utf16IwLb0EEE = Module['__ZTSNSt3__215__codecvt_utf16IwLb0EEE'] = 369946;
+var __ZTVNSt3__215__codecvt_utf16IwLb1EEE = Module['__ZTVNSt3__215__codecvt_utf16IwLb1EEE'] = 397744;
+var __ZTINSt3__215__codecvt_utf16IwLb1EEE = Module['__ZTINSt3__215__codecvt_utf16IwLb1EEE'] = 397840;
+var __ZTSNSt3__215__codecvt_utf16IwLb1EEE = Module['__ZTSNSt3__215__codecvt_utf16IwLb1EEE'] = 369979;
+var __ZTVNSt3__215__codecvt_utf16IDsLb0EEE = Module['__ZTVNSt3__215__codecvt_utf16IDsLb0EEE'] = 397864;
+var __ZTINSt3__215__codecvt_utf16IDsLb0EEE = Module['__ZTINSt3__215__codecvt_utf16IDsLb0EEE'] = 397960;
+var __ZTSNSt3__215__codecvt_utf16IDsLb0EEE = Module['__ZTSNSt3__215__codecvt_utf16IDsLb0EEE'] = 370012;
+var __ZTVNSt3__215__codecvt_utf16IDsLb1EEE = Module['__ZTVNSt3__215__codecvt_utf16IDsLb1EEE'] = 397984;
+var __ZTINSt3__215__codecvt_utf16IDsLb1EEE = Module['__ZTINSt3__215__codecvt_utf16IDsLb1EEE'] = 398080;
+var __ZTSNSt3__215__codecvt_utf16IDsLb1EEE = Module['__ZTSNSt3__215__codecvt_utf16IDsLb1EEE'] = 370046;
+var __ZTVNSt3__215__codecvt_utf16IDiLb0EEE = Module['__ZTVNSt3__215__codecvt_utf16IDiLb0EEE'] = 398104;
+var __ZTINSt3__215__codecvt_utf16IDiLb0EEE = Module['__ZTINSt3__215__codecvt_utf16IDiLb0EEE'] = 398200;
+var __ZTSNSt3__215__codecvt_utf16IDiLb0EEE = Module['__ZTSNSt3__215__codecvt_utf16IDiLb0EEE'] = 370080;
+var __ZTVNSt3__215__codecvt_utf16IDiLb1EEE = Module['__ZTVNSt3__215__codecvt_utf16IDiLb1EEE'] = 398224;
+var __ZTINSt3__215__codecvt_utf16IDiLb1EEE = Module['__ZTINSt3__215__codecvt_utf16IDiLb1EEE'] = 398320;
+var __ZTSNSt3__215__codecvt_utf16IDiLb1EEE = Module['__ZTSNSt3__215__codecvt_utf16IDiLb1EEE'] = 370114;
+var __ZTVNSt3__220__codecvt_utf8_utf16IwEE = Module['__ZTVNSt3__220__codecvt_utf8_utf16IwEE'] = 398344;
+var __ZTINSt3__220__codecvt_utf8_utf16IwEE = Module['__ZTINSt3__220__codecvt_utf8_utf16IwEE'] = 398440;
+var __ZTSNSt3__220__codecvt_utf8_utf16IwEE = Module['__ZTSNSt3__220__codecvt_utf8_utf16IwEE'] = 370148;
+var __ZTVNSt3__220__codecvt_utf8_utf16IDiEE = Module['__ZTVNSt3__220__codecvt_utf8_utf16IDiEE'] = 398464;
+var __ZTINSt3__220__codecvt_utf8_utf16IDiEE = Module['__ZTINSt3__220__codecvt_utf8_utf16IDiEE'] = 398560;
+var __ZTSNSt3__220__codecvt_utf8_utf16IDiEE = Module['__ZTSNSt3__220__codecvt_utf8_utf16IDiEE'] = 370182;
+var __ZTVNSt3__220__codecvt_utf8_utf16IDsEE = Module['__ZTVNSt3__220__codecvt_utf8_utf16IDsEE'] = 398584;
+var __ZTINSt3__220__codecvt_utf8_utf16IDsEE = Module['__ZTINSt3__220__codecvt_utf8_utf16IDsEE'] = 398680;
+var __ZTSNSt3__220__codecvt_utf8_utf16IDsEE = Module['__ZTSNSt3__220__codecvt_utf8_utf16IDsEE'] = 370217;
+var __ZTSNSt3__26locale5__impE = Module['__ZTSNSt3__26locale5__impE'] = 370252;
+var __ZTSNSt3__214collate_bynameIcEE = Module['__ZTSNSt3__214collate_bynameIcEE'] = 370274;
+var __ZTINSt3__27collateIcEE = Module['__ZTINSt3__27collateIcEE'] = 398752;
+var __ZTSNSt3__27collateIcEE = Module['__ZTSNSt3__27collateIcEE'] = 370302;
+var __ZTSNSt3__214collate_bynameIwEE = Module['__ZTSNSt3__214collate_bynameIwEE'] = 370322;
+var __ZTINSt3__27collateIwEE = Module['__ZTINSt3__27collateIwEE'] = 398800;
+var __ZTSNSt3__27collateIwEE = Module['__ZTSNSt3__27collateIwEE'] = 370350;
+var __ZTSNSt3__25ctypeIcEE = Module['__ZTSNSt3__25ctypeIcEE'] = 370370;
+var __ZTSNSt3__212ctype_bynameIcEE = Module['__ZTSNSt3__212ctype_bynameIcEE'] = 370388;
+var __ZTSNSt3__212ctype_bynameIwEE = Module['__ZTSNSt3__212ctype_bynameIwEE'] = 370414;
+var __ZTSNSt3__28numpunctIcEE = Module['__ZTSNSt3__28numpunctIcEE'] = 370440;
+var __ZTSNSt3__28numpunctIwEE = Module['__ZTSNSt3__28numpunctIwEE'] = 370461;
+var __ZTSNSt3__215numpunct_bynameIcEE = Module['__ZTSNSt3__215numpunct_bynameIcEE'] = 370482;
+var __ZTSNSt3__215numpunct_bynameIwEE = Module['__ZTSNSt3__215numpunct_bynameIwEE'] = 370511;
+var __ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 399280;
+var __ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 370540;
+var __ZTINSt3__29__num_getIcEE = Module['__ZTINSt3__29__num_getIcEE'] = 399336;
+var __ZTSNSt3__29__num_getIcEE = Module['__ZTSNSt3__29__num_getIcEE'] = 370608;
+var __ZTINSt3__214__num_get_baseE = Module['__ZTINSt3__214__num_get_baseE'] = 399376;
+var __ZTSNSt3__214__num_get_baseE = Module['__ZTSNSt3__214__num_get_baseE'] = 370630;
+var __ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 399520;
+var __ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 370655;
+var __ZTINSt3__29__num_getIwEE = Module['__ZTINSt3__29__num_getIwEE'] = 399576;
+var __ZTSNSt3__29__num_getIwEE = Module['__ZTSNSt3__29__num_getIwEE'] = 370723;
+var __ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 399720;
+var __ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 370745;
+var __ZTINSt3__29__num_putIcEE = Module['__ZTINSt3__29__num_putIcEE'] = 399776;
+var __ZTSNSt3__29__num_putIcEE = Module['__ZTSNSt3__29__num_putIcEE'] = 370813;
+var __ZTINSt3__214__num_put_baseE = Module['__ZTINSt3__214__num_put_baseE'] = 399816;
+var __ZTSNSt3__214__num_put_baseE = Module['__ZTSNSt3__214__num_put_baseE'] = 370835;
+var __ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 399936;
+var __ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 370860;
+var __ZTINSt3__29__num_putIwEE = Module['__ZTINSt3__29__num_putIwEE'] = 399992;
+var __ZTSNSt3__29__num_putIwEE = Module['__ZTSNSt3__29__num_putIwEE'] = 370928;
+var __ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 400200;
+var __ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 370950;
+var __ZTINSt3__29time_baseE = Module['__ZTINSt3__29time_baseE'] = 400272;
+var __ZTINSt3__220__time_get_c_storageIcEE = Module['__ZTINSt3__220__time_get_c_storageIcEE'] = 400288;
+var __ZTSNSt3__29time_baseE = Module['__ZTSNSt3__29time_baseE'] = 371019;
+var __ZTSNSt3__220__time_get_c_storageIcEE = Module['__ZTSNSt3__220__time_get_c_storageIcEE'] = 371038;
+var __ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 400472;
+var __ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 371072;
+var __ZTINSt3__220__time_get_c_storageIwEE = Module['__ZTINSt3__220__time_get_c_storageIwEE'] = 400544;
+var __ZTSNSt3__220__time_get_c_storageIwEE = Module['__ZTSNSt3__220__time_get_c_storageIwEE'] = 371141;
+var __ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 400784;
+var __ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 371175;
+var __ZTINSt3__218__time_get_storageIcEE = Module['__ZTINSt3__218__time_get_storageIcEE'] = 400840;
+var __ZTSNSt3__218__time_get_storageIcEE = Module['__ZTSNSt3__218__time_get_storageIcEE'] = 371252;
+var __ZTINSt3__210__time_getE = Module['__ZTINSt3__210__time_getE'] = 400864;
+var __ZTSNSt3__210__time_getE = Module['__ZTSNSt3__210__time_getE'] = 371284;
+var __ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 401104;
+var __ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 371305;
+var __ZTINSt3__218__time_get_storageIwEE = Module['__ZTINSt3__218__time_get_storageIwEE'] = 401160;
+var __ZTSNSt3__218__time_get_storageIwEE = Module['__ZTSNSt3__218__time_get_storageIwEE'] = 371382;
+var __ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 401232;
+var __ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 371414;
+var __ZTINSt3__210__time_putE = Module['__ZTINSt3__210__time_putE'] = 401288;
+var __ZTSNSt3__210__time_putE = Module['__ZTSNSt3__210__time_putE'] = 371483;
+var __ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 401352;
+var __ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 371504;
+var __ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 401456;
+var __ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 371573;
+var __ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 401528;
+var __ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 371650;
+var __ZTINSt3__210moneypunctIcLb0EEE = Module['__ZTINSt3__210moneypunctIcLb0EEE'] = 401664;
+var __ZTSNSt3__210moneypunctIcLb0EEE = Module['__ZTSNSt3__210moneypunctIcLb0EEE'] = 371727;
+var __ZTINSt3__210money_baseE = Module['__ZTINSt3__210money_baseE'] = 401720;
+var __ZTSNSt3__210money_baseE = Module['__ZTSNSt3__210money_baseE'] = 371755;
+var __ZTINSt3__210moneypunctIcLb1EEE = Module['__ZTINSt3__210moneypunctIcLb1EEE'] = 401848;
+var __ZTSNSt3__210moneypunctIcLb1EEE = Module['__ZTSNSt3__210moneypunctIcLb1EEE'] = 371776;
+var __ZTINSt3__210moneypunctIwLb0EEE = Module['__ZTINSt3__210moneypunctIwLb0EEE'] = 402016;
+var __ZTSNSt3__210moneypunctIwLb0EEE = Module['__ZTSNSt3__210moneypunctIwLb0EEE'] = 371804;
+var __ZTINSt3__210moneypunctIwLb1EEE = Module['__ZTINSt3__210moneypunctIwLb1EEE'] = 402184;
+var __ZTSNSt3__210moneypunctIwLb1EEE = Module['__ZTSNSt3__210moneypunctIwLb1EEE'] = 371832;
+var __ZTINSt3__217moneypunct_bynameIcLb0EEE = Module['__ZTINSt3__217moneypunct_bynameIcLb0EEE'] = 402352;
+var __ZTSNSt3__217moneypunct_bynameIcLb0EEE = Module['__ZTSNSt3__217moneypunct_bynameIcLb0EEE'] = 371860;
+var __ZTINSt3__217moneypunct_bynameIcLb1EEE = Module['__ZTINSt3__217moneypunct_bynameIcLb1EEE'] = 402488;
+var __ZTSNSt3__217moneypunct_bynameIcLb1EEE = Module['__ZTSNSt3__217moneypunct_bynameIcLb1EEE'] = 371895;
+var __ZTINSt3__217moneypunct_bynameIwLb0EEE = Module['__ZTINSt3__217moneypunct_bynameIwLb0EEE'] = 402624;
+var __ZTSNSt3__217moneypunct_bynameIwLb0EEE = Module['__ZTSNSt3__217moneypunct_bynameIwLb0EEE'] = 371930;
+var __ZTINSt3__217moneypunct_bynameIwLb1EEE = Module['__ZTINSt3__217moneypunct_bynameIwLb1EEE'] = 402760;
+var __ZTSNSt3__217moneypunct_bynameIwLb1EEE = Module['__ZTSNSt3__217moneypunct_bynameIwLb1EEE'] = 371965;
+var __ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 402840;
+var __ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 372000;
+var __ZTINSt3__211__money_getIcEE = Module['__ZTINSt3__211__money_getIcEE'] = 402896;
+var __ZTSNSt3__211__money_getIcEE = Module['__ZTSNSt3__211__money_getIcEE'] = 372070;
+var __ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 402968;
+var __ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 372095;
+var __ZTINSt3__211__money_getIwEE = Module['__ZTINSt3__211__money_getIwEE'] = 403024;
+var __ZTSNSt3__211__money_getIwEE = Module['__ZTSNSt3__211__money_getIwEE'] = 372165;
+var __ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 403096;
+var __ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module['__ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE'] = 372190;
+var __ZTINSt3__211__money_putIcEE = Module['__ZTINSt3__211__money_putIcEE'] = 403152;
+var __ZTSNSt3__211__money_putIcEE = Module['__ZTSNSt3__211__money_putIcEE'] = 372260;
+var __ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 403224;
+var __ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module['__ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE'] = 372285;
+var __ZTINSt3__211__money_putIwEE = Module['__ZTINSt3__211__money_putIwEE'] = 403280;
+var __ZTSNSt3__211__money_putIwEE = Module['__ZTSNSt3__211__money_putIwEE'] = 372355;
+var __ZTINSt3__28messagesIcEE = Module['__ZTINSt3__28messagesIcEE'] = 403360;
+var __ZTSNSt3__28messagesIcEE = Module['__ZTSNSt3__28messagesIcEE'] = 372380;
+var __ZTINSt3__213messages_baseE = Module['__ZTINSt3__213messages_baseE'] = 403416;
+var __ZTSNSt3__213messages_baseE = Module['__ZTSNSt3__213messages_baseE'] = 372401;
+var __ZTINSt3__28messagesIwEE = Module['__ZTINSt3__28messagesIwEE'] = 403496;
+var __ZTSNSt3__28messagesIwEE = Module['__ZTSNSt3__28messagesIwEE'] = 372425;
+var __ZTINSt3__215messages_bynameIcEE = Module['__ZTINSt3__215messages_bynameIcEE'] = 403616;
+var __ZTSNSt3__215messages_bynameIcEE = Module['__ZTSNSt3__215messages_bynameIcEE'] = 372446;
+var __ZTINSt3__215messages_bynameIwEE = Module['__ZTINSt3__215messages_bynameIwEE'] = 403704;
+var __ZTSNSt3__215messages_bynameIwEE = Module['__ZTSNSt3__215messages_bynameIwEE'] = 372475;
+var __ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE'] = 403824;
+var __ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE'] = 372504;
+var __ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE'] = 403944;
+var __ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE'] = 372546;
+var __ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE'] = 404064;
+var __ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE'] = 372588;
+var __ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE'] = 404184;
+var __ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE'] = 372631;
+var __ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE'] = 404304;
+var __ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE'] = 372674;
+var __ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module['__ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE'] = 404424;
+var __ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module['__ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE'] = 372718;
+var __ZTINSt3__215__time_get_tempIcEE = Module['__ZTINSt3__215__time_get_tempIcEE'] = 404696;
+var __ZTSNSt3__215__time_get_tempIcEE = Module['__ZTSNSt3__215__time_get_tempIcEE'] = 373648;
+var __ZTINSt3__215__time_get_tempIwEE = Module['__ZTINSt3__215__time_get_tempIwEE'] = 404856;
+var __ZTSNSt3__215__time_get_tempIwEE = Module['__ZTSNSt3__215__time_get_tempIwEE'] = 373677;
+var __ZTSNSt3__214__shared_countE = Module['__ZTSNSt3__214__shared_countE'] = 373706;
+var __ZTSNSt3__219__shared_weak_countE = Module['__ZTSNSt3__219__shared_weak_countE'] = 373731;
+var __ZTVNSt3__212bad_weak_ptrE = Module['__ZTVNSt3__212bad_weak_ptrE'] = 405288;
+var __ZTINSt3__212bad_weak_ptrE = Module['__ZTINSt3__212bad_weak_ptrE'] = 405328;
+var __ZTSNSt3__212bad_weak_ptrE = Module['__ZTSNSt3__212bad_weak_ptrE'] = 373761;
+var __ZTVNSt3__23pmr28unsynchronized_pool_resourceE = Module['__ZTVNSt3__23pmr28unsynchronized_pool_resourceE'] = 405480;
+var __ZTVNSt3__23pmr15memory_resourceE = Module['__ZTVNSt3__23pmr15memory_resourceE'] = 405632;
+var __ZTVNSt3__23pmr25monotonic_buffer_resourceE = Module['__ZTVNSt3__23pmr25monotonic_buffer_resourceE'] = 405536;
+var __ZTVNSt3__23pmr26synchronized_pool_resourceE = Module['__ZTVNSt3__23pmr26synchronized_pool_resourceE'] = 405712;
+var __ZTVNSt3__23pmr32__new_delete_memory_resource_impE = Module['__ZTVNSt3__23pmr32__new_delete_memory_resource_impE'] = 405352;
+var __ZTINSt3__23pmr32__new_delete_memory_resource_impE = Module['__ZTINSt3__23pmr32__new_delete_memory_resource_impE'] = 405792;
+var __ZTVNSt3__23pmr26__null_memory_resource_impE = Module['__ZTVNSt3__23pmr26__null_memory_resource_impE'] = 405408;
+var __ZTINSt3__23pmr26__null_memory_resource_impE = Module['__ZTINSt3__23pmr26__null_memory_resource_impE'] = 405816;
+var __ZTINSt3__23pmr28unsynchronized_pool_resourceE = Module['__ZTINSt3__23pmr28unsynchronized_pool_resourceE'] = 405688;
+var __ZTINSt3__23pmr25monotonic_buffer_resourceE = Module['__ZTINSt3__23pmr25monotonic_buffer_resourceE'] = 405592;
+var __ZTSNSt3__23pmr25monotonic_buffer_resourceE = Module['__ZTSNSt3__23pmr25monotonic_buffer_resourceE'] = 373784;
+var __ZTINSt3__23pmr15memory_resourceE = Module['__ZTINSt3__23pmr15memory_resourceE'] = 405616;
+var __ZTSNSt3__23pmr15memory_resourceE = Module['__ZTSNSt3__23pmr15memory_resourceE'] = 373824;
+var __ZTSNSt3__23pmr28unsynchronized_pool_resourceE = Module['__ZTSNSt3__23pmr28unsynchronized_pool_resourceE'] = 373854;
+var __ZTINSt3__23pmr26synchronized_pool_resourceE = Module['__ZTINSt3__23pmr26synchronized_pool_resourceE'] = 405768;
+var __ZTSNSt3__23pmr26synchronized_pool_resourceE = Module['__ZTSNSt3__23pmr26synchronized_pool_resourceE'] = 373897;
+var __ZTSNSt3__23pmr32__new_delete_memory_resource_impE = Module['__ZTSNSt3__23pmr32__new_delete_memory_resource_impE'] = 373938;
+var __ZTSNSt3__23pmr26__null_memory_resource_impE = Module['__ZTSNSt3__23pmr26__null_memory_resource_impE'] = 373985;
+var __ZSt7nothrow = Module['__ZSt7nothrow'] = 374026;
+var __ZTVSt19bad_optional_access = Module['__ZTVSt19bad_optional_access'] = 405888;
+var __ZTISt19bad_optional_access = Module['__ZTISt19bad_optional_access'] = 405928;
+var __ZTSSt19bad_optional_access = Module['__ZTSSt19bad_optional_access'] = 374027;
+var __ZTVNSt12experimental19bad_optional_accessE = Module['__ZTVNSt12experimental19bad_optional_accessE'] = 405952;
+var __ZTINSt12experimental19bad_optional_accessE = Module['__ZTINSt12experimental19bad_optional_accessE'] = 405992;
+var __ZTSNSt12experimental19bad_optional_accessE = Module['__ZTSNSt12experimental19bad_optional_accessE'] = 374051;
+var __ZNSt3__210filesystem4path19preferred_separatorE = Module['__ZNSt3__210filesystem4path19preferred_separatorE'] = 374091;
+var __ZNSt3__212__rs_default4__c_E = Module['__ZNSt3__212__rs_default4__c_E'] = 478816;
+var __ZTVNSt3__211regex_errorE = Module['__ZTVNSt3__211regex_errorE'] = 406016;
+var __ZTINSt3__211regex_errorE = Module['__ZTINSt3__211regex_errorE'] = 408080;
+var __ZTSNSt3__211regex_errorE = Module['__ZTSNSt3__211regex_errorE'] = 374092;
+var __ZTVSt11logic_error = Module['__ZTVSt11logic_error'] = 423984;
+var __ZTVSt9exception = Module['__ZTVSt9exception'] = 423816;
+var __ZTVSt13runtime_error = Module['__ZTVSt13runtime_error'] = 424024;
+var __ZNSt3__26__itoa10__pow10_64E = Module['__ZNSt3__26__itoa10__pow10_64E'] = 374176;
+var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE = Module['__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE'] = 374120;
+var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE = Module['__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE'] = 374128;
+var __ZTVNSt3__212strstreambufE = Module['__ZTVNSt3__212strstreambufE'] = 408240;
+var __ZTTNSt3__210istrstreamE = Module['__ZTTNSt3__210istrstreamE'] = 408448;
+var __ZTTNSt3__210ostrstreamE = Module['__ZTTNSt3__210ostrstreamE'] = 408560;
+var __ZTTNSt3__29strstreamE = Module['__ZTTNSt3__29strstreamE'] = 408712;
+var __ZTINSt3__212strstreambufE = Module['__ZTINSt3__212strstreambufE'] = 408792;
+var __ZTVNSt3__210istrstreamE = Module['__ZTVNSt3__210istrstreamE'] = 408368;
+var __ZTINSt3__210istrstreamE = Module['__ZTINSt3__210istrstreamE'] = 408896;
+var __ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE'] = 408816;
+var __ZTVNSt3__210ostrstreamE = Module['__ZTVNSt3__210ostrstreamE'] = 408480;
+var __ZTINSt3__210ostrstreamE = Module['__ZTINSt3__210ostrstreamE'] = 409000;
+var __ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE'] = 408920;
+var __ZTVNSt3__29strstreamE = Module['__ZTVNSt3__29strstreamE'] = 408592;
+var __ZTINSt3__29strstreamE = Module['__ZTINSt3__29strstreamE'] = 409304;
+var __ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE'] = 409024;
+var __ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE'] = 409144;
+var __ZTCNSt3__29strstreamE16_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module['__ZTCNSt3__29strstreamE16_NS_13basic_ostreamIcNS_11char_traitsIcEEEE'] = 409224;
+var __ZTSNSt3__212strstreambufE = Module['__ZTSNSt3__212strstreambufE'] = 374336;
+var __ZTSNSt3__210istrstreamE = Module['__ZTSNSt3__210istrstreamE'] = 374359;
+var __ZTSNSt3__210ostrstreamE = Module['__ZTSNSt3__210ostrstreamE'] = 374380;
+var __ZTSNSt3__29strstreamE = Module['__ZTSNSt3__29strstreamE'] = 374401;
+var __ZTVNSt3__212system_errorE = Module['__ZTVNSt3__212system_errorE'] = 409488;
+var __ZTVNSt3__224__generic_error_categoryE = Module['__ZTVNSt3__224__generic_error_categoryE'] = 409336;
+var __ZTINSt3__224__generic_error_categoryE = Module['__ZTINSt3__224__generic_error_categoryE'] = 409624;
+var __ZTVNSt3__223__system_error_categoryE = Module['__ZTVNSt3__223__system_error_categoryE'] = 409416;
+var __ZTINSt3__223__system_error_categoryE = Module['__ZTINSt3__223__system_error_categoryE'] = 409648;
+var __ZTVNSt3__212__do_messageE = Module['__ZTVNSt3__212__do_messageE'] = 409528;
+var __ZTSNSt3__212__do_messageE = Module['__ZTSNSt3__212__do_messageE'] = 374420;
+var __ZTSNSt3__224__generic_error_categoryE = Module['__ZTSNSt3__224__generic_error_categoryE'] = 374443;
+var __ZTSNSt3__223__system_error_categoryE = Module['__ZTSNSt3__223__system_error_categoryE'] = 374478;
+var __ZTSNSt3__212system_errorE = Module['__ZTSNSt3__212system_errorE'] = 374512;
+var __ZTVSt18bad_variant_access = Module['__ZTVSt18bad_variant_access'] = 409696;
+var __ZTISt18bad_variant_access = Module['__ZTISt18bad_variant_access'] = 409736;
+var __ZTSSt18bad_variant_access = Module['__ZTSSt18bad_variant_access'] = 374535;
+var ___cxa_unexpected_handler = Module['___cxa_unexpected_handler'] = 409768;
+var ___cxa_terminate_handler = Module['___cxa_terminate_handler'] = 409760;
+var ___cxa_new_handler = Module['___cxa_new_handler'] = 481408;
+var __ZTIN10__cxxabiv117__class_type_infoE = Module['__ZTIN10__cxxabiv117__class_type_infoE'] = 420808;
+var __ZTIN10__cxxabiv116__shim_type_infoE = Module['__ZTIN10__cxxabiv116__shim_type_infoE'] = 420784;
+var __ZTIN10__cxxabiv117__pbase_type_infoE = Module['__ZTIN10__cxxabiv117__pbase_type_infoE'] = 420832;
+var __ZTIDn = Module['__ZTIDn'] = 421144;
+var __ZTIN10__cxxabiv119__pointer_type_infoE = Module['__ZTIN10__cxxabiv119__pointer_type_infoE'] = 420856;
+var __ZTIv = Module['__ZTIv'] = 421064;
+var __ZTIN10__cxxabiv120__function_type_infoE = Module['__ZTIN10__cxxabiv120__function_type_infoE'] = 420880;
+var __ZTIN10__cxxabiv129__pointer_to_member_type_infoE = Module['__ZTIN10__cxxabiv129__pointer_to_member_type_infoE'] = 420904;
+var __ZTISt9type_info = Module['__ZTISt9type_info'] = 424672;
+var __ZTSN10__cxxabiv116__shim_type_infoE = Module['__ZTSN10__cxxabiv116__shim_type_infoE'] = 379169;
+var __ZTSN10__cxxabiv117__class_type_infoE = Module['__ZTSN10__cxxabiv117__class_type_infoE'] = 379202;
+var __ZTSN10__cxxabiv117__pbase_type_infoE = Module['__ZTSN10__cxxabiv117__pbase_type_infoE'] = 379236;
+var __ZTSN10__cxxabiv119__pointer_type_infoE = Module['__ZTSN10__cxxabiv119__pointer_type_infoE'] = 379270;
+var __ZTSN10__cxxabiv120__function_type_infoE = Module['__ZTSN10__cxxabiv120__function_type_infoE'] = 379306;
+var __ZTSN10__cxxabiv129__pointer_to_member_type_infoE = Module['__ZTSN10__cxxabiv129__pointer_to_member_type_infoE'] = 379343;
+var __ZTVN10__cxxabiv116__shim_type_infoE = Module['__ZTVN10__cxxabiv116__shim_type_infoE'] = 420928;
+var __ZTVN10__cxxabiv123__fundamental_type_infoE = Module['__ZTVN10__cxxabiv123__fundamental_type_infoE'] = 420984;
+var __ZTIN10__cxxabiv123__fundamental_type_infoE = Module['__ZTIN10__cxxabiv123__fundamental_type_infoE'] = 421040;
+var __ZTSN10__cxxabiv123__fundamental_type_infoE = Module['__ZTSN10__cxxabiv123__fundamental_type_infoE'] = 379416;
+var __ZTSv = Module['__ZTSv'] = 379456;
+var __ZTIPv = Module['__ZTIPv'] = 421080;
+var __ZTVN10__cxxabiv119__pointer_type_infoE = Module['__ZTVN10__cxxabiv119__pointer_type_infoE'] = 423624;
+var __ZTSPv = Module['__ZTSPv'] = 379458;
+var __ZTIPKv = Module['__ZTIPKv'] = 421112;
+var __ZTSPKv = Module['__ZTSPKv'] = 379461;
+var __ZTSDn = Module['__ZTSDn'] = 379465;
+var __ZTIPDn = Module['__ZTIPDn'] = 421160;
+var __ZTSPDn = Module['__ZTSPDn'] = 379468;
+var __ZTIPKDn = Module['__ZTIPKDn'] = 421192;
+var __ZTSPKDn = Module['__ZTSPKDn'] = 379472;
+var __ZTIb = Module['__ZTIb'] = 421224;
+var __ZTSb = Module['__ZTSb'] = 379477;
+var __ZTIPb = Module['__ZTIPb'] = 421240;
+var __ZTSPb = Module['__ZTSPb'] = 379479;
+var __ZTIPKb = Module['__ZTIPKb'] = 421272;
+var __ZTSPKb = Module['__ZTSPKb'] = 379482;
+var __ZTIw = Module['__ZTIw'] = 421304;
+var __ZTSw = Module['__ZTSw'] = 379486;
+var __ZTIPw = Module['__ZTIPw'] = 421320;
+var __ZTSPw = Module['__ZTSPw'] = 379488;
+var __ZTIPKw = Module['__ZTIPKw'] = 421352;
+var __ZTSPKw = Module['__ZTSPKw'] = 379491;
+var __ZTIc = Module['__ZTIc'] = 421384;
+var __ZTSc = Module['__ZTSc'] = 379495;
+var __ZTIPc = Module['__ZTIPc'] = 421400;
+var __ZTSPc = Module['__ZTSPc'] = 379497;
+var __ZTIPKc = Module['__ZTIPKc'] = 421432;
+var __ZTSPKc = Module['__ZTSPKc'] = 379500;
+var __ZTIh = Module['__ZTIh'] = 421464;
+var __ZTSh = Module['__ZTSh'] = 379504;
+var __ZTIPh = Module['__ZTIPh'] = 421480;
+var __ZTSPh = Module['__ZTSPh'] = 379506;
+var __ZTIPKh = Module['__ZTIPKh'] = 421512;
+var __ZTSPKh = Module['__ZTSPKh'] = 379509;
+var __ZTIa = Module['__ZTIa'] = 421544;
+var __ZTSa = Module['__ZTSa'] = 379513;
+var __ZTIPa = Module['__ZTIPa'] = 421560;
+var __ZTSPa = Module['__ZTSPa'] = 379515;
+var __ZTIPKa = Module['__ZTIPKa'] = 421592;
+var __ZTSPKa = Module['__ZTSPKa'] = 379518;
+var __ZTIs = Module['__ZTIs'] = 421624;
+var __ZTSs = Module['__ZTSs'] = 379522;
+var __ZTIPs = Module['__ZTIPs'] = 421640;
+var __ZTSPs = Module['__ZTSPs'] = 379524;
+var __ZTIPKs = Module['__ZTIPKs'] = 421672;
+var __ZTSPKs = Module['__ZTSPKs'] = 379527;
+var __ZTIt = Module['__ZTIt'] = 421704;
+var __ZTSt = Module['__ZTSt'] = 379531;
+var __ZTIPt = Module['__ZTIPt'] = 421720;
+var __ZTSPt = Module['__ZTSPt'] = 379533;
+var __ZTIPKt = Module['__ZTIPKt'] = 421752;
+var __ZTSPKt = Module['__ZTSPKt'] = 379536;
+var __ZTIi = Module['__ZTIi'] = 421784;
+var __ZTSi = Module['__ZTSi'] = 379540;
+var __ZTIPi = Module['__ZTIPi'] = 421800;
+var __ZTSPi = Module['__ZTSPi'] = 379542;
+var __ZTIPKi = Module['__ZTIPKi'] = 421832;
+var __ZTSPKi = Module['__ZTSPKi'] = 379545;
+var __ZTIj = Module['__ZTIj'] = 421864;
+var __ZTSj = Module['__ZTSj'] = 379549;
+var __ZTIPj = Module['__ZTIPj'] = 421880;
+var __ZTSPj = Module['__ZTSPj'] = 379551;
+var __ZTIPKj = Module['__ZTIPKj'] = 421912;
+var __ZTSPKj = Module['__ZTSPKj'] = 379554;
+var __ZTIl = Module['__ZTIl'] = 421944;
+var __ZTSl = Module['__ZTSl'] = 379558;
+var __ZTIPl = Module['__ZTIPl'] = 421960;
+var __ZTSPl = Module['__ZTSPl'] = 379560;
+var __ZTIPKl = Module['__ZTIPKl'] = 421992;
+var __ZTSPKl = Module['__ZTSPKl'] = 379563;
+var __ZTIm = Module['__ZTIm'] = 422024;
+var __ZTSm = Module['__ZTSm'] = 379567;
+var __ZTIPm = Module['__ZTIPm'] = 422040;
+var __ZTSPm = Module['__ZTSPm'] = 379569;
+var __ZTIPKm = Module['__ZTIPKm'] = 422072;
+var __ZTSPKm = Module['__ZTSPKm'] = 379572;
+var __ZTIx = Module['__ZTIx'] = 422104;
+var __ZTSx = Module['__ZTSx'] = 379576;
+var __ZTIPx = Module['__ZTIPx'] = 422120;
+var __ZTSPx = Module['__ZTSPx'] = 379578;
+var __ZTIPKx = Module['__ZTIPKx'] = 422152;
+var __ZTSPKx = Module['__ZTSPKx'] = 379581;
+var __ZTIy = Module['__ZTIy'] = 422184;
+var __ZTSy = Module['__ZTSy'] = 379585;
+var __ZTIPy = Module['__ZTIPy'] = 422200;
+var __ZTSPy = Module['__ZTSPy'] = 379587;
+var __ZTIPKy = Module['__ZTIPKy'] = 422232;
+var __ZTSPKy = Module['__ZTSPKy'] = 379590;
+var __ZTIn = Module['__ZTIn'] = 422264;
+var __ZTSn = Module['__ZTSn'] = 379594;
+var __ZTIPn = Module['__ZTIPn'] = 422280;
+var __ZTSPn = Module['__ZTSPn'] = 379596;
+var __ZTIPKn = Module['__ZTIPKn'] = 422312;
+var __ZTSPKn = Module['__ZTSPKn'] = 379599;
+var __ZTIo = Module['__ZTIo'] = 422344;
+var __ZTSo = Module['__ZTSo'] = 379603;
+var __ZTIPo = Module['__ZTIPo'] = 422360;
+var __ZTSPo = Module['__ZTSPo'] = 379605;
+var __ZTIPKo = Module['__ZTIPKo'] = 422392;
+var __ZTSPKo = Module['__ZTSPKo'] = 379608;
+var __ZTIDh = Module['__ZTIDh'] = 422424;
+var __ZTSDh = Module['__ZTSDh'] = 379612;
+var __ZTIPDh = Module['__ZTIPDh'] = 422440;
+var __ZTSPDh = Module['__ZTSPDh'] = 379615;
+var __ZTIPKDh = Module['__ZTIPKDh'] = 422472;
+var __ZTSPKDh = Module['__ZTSPKDh'] = 379619;
+var __ZTIf = Module['__ZTIf'] = 422504;
+var __ZTSf = Module['__ZTSf'] = 379624;
+var __ZTIPf = Module['__ZTIPf'] = 422520;
+var __ZTSPf = Module['__ZTSPf'] = 379626;
+var __ZTIPKf = Module['__ZTIPKf'] = 422552;
+var __ZTSPKf = Module['__ZTSPKf'] = 379629;
+var __ZTId = Module['__ZTId'] = 422584;
+var __ZTSd = Module['__ZTSd'] = 379633;
+var __ZTIPd = Module['__ZTIPd'] = 422600;
+var __ZTSPd = Module['__ZTSPd'] = 379635;
+var __ZTIPKd = Module['__ZTIPKd'] = 422632;
+var __ZTSPKd = Module['__ZTSPKd'] = 379638;
+var __ZTIe = Module['__ZTIe'] = 422664;
+var __ZTSe = Module['__ZTSe'] = 379642;
+var __ZTIPe = Module['__ZTIPe'] = 422680;
+var __ZTSPe = Module['__ZTSPe'] = 379644;
+var __ZTIPKe = Module['__ZTIPKe'] = 422712;
+var __ZTSPKe = Module['__ZTSPKe'] = 379647;
+var __ZTIg = Module['__ZTIg'] = 422744;
+var __ZTSg = Module['__ZTSg'] = 379651;
+var __ZTIPg = Module['__ZTIPg'] = 422760;
+var __ZTSPg = Module['__ZTSPg'] = 379653;
+var __ZTIPKg = Module['__ZTIPKg'] = 422792;
+var __ZTSPKg = Module['__ZTSPKg'] = 379656;
+var __ZTIDu = Module['__ZTIDu'] = 422824;
+var __ZTSDu = Module['__ZTSDu'] = 379660;
+var __ZTIPDu = Module['__ZTIPDu'] = 422840;
+var __ZTSPDu = Module['__ZTSPDu'] = 379663;
+var __ZTIPKDu = Module['__ZTIPKDu'] = 422872;
+var __ZTSPKDu = Module['__ZTSPKDu'] = 379667;
+var __ZTIDs = Module['__ZTIDs'] = 422904;
+var __ZTSDs = Module['__ZTSDs'] = 379672;
+var __ZTIPDs = Module['__ZTIPDs'] = 422920;
+var __ZTSPDs = Module['__ZTSPDs'] = 379675;
+var __ZTIPKDs = Module['__ZTIPKDs'] = 422952;
+var __ZTSPKDs = Module['__ZTSPKDs'] = 379679;
+var __ZTIDi = Module['__ZTIDi'] = 422984;
+var __ZTSDi = Module['__ZTSDi'] = 379684;
+var __ZTIPDi = Module['__ZTIPDi'] = 423000;
+var __ZTSPDi = Module['__ZTSPDi'] = 379687;
+var __ZTIPKDi = Module['__ZTIPKDi'] = 423032;
+var __ZTSPKDi = Module['__ZTSPKDi'] = 379691;
+var __ZTVN10__cxxabiv117__array_type_infoE = Module['__ZTVN10__cxxabiv117__array_type_infoE'] = 423064;
+var __ZTIN10__cxxabiv117__array_type_infoE = Module['__ZTIN10__cxxabiv117__array_type_infoE'] = 423120;
+var __ZTSN10__cxxabiv117__array_type_infoE = Module['__ZTSN10__cxxabiv117__array_type_infoE'] = 379696;
+var __ZTVN10__cxxabiv120__function_type_infoE = Module['__ZTVN10__cxxabiv120__function_type_infoE'] = 423144;
+var __ZTVN10__cxxabiv116__enum_type_infoE = Module['__ZTVN10__cxxabiv116__enum_type_infoE'] = 423200;
+var __ZTIN10__cxxabiv116__enum_type_infoE = Module['__ZTIN10__cxxabiv116__enum_type_infoE'] = 423256;
+var __ZTSN10__cxxabiv116__enum_type_infoE = Module['__ZTSN10__cxxabiv116__enum_type_infoE'] = 379730;
+var __ZTIN10__cxxabiv120__si_class_type_infoE = Module['__ZTIN10__cxxabiv120__si_class_type_infoE'] = 423440;
+var __ZTSN10__cxxabiv120__si_class_type_infoE = Module['__ZTSN10__cxxabiv120__si_class_type_infoE'] = 379763;
+var __ZTIN10__cxxabiv121__vmi_class_type_infoE = Module['__ZTIN10__cxxabiv121__vmi_class_type_infoE'] = 423544;
+var __ZTSN10__cxxabiv121__vmi_class_type_infoE = Module['__ZTSN10__cxxabiv121__vmi_class_type_infoE'] = 379800;
+var __ZTVN10__cxxabiv117__pbase_type_infoE = Module['__ZTVN10__cxxabiv117__pbase_type_infoE'] = 423568;
+var __ZTVN10__cxxabiv129__pointer_to_member_type_infoE = Module['__ZTVN10__cxxabiv129__pointer_to_member_type_infoE'] = 423680;
+var __ZTVSt9bad_alloc = Module['__ZTVSt9bad_alloc'] = 423736;
+var __ZTVSt20bad_array_new_length = Module['__ZTVSt20bad_array_new_length'] = 423776;
+var __ZTISt9bad_alloc = Module['__ZTISt9bad_alloc'] = 423936;
+var __ZTISt20bad_array_new_length = Module['__ZTISt20bad_array_new_length'] = 423960;
+var __ZTSSt9exception = Module['__ZTSSt9exception'] = 379838;
+var __ZTVSt13bad_exception = Module['__ZTVSt13bad_exception'] = 423872;
+var __ZTISt13bad_exception = Module['__ZTISt13bad_exception'] = 423912;
+var __ZTSSt13bad_exception = Module['__ZTSSt13bad_exception'] = 379851;
+var __ZTSSt9bad_alloc = Module['__ZTSSt9bad_alloc'] = 379869;
+var __ZTSSt20bad_array_new_length = Module['__ZTSSt20bad_array_new_length'] = 379882;
+var __ZTVSt12domain_error = Module['__ZTVSt12domain_error'] = 424064;
+var __ZTISt12domain_error = Module['__ZTISt12domain_error'] = 424104;
+var __ZTSSt12domain_error = Module['__ZTSSt12domain_error'] = 379907;
+var __ZTSSt11logic_error = Module['__ZTSSt11logic_error'] = 379924;
+var __ZTVSt16invalid_argument = Module['__ZTVSt16invalid_argument'] = 424152;
+var __ZTISt16invalid_argument = Module['__ZTISt16invalid_argument'] = 424192;
+var __ZTSSt16invalid_argument = Module['__ZTSSt16invalid_argument'] = 379940;
+var __ZTVSt12length_error = Module['__ZTVSt12length_error'] = 424216;
+var __ZTISt12length_error = Module['__ZTISt12length_error'] = 424256;
+var __ZTSSt12length_error = Module['__ZTSSt12length_error'] = 379961;
+var __ZTVSt12out_of_range = Module['__ZTVSt12out_of_range'] = 424280;
+var __ZTISt12out_of_range = Module['__ZTISt12out_of_range'] = 424320;
+var __ZTSSt12out_of_range = Module['__ZTSSt12out_of_range'] = 379978;
+var __ZTVSt11range_error = Module['__ZTVSt11range_error'] = 424344;
+var __ZTISt11range_error = Module['__ZTISt11range_error'] = 424384;
+var __ZTSSt11range_error = Module['__ZTSSt11range_error'] = 379995;
+var __ZTSSt13runtime_error = Module['__ZTSSt13runtime_error'] = 380011;
+var __ZTVSt14overflow_error = Module['__ZTVSt14overflow_error'] = 424432;
+var __ZTISt14overflow_error = Module['__ZTISt14overflow_error'] = 424472;
+var __ZTSSt14overflow_error = Module['__ZTSSt14overflow_error'] = 380029;
+var __ZTVSt15underflow_error = Module['__ZTVSt15underflow_error'] = 424496;
+var __ZTISt15underflow_error = Module['__ZTISt15underflow_error'] = 424536;
+var __ZTSSt15underflow_error = Module['__ZTSSt15underflow_error'] = 380048;
+var __ZTVSt8bad_cast = Module['__ZTVSt8bad_cast'] = 424560;
+var __ZTVSt10bad_typeid = Module['__ZTVSt10bad_typeid'] = 424600;
+var __ZTISt10bad_typeid = Module['__ZTISt10bad_typeid'] = 424712;
+var __ZTVSt9type_info = Module['__ZTVSt9type_info'] = 424640;
+var __ZTSSt9type_info = Module['__ZTSSt9type_info'] = 380068;
+var __ZTSSt8bad_cast = Module['__ZTSSt8bad_cast'] = 380081;
+var __ZTSSt10bad_typeid = Module['__ZTSSt10bad_typeid'] = 380093;
+var _in6addr_any = Module['_in6addr_any'] = 380108;
+var _in6addr_loopback = Module['_in6addr_loopback'] = 380124;
+function invoke_vjj(index,a1,a2) {
   var sp = stackSave();
   try {
-    getWasmTableEntry(index)(a1,a2);
+    getWasmTableEntry(Number(index))(a1,a2);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0) throw e;
@@ -38178,6 +41359,61 @@ function invoke_vii(index,a1,a2) {
   }
 }
 
+// Argument name here must shadow the `wasmExports` global so
+// that it is recognised by metadce and minify-import-export-names
+// passes.
+function applySignatureConversions(wasmExports) {
+  // First, make a copy of the incoming exports object
+  wasmExports = Object.assign({}, wasmExports);
+  var makeWrapper__ppp = (f) => (a0, a1, a2) => f(BigInt(a0), BigInt(a1), BigInt(a2));
+  var makeWrapper_p = (f) => () => Number(f());
+  var makeWrapper_p_ = (f) => (a0) => Number(f(a0));
+  var makeWrapper__p = (f) => (a0) => f(BigInt(a0));
+  var makeWrapper_pp = (f) => (a0) => Number(f(BigInt(a0)));
+  var makeWrapper__pp_pp = (f) => (a0, a1, a2, a3, a4) => f(BigInt(a0), BigInt(a1), a2, BigInt(a3), BigInt(a4));
+  var makeWrapper__pp__ = (f) => (a0, a1, a2, a3) => f(BigInt(a0), BigInt(a1), a2, a3);
+  var makeWrapper_pppp = (f) => (a0, a1, a2) => Number(f(BigInt(a0), BigInt(a1), BigInt(a2)));
+  var makeWrapper__pp = (f) => (a0, a1) => f(BigInt(a0), BigInt(a1));
+  var makeWrapper_ppp = (f) => (a0, a1) => Number(f(BigInt(a0), BigInt(a1)));
+  var makeWrapper_vp = (f) => (a0) => f(BigInt(a0));
+  var makeWrapper_pP = (f) => (a0) => Number(f(BigInt(a0 ? a0 : 0)));
+
+  wasmExports['memcmp'] = makeWrapper__ppp(wasmExports['memcmp']);
+  wasmExports['__errno_location'] = makeWrapper_p(wasmExports['__errno_location']);
+  wasmExports['strerror'] = makeWrapper_p_(wasmExports['strerror']);
+  wasmExports['free'] = makeWrapper__p(wasmExports['free']);
+  wasmExports['fflush'] = makeWrapper__p(wasmExports['fflush']);
+  wasmExports['malloc'] = makeWrapper_pp(wasmExports['malloc']);
+  wasmExports['_emscripten_run_callback_on_thread'] = makeWrapper__pp_pp(wasmExports['_emscripten_run_callback_on_thread']);
+  wasmExports['_emscripten_set_offscreencanvas_size_on_thread'] = makeWrapper__pp__(wasmExports['_emscripten_set_offscreencanvas_size_on_thread']);
+  wasmExports['emscripten_stack_get_end'] = makeWrapper_p(wasmExports['emscripten_stack_get_end']);
+  wasmExports['emscripten_stack_get_base'] = makeWrapper_p(wasmExports['emscripten_stack_get_base']);
+  wasmExports['emscripten_builtin_malloc'] = makeWrapper_pp(wasmExports['emscripten_builtin_malloc']);
+  wasmExports['memcpy'] = makeWrapper_pppp(wasmExports['memcpy']);
+  wasmExports['__dl_seterr'] = makeWrapper__pp(wasmExports['__dl_seterr']);
+  wasmExports['calloc'] = makeWrapper_ppp(wasmExports['calloc']);
+  wasmExports['emscripten_builtin_free'] = makeWrapper_vp(wasmExports['emscripten_builtin_free']);
+  wasmExports['emscripten_builtin_memalign'] = makeWrapper_ppp(wasmExports['emscripten_builtin_memalign']);
+  wasmExports['emscripten_stack_get_current'] = makeWrapper_p(wasmExports['emscripten_stack_get_current']);
+  wasmExports['fileno'] = makeWrapper__p(wasmExports['fileno']);
+  wasmExports['emscripten_proxy_execute_queue'] = makeWrapper__p(wasmExports['emscripten_proxy_execute_queue']);
+  wasmExports['emscripten_proxy_finish'] = makeWrapper__p(wasmExports['emscripten_proxy_finish']);
+  wasmExports['pthread_self'] = makeWrapper_p(wasmExports['pthread_self']);
+  wasmExports['emscripten_main_runtime_thread_id'] = makeWrapper_p(wasmExports['emscripten_main_runtime_thread_id']);
+  wasmExports['sbrk'] = makeWrapper_pP(wasmExports['sbrk']);
+  wasmExports['memalign'] = makeWrapper_ppp(wasmExports['memalign']);
+  wasmExports['emscripten_builtin_calloc'] = makeWrapper_ppp(wasmExports['emscripten_builtin_calloc']);
+  wasmExports['setThrew'] = makeWrapper__p(wasmExports['setThrew']);
+  wasmExports['emscripten_stack_set_limits'] = makeWrapper__pp(wasmExports['emscripten_stack_set_limits']);
+  wasmExports['_emscripten_stack_restore'] = makeWrapper__p(wasmExports['_emscripten_stack_restore']);
+  wasmExports['_emscripten_stack_alloc'] = makeWrapper_pp(wasmExports['_emscripten_stack_alloc']);
+  wasmExports['__cxa_decrement_exception_refcount'] = makeWrapper__p(wasmExports['__cxa_decrement_exception_refcount']);
+  wasmExports['__cxa_increment_exception_refcount'] = makeWrapper__p(wasmExports['__cxa_increment_exception_refcount']);
+  wasmExports['__get_exception_message'] = makeWrapper__ppp(wasmExports['__get_exception_message']);
+  wasmExports['__cxa_can_catch'] = makeWrapper__ppp(wasmExports['__cxa_can_catch']);
+  wasmExports['__cxa_get_exception_ptr'] = makeWrapper_pp(wasmExports['__cxa_get_exception_ptr']);
+  return wasmExports;
+}
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===
@@ -38193,17 +41429,17 @@ function callMain(args = []) {
   args.unshift(thisProgram);
 
   var argc = args.length;
-  var argv = stackAlloc((argc + 1) * 4);
+  var argv = stackAlloc((argc + 1) * 8);
   var argv_ptr = argv;
   args.forEach((arg) => {
-    HEAPU32[((argv_ptr)>>2)] = stringToUTF8OnStack(arg);
-    argv_ptr += 4;
+    HEAPU64[((argv_ptr)/8)] = BigInt(stringToUTF8OnStack(arg));
+    argv_ptr += 8;
   });
-  HEAPU32[((argv_ptr)>>2)] = 0;
+  HEAPU64[((argv_ptr)/8)] = BigInt(0);
 
   try {
 
-    var ret = entryFunction(argc, argv);
+    var ret = entryFunction(argc, BigInt(argv));
 
     // if we're not running an evented main loop, it's time to exit
     exitJS(ret, /* implicit = */ true);
