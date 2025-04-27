@@ -91,7 +91,7 @@ const luaPackages = {
 	],
 	['numo9'] : [
 		{from : '/lua/numo9', to : 'numo9', files : ['font.png', 'splash.png', 'bank.n9', 'bombs.n9', 'btnp_test.n9', 'fpstest.n9', 'hello.n9', 'knots.n9', 'snake.n9', 'n9a.lua', 'n9a_p8_glue.lua', 'run.lua']},
-		{from : '/lua/numo9/numo9', to : 'numo9/numo9', files : ['app.lua', 'archive.lua', 'audio.lua', 'console.lua', 'editcode.lua', 'editmusic.lua', 'editsfx.lua', 'editsprites.lua', 'edittilemap.lua', 'filesystem.lua', 'keys.lua', 'mainmenu.lua', 'net.lua', 'rom.lua', 'ui.lua', 'video.lua']},
+		{from : '/lua/numo9/numo9', to : 'numo9/numo9', files : ['app.lua', 'archive.lua', 'audio.lua', 'cartbrowser.lua', 'console.lua', 'editcode.lua', 'editmusic.lua', 'editsfx.lua', 'editsprites.lua', 'edittilemap.lua', 'filesystem.lua', 'keys.lua', 'mainmenu.lua', 'net.lua', 'rom.lua', 'ui.lua', 'video.lua']},
 	],
 	['parser'] : [
 		{from : '/lua/parser', to : 'parser', files : ['load_xform.lua', 'parser.lua', 'syntax_5.1.txt', 'syntax_5.2.txt', 'syntax_5.3.txt', 'syntax_5.4.txt', 'syntax_ast_5.1.txt', 'syntax_grammar.txt']},
