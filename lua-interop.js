@@ -1,9 +1,5 @@
 /*
 This file will load the emscripten module and provide the lua<->js wrapper code
-
-TODO's:
-- use ptrs instead of strings for luaToJs and jsToLua
-- make them weak tables too so they gc their stuff
 */
 import { default as newLuaLib } from '/js/lua-5.4.7-with-ffi.js';
 
@@ -73,8 +69,11 @@ M._luaL_typename = (L,i) => M._lua_typename(L, M._lua_type(L,i));
 
 M.LUA_LOADED_TABLE = M.stringToNewUTF8('_LOADED');
 
-const str_luaToJs = M.stringToNewUTF8('luaToJs');
-const str_jsToLua = M.stringToNewUTF8('jsToLua');
+// unique ptrs to be used as registry keys
+window.M = M;
+const luaToJsKey = M._malloc(1);
+const jsToLuaKey = M._malloc(1);
+
 const str_luaWrapObjectMT = M.stringToNewUTF8('luaWrapObjectMT');
 const str_luaWrapFuncMT = M.stringToNewUTF8('luaWrapFuncMT');
 const str___index = M.stringToNewUTF8('__index');
@@ -184,9 +183,24 @@ const wrapper___callArrow_func = M.addFunction(L => call_func(L, true), 'ip');
 // meanwhile we have a jsToLua table in Lua that maps these indexes to tables
 let jsToLua, luaToJs;
 
+// pushes registry[key] for C-pointer 'key'
+const pushRegistry = (L, key) => {
+	M._lua_pushlightuserdata(L, key);		// stack: key
+	M._lua_rawget(L, M.LUA_REGISTRYINDEX);  // stack: registry[key]
+}
+
+// pops the top value from the stack and assigns it to registry[key]
+// for C-pointer 'key'
+const setRegistry = (L, key) => {		// stack: ..., value
+	M._lua_pushlightuserdata(L, key);		// stack: ..., value, key
+	M._lua_insert(L, -2);					// stack: ..., key, value
+	M._lua_rawset(L, M.LUA_REGISTRYINDEX);	// stack: ...;  registry[key] = value
+}
+
+
 // push onto the stack the Lua obj assoc. with jsObjID <=> whatever is in jsToLua[jsObjID]
 const pushForJsObjID = (L, jsObjID) => {	// stack: ...
-	M._lua_getglobal(L, str_jsToLua);	// stack: ..., jsToLua
+	pushRegistry(L, jsToLuaKey);		// stack: ..., jsToLua
 	M._lua_geti(L, -1, jsObjID);		// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
 	M._lua_remove(L, -2);				// stack: ..., luaValue
 };
@@ -221,7 +235,7 @@ const lua_to_js = (L, i) => {
 	case M.LUA_TFUNCTION:
 //console.log('lua_to_js top=', M._lua_gettop(L));
 //console.log('lua_to_js got table/function, checking cache...');
-		M._lua_getglobal(L, str_luaToJs);	// stack = luaToJs
+		pushRegistry(L, luaToJsKey);		// stack = luaToJs
 		M._lua_pushvalue(L, i);				// stack = luaToJs, luaValue
 		M._lua_gettable(L, -2);				// stack = luaToJs, luaToJs[luaValue]
 		if (!M._lua_isnil(L, -1)) {
@@ -319,7 +333,7 @@ const lua_to_js = (L, i) => {
 			M._lua_settable(L, -3);				// stack = luaToJs; luaToJs[luaValue] = jsObjID
 			M._lua_pop(L, 1);
 
-			M._lua_getglobal(L, str_jsToLua);	// stack = jsToLua
+			pushRegistry(L, jsToLuaKey);			// stack = jsToLua
 			M._lua_pushvalue(L, i);				// stack = jsToLua, luaValue
 			M._lua_seti(L, -2, jsObjID);		// stack = jsToLua; jsToLua[jsObjID] = luaValue
 			M._lua_pop(L, 1);
@@ -363,7 +377,7 @@ const Ltop = M._lua_gettop(L);
 			let jsObjID = jsToLua.get(jsValue);
 			if (jsObjID !== undefined) {
 //console.log('push_js found in entry', jsObjID);
-				pushForJsObjID(L, jsObjID);				// stack: ..., str_jsToLua[jsObjID]
+				pushForJsObjID(L, jsObjID);				// stack: ..., jsToLua[jsObjID]
 //console.log('push_js returning');
 			} else {
 				jsObjID = BigInt(jsToLua.size);
@@ -390,11 +404,11 @@ const Ltop = M._lua_gettop(L);
 //console.log('push_js setting relation with key', jsObjID);
 				jsToLua.set(jsValue, jsObjID);
 				luaToJs.set(jsObjID, jsValue);
-				M._lua_getglobal(L, str_jsToLua);					// stack = luaWrapper, jsToLua
+				pushRegistry(L, jsToLuaKey);						// stack = luaWrapper, jsToLua
 				M._lua_pushvalue(L, -2);							// stack = luaWrapper, jsToLua, luaWrapper
 				M._lua_seti(L, -2, jsObjID);						// stack = luaWrapper, jsToLua; jsToLua[jsObjID] = luaWrapper
 				M._lua_pop(L, 1);									// stack = luaWrapper
-				M._lua_getglobal(L, str_luaToJs);					// stack = luaWrapper, luaToJs
+				pushRegistry(L, luaToJsKey);						// stack = luaWrapper, luaToJs
 				M._lua_pushvalue(L, -2);							// stack = luaWrapper, luaToJs, luaWrapper
 				M._lua_pushinteger(L, jsObjID);						// stack = luaWrapper, luaToJs, luaWrapper, jsObjID
 				M._lua_settable(L, -3);								// stack = luaWrapper, luaToJs; luaToJs[luaWrapper] = jsObjID
@@ -424,11 +438,22 @@ const lua = {
 		lua.jsToLua = jsToLua;
 		lua.luaToJs = luaToJs;
 
-		// TODO use registery instead of this
+		// set metatable to {__mode='v'}
+		const setTopToWeakTable = () => {
+			M._lua_newtable(L);
+			M._lua_pushstring(L, M.stringToNewUTF8('v'));
+			M._lua_setfield(L, -2, M.stringToNewUTF8('__mode'));
+			M._lua_setmetatable(L, -2);
+		};
+
+		// TODO use registery instead of globals
 		M._lua_newtable(L);
-		M._lua_setglobal(L, str_jsToLua);
+		setTopToWeakTable();
+		setRegistry(L, jsToLuaKey);
+
 		M._lua_newtable(L);
-		M._lua_setglobal(L, str_luaToJs);
+		setTopToWeakTable();
+		setRegistry(L, luaToJsKey);
 
 		// setup wrapper metatable
 		if (M._luaL_newmetatable(L, str_luaWrapObjectMT)) {

@@ -29934,7 +29934,7 @@ var _luaL_gsub = Module["_luaL_gsub"] = wasmExports["luaL_gsub"];
 
 var _luaL_newstate = Module["_luaL_newstate"] = wasmExports["luaL_newstate"];
 
-var _free = wasmExports["free"];
+var _free = Module["_free"] = wasmExports["free"];
 
 var _realloc = Module["_realloc"] = wasmExports["realloc"];
 
@@ -30222,7 +30222,7 @@ var _luaopen_ffi = Module["_luaopen_ffi"] = wasmExports["luaopen_ffi"];
 
 var _sysconf = Module["_sysconf"] = wasmExports["sysconf"];
 
-var _malloc = wasmExports["malloc"];
+var _malloc = Module["_malloc"] = wasmExports["malloc"];
 
 var _dlopen = Module["_dlopen"] = wasmExports["dlopen"];
 
