@@ -184,6 +184,13 @@ const wrapper___callArrow_func = M.addFunction(L => call_func(L, true), 'ip');
 // meanwhile we have a jsToLua table in Lua that maps these indexes to tables
 let jsToLua, luaToJs;
 
+// push onto the stack the Lua obj assoc. with jsObjID <=> whatever is in jsToLua[jsObjID]
+const pushForJsObjID = (L, jsObjID) => {	// stack: ...
+	M._lua_getglobal(L, str_jsToLua);	// stack: ..., jsToLua
+	M._lua_geti(L, -1, jsObjID);		// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
+	M._lua_remove(L, -2);				// stack: ..., luaValue
+};
+
 const lua_to_js = (L, i) => {
 	i = M._lua_absindex(L, i);
 	const t = M._lua_type(L, i);
@@ -255,11 +262,7 @@ const lua_to_js = (L, i) => {
 					Object.defineProperty(jsValue, luaKey, {
 						get : function() {
 							// how about a 'push_jsObjForID' ?
-							M._lua_getglobal(L, str_jsToLua);	// stack: ..., jsToLua
-							M._lua_pushinteger(L, jsObjID);		// stack: ..., jsToLua, jsObjID
-							M._lua_gettable(L, -2);				// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
-							M._lua_remove(L, -2);				// stack: ..., luaValue
-
+							pushForJsObjID(L, jsObjID);
 							push_js(L, luaKey);					// stack: ..., luaValue, luaKey
 							M._lua_gettable(L, -2);				// stack: ..., luaValue, luaValue[luaKey]
 							const result = lua_to_js(L, -1);
@@ -267,12 +270,7 @@ const lua_to_js = (L, i) => {
 							return result;
 						},
 						set : function(value) {
-							// how about a 'push_jsObjForID' ?
-							M._lua_getglobal(L, str_jsToLua);	// stack: ..., jsToLua
-							M._lua_pushinteger(L, jsObjID);		// stack: ..., jsToLua, jsObjID
-							M._lua_gettable(L, -2);				// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
-							M._lua_remove(L, -2);				// stack: ..., luaValue
-
+							pushForJsObjID(L, jsObjID);
 							push_js(L, luaKey);					// stack: ..., luaValue, luaKey
 							push_js(L, value);					// stack: ..., luaValue, luaKey, value
 							lua_settable(L, -3);				// stack: ..., luaValue;  luaValue[luaKey]=value
@@ -292,9 +290,7 @@ const lua_to_js = (L, i) => {
 					M._lua_pushcfunction(L, errHandler);	// msgh
 
 					// get back the function from the cache key
-					M._lua_getglobal(L, str_jsToLua);	// msgh, jsToLua
-					M._lua_geti(L, -1, jsObjID);						// msgh, jsToLua, jsToLua[jsObjID]
-					M._lua_remove(L, -2);								// msgh, jsToLua[jsObjID]
+					pushForJsObjID(L, jsObjID);				// msgh, jsToLua[jsObjID]
 
 					const n = args.length;
 					for (let i = 0; i < n; ++i) {
@@ -322,6 +318,7 @@ const lua_to_js = (L, i) => {
 			M._lua_pushinteger(L, jsObjID);		// stack = luaToJs, luaValue, jsObjID
 			M._lua_settable(L, -3);				// stack = luaToJs; luaToJs[luaValue] = jsObjID
 			M._lua_pop(L, 1);
+
 			M._lua_getglobal(L, str_jsToLua);	// stack = jsToLua
 			M._lua_pushvalue(L, i);				// stack = jsToLua, luaValue
 			M._lua_seti(L, -2, jsObjID);		// stack = jsToLua; jsToLua[jsObjID] = luaValue
@@ -366,9 +363,7 @@ const Ltop = M._lua_gettop(L);
 			let jsObjID = jsToLua.get(jsValue);
 			if (jsObjID !== undefined) {
 //console.log('push_js found in entry', jsObjID);
-				M._lua_getglobal(L, str_jsToLua);			// stack: ..., str_jsToLua
-				M._lua_geti(L, -1, BigInt(jsObjID));		// stack: ..., str_jsToLua, str_jsToLua[jsObjID]
-				M._lua_remove(L, -2);						// stack: ..., str_jsToLua[jsObjID]
+				pushForJsObjID(L, jsObjID);				// stack: ..., str_jsToLua[jsObjID]
 //console.log('push_js returning');
 			} else {
 				jsObjID = BigInt(jsToLua.size);
