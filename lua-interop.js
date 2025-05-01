@@ -203,12 +203,30 @@ const setRegistry = (L, key) => {		// stack: ..., value
 	M._lua_rawset(L, M.LUA_REGISTRYINDEX);	// stack: ...;  registry[key] = value
 }
 
-
 // push onto the stack the Lua obj assoc. with jsObjID <=> whatever is in jsToLua[jsObjID]
 const pushForJsObjID = (L, jsObjID) => {	// stack: ...
 	pushRegistry(L, jsToLuaKey);		// stack: ..., jsToLua
 	M._lua_geti(L, -1, jsObjID);		// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
 	M._lua_remove(L, -2);				// stack: ..., luaValue
+};
+
+// sets lua registry's jsToLua[jsObjID] = lua stack[valueLoc]
+const lua_setJsToLua = (L, jsObjID, valueLoc) => {	// stack: ...
+	valueLoc = M._lua_absindex(L, valueLoc);
+	pushRegistry(L, jsToLuaKey);	// stack = ..., jsToLua
+	M._lua_pushvalue(L, valueLoc);	// stack = ..., jsToLua, value
+	M._lua_seti(L, -2, jsObjID);	// stack = ..., jsToLua; jsToLua[jsObjID] = value
+	M._lua_pop(L, 1);				// stack = ...
+};
+
+// sets lua registry's luaToJs[luaValue] = jsObjID
+const lua_setLuaToJs = (L, valueLoc, jsObjID) => {	// stack: ...
+	valueLoc = M._lua_absindex(L, valueLoc);
+	pushRegistry(L, luaToJsKey);	// stack = ..., luaToJs
+	M._lua_pushvalue(L, valueLoc);	// stack = ..., luaToJs, luaWrapper
+	M._lua_pushinteger(L, jsObjID);	// stack = ..., luaToJs, luaWrapper, jsObjID
+	M._lua_settable(L, -3);			// stack = ..., luaToJs; luaToJs[luaWrapper] = jsObjID
+	M._lua_pop(L, 1);				// stack = ...
 };
 
 /*
@@ -294,20 +312,20 @@ const lua_to_js = (L, i) => {
 	case M.LUA_TFUNCTION:
 //console.log('lua_to_js top=', M._lua_gettop(L));
 //console.log('lua_to_js got table/function, checking cache...');
-		pushRegistry(L, luaToJsKey);		// stack = luaToJs
-		M._lua_pushvalue(L, i);				// stack = luaToJs, luaValue
-		M._lua_gettable(L, -2);				// stack = luaToJs, luaToJs[luaValue]
+		pushRegistry(L, luaToJsKey);		// stack = ..., luaToJs
+		M._lua_pushvalue(L, i);				// stack = ..., luaToJs, luaValue
+		M._lua_gettable(L, -2);				// stack = ..., luaToJs, luaToJs[luaValue]
 		if (!M._lua_isnil(L, -1)) {
 			const jsObjID = M._lua_tointeger(L, -1);
 //console.log('lua_to_js got key', typeof(jsObjID), jsObjID);
-			M._lua_pop(L, 2);
+			M._lua_pop(L, 2);				// stack: ...
 //console.log('lua_to_js top=', M._lua_gettop(L));
 //console.log('lua_to_js returning', luaToJs.get(jsObjID));
 //{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 			return luaToJs.get(jsObjID);
 		} else {
 //console.log('lua_to_js building wrapper...');
-			M._lua_pop(L, 1);			// stack = luaToJs
+			M._lua_pop(L, 2);			// stack = ...
 //console.log('lua_to_js top=', M._lua_gettop(L));
 
 			const jsObjID = BigInt(jsToLua.size);	// consistent with push_js below
@@ -371,16 +389,8 @@ const lua_to_js = (L, i) => {
 
 			luaToJs.set(jsObjID, jsValue);
 			jsToLua.set(jsValue, jsObjID);
-
-			M._lua_pushvalue(L, i);				// stack = luaToJs, luaValue
-			M._lua_pushinteger(L, jsObjID);		// stack = luaToJs, luaValue, jsObjID
-			M._lua_settable(L, -3);				// stack = luaToJs; luaToJs[luaValue] = jsObjID
-			M._lua_pop(L, 1);
-
-			pushRegistry(L, jsToLuaKey);			// stack = jsToLua
-			M._lua_pushvalue(L, i);				// stack = jsToLua, luaValue
-			M._lua_seti(L, -2, jsObjID);		// stack = jsToLua; jsToLua[jsObjID] = luaValue
-			M._lua_pop(L, 1);
+			lua_setLuaToJs(L, i, jsObjID);	// jsToLua[jsObjID] = stack[i]
+			lua_setJsToLua(L, jsObjID, i);	// luaToJs[stack[i]] = jsObjID
 
 //console.log('lua_to_js returning', jsValue);
 //{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
@@ -451,15 +461,9 @@ const Ltop = M._lua_gettop(L);
 //console.log('push_js setting relation with key', jsObjID);
 				jsToLua.set(jsValue, jsObjID);
 				luaToJs.set(jsObjID, jsValue);
-				pushRegistry(L, jsToLuaKey);						// stack = luaWrapper, jsToLua
-				M._lua_pushvalue(L, -2);							// stack = luaWrapper, jsToLua, luaWrapper
-				M._lua_seti(L, -2, jsObjID);						// stack = luaWrapper, jsToLua; jsToLua[jsObjID] = luaWrapper
-				M._lua_pop(L, 1);									// stack = luaWrapper
-				pushRegistry(L, luaToJsKey);						// stack = luaWrapper, luaToJs
-				M._lua_pushvalue(L, -2);							// stack = luaWrapper, luaToJs, luaWrapper
-				M._lua_pushinteger(L, jsObjID);						// stack = luaWrapper, luaToJs, luaWrapper, jsObjID
-				M._lua_settable(L, -3);								// stack = luaWrapper, luaToJs; luaToJs[luaWrapper] = jsObjID
-				M._lua_pop(L, 1);									// stack = luaWrapper
+
+				lua_setJsToLua(L, jsObjID, -1);	// jsToLua[jsObjID] = stack[-1]
+				lua_setLuaToJs(L, -1, jsObjID);	// luaToJs[stack[-1]] = jsObjID
 //console.log('push_js returning');
 			}
 		}
