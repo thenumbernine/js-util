@@ -1,4 +1,10 @@
-// this file will load the emscripten module and provide the lua<->js wrapper code
+/*
+This file will load the emscripten module and provide the lua<->js wrapper code
+
+TODO's:
+- use ptrs instead of strings for luaToJs and jsToLua
+- make them weak tables too so they gc their stuff
+*/
 import { default as newLuaLib } from '/js/lua-5.4.7-with-ffi.js';
 
 const newLua = async(args = {}) => {
@@ -10,8 +16,8 @@ args.printErr ??= s => { console.log('> '+s); }
 const M = await newLuaLib(args);
 
 // luaconf.h
-//M.LUAI_MAXSTACK = 1000000;	// 32 bit
-M.LUAI_MAXSTACK = 15000;	// otherwise
+M.LUAI_MAXSTACK = 1000000;	// 32 bit
+//M.LUAI_MAXSTACK = 15000;	// 64 bit
 // lua.h
 M.LUA_MULTRET = -1;
 M.LUA_REGISTRYINDEX = -M.LUAI_MAXSTACK - 1000;
@@ -209,8 +215,8 @@ const lua_to_js = (L, i) => {
 //console.log('lua_to_js top=', M._lua_gettop(L));
 //console.log('lua_to_js got table/function, checking cache...');
 		M._lua_getglobal(L, str_luaToJs);	// stack = luaToJs
-		M._lua_pushvalue(L, i);			// stack = luaToJs, luaValue
-		M._lua_gettable(L, -2);			// stack = luaToJs, luaToJs[luaValue]
+		M._lua_pushvalue(L, i);				// stack = luaToJs, luaValue
+		M._lua_gettable(L, -2);				// stack = luaToJs, luaToJs[luaValue]
 		if (!M._lua_isnil(L, -1)) {
 			const jsObjID = M._lua_tointeger(L, -1);
 //console.log('lua_to_js got key', typeof(jsObjID), jsObjID);
@@ -232,10 +238,50 @@ const lua_to_js = (L, i) => {
 				jsValue = {};	// do I want JS objects or JS maps?  maps are more like Lua, but don't have syntax support in JS ...
 				M._lua_pushnil(L);  // first key
 				while (M._lua_next(L, i) != 0) {
+					/* convert to JS all k/v's one level deep ...
+						con: if any k/v is self-referencing, then we recurse forever
+						con: writing to the JS object won't change the Lua object (right?)
+					* /
 					const luaKey = lua_to_js(L, -2);
 					const luaValue = lua_to_js(L, -1);
 //console.log('setting', luaKey, 'to', luaValue);
 					jsValue[luaKey] = luaValue;
+					/**/
+					/* convert to JS only the keys, use getters on the values ...
+						+/-: now the only inf recursion weakness is if a key points to itself: t={} t[t]='this will break things'
+						pro: i guess we can write back to the Lua reflections
+					*/
+					const luaKey = lua_to_js(L, -2);
+					Object.defineProperty(jsValue, luaKey, {
+						get : function() {
+							// how about a 'push_jsObjForID' ?
+							M._lua_getglobal(L, str_jsToLua);	// stack: ..., jsToLua
+							M._lua_pushinteger(L, jsObjID);		// stack: ..., jsToLua, jsObjID
+							M._lua_gettable(L, -2);				// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
+							M._lua_remove(L, -2);				// stack: ..., luaValue
+
+							push_js(L, luaKey);					// stack: ..., luaValue, luaKey
+							M._lua_gettable(L, -2);				// stack: ..., luaValue, luaValue[luaKey]
+							const result = lua_to_js(L, -1);
+							M._lua_pop(L, 2);					// stack: ...
+							return result;
+						},
+						set : function(value) {
+							// how about a 'push_jsObjForID' ?
+							M._lua_getglobal(L, str_jsToLua);	// stack: ..., jsToLua
+							M._lua_pushinteger(L, jsObjID);		// stack: ..., jsToLua, jsObjID
+							M._lua_gettable(L, -2);				// stack: ..., jsToLua, luaValue=jsToLua[jsObjID]
+							M._lua_remove(L, -2);				// stack: ..., luaValue
+
+							push_js(L, luaKey);					// stack: ..., luaValue, luaKey
+							push_js(L, value);					// stack: ..., luaValue, luaKey, value
+							lua_settable(L, -3);				// stack: ..., luaValue;  luaValue[luaKey]=value
+							const result = lua_to_js(L, -1);
+							lua_pop(L, 1);						// stack: ...
+							return result;
+						},
+					});
+					/**/
 					M._lua_pop(L, 1);
 				}
 //console.log('done with wrapper', jsValue);
@@ -290,81 +336,85 @@ const lua_to_js = (L, i) => {
 };
 
 let jsNullToken;
-const push_js = (L, jsValue, isArrow) => {
-//console.log('push_js begin top', M._lua_gettop(L));
+// This will always push 1 Lua value onto the stack
+const push_js = (L, jsValue, isArrow) => {					// stack: ...
+const Ltop = M._lua_gettop(L);
+//console.log('push_js begin top', Ltop);
 	const t = typeof(jsValue);
 	switch (t) {
 	case 'undefined':
-		M._lua_pushnil(L);
-		return 1;
+		M._lua_pushnil(L);									// stack: ..., nil
+		break;
 	case 'boolean':
-		M._lua_pushboolean(L, jsValue ? 1 : 0);
-		return 1;
+		M._lua_pushboolean(L, jsValue ? 1 : 0);				// stack: ..., jsValue
+		break;
 	case 'number':
-		M._lua_pushnumber(L, jsValue);
-		return 1;
+		M._lua_pushnumber(L, jsValue);						// stack: ..., jsValue
+		break;
 	case 'string':
-		M._lua_pushstring(L, M.stringToNewUTF8(jsValue));
-		return 1;
+		M._lua_pushstring(L, M.stringToNewUTF8(jsValue));	// stack: ..., jsValue
 		break;
 	case 'function':
 	case 'object':
 		// cuz for null, type is 'object' ... smh javascript
 		if (jsValue === null) {
 			//M._lua_pushnil(L);
-			push_js(L, jsNullToken);
-			return 1;
-		}
-//console.log('push_js checking cache for', jsValue);
-		// see if it's already there
-		let jsObjID = jsToLua.get(jsValue);
-		if (jsObjID !== undefined) {
-//console.log('push_js found in entry', jsObjID);
-			M._lua_getglobal(L, str_jsToLua);
-			M._lua_geti(L, -1, BigInt(jsObjID));
-//console.log('push_js returning');
-			return 1;
+			push_js(L, jsNullToken);						// stack: ..., jsNullToken's lua-obj
 		} else {
-			jsObjID = BigInt(jsToLua.size);
+//console.log('push_js checking cache for', jsValue);
+			// see if it's already there
+			let jsObjID = jsToLua.get(jsValue);
+			if (jsObjID !== undefined) {
+//console.log('push_js found in entry', jsObjID);
+				M._lua_getglobal(L, str_jsToLua);			// stack: ..., str_jsToLua
+				M._lua_geti(L, -1, BigInt(jsObjID));		// stack: ..., str_jsToLua, str_jsToLua[jsObjID]
+				M._lua_remove(L, -2);						// stack: ..., str_jsToLua[jsObjID]
+//console.log('push_js returning');
+			} else {
+				jsObjID = BigInt(jsToLua.size);
 //console.log("push_js didn't find any entry, using new key", jsObjID);
 
-			// TODO this is a faulty test , but good luck finding a better one
-			//const isArrow = t == 'function' && !jsValue.toString().startsWith('function');
-			// because it's faulty I'm going to allow specifying arrow functions manually
+				// TODO this is a faulty test , but good luck finding a better one
+				//const isArrow = t == 'function' && !jsValue.toString().startsWith('function');
+				// because it's faulty I'm going to allow specifying arrow functions manually
 
-			if (isArrow) {
-				// push a cfunction with its own addFunction ...
-				// unlike pushing an object, this will be 1:1 with function args, no separate initial 'this' arg
-				M._lua_newtable(L);								// luaWrapper={}
-				M._luaL_setmetatable(L, str_luaWrapFuncMT);		// luaWrapper
-			} else {
+				if (isArrow) {
+					// push a cfunction with its own addFunction ...
+					// unlike pushing an object, this will be 1:1 with function args, no separate initial 'this' arg
+					M._lua_newtable(L);								// luaWrapper={}
+					M._luaL_setmetatable(L, str_luaWrapFuncMT);		// luaWrapper
+				} else {
 //console.log('push_js pushing object');
-				// convert to a Lua table and push that table
-				// or push a table with metamethods that read into this table
-				M._lua_newtable(L);								// luaWrapper={}
-				M._luaL_setmetatable(L, str_luaWrapObjectMT);	// luaWrapper
-			}
+					// convert to a Lua table and push that table
+					// or push a table with metamethods that read into this table
+					M._lua_newtable(L);								// luaWrapper={}
+					M._luaL_setmetatable(L, str_luaWrapObjectMT);	// luaWrapper
+				}
 
-			// keep up with the lua<->js map
+				// keep up with the lua<->js map
 //console.log('push_js setting relation with key', jsObjID);
-			jsToLua.set(jsValue, jsObjID);
-			luaToJs.set(jsObjID, jsValue);
-			M._lua_getglobal(L, str_jsToLua);	// stack = luaWrapper, jsToLua
-			M._lua_pushvalue(L, -2);							// stack = luaWrapper, jsToLua, luaWrapper
-			M._lua_seti(L, -2, jsObjID);						// stack = luaWrapper, jsToLua; jsToLua[jsObjID] = luaWrapper
-			M._lua_pop(L, 1);									// stack = luaWrapper
-			M._lua_getglobal(L, str_luaToJs);	// stack = luaWrapper, luaToJs
-			M._lua_pushvalue(L, -2);							// stack = luaWrapper, luaToJs, luaWrapper
-			M._lua_pushinteger(L, jsObjID);						// stack = luaWrapper, luaToJs, luaWrapper, jsObjID
-			M._lua_settable(L, -3);								// stack = luaWrapper, luaToJs; luaToJs[luaWrapper] = jsObjID
-			M._lua_pop(L, 1);									// stack = luaWrapper
+				jsToLua.set(jsValue, jsObjID);
+				luaToJs.set(jsObjID, jsValue);
+				M._lua_getglobal(L, str_jsToLua);					// stack = luaWrapper, jsToLua
+				M._lua_pushvalue(L, -2);							// stack = luaWrapper, jsToLua, luaWrapper
+				M._lua_seti(L, -2, jsObjID);						// stack = luaWrapper, jsToLua; jsToLua[jsObjID] = luaWrapper
+				M._lua_pop(L, 1);									// stack = luaWrapper
+				M._lua_getglobal(L, str_luaToJs);					// stack = luaWrapper, luaToJs
+				M._lua_pushvalue(L, -2);							// stack = luaWrapper, luaToJs, luaWrapper
+				M._lua_pushinteger(L, jsObjID);						// stack = luaWrapper, luaToJs, luaWrapper, jsObjID
+				M._lua_settable(L, -3);								// stack = luaWrapper, luaToJs; luaToJs[luaWrapper] = jsObjID
+				M._lua_pop(L, 1);									// stack = luaWrapper
 //console.log('push_js returning');
-			return 1;
+			}
 		}
+		break;
 	default:
 		throw "push_js unknown js type "+t;
 	}
 //console.log('push_js end top', M._lua_gettop(L));
+const Ntop = M._lua_gettop(L)
+if (Ntop !== Ltop+1) throw "top before: "+Ltop+" after: "+Ntop;
+	return 1;
 };
 
 let L;
@@ -496,6 +546,7 @@ const lua = {
 	},
 
 	doString : function(s, ...args) {
+
 		const Ltop = M._lua_gettop(L);
 
 		// stack: ...
@@ -532,6 +583,7 @@ const lua = {
 		return jsRet;
 	},
 
+	// get the global table
 	_G : function() {
 		M._lua_pushglobaltable(L);
 		const _G = lua_to_js(L, -1);
