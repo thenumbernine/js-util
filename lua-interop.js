@@ -74,8 +74,12 @@ window.M = M;
 const luaToJsKey = M._malloc(1);
 const jsToLuaKey = M._malloc(1);
 
+// hmm, registry keys or names for these?
+//  names means verbose
+//  keys means prevents possible lua registry name clashes with outside packages...
 const str_luaWrapObjectMT = M.stringToNewUTF8('luaWrapObjectMT');
 const str_luaWrapFuncMT = M.stringToNewUTF8('luaWrapFuncMT');
+
 const str___index = M.stringToNewUTF8('__index');
 const str___newindex = M.stringToNewUTF8('__newindex');
 const str___tostring = M.stringToNewUTF8('__tostring');
@@ -118,7 +122,8 @@ const wrapper___index_func = M.addFunction(L => {
 	const jsValue = lua_to_js(L, 1);
 	const indexKey = lua_to_js(L, 2);
 //console.log('wrapper for jsToLua key', jsObjID, 'index key', indexKey, 'returning value', jsValue[indexKey]);
-	return push_js(L, jsValue[indexKey]);
+	push_js(L, jsValue[indexKey]);
+	return 1;
 }, 'ip');
 
 const wrapper___newindex_func = M.addFunction(L => {
@@ -173,7 +178,8 @@ const call_func = (L, isArrow) => {
 	// convert results to lua
 	// only supports single-return for now
 //console.log('... pushing ret', ret);
-	return push_js(L, ret);
+	push_js(L, ret);
+	return 1;
 }
 const wrapper___call_func = M.addFunction(L => call_func(L, false), 'ip');
 const wrapper___callArrow_func = M.addFunction(L => call_func(L, true), 'ip');
@@ -206,23 +212,31 @@ const pushForJsObjID = (L, jsObjID) => {	// stack: ...
 };
 
 const lua_to_js = (L, i) => {
+//debugging:
+const Ltop = M._lua_gettop(L);
 	i = M._lua_absindex(L, i);
 	const t = M._lua_type(L, i);
 //console.log('lua_to_js type', t);
 	switch (t) {
 	case M.LUA_TNONE:
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return undefined;
 	case M.LUA_TNIL:
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return undefined;
 	case M.LUA_TBOOLEAN:
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return M._lua_toboolean(L, i) != 0;
 	case M.LUA_TLIGHTUSERDATA:
 	case M.LUA_TUSERDATA:
 		// wrapper at all? meh?
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return {userdata:M._lua_touserdata(L, i)};
 	case M.LUA_TTHREAD:
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return {thread:M._lua_tothread(L, i)};
 	case M.LUA_TNUMBER:
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return M._lua_tonumber(L, i);
 	case M.LUA_TSTRING:
 		// TODO lua_tolstring to read length ...
@@ -230,6 +244,7 @@ const lua_to_js = (L, i) => {
 		const s = M._lua_tolstring(L, i, lenp);
 		// convert 'len' ptr from int in mem to number ...
 		const len = M.getValue(lenp, 'i32');
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 		return M.UTF8ToString(s, len);
 	case M.LUA_TTABLE:
 	case M.LUA_TFUNCTION:
@@ -244,6 +259,7 @@ const lua_to_js = (L, i) => {
 			M._lua_pop(L, 2);
 //console.log('lua_to_js top=', M._lua_gettop(L));
 //console.log('lua_to_js returning', luaToJs.get(jsObjID));
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 			return luaToJs.get(jsObjID);
 		} else {
 //console.log('lua_to_js building wrapper...');
@@ -299,26 +315,29 @@ const lua_to_js = (L, i) => {
 //console.log('done with wrapper', jsValue);
 			} else if (t == M.LUA_TFUNCTION) {
 				// create proxy obj
-				jsValue = (...args) => {
+				jsValue = (...args) => {					// stack: ...
+					const Ltop = M._lua_gettop(L);
 //console.log('lua_to_js proxy function being called with args', ...args);
-					M._lua_pushcfunction(L, errHandler);	// msgh
+					M._lua_pushcfunction(L, errHandler);	// stack: ..., msgh
 
 					// get back the function from the cache key
-					pushForJsObjID(L, jsObjID);				// msgh, jsToLua[jsObjID]
+					pushForJsObjID(L, jsObjID);				// stack: ..., msgh, jsToLua[jsObjID]
 
 					const n = args.length;
 					for (let i = 0; i < n; ++i) {
 						push_js(L, args[i]);
-					}										// msgh, f, args...
+					}										// stack: ..., msgh, f, args...
 //console.log('lua_to_js proxy function pcall...');
-					const numret = M._lua_pcall(L, n, M.LUA_MULTRET, 1);
+					const callStatus = M._lua_pcall(L, n, M.LUA_MULTRET, 1);	// stack: ..., msgh, results...
 //console.log('lua_to_js proxy function got back #return=', numret);
 					// results ... always an array?  coerce to prim for size <= 1?
+					const numret = M._lua_gettop(L) - Ltop - 1;	// -1 for msgh
 					const ret = [];
 					for (let i = 0; i < numret; ++i) {
 						ret.push(lua_to_js(L, -numret+i));
 					}
 //console.log('lua_to_proxy function got results', ret);
+					M._lua_settop(L, Ltop);
 					return ret;
 				};
 			}
@@ -339,16 +358,19 @@ const lua_to_js = (L, i) => {
 			M._lua_pop(L, 1);
 
 //console.log('lua_to_js returning', jsValue);
+{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 			return jsValue;
 		}
 	default:
-		throw 'lua_to_js unknown lua type '+t;
+		break;
 	}
+	throw 'lua_to_js unknown lua type '+t;
 };
 
 let jsNullToken;
 // This will always push 1 Lua value onto the stack
 const push_js = (L, jsValue, isArrow) => {					// stack: ...
+//debugging:
 const Ltop = M._lua_gettop(L);
 //console.log('push_js begin top', Ltop);
 	const t = typeof(jsValue);
@@ -421,9 +443,8 @@ const Ltop = M._lua_gettop(L);
 		throw "push_js unknown js type "+t;
 	}
 //console.log('push_js end top', M._lua_gettop(L));
-const Ntop = M._lua_gettop(L)
-if (Ntop !== Ltop+1) throw "top before: "+Ltop+" after: "+Ntop;
-	return 1;
+//debugging:
+const Ntop = M._lua_gettop(L); if (Ntop !== Ltop+1) throw "top before: "+Ltop+" after: "+Ntop;
 };
 
 let L;
@@ -584,10 +605,10 @@ const lua = {
 			push_js(L, args[i]);	// this always pushes 1 value right?
 		}
 
-		const ret = M._lua_pcall(L, args.length, M.LUA_MULTRET, -2);	// stack: ..., errHandler, f() results...
+		const callStatus = M._lua_pcall(L, args.length, M.LUA_MULTRET, -2);	// stack: ..., errHandler, f() results...
 
-		//console.log('lua_pcall', ret);
-		if (ret != 0) {
+		//console.log('lua_pcall', callStatus);
+		if (callStatus != 0) {
 			const msg = M.UTF8ToString(M._lua_tostring(L, -1));
 			M.printErr(msg);
 			//throw msg; // return? idk?
