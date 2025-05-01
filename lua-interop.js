@@ -179,9 +179,7 @@ const wrapper___callArrow_func = M.addFunction(L => call_func(L, true), 'ip');
 let jsToLua, luaToJs;
 
 const lua_to_js = (L, i) => {
-	if (i < 0) {
-		i += M._lua_gettop(L)+1;
-	}
+	i = M._lua_absindex(L, i);
 	const t = M._lua_type(L, i);
 //console.log('lua_to_js type', t);
 	switch (t) {
@@ -532,6 +530,13 @@ const lua = {
 
 		M._lua_settop(L, Ltop);
 		return jsRet;
+	},
+
+	_G : function() {
+		M._lua_pushglobaltable(L);
+		const _G = lua_to_js(L, -1);
+		M._lua_pop(L, 1);
+		return _G;
 	},
 
 	push_js : push_js,
