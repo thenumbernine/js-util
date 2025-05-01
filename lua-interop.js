@@ -497,9 +497,12 @@ const lua = {
 		M._lua_setfield(L, -2, str_js);	// package.loaded;  package.loaded.js = js
 	},
 
-	doString : function(s) {
-		M._lua_pushcfunction(L, errHandler);
-		const result = M._luaL_loadstring(L, M.stringToNewUTF8(s));	// throw on error?
+	doString : function(s, ...args) {
+		const Ltop = M._lua_gettop(L);
+
+		// stack: ...
+		M._lua_pushcfunction(L, errHandler);	// stack: ..., errHandler
+		const result = M._luaL_loadstring(L, M.stringToNewUTF8(s));	// stack: ..., errHandler, f
 		if (result != M.LUA_OK) {
 			// TODO get stack trace and error message
 			const msg = M.UTF8ToString(M._lua_tostring(L, -1));
@@ -508,13 +511,27 @@ const lua = {
 		}
 		//console.log('luaL_loadstring', result);	// no syntax errors
 
-		const ret = M._lua_pcall(L, 0, 0, -2);
+		for (let i = 0; i < args.length; ++i) {
+			push_js(L, args[i]);	// this always pushes 1 value right?
+		}
+
+		const ret = M._lua_pcall(L, args.length, M.LUA_MULTRET, -2);	// stack: ..., errHandler, f() results...
+
 		//console.log('lua_pcall', ret);
 		if (ret != 0) {
 			const msg = M.UTF8ToString(M._lua_tostring(L, -1));
 			M.printErr(msg);
 			//throw msg; // return? idk?
 		}
+
+		const newTop = M._lua_gettop(L);
+		const jsRet = [];
+		for (let i = Ltop+2; i <= newTop; ++i) {
+			jsRet.push(lua_to_js(L, i));
+		}
+
+		M._lua_settop(L, Ltop);
+		return jsRet;
 	},
 
 	push_js : push_js,
@@ -522,5 +539,5 @@ const lua = {
 };
 
 	return lua;
-}; //newLua 
+}; //newLua
 export { newLua };
