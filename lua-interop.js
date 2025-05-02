@@ -339,8 +339,8 @@ const lua_to_js = (L, i) => {
 			if (t == M.LUA_TTABLE) {
 //console.log('creating js wrapper for lua obj...');
 				jsValue = new Proxy({}, {
-					get : (jsValue, luaKey) => {
-//console.log('calling JS getter', jsValue, luaKey);
+					get : (proxyObj, luaKey) => {
+//console.log('calling JS getter', proxyObj, luaKey);
 //const Ltop = M._lua_gettop(L);
 //console.log('pushForJsObjID', jsObjID);
 						pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
@@ -356,8 +356,8 @@ const lua_to_js = (L, i) => {
 //{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
 						return result;
 					},
-					set : (jsValue, luaKey, value) => {
-//console.log('calling JS setter', jsValue, luaKey, value);
+					set : (proxyObj, luaKey, value) => {
+//console.log('calling JS setter', proxyObj, luaKey, value);
 //const Ltop = M._lua_gettop(L);
 //console.log('pushForJsObjID', jsObjID);
 						pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
