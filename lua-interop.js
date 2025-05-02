@@ -243,14 +243,18 @@ const callLua = (L, pushFunc, ...args) => {
 //console.log('lua_to_js proxy function being called with args', ...args);
 	M._lua_pushcfunction(L, errHandler);	// stack: ..., msgh
 
-	pushFunc(L, Ltop);
+//{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop+1) throw "top before: "+Ltop+" after: "+Ntop; }
+	pushFunc(L, Ltop);						// stack: ..., msgh, f
+//{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop+2) throw "top before: "+Ltop+" after: "+Ntop; }
 
 	const n = args.length;
+//console.log("calling with ", n, "args");
 	for (let i = 0; i < n; ++i) {
 		push_js(L, args[i]);
+//{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop+3+i) throw "top before: "+Ltop+" after: "+Ntop; }
 	}										// stack: ..., msgh, f, args...
 //console.log('lua_to_js proxy function pcall...');
-	const callStatus = M._lua_pcall(L, n, M.LUA_MULTRET, 1);	// stack: ..., msgh, results...
+	const callStatus = M._lua_pcall(L, n, M.LUA_MULTRET, -n-2);	// stack: ..., msgh, results...
 	if (callStatus !== M.LUA_OK) {
 		const msg = M.UTF8ToString(M._lua_tostring(L, -1));
 		M._lua_settop(L, Ltop);
@@ -354,18 +358,27 @@ const lua_to_js = (L, i) => {
 					Object.defineProperty(jsValue, luaKey, {
 						get : function() {
 							// how about a 'push_jsObjForID' ?
-							pushForJsObjID(L, jsObjID);
-							push_js(L, luaKey);					// stack: ..., luaValue, luaKey
-							M._lua_gettable(L, -2);				// stack: ..., luaValue, luaValue[luaKey]
+//console.log('stack was', M._lua_gettop(L));
+//console.log('pushForJsObjID', jsObjID);
+							pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
+//console.log('push_js', luaKey);
+							push_js(L, luaKey);					// stack: ..., t, luaKey
+//console.log('lua_gettable(-2)');
+							M._lua_gettable(L, -2);				// stack: ..., t, t[luaKey]
+//console.log('lua_to_js(-1)...');
 							const result = lua_to_js(L, -1);
+//console.log('...is', result);
+//console.log('lua_pop(2)');
 							M._lua_pop(L, 2);					// stack: ...
+//console.log('stack is', M._lua_gettop(L));
 							return result;
 						},
 						set : function(value) {
-							pushForJsObjID(L, jsObjID);
-							push_js(L, luaKey);					// stack: ..., luaValue, luaKey
-							push_js(L, value);					// stack: ..., luaValue, luaKey, value
-							lua_settable(L, -3);				// stack: ..., luaValue;  luaValue[luaKey]=value
+//console.log('stack was', M._lua_gettop(L));
+							pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
+							push_js(L, luaKey);					// stack: ..., t, luaKey
+							push_js(L, value);					// stack: ..., t, luaKey, value
+							lua_settable(L, -3);				// stack: ..., t;  luaValue[luaKey]=value
 							const result = lua_to_js(L, -1);
 							lua_pop(L, 1);						// stack: ...
 							return result;
