@@ -263,11 +263,18 @@ const callLua = (L, pushFunc, ...args) => {
 	// results ... always an array?  coerce to prim for size <= 1?
 	const numret = M._lua_gettop(L) - Ltop - 1;	// -1 for msgh
 
-	// should I bother allocate an array if there's no return contents?
+	let ret = undefined;
+	// Should I bother allocate an array if there's no return contents?  Nah...
+	if (numret) {
 //console.log('lua_to_js proxy function got back #return=', numret);
-	const ret = [];
-	for (let i = 0; i < numret; ++i) {
-		ret.push(lua_to_js(L, -numret+i));
+		ret = [];
+		for (let i = 0; i < numret; ++i) {
+			ret.push(lua_to_js(L, -numret+i));
+		}
+		// Don't unpack single-element multret arrays.
+		// If you unpack them then when your results are an Array you are left wondering was it multret or was it just the first argument?
+		// Lua returning a single arg of {{x,y}} unpacking to [x,y], is ambiguous with Lua multiple arg returning x,y
+		// But always returning Arrays guarantees any returned array is the JS results in-order as-is.
 	}
 
 //console.log('lua_to_proxy function got results', ret);
@@ -303,7 +310,16 @@ const lua_to_js = (L, i) => {
 		return {thread:M._lua_tothread(L, i)};
 	case M.LUA_TNUMBER:
 //{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
-		return M._lua_tonumber(L, i);
+		const numVal = M._lua_tonumber(L, i);
+		// if the underlying Lua number is an integer, and it's too big to store in a JS double value,
+		// only then return a BigInt
+		if (M._lua_isinteger(L, i)
+			&& isFinite(numVal)
+			&& Math.abs(numVal) > Number.MAX_SAFE_INTEGER
+		) {
+			return M._lua_tointeger(L, i);
+		}
+		return numVal;
 	case M.LUA_TSTRING:
 		// TODO lua_tolstring to read length ...
 		const lenp = M.stackAlloc(4);
@@ -414,6 +430,9 @@ const Ltop = M._lua_gettop(L);
 		break;
 	case 'number':
 		M._lua_pushnumber(L, jsValue);						// stack: ..., jsValue
+		break;
+	case 'bigint':
+		M._lua_pushinteger(L, jsValue);
 		break;
 	case 'string':
 		M._lua_pushstring(L, M.stringToNewUTF8(jsValue));	// stack: ..., jsValue
