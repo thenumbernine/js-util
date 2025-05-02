@@ -1,12 +1,28 @@
 # js-utils
 
-some useful JS scripts / functions / libraries thrown together
+Some useful JS scripts / functions / libraries thrown together, including:
 
-- lua-5.4.7-with-ffi.js - my [lua-ffi-wasm](https://github.com/thenumbernine/lua-ffi-wasm) build of Lua in JS.
-- lua-interop.js = the lua-js layer on top of it
-- lua.vm-util.js = an old layer to an older lua-in-js build 
+## My Lua-FFI-WASM Library:
+- my [lua-ffi-wasm](https://github.com/thenumbernine/lua-ffi-wasm) build of Lua in JS, which includes:
+	- lua-5.4.7-with-ffi.js
+	- lua-5.4.7-with-ffi.wasm
+	- lua-interop.js
 
-# webgl utils
+## other libraries:
+- gl-matrix 3.4.1 - used by all webgl projects
+- jquery ... a few dif versions ...
+- numeric javascript 1.2.6
+- cryptojs-3.1.2.min.js - used by socialbrowsing
+
+- fancybox 2.1.5 - used by main and everything that uses main's system
+
+- webgl-debug.js - used by universe
+- mediawiki.api.js wikipedia api, i think used by universe
+
+- showdown-1.9.1.min.js - used by symbolic-lua for rendering the README.md
+- webgl-debug.js ?? who is using this?
+
+# My Webgl Utils:
 
 ## GLUtil class
 *GLUtil.prototype.onload*<br>
@@ -184,19 +200,3 @@ glutil considerations:
 	- targetMat, mvMat, projMat are all convenient but not always used/useful
 	- likewise, 'static'... should it be asserted by the presence of pos/angle?  should it always be true/false unless specified otherwise?
 	- speaking of defaults, should parent auto-attach to root, or only when specified?
-
-# other libraries I'm using
-- gl-matrix 3.4.1 - used by all webgl projects
-- jquery ... a few dif versions ... 
-- numeric javascript 1.2.6
-- cryptojs-3.1.2.min.js - used by socialbrowsing
-
-- fancybox 2.1.5 - used by main and everything that uses main's system
-
-- webgl-debug.js - used by universe
-- mediawiki.api.js wikipedia api, i think used by universe
-
-- showdown-1.9.1.min.js - used by symbolic-lua for rendering the README.md
-- webgl-debug.js ?? who is using this?
-
-
