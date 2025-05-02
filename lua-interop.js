@@ -338,65 +338,44 @@ const lua_to_js = (L, i) => {
 			let jsValue;
 			if (t == M.LUA_TTABLE) {
 //console.log('creating js wrapper for lua obj...');
-				jsValue = {};	// do I want JS objects or JS maps?  maps are more like Lua, but don't have syntax support in JS ...
-				M._lua_pushnil(L);  // first key
-				while (M._lua_next(L, i) != 0) {
-					/* convert to JS all k/v's one level deep ...
-						con: if any k/v is self-referencing, then we recurse forever
-						con: writing to the JS object won't change the Lua object (right?)
-					* /
-					const luaKey = lua_to_js(L, -2);
-					const luaValue = lua_to_js(L, -1);
-//console.log('setting', luaKey, 'to', luaValue);
-					jsValue[luaKey] = luaValue;
-					/**/
-					/* convert to JS only the keys, use getters on the values ...
-						+/-: now the only inf recursion weakness is if a key points to itself: t={} t[t]='this will break things'
-						pro: i guess we can write back to the Lua reflections
-					*/
-					const luaKey = lua_to_js(L, -2);
-					Object.defineProperty(jsValue, luaKey, {
-						get : function() {
+				jsValue = new Proxy({}, {
+					get : (jsValue, luaKey) => {
+//console.log('calling JS getter', jsValue, luaKey);
 //const Ltop = M._lua_gettop(L);
 //console.log('pushForJsObjID', jsObjID);
-							pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
+						pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
 //console.log('push_js', luaKey);
-							push_js(L, luaKey);					// stack: ..., t, luaKey
+						push_js(L, luaKey);					// stack: ..., t, luaKey
 //console.log('lua_gettable(-2)');
-							M._lua_gettable(L, -2);				// stack: ..., t, t[luaKey]
+						M._lua_gettable(L, -2);				// stack: ..., t, t[luaKey]
 //console.log('lua_to_js(-1)...');
-							const result = lua_to_js(L, -1);
+						const result = lua_to_js(L, -1);
 //console.log('...is', result);
 //console.log('lua_pop(2)');
-							M._lua_pop(L, 2);					// stack: ...
+						M._lua_pop(L, 2);					// stack: ...
 //{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
-							return result;
-						},
-						set : function(value) {
+						return result;
+					},
+					set : (jsValue, luaKey, value) => {
 //console.log('calling JS setter', jsValue, luaKey, value);
 //const Ltop = M._lua_gettop(L);
 //console.log('pushForJsObjID', jsObjID);
-							pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
+						pushForJsObjID(L, jsObjID);			// stack: ..., t = the outer scope's luaValue
 //console.log('push_js', luaKey);
-							push_js(L, luaKey);					// stack: ..., t, luaKey
+						push_js(L, luaKey);					// stack: ..., t, luaKey
 //console.log('push_js', value);
-							push_js(L, value);					// stack: ..., t, luaKey, value
+						push_js(L, value);					// stack: ..., t, luaKey, value
 //console.log('lua_settable(-3)');
-							lua_settable(L, -3);				// stack: ..., t;  luaValue[luaKey]=value
+						M._lua_settable(L, -3);				// stack: ..., t;  luaValue[luaKey]=value
 //console.log('lua_pop(1)');
-							lua_pop(L, 1);						// stack: ...
+						M._lua_pop(L, 1);					// stack: ...
 //{ const Ntop = M._lua_gettop(L); if (Ntop !== Ltop) throw "top before: "+Ltop+" after: "+Ntop; }
-						},
-					});
-					/**/
-					M._lua_pop(L, 1);
-				}
+					},
+				});
 //console.log('done with wrapper', jsValue);
 			} else if (t == M.LUA_TFUNCTION) {
-				// create proxy obj
 				jsValue = (...args) => {
 					return callLua(L, (L, Ltop) => {
-						// get back the function from the cache key
 						pushForJsObjID(L, jsObjID);
 					}, ...args);
 				};
