@@ -1,6 +1,9 @@
 # js-utils
 
-Some useful JS scripts / functions / libraries thrown together, including:
+This contains some useful JS scripts / functions / libraries thrown together, including:
+
+It maybe at one time was the repo of my "gl-util" framework, but slowly became the "js/" folder used in a few of my websites over time,
+and now it's current resting place is a host of distributable javascript files for my [thenumbernine.github.io](https://thenumbernine.github.io/) site.
 
 ## My Lua-FFI-WASM Library:
 - my [lua-ffi-wasm](https://github.com/thenumbernine/lua-ffi-wasm) build of Lua in JS, which includes:
