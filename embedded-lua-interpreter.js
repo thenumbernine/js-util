@@ -286,7 +286,7 @@ package.path = package.path .. ';./?/?.lua'
 		});
 	}
 	execute(s) {
-		this.lua.doString(s);
+		this.lua.run(s);
 	}
 	executeAndPrint(s) {
 		this.print('> '+s);
