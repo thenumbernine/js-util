@@ -345,7 +345,7 @@ const fetchBytes = src => {
 
 // https://github.com/hellpanderrr/lua-in-browser
 //emscripten filesystem helper function
-const mountFile = (FS, filePath, luaPath, callback) => {
+const mountFile = (FS, filePath, luaPath, fileCallback) => {
 	return fetchBytes(filePath)
 	.then(fileContent => {
 
@@ -373,27 +373,27 @@ const mountFile = (FS, filePath, luaPath, callback) => {
 		FS.writeFile(luaPath, fileContent, {encoding:'binary'});
 
 		// I know, I could just let whoever is calling addPackage pick all the filenames they want out and wait until after the promise is finished, but meh. ..
-		if (callback) {
-			callback(luaPath);
+		if (fileCallback) {
+			fileCallback(luaPath);
 		}
 	});
 }
 
 //emscripten filesystem helper function
-const addFromToDir = (FS, fromPath, toPath, files, callback) =>
+const addFromToDir = (FS, fromPath, toPath, files, fileCallback) =>
 	// TODO use Promise.allSettled, but that means first flatten all the promises into one Promise.all ... shudders ... javascript is so retarded ...
 	Promise.all(files.map(f => mountFile(
 		FS,
 		(fromPath+'/'+f).replace('+', '%2b'),	//TODO full url escape? but not for /'s
 		toPath+'/'+f,
-		callback
+		fileCallback
 	)));
 
 //emscripten filesystem helper function
-const addPackage = (FS, pkg, callback) =>
+const addPackage = (FS, pkg, fileCallback) =>
 	Promise.all(
 		pkg.map(fileset =>
-			addFromToDir(FS, fileset.from, fileset.to, fileset.files, callback)
+			addFromToDir(FS, fileset.from, fileset.to, fileset.files, fileCallback)
 		)
 	);
 
