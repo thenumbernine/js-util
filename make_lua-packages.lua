@@ -5,8 +5,14 @@ Generate the lua-packages.js using rockspecs.
 This seems nice at first, since rockspecs can also include extra non-lua files.
 But with rockspecs the problem becomes that, for rockspecs, I decided to move the `?/?.lua` file into the root directory so that people installing a rockspec wouldn't have to explicitly change their Lua path to include `?/?.lua`.
 That means that if this script wants to map rockspec files to a listing of files to be uploaded, then it will have to look out for those remapped files.
-Or of course I could just leave them where the rockspec says to put them, in the root folder.  But then you run the issue of multiple files colliding / overwriting.  
-And you run into the issue of a cluttered root directory.  Which is exactly why I modified my package.path.  At first I tried `?/init.lua` to be like Lua's .so search path, and to be like Python's default `import` functionality, but then you just get single-line `init.lua` files scattered everwhere, and why bother when they all always only ever redirect to the file with the same name of the cwd?  So I just used `?/?.lua`.
+Or of course I could just leave them where the rockspec says to put them, in the root folder.  But then you run the issue of multiple files colliding / overwriting.
+And you run into the issue of a cluttered root directory.  Which is exactly why I modified my package.path.
+At first I tried `?/init.lua` to be like Lua's .so search path, and to be like Python's default `import` functionality,
+but then you just get single-line `init.lua` files scattered everwhere, and why bother when they all always only ever redirect to the file with the same name of the cwd?  So I just used `?/?.lua`.
+
+TODO Maybe I should just start pushing the `distinfo` file more, and in it separate the local files vs the dependent projects ...
+... and separate out the local-to-this-distribution-as-app versus the include-this-as-library portions? kind of like the '.tests=' field of luarocks.  or maybe multiple / optional components?
+... and then I wouldn't need this script at all.
 --]]
 local path = require 'ext.path'
 local table = require 'ext.table'
@@ -73,7 +79,7 @@ for _,dirname in ipairs{
 } do
 	io.write(dirname..'... ')
 	local rockspec = {}
-	local rockpath 
+	local rockpath
 	local dirpath = path(root..'/'..dirname)
 
 	local rockpaths = table.wrapfor(dirpath:dir())
@@ -88,7 +94,7 @@ for _,dirname in ipairs{
 	assert(loadfile(rockpath.path, nil, rockspec))()
 
 	local files = table.values(rockspec.build.modules):sort()
-	
+
 	luaPackages[dirname] = {{
 		from = path(urlbase)(dirname).path,
 		to = path(fsbase)(dirname).path,
