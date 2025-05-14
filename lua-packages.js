@@ -1,7 +1,7 @@
 // packages containing filesystem info, so emscripten-lua modules can pick which ones they want and load batches of files
 
 const luaPackages = {
-	['SphericalHarmonicGraphs'] : [{from : '/lua/SphericalHarmonicGraphs', to : 'SphericalHarmonicGraphs', files : ['associatedlegendre.lua', 'factorial.lua', 'plot_associatedlegendre.lua', 'run.lua', 'sphericalharmonics.lua', 'associatedlegendre.rua', 'run.rua', 'sphericalharmonics.rua']}],
+	['SphericalHarmonicGraphs'] : [{from : '/lua/SphericalHarmonicGraphs', to : 'SphericalHarmonicGraphs', files : ['associatedlegendre.lua', 'factorial.lua', 'plot_associatedlegendre.lua', 'run.lua', 'sphericalharmonics.lua', 'associatedlegendre.rua', 'factorial.rua', 'run.rua']}],
 	['audio'] : [
 		{from : '/lua/audio', to : 'audio', files : ['audio.lua', 'buffer.lua', 'currentsystem.lua', 'source.lua']},
 		{from : '/lua/audio/null', to : 'audio/null', files : ['audio.lua', 'buffer.lua', 'source.lua']},
@@ -111,7 +111,7 @@ const luaPackages = {
 	],
 	['prime-spiral'] : [{from : '/lua/prime-spiral', to : 'prime-spiral', files : ['pi', 'run.lua', 'run.rua']}],
 	['resourcecache'] : [{from : '/lua/resourcecache', to : 'resourcecache', files : ['resourcecache.lua', 'texturecache.lua']}],
-	['rule110'] : [{from : '/lua/rule110', to : 'rule110', files : ['rule110.lua', 'run.rua']}],
+	['rule110'] : [{from : '/lua/rule110', to : 'rule110', files : ['rule110.lua', 'rule110.rua']}],
 	['sand-attack'] : [
 		{from : '/lua/sand-attack', to : 'sand-attack', files : ['app.lua', 'player.lua', 'run.lua', 'serialize.lua', 'splash.demo']}, // isn't in the repo: 'config.lua'
 		{from : '/lua/sand-attack/font', to : 'sand-attack/font', files : ['Billow twirl Demo.ttf', 'Billow twirl Demo.url']},
