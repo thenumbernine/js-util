@@ -56,10 +56,9 @@ const luaPackages = {
 		{from : '/lua/image', to : 'image', files : ['image.lua', 'quantize_mediancut.lua']},
 		{from : '/lua/image/luajit', to : 'image/luajit', files : ['bmp.lua', 'fits.lua', 'gif.lua', 'image.lua', 'jpeg.lua', 'loader.lua', 'png.lua', 'tiff.lua']},
 	],
-	['imgui'] : [{from : '/lua/imgui', to : 'imgui', files : ['imgui.lua']}],
-	['imguiapp'] : [
-		{from : '/lua/imguiapp', to : 'imguiapp', files : ['imguiapp.lua', 'withorbit.lua']},
-		{from : '/lua/imguiapp/tests', to : 'imguiapp/tests', files : ['console.lua', 'demo.lua', 'font.lua']},
+	['imgui'] : [
+		{from : '/lua/imgui', to : 'imgui', files : ['app.lua', 'appwithorbit.lua', 'imgui.lua']},
+		{from : '/lua/imgui/tests', to : 'imgui/tests', files : ['console.lua', 'demo.lua', 'font.lua']},
 	],
 	['interpreter'] : [{from : '/lua/interpreter', to : 'interpreter', files : ['interpreter.lua']}],
 	['ips'] : [

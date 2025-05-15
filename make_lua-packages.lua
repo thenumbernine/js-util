@@ -55,7 +55,6 @@ for _,dirname in ipairs{
 	'sdl',
 	'glapp',
 	'imgui',
-	'imguiapp',
 	'line-integral-convolution',
 	'rule110',
 	'n-points',
