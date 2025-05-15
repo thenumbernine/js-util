@@ -13,6 +13,10 @@ but then you just get single-line `init.lua` files scattered everwhere, and why 
 TODO Maybe I should just start pushing the `distinfo` file more, and in it separate the local files vs the dependent projects ...
 ... and separate out the local-to-this-distribution-as-app versus the include-this-as-library portions? kind of like the '.tests=' field of luarocks.  or maybe multiple / optional components?
 ... and then I wouldn't need this script at all.
+
+Starting on this, I've found most my library packages' distinfo looks like: `files={['*']=[$name/]}`, one single line.
+In this case, the rockspec is lighter on this script because it specifies the files,
+ whereas the distinfo would require this script to `find` through the files.
 --]]
 local path = require 'ext.path'
 local table = require 'ext.table'

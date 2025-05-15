@@ -123,7 +123,7 @@ const luaPackages = {
 		//sand-attack/highscores : [{from : '/lua/sand-attack/highscores', to : 'sand-attack/highscores', files : ['2024-06-21-22-05-44.demo']}],	// ... isn't in the repo ... interesting, mkdir didn't seem to work ... also interesting making an empty dir ?
 	],
 	['sdl'] : [
-		{from : '/lua/sdl', to : 'sdl', files : ['app.lua', 'assert.lua', 'audio.lua', 'sdl.lua']},
+		{from : '/lua/sdl', to : 'sdl', files : ['app.lua', 'app2.lua', 'app3.lua', 'assert.lua', 'audio.lua', 'sdl.lua', 'setup.lua']},
 		{from : '/lua/sdl/tests', to : 'sdl/tests', files : ['app.lua', 'audio.lua']},
 	],
 	['seashell'] : [
