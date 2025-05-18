@@ -688,7 +688,7 @@ var LDSO = {
   }
 };
 
-var ___heap_base = 5846016;
+var ___heap_base = 6039296;
 
 var alignMemory = (size, alignment) => Math.ceil(size / alignment) * alignment;
 
@@ -808,7 +808,7 @@ var convertJsFunctionToWasm = (func, sig) => {
 var wasmTableMirror = [];
 
 /** @type {WebAssembly.Table} */ var wasmTable = new WebAssembly.Table({
-  "initial": 2166,
+  "initial": 2249,
   "element": "anyfunc"
 });
 
@@ -3906,14 +3906,14 @@ var ___memory_base = new WebAssembly.Global({
   "mutable": false
 }, 1024);
 
-var ___stack_high = 5846016;
+var ___stack_high = 6039296;
 
-var ___stack_low = 603136;
+var ___stack_low = 796416;
 
 var ___stack_pointer = new WebAssembly.Global({
   "value": "i32",
   "mutable": true
-}, 5846016);
+}, 6039296);
 
 var SYSCALLS = {
   DEFAULT_POLLMASK: 5,
@@ -27668,7 +27668,7 @@ Module["_emscripten_is_main_browser_thread"] = _emscripten_is_main_browser_threa
 // End JS library exports
 // end include: postlibrary.js
 var ASM_CONSTS = {
-  541952: $0 => {
+  707936: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -27676,7 +27676,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  542177: () => {
+  708161: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -27684,7 +27684,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  542324: () => {
+  708308: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -27692,7 +27692,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  542558: $0 => {
+  708542: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -27716,11 +27716,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  543110: () => {
+  709094: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  543178: ($0, $1, $2, $3) => {
+  709162: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -27762,7 +27762,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  544871: ($0, $1, $2, $3) => {
+  710855: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -27794,7 +27794,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  546046: ($0, $1) => {
+  712030: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -27813,7 +27813,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  546651: ($0, $1) => {
+  712635: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -27827,7 +27827,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  547140: $0 => {
+  713124: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -27861,7 +27861,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  548146: ($0, $1, $2) => {
+  714130: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -27932,7 +27932,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  549614: ($0, $1, $2, $3, $4) => {
+  715598: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -27969,19 +27969,19 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  550602: $0 => {
+  716586: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  550685: () => {
+  716669: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  550754: () => window.innerWidth,
-  550784: () => window.innerHeight,
-  550815: ($0, $1) => {
+  716738: () => window.innerWidth,
+  716768: () => window.innerHeight,
+  716799: ($0, $1) => {
     var buf = $0;
     var buflen = $1;
     var list = undefined;
@@ -28015,19 +28015,19 @@ var ASM_CONSTS = {
       setValue(buf + i, str.charCodeAt(i), "i8");
     }
   },
-  551523: $0 => {
+  717507: $0 => {
     window.open(UTF8ToString($0), "_blank");
   },
-  551563: ($0, $1) => {
+  717547: ($0, $1) => {
     alert(UTF8ToString($0) + "\n\n" + UTF8ToString($1));
   },
-  551620: $0 => {
+  717604: $0 => {
     if (!$0) {
       AL.alcErr = 40964;
       return 1;
     }
   },
-  551668: $0 => {
+  717652: $0 => {
     if (!AL.currentCtx) {
       err("alGetProcAddress() called without a valid context");
       return 1;
@@ -30536,6 +30536,8 @@ var _callValuePush = Module["_callValuePush"] = wasmExports["callValuePush"];
 
 var _push_cdata = Module["_push_cdata"] = wasmExports["push_cdata"];
 
+var _set_struct = Module["_set_struct"] = wasmExports["set_struct"];
+
 var _callLuaToCWithLibFFI = Module["_callLuaToCWithLibFFI"] = wasmExports["callLuaToCWithLibFFI"];
 
 var _ffi_call = Module["_ffi_call"] = wasmExports["ffi_call"];
@@ -30705,6 +30707,5250 @@ var _ffi_type_test = Module["_ffi_type_test"] = wasmExports["ffi_type_test"];
 var _ffi_closure_alloc = Module["_ffi_closure_alloc"] = wasmExports["ffi_closure_alloc"];
 
 var _ffi_closure_free = Module["_ffi_closure_free"] = wasmExports["ffi_closure_free"];
+
+var _ImVec2_ImVec2_Nil = Module["_ImVec2_ImVec2_Nil"] = wasmExports["ImVec2_ImVec2_Nil"];
+
+var __ZN5ImGui8MemAllocEm = Module["__ZN5ImGui8MemAllocEm"] = wasmExports["_ZN5ImGui8MemAllocEm"];
+
+var _ImVec2_destroy = Module["_ImVec2_destroy"] = wasmExports["ImVec2_destroy"];
+
+var __ZN5ImGui7MemFreeEPv = Module["__ZN5ImGui7MemFreeEPv"] = wasmExports["_ZN5ImGui7MemFreeEPv"];
+
+var _ImVec2_ImVec2_Float = Module["_ImVec2_ImVec2_Float"] = wasmExports["ImVec2_ImVec2_Float"];
+
+var _ImVec4_ImVec4_Nil = Module["_ImVec4_ImVec4_Nil"] = wasmExports["ImVec4_ImVec4_Nil"];
+
+var _ImVec4_destroy = Module["_ImVec4_destroy"] = wasmExports["ImVec4_destroy"];
+
+var _ImVec4_ImVec4_Float = Module["_ImVec4_ImVec4_Float"] = wasmExports["ImVec4_ImVec4_Float"];
+
+var _igCreateContext = Module["_igCreateContext"] = wasmExports["igCreateContext"];
+
+var __ZN5ImGui13CreateContextEP11ImFontAtlas = Module["__ZN5ImGui13CreateContextEP11ImFontAtlas"] = wasmExports["_ZN5ImGui13CreateContextEP11ImFontAtlas"];
+
+var _igDestroyContext = Module["_igDestroyContext"] = wasmExports["igDestroyContext"];
+
+var __ZN5ImGui14DestroyContextEP12ImGuiContext = Module["__ZN5ImGui14DestroyContextEP12ImGuiContext"] = wasmExports["_ZN5ImGui14DestroyContextEP12ImGuiContext"];
+
+var _igGetCurrentContext = Module["_igGetCurrentContext"] = wasmExports["igGetCurrentContext"];
+
+var __ZN5ImGui17GetCurrentContextEv = Module["__ZN5ImGui17GetCurrentContextEv"] = wasmExports["_ZN5ImGui17GetCurrentContextEv"];
+
+var _igSetCurrentContext = Module["_igSetCurrentContext"] = wasmExports["igSetCurrentContext"];
+
+var __ZN5ImGui17SetCurrentContextEP12ImGuiContext = Module["__ZN5ImGui17SetCurrentContextEP12ImGuiContext"] = wasmExports["_ZN5ImGui17SetCurrentContextEP12ImGuiContext"];
+
+var _igGetIO = Module["_igGetIO"] = wasmExports["igGetIO"];
+
+var __ZN5ImGui5GetIOEv = Module["__ZN5ImGui5GetIOEv"] = wasmExports["_ZN5ImGui5GetIOEv"];
+
+var _igGetStyle = Module["_igGetStyle"] = wasmExports["igGetStyle"];
+
+var __ZN5ImGui8GetStyleEv = Module["__ZN5ImGui8GetStyleEv"] = wasmExports["_ZN5ImGui8GetStyleEv"];
+
+var _igNewFrame = Module["_igNewFrame"] = wasmExports["igNewFrame"];
+
+var __ZN5ImGui8NewFrameEv = Module["__ZN5ImGui8NewFrameEv"] = wasmExports["_ZN5ImGui8NewFrameEv"];
+
+var _igEndFrame = Module["_igEndFrame"] = wasmExports["igEndFrame"];
+
+var __ZN5ImGui8EndFrameEv = Module["__ZN5ImGui8EndFrameEv"] = wasmExports["_ZN5ImGui8EndFrameEv"];
+
+var _igRender = Module["_igRender"] = wasmExports["igRender"];
+
+var __ZN5ImGui6RenderEv = Module["__ZN5ImGui6RenderEv"] = wasmExports["_ZN5ImGui6RenderEv"];
+
+var _igGetDrawData = Module["_igGetDrawData"] = wasmExports["igGetDrawData"];
+
+var __ZN5ImGui11GetDrawDataEv = Module["__ZN5ImGui11GetDrawDataEv"] = wasmExports["_ZN5ImGui11GetDrawDataEv"];
+
+var _igShowDemoWindow = Module["_igShowDemoWindow"] = wasmExports["igShowDemoWindow"];
+
+var __ZN5ImGui14ShowDemoWindowEPb = Module["__ZN5ImGui14ShowDemoWindowEPb"] = wasmExports["_ZN5ImGui14ShowDemoWindowEPb"];
+
+var _igShowMetricsWindow = Module["_igShowMetricsWindow"] = wasmExports["igShowMetricsWindow"];
+
+var __ZN5ImGui17ShowMetricsWindowEPb = Module["__ZN5ImGui17ShowMetricsWindowEPb"] = wasmExports["_ZN5ImGui17ShowMetricsWindowEPb"];
+
+var _igShowDebugLogWindow = Module["_igShowDebugLogWindow"] = wasmExports["igShowDebugLogWindow"];
+
+var __ZN5ImGui18ShowDebugLogWindowEPb = Module["__ZN5ImGui18ShowDebugLogWindowEPb"] = wasmExports["_ZN5ImGui18ShowDebugLogWindowEPb"];
+
+var _igShowIDStackToolWindow = Module["_igShowIDStackToolWindow"] = wasmExports["igShowIDStackToolWindow"];
+
+var __ZN5ImGui21ShowIDStackToolWindowEPb = Module["__ZN5ImGui21ShowIDStackToolWindowEPb"] = wasmExports["_ZN5ImGui21ShowIDStackToolWindowEPb"];
+
+var _igShowAboutWindow = Module["_igShowAboutWindow"] = wasmExports["igShowAboutWindow"];
+
+var __ZN5ImGui15ShowAboutWindowEPb = Module["__ZN5ImGui15ShowAboutWindowEPb"] = wasmExports["_ZN5ImGui15ShowAboutWindowEPb"];
+
+var _igShowStyleEditor = Module["_igShowStyleEditor"] = wasmExports["igShowStyleEditor"];
+
+var __ZN5ImGui15ShowStyleEditorEP10ImGuiStyle = Module["__ZN5ImGui15ShowStyleEditorEP10ImGuiStyle"] = wasmExports["_ZN5ImGui15ShowStyleEditorEP10ImGuiStyle"];
+
+var _igShowStyleSelector = Module["_igShowStyleSelector"] = wasmExports["igShowStyleSelector"];
+
+var __ZN5ImGui17ShowStyleSelectorEPKc = Module["__ZN5ImGui17ShowStyleSelectorEPKc"] = wasmExports["_ZN5ImGui17ShowStyleSelectorEPKc"];
+
+var _igShowFontSelector = Module["_igShowFontSelector"] = wasmExports["igShowFontSelector"];
+
+var __ZN5ImGui16ShowFontSelectorEPKc = Module["__ZN5ImGui16ShowFontSelectorEPKc"] = wasmExports["_ZN5ImGui16ShowFontSelectorEPKc"];
+
+var _igShowUserGuide = Module["_igShowUserGuide"] = wasmExports["igShowUserGuide"];
+
+var __ZN5ImGui13ShowUserGuideEv = Module["__ZN5ImGui13ShowUserGuideEv"] = wasmExports["_ZN5ImGui13ShowUserGuideEv"];
+
+var _igGetVersion = Module["_igGetVersion"] = wasmExports["igGetVersion"];
+
+var __ZN5ImGui10GetVersionEv = Module["__ZN5ImGui10GetVersionEv"] = wasmExports["_ZN5ImGui10GetVersionEv"];
+
+var _igStyleColorsDark = Module["_igStyleColorsDark"] = wasmExports["igStyleColorsDark"];
+
+var __ZN5ImGui15StyleColorsDarkEP10ImGuiStyle = Module["__ZN5ImGui15StyleColorsDarkEP10ImGuiStyle"] = wasmExports["_ZN5ImGui15StyleColorsDarkEP10ImGuiStyle"];
+
+var _igStyleColorsLight = Module["_igStyleColorsLight"] = wasmExports["igStyleColorsLight"];
+
+var __ZN5ImGui16StyleColorsLightEP10ImGuiStyle = Module["__ZN5ImGui16StyleColorsLightEP10ImGuiStyle"] = wasmExports["_ZN5ImGui16StyleColorsLightEP10ImGuiStyle"];
+
+var _igStyleColorsClassic = Module["_igStyleColorsClassic"] = wasmExports["igStyleColorsClassic"];
+
+var __ZN5ImGui18StyleColorsClassicEP10ImGuiStyle = Module["__ZN5ImGui18StyleColorsClassicEP10ImGuiStyle"] = wasmExports["_ZN5ImGui18StyleColorsClassicEP10ImGuiStyle"];
+
+var _igBegin = Module["_igBegin"] = wasmExports["igBegin"];
+
+var __ZN5ImGui5BeginEPKcPbi = Module["__ZN5ImGui5BeginEPKcPbi"] = wasmExports["_ZN5ImGui5BeginEPKcPbi"];
+
+var _igEnd = Module["_igEnd"] = wasmExports["igEnd"];
+
+var __ZN5ImGui3EndEv = Module["__ZN5ImGui3EndEv"] = wasmExports["_ZN5ImGui3EndEv"];
+
+var _igBeginChild_Str = Module["_igBeginChild_Str"] = wasmExports["igBeginChild_Str"];
+
+var __ZN5ImGui10BeginChildEPKcRK6ImVec2ii = Module["__ZN5ImGui10BeginChildEPKcRK6ImVec2ii"] = wasmExports["_ZN5ImGui10BeginChildEPKcRK6ImVec2ii"];
+
+var _igBeginChild_ID = Module["_igBeginChild_ID"] = wasmExports["igBeginChild_ID"];
+
+var __ZN5ImGui10BeginChildEjRK6ImVec2ii = Module["__ZN5ImGui10BeginChildEjRK6ImVec2ii"] = wasmExports["_ZN5ImGui10BeginChildEjRK6ImVec2ii"];
+
+var _igEndChild = Module["_igEndChild"] = wasmExports["igEndChild"];
+
+var __ZN5ImGui8EndChildEv = Module["__ZN5ImGui8EndChildEv"] = wasmExports["_ZN5ImGui8EndChildEv"];
+
+var _igIsWindowAppearing = Module["_igIsWindowAppearing"] = wasmExports["igIsWindowAppearing"];
+
+var __ZN5ImGui17IsWindowAppearingEv = Module["__ZN5ImGui17IsWindowAppearingEv"] = wasmExports["_ZN5ImGui17IsWindowAppearingEv"];
+
+var _igIsWindowCollapsed = Module["_igIsWindowCollapsed"] = wasmExports["igIsWindowCollapsed"];
+
+var __ZN5ImGui17IsWindowCollapsedEv = Module["__ZN5ImGui17IsWindowCollapsedEv"] = wasmExports["_ZN5ImGui17IsWindowCollapsedEv"];
+
+var _igIsWindowFocused = Module["_igIsWindowFocused"] = wasmExports["igIsWindowFocused"];
+
+var __ZN5ImGui15IsWindowFocusedEi = Module["__ZN5ImGui15IsWindowFocusedEi"] = wasmExports["_ZN5ImGui15IsWindowFocusedEi"];
+
+var _igIsWindowHovered = Module["_igIsWindowHovered"] = wasmExports["igIsWindowHovered"];
+
+var __ZN5ImGui15IsWindowHoveredEi = Module["__ZN5ImGui15IsWindowHoveredEi"] = wasmExports["_ZN5ImGui15IsWindowHoveredEi"];
+
+var _igGetWindowDrawList = Module["_igGetWindowDrawList"] = wasmExports["igGetWindowDrawList"];
+
+var __ZN5ImGui17GetWindowDrawListEv = Module["__ZN5ImGui17GetWindowDrawListEv"] = wasmExports["_ZN5ImGui17GetWindowDrawListEv"];
+
+var _igGetWindowDpiScale = Module["_igGetWindowDpiScale"] = wasmExports["igGetWindowDpiScale"];
+
+var __ZN5ImGui17GetWindowDpiScaleEv = Module["__ZN5ImGui17GetWindowDpiScaleEv"] = wasmExports["_ZN5ImGui17GetWindowDpiScaleEv"];
+
+var _igGetWindowPos = Module["_igGetWindowPos"] = wasmExports["igGetWindowPos"];
+
+var __ZN5ImGui12GetWindowPosEv = Module["__ZN5ImGui12GetWindowPosEv"] = wasmExports["_ZN5ImGui12GetWindowPosEv"];
+
+var _igGetWindowSize = Module["_igGetWindowSize"] = wasmExports["igGetWindowSize"];
+
+var __ZN5ImGui13GetWindowSizeEv = Module["__ZN5ImGui13GetWindowSizeEv"] = wasmExports["_ZN5ImGui13GetWindowSizeEv"];
+
+var _igGetWindowWidth = Module["_igGetWindowWidth"] = wasmExports["igGetWindowWidth"];
+
+var __ZN5ImGui14GetWindowWidthEv = Module["__ZN5ImGui14GetWindowWidthEv"] = wasmExports["_ZN5ImGui14GetWindowWidthEv"];
+
+var _igGetWindowHeight = Module["_igGetWindowHeight"] = wasmExports["igGetWindowHeight"];
+
+var __ZN5ImGui15GetWindowHeightEv = Module["__ZN5ImGui15GetWindowHeightEv"] = wasmExports["_ZN5ImGui15GetWindowHeightEv"];
+
+var _igGetWindowViewport = Module["_igGetWindowViewport"] = wasmExports["igGetWindowViewport"];
+
+var __ZN5ImGui17GetWindowViewportEv = Module["__ZN5ImGui17GetWindowViewportEv"] = wasmExports["_ZN5ImGui17GetWindowViewportEv"];
+
+var _igSetNextWindowPos = Module["_igSetNextWindowPos"] = wasmExports["igSetNextWindowPos"];
+
+var __ZN5ImGui16SetNextWindowPosERK6ImVec2iS2_ = Module["__ZN5ImGui16SetNextWindowPosERK6ImVec2iS2_"] = wasmExports["_ZN5ImGui16SetNextWindowPosERK6ImVec2iS2_"];
+
+var _igSetNextWindowSize = Module["_igSetNextWindowSize"] = wasmExports["igSetNextWindowSize"];
+
+var __ZN5ImGui17SetNextWindowSizeERK6ImVec2i = Module["__ZN5ImGui17SetNextWindowSizeERK6ImVec2i"] = wasmExports["_ZN5ImGui17SetNextWindowSizeERK6ImVec2i"];
+
+var _igSetNextWindowSizeConstraints = Module["_igSetNextWindowSizeConstraints"] = wasmExports["igSetNextWindowSizeConstraints"];
+
+var __ZN5ImGui28SetNextWindowSizeConstraintsERK6ImVec2S2_PFvP21ImGuiSizeCallbackDataEPv = Module["__ZN5ImGui28SetNextWindowSizeConstraintsERK6ImVec2S2_PFvP21ImGuiSizeCallbackDataEPv"] = wasmExports["_ZN5ImGui28SetNextWindowSizeConstraintsERK6ImVec2S2_PFvP21ImGuiSizeCallbackDataEPv"];
+
+var _igSetNextWindowContentSize = Module["_igSetNextWindowContentSize"] = wasmExports["igSetNextWindowContentSize"];
+
+var __ZN5ImGui24SetNextWindowContentSizeERK6ImVec2 = Module["__ZN5ImGui24SetNextWindowContentSizeERK6ImVec2"] = wasmExports["_ZN5ImGui24SetNextWindowContentSizeERK6ImVec2"];
+
+var _igSetNextWindowCollapsed = Module["_igSetNextWindowCollapsed"] = wasmExports["igSetNextWindowCollapsed"];
+
+var __ZN5ImGui22SetNextWindowCollapsedEbi = Module["__ZN5ImGui22SetNextWindowCollapsedEbi"] = wasmExports["_ZN5ImGui22SetNextWindowCollapsedEbi"];
+
+var _igSetNextWindowFocus = Module["_igSetNextWindowFocus"] = wasmExports["igSetNextWindowFocus"];
+
+var __ZN5ImGui18SetNextWindowFocusEv = Module["__ZN5ImGui18SetNextWindowFocusEv"] = wasmExports["_ZN5ImGui18SetNextWindowFocusEv"];
+
+var _igSetNextWindowScroll = Module["_igSetNextWindowScroll"] = wasmExports["igSetNextWindowScroll"];
+
+var __ZN5ImGui19SetNextWindowScrollERK6ImVec2 = Module["__ZN5ImGui19SetNextWindowScrollERK6ImVec2"] = wasmExports["_ZN5ImGui19SetNextWindowScrollERK6ImVec2"];
+
+var _igSetNextWindowBgAlpha = Module["_igSetNextWindowBgAlpha"] = wasmExports["igSetNextWindowBgAlpha"];
+
+var __ZN5ImGui20SetNextWindowBgAlphaEf = Module["__ZN5ImGui20SetNextWindowBgAlphaEf"] = wasmExports["_ZN5ImGui20SetNextWindowBgAlphaEf"];
+
+var _igSetNextWindowViewport = Module["_igSetNextWindowViewport"] = wasmExports["igSetNextWindowViewport"];
+
+var __ZN5ImGui21SetNextWindowViewportEj = Module["__ZN5ImGui21SetNextWindowViewportEj"] = wasmExports["_ZN5ImGui21SetNextWindowViewportEj"];
+
+var _igSetWindowPos_Vec2 = Module["_igSetWindowPos_Vec2"] = wasmExports["igSetWindowPos_Vec2"];
+
+var __ZN5ImGui12SetWindowPosERK6ImVec2i = Module["__ZN5ImGui12SetWindowPosERK6ImVec2i"] = wasmExports["_ZN5ImGui12SetWindowPosERK6ImVec2i"];
+
+var _igSetWindowSize_Vec2 = Module["_igSetWindowSize_Vec2"] = wasmExports["igSetWindowSize_Vec2"];
+
+var __ZN5ImGui13SetWindowSizeERK6ImVec2i = Module["__ZN5ImGui13SetWindowSizeERK6ImVec2i"] = wasmExports["_ZN5ImGui13SetWindowSizeERK6ImVec2i"];
+
+var _igSetWindowCollapsed_Bool = Module["_igSetWindowCollapsed_Bool"] = wasmExports["igSetWindowCollapsed_Bool"];
+
+var __ZN5ImGui18SetWindowCollapsedEbi = Module["__ZN5ImGui18SetWindowCollapsedEbi"] = wasmExports["_ZN5ImGui18SetWindowCollapsedEbi"];
+
+var _igSetWindowFocus_Nil = Module["_igSetWindowFocus_Nil"] = wasmExports["igSetWindowFocus_Nil"];
+
+var __ZN5ImGui14SetWindowFocusEv = Module["__ZN5ImGui14SetWindowFocusEv"] = wasmExports["_ZN5ImGui14SetWindowFocusEv"];
+
+var _igSetWindowFontScale = Module["_igSetWindowFontScale"] = wasmExports["igSetWindowFontScale"];
+
+var __ZN5ImGui18SetWindowFontScaleEf = Module["__ZN5ImGui18SetWindowFontScaleEf"] = wasmExports["_ZN5ImGui18SetWindowFontScaleEf"];
+
+var _igSetWindowPos_Str = Module["_igSetWindowPos_Str"] = wasmExports["igSetWindowPos_Str"];
+
+var __ZN5ImGui12SetWindowPosEPKcRK6ImVec2i = Module["__ZN5ImGui12SetWindowPosEPKcRK6ImVec2i"] = wasmExports["_ZN5ImGui12SetWindowPosEPKcRK6ImVec2i"];
+
+var _igSetWindowSize_Str = Module["_igSetWindowSize_Str"] = wasmExports["igSetWindowSize_Str"];
+
+var __ZN5ImGui13SetWindowSizeEPKcRK6ImVec2i = Module["__ZN5ImGui13SetWindowSizeEPKcRK6ImVec2i"] = wasmExports["_ZN5ImGui13SetWindowSizeEPKcRK6ImVec2i"];
+
+var _igSetWindowCollapsed_Str = Module["_igSetWindowCollapsed_Str"] = wasmExports["igSetWindowCollapsed_Str"];
+
+var __ZN5ImGui18SetWindowCollapsedEPKcbi = Module["__ZN5ImGui18SetWindowCollapsedEPKcbi"] = wasmExports["_ZN5ImGui18SetWindowCollapsedEPKcbi"];
+
+var _igSetWindowFocus_Str = Module["_igSetWindowFocus_Str"] = wasmExports["igSetWindowFocus_Str"];
+
+var __ZN5ImGui14SetWindowFocusEPKc = Module["__ZN5ImGui14SetWindowFocusEPKc"] = wasmExports["_ZN5ImGui14SetWindowFocusEPKc"];
+
+var _igGetContentRegionAvail = Module["_igGetContentRegionAvail"] = wasmExports["igGetContentRegionAvail"];
+
+var __ZN5ImGui21GetContentRegionAvailEv = Module["__ZN5ImGui21GetContentRegionAvailEv"] = wasmExports["_ZN5ImGui21GetContentRegionAvailEv"];
+
+var _igGetContentRegionMax = Module["_igGetContentRegionMax"] = wasmExports["igGetContentRegionMax"];
+
+var __ZN5ImGui19GetContentRegionMaxEv = Module["__ZN5ImGui19GetContentRegionMaxEv"] = wasmExports["_ZN5ImGui19GetContentRegionMaxEv"];
+
+var _igGetWindowContentRegionMin = Module["_igGetWindowContentRegionMin"] = wasmExports["igGetWindowContentRegionMin"];
+
+var __ZN5ImGui25GetWindowContentRegionMinEv = Module["__ZN5ImGui25GetWindowContentRegionMinEv"] = wasmExports["_ZN5ImGui25GetWindowContentRegionMinEv"];
+
+var _igGetWindowContentRegionMax = Module["_igGetWindowContentRegionMax"] = wasmExports["igGetWindowContentRegionMax"];
+
+var __ZN5ImGui25GetWindowContentRegionMaxEv = Module["__ZN5ImGui25GetWindowContentRegionMaxEv"] = wasmExports["_ZN5ImGui25GetWindowContentRegionMaxEv"];
+
+var _igGetScrollX = Module["_igGetScrollX"] = wasmExports["igGetScrollX"];
+
+var __ZN5ImGui10GetScrollXEv = Module["__ZN5ImGui10GetScrollXEv"] = wasmExports["_ZN5ImGui10GetScrollXEv"];
+
+var _igGetScrollY = Module["_igGetScrollY"] = wasmExports["igGetScrollY"];
+
+var __ZN5ImGui10GetScrollYEv = Module["__ZN5ImGui10GetScrollYEv"] = wasmExports["_ZN5ImGui10GetScrollYEv"];
+
+var _igSetScrollX_Float = Module["_igSetScrollX_Float"] = wasmExports["igSetScrollX_Float"];
+
+var __ZN5ImGui10SetScrollXEf = Module["__ZN5ImGui10SetScrollXEf"] = wasmExports["_ZN5ImGui10SetScrollXEf"];
+
+var _igSetScrollY_Float = Module["_igSetScrollY_Float"] = wasmExports["igSetScrollY_Float"];
+
+var __ZN5ImGui10SetScrollYEf = Module["__ZN5ImGui10SetScrollYEf"] = wasmExports["_ZN5ImGui10SetScrollYEf"];
+
+var _igGetScrollMaxX = Module["_igGetScrollMaxX"] = wasmExports["igGetScrollMaxX"];
+
+var __ZN5ImGui13GetScrollMaxXEv = Module["__ZN5ImGui13GetScrollMaxXEv"] = wasmExports["_ZN5ImGui13GetScrollMaxXEv"];
+
+var _igGetScrollMaxY = Module["_igGetScrollMaxY"] = wasmExports["igGetScrollMaxY"];
+
+var __ZN5ImGui13GetScrollMaxYEv = Module["__ZN5ImGui13GetScrollMaxYEv"] = wasmExports["_ZN5ImGui13GetScrollMaxYEv"];
+
+var _igSetScrollHereX = Module["_igSetScrollHereX"] = wasmExports["igSetScrollHereX"];
+
+var __ZN5ImGui14SetScrollHereXEf = Module["__ZN5ImGui14SetScrollHereXEf"] = wasmExports["_ZN5ImGui14SetScrollHereXEf"];
+
+var _igSetScrollHereY = Module["_igSetScrollHereY"] = wasmExports["igSetScrollHereY"];
+
+var __ZN5ImGui14SetScrollHereYEf = Module["__ZN5ImGui14SetScrollHereYEf"] = wasmExports["_ZN5ImGui14SetScrollHereYEf"];
+
+var _igSetScrollFromPosX_Float = Module["_igSetScrollFromPosX_Float"] = wasmExports["igSetScrollFromPosX_Float"];
+
+var __ZN5ImGui17SetScrollFromPosXEff = Module["__ZN5ImGui17SetScrollFromPosXEff"] = wasmExports["_ZN5ImGui17SetScrollFromPosXEff"];
+
+var _igSetScrollFromPosY_Float = Module["_igSetScrollFromPosY_Float"] = wasmExports["igSetScrollFromPosY_Float"];
+
+var __ZN5ImGui17SetScrollFromPosYEff = Module["__ZN5ImGui17SetScrollFromPosYEff"] = wasmExports["_ZN5ImGui17SetScrollFromPosYEff"];
+
+var _igPushFont = Module["_igPushFont"] = wasmExports["igPushFont"];
+
+var __ZN5ImGui8PushFontEP6ImFont = Module["__ZN5ImGui8PushFontEP6ImFont"] = wasmExports["_ZN5ImGui8PushFontEP6ImFont"];
+
+var _igPopFont = Module["_igPopFont"] = wasmExports["igPopFont"];
+
+var __ZN5ImGui7PopFontEv = Module["__ZN5ImGui7PopFontEv"] = wasmExports["_ZN5ImGui7PopFontEv"];
+
+var _igPushStyleColor_U32 = Module["_igPushStyleColor_U32"] = wasmExports["igPushStyleColor_U32"];
+
+var __ZN5ImGui14PushStyleColorEij = Module["__ZN5ImGui14PushStyleColorEij"] = wasmExports["_ZN5ImGui14PushStyleColorEij"];
+
+var _igPushStyleColor_Vec4 = Module["_igPushStyleColor_Vec4"] = wasmExports["igPushStyleColor_Vec4"];
+
+var __ZN5ImGui14PushStyleColorEiRK6ImVec4 = Module["__ZN5ImGui14PushStyleColorEiRK6ImVec4"] = wasmExports["_ZN5ImGui14PushStyleColorEiRK6ImVec4"];
+
+var _igPopStyleColor = Module["_igPopStyleColor"] = wasmExports["igPopStyleColor"];
+
+var __ZN5ImGui13PopStyleColorEi = Module["__ZN5ImGui13PopStyleColorEi"] = wasmExports["_ZN5ImGui13PopStyleColorEi"];
+
+var _igPushStyleVar_Float = Module["_igPushStyleVar_Float"] = wasmExports["igPushStyleVar_Float"];
+
+var __ZN5ImGui12PushStyleVarEif = Module["__ZN5ImGui12PushStyleVarEif"] = wasmExports["_ZN5ImGui12PushStyleVarEif"];
+
+var _igPushStyleVar_Vec2 = Module["_igPushStyleVar_Vec2"] = wasmExports["igPushStyleVar_Vec2"];
+
+var __ZN5ImGui12PushStyleVarEiRK6ImVec2 = Module["__ZN5ImGui12PushStyleVarEiRK6ImVec2"] = wasmExports["_ZN5ImGui12PushStyleVarEiRK6ImVec2"];
+
+var _igPopStyleVar = Module["_igPopStyleVar"] = wasmExports["igPopStyleVar"];
+
+var __ZN5ImGui11PopStyleVarEi = Module["__ZN5ImGui11PopStyleVarEi"] = wasmExports["_ZN5ImGui11PopStyleVarEi"];
+
+var _igPushTabStop = Module["_igPushTabStop"] = wasmExports["igPushTabStop"];
+
+var __ZN5ImGui11PushTabStopEb = Module["__ZN5ImGui11PushTabStopEb"] = wasmExports["_ZN5ImGui11PushTabStopEb"];
+
+var _igPopTabStop = Module["_igPopTabStop"] = wasmExports["igPopTabStop"];
+
+var __ZN5ImGui10PopTabStopEv = Module["__ZN5ImGui10PopTabStopEv"] = wasmExports["_ZN5ImGui10PopTabStopEv"];
+
+var _igPushButtonRepeat = Module["_igPushButtonRepeat"] = wasmExports["igPushButtonRepeat"];
+
+var __ZN5ImGui16PushButtonRepeatEb = Module["__ZN5ImGui16PushButtonRepeatEb"] = wasmExports["_ZN5ImGui16PushButtonRepeatEb"];
+
+var _igPopButtonRepeat = Module["_igPopButtonRepeat"] = wasmExports["igPopButtonRepeat"];
+
+var __ZN5ImGui15PopButtonRepeatEv = Module["__ZN5ImGui15PopButtonRepeatEv"] = wasmExports["_ZN5ImGui15PopButtonRepeatEv"];
+
+var _igPushItemWidth = Module["_igPushItemWidth"] = wasmExports["igPushItemWidth"];
+
+var __ZN5ImGui13PushItemWidthEf = Module["__ZN5ImGui13PushItemWidthEf"] = wasmExports["_ZN5ImGui13PushItemWidthEf"];
+
+var _igPopItemWidth = Module["_igPopItemWidth"] = wasmExports["igPopItemWidth"];
+
+var __ZN5ImGui12PopItemWidthEv = Module["__ZN5ImGui12PopItemWidthEv"] = wasmExports["_ZN5ImGui12PopItemWidthEv"];
+
+var _igSetNextItemWidth = Module["_igSetNextItemWidth"] = wasmExports["igSetNextItemWidth"];
+
+var __ZN5ImGui16SetNextItemWidthEf = Module["__ZN5ImGui16SetNextItemWidthEf"] = wasmExports["_ZN5ImGui16SetNextItemWidthEf"];
+
+var _igCalcItemWidth = Module["_igCalcItemWidth"] = wasmExports["igCalcItemWidth"];
+
+var __ZN5ImGui13CalcItemWidthEv = Module["__ZN5ImGui13CalcItemWidthEv"] = wasmExports["_ZN5ImGui13CalcItemWidthEv"];
+
+var _igPushTextWrapPos = Module["_igPushTextWrapPos"] = wasmExports["igPushTextWrapPos"];
+
+var __ZN5ImGui15PushTextWrapPosEf = Module["__ZN5ImGui15PushTextWrapPosEf"] = wasmExports["_ZN5ImGui15PushTextWrapPosEf"];
+
+var _igPopTextWrapPos = Module["_igPopTextWrapPos"] = wasmExports["igPopTextWrapPos"];
+
+var __ZN5ImGui14PopTextWrapPosEv = Module["__ZN5ImGui14PopTextWrapPosEv"] = wasmExports["_ZN5ImGui14PopTextWrapPosEv"];
+
+var _igGetFont = Module["_igGetFont"] = wasmExports["igGetFont"];
+
+var __ZN5ImGui7GetFontEv = Module["__ZN5ImGui7GetFontEv"] = wasmExports["_ZN5ImGui7GetFontEv"];
+
+var _igGetFontSize = Module["_igGetFontSize"] = wasmExports["igGetFontSize"];
+
+var __ZN5ImGui11GetFontSizeEv = Module["__ZN5ImGui11GetFontSizeEv"] = wasmExports["_ZN5ImGui11GetFontSizeEv"];
+
+var _igGetFontTexUvWhitePixel = Module["_igGetFontTexUvWhitePixel"] = wasmExports["igGetFontTexUvWhitePixel"];
+
+var __ZN5ImGui22GetFontTexUvWhitePixelEv = Module["__ZN5ImGui22GetFontTexUvWhitePixelEv"] = wasmExports["_ZN5ImGui22GetFontTexUvWhitePixelEv"];
+
+var _igGetColorU32_Col = Module["_igGetColorU32_Col"] = wasmExports["igGetColorU32_Col"];
+
+var __ZN5ImGui11GetColorU32Eif = Module["__ZN5ImGui11GetColorU32Eif"] = wasmExports["_ZN5ImGui11GetColorU32Eif"];
+
+var _igGetColorU32_Vec4 = Module["_igGetColorU32_Vec4"] = wasmExports["igGetColorU32_Vec4"];
+
+var __ZN5ImGui11GetColorU32ERK6ImVec4 = Module["__ZN5ImGui11GetColorU32ERK6ImVec4"] = wasmExports["_ZN5ImGui11GetColorU32ERK6ImVec4"];
+
+var _igGetColorU32_U32 = Module["_igGetColorU32_U32"] = wasmExports["igGetColorU32_U32"];
+
+var __ZN5ImGui11GetColorU32Ejf = Module["__ZN5ImGui11GetColorU32Ejf"] = wasmExports["_ZN5ImGui11GetColorU32Ejf"];
+
+var _igGetStyleColorVec4 = Module["_igGetStyleColorVec4"] = wasmExports["igGetStyleColorVec4"];
+
+var __ZN5ImGui17GetStyleColorVec4Ei = Module["__ZN5ImGui17GetStyleColorVec4Ei"] = wasmExports["_ZN5ImGui17GetStyleColorVec4Ei"];
+
+var _igGetCursorScreenPos = Module["_igGetCursorScreenPos"] = wasmExports["igGetCursorScreenPos"];
+
+var __ZN5ImGui18GetCursorScreenPosEv = Module["__ZN5ImGui18GetCursorScreenPosEv"] = wasmExports["_ZN5ImGui18GetCursorScreenPosEv"];
+
+var _igSetCursorScreenPos = Module["_igSetCursorScreenPos"] = wasmExports["igSetCursorScreenPos"];
+
+var __ZN5ImGui18SetCursorScreenPosERK6ImVec2 = Module["__ZN5ImGui18SetCursorScreenPosERK6ImVec2"] = wasmExports["_ZN5ImGui18SetCursorScreenPosERK6ImVec2"];
+
+var _igGetCursorPos = Module["_igGetCursorPos"] = wasmExports["igGetCursorPos"];
+
+var __ZN5ImGui12GetCursorPosEv = Module["__ZN5ImGui12GetCursorPosEv"] = wasmExports["_ZN5ImGui12GetCursorPosEv"];
+
+var _igGetCursorPosX = Module["_igGetCursorPosX"] = wasmExports["igGetCursorPosX"];
+
+var __ZN5ImGui13GetCursorPosXEv = Module["__ZN5ImGui13GetCursorPosXEv"] = wasmExports["_ZN5ImGui13GetCursorPosXEv"];
+
+var _igGetCursorPosY = Module["_igGetCursorPosY"] = wasmExports["igGetCursorPosY"];
+
+var __ZN5ImGui13GetCursorPosYEv = Module["__ZN5ImGui13GetCursorPosYEv"] = wasmExports["_ZN5ImGui13GetCursorPosYEv"];
+
+var _igSetCursorPos = Module["_igSetCursorPos"] = wasmExports["igSetCursorPos"];
+
+var __ZN5ImGui12SetCursorPosERK6ImVec2 = Module["__ZN5ImGui12SetCursorPosERK6ImVec2"] = wasmExports["_ZN5ImGui12SetCursorPosERK6ImVec2"];
+
+var _igSetCursorPosX = Module["_igSetCursorPosX"] = wasmExports["igSetCursorPosX"];
+
+var __ZN5ImGui13SetCursorPosXEf = Module["__ZN5ImGui13SetCursorPosXEf"] = wasmExports["_ZN5ImGui13SetCursorPosXEf"];
+
+var _igSetCursorPosY = Module["_igSetCursorPosY"] = wasmExports["igSetCursorPosY"];
+
+var __ZN5ImGui13SetCursorPosYEf = Module["__ZN5ImGui13SetCursorPosYEf"] = wasmExports["_ZN5ImGui13SetCursorPosYEf"];
+
+var _igGetCursorStartPos = Module["_igGetCursorStartPos"] = wasmExports["igGetCursorStartPos"];
+
+var __ZN5ImGui17GetCursorStartPosEv = Module["__ZN5ImGui17GetCursorStartPosEv"] = wasmExports["_ZN5ImGui17GetCursorStartPosEv"];
+
+var _igSeparator = Module["_igSeparator"] = wasmExports["igSeparator"];
+
+var __ZN5ImGui9SeparatorEv = Module["__ZN5ImGui9SeparatorEv"] = wasmExports["_ZN5ImGui9SeparatorEv"];
+
+var _igSameLine = Module["_igSameLine"] = wasmExports["igSameLine"];
+
+var __ZN5ImGui8SameLineEff = Module["__ZN5ImGui8SameLineEff"] = wasmExports["_ZN5ImGui8SameLineEff"];
+
+var _igNewLine = Module["_igNewLine"] = wasmExports["igNewLine"];
+
+var __ZN5ImGui7NewLineEv = Module["__ZN5ImGui7NewLineEv"] = wasmExports["_ZN5ImGui7NewLineEv"];
+
+var _igSpacing = Module["_igSpacing"] = wasmExports["igSpacing"];
+
+var __ZN5ImGui7SpacingEv = Module["__ZN5ImGui7SpacingEv"] = wasmExports["_ZN5ImGui7SpacingEv"];
+
+var _igDummy = Module["_igDummy"] = wasmExports["igDummy"];
+
+var __ZN5ImGui5DummyERK6ImVec2 = Module["__ZN5ImGui5DummyERK6ImVec2"] = wasmExports["_ZN5ImGui5DummyERK6ImVec2"];
+
+var _igIndent = Module["_igIndent"] = wasmExports["igIndent"];
+
+var __ZN5ImGui6IndentEf = Module["__ZN5ImGui6IndentEf"] = wasmExports["_ZN5ImGui6IndentEf"];
+
+var _igUnindent = Module["_igUnindent"] = wasmExports["igUnindent"];
+
+var __ZN5ImGui8UnindentEf = Module["__ZN5ImGui8UnindentEf"] = wasmExports["_ZN5ImGui8UnindentEf"];
+
+var _igBeginGroup = Module["_igBeginGroup"] = wasmExports["igBeginGroup"];
+
+var __ZN5ImGui10BeginGroupEv = Module["__ZN5ImGui10BeginGroupEv"] = wasmExports["_ZN5ImGui10BeginGroupEv"];
+
+var _igEndGroup = Module["_igEndGroup"] = wasmExports["igEndGroup"];
+
+var __ZN5ImGui8EndGroupEv = Module["__ZN5ImGui8EndGroupEv"] = wasmExports["_ZN5ImGui8EndGroupEv"];
+
+var _igAlignTextToFramePadding = Module["_igAlignTextToFramePadding"] = wasmExports["igAlignTextToFramePadding"];
+
+var __ZN5ImGui23AlignTextToFramePaddingEv = Module["__ZN5ImGui23AlignTextToFramePaddingEv"] = wasmExports["_ZN5ImGui23AlignTextToFramePaddingEv"];
+
+var _igGetTextLineHeight = Module["_igGetTextLineHeight"] = wasmExports["igGetTextLineHeight"];
+
+var __ZN5ImGui17GetTextLineHeightEv = Module["__ZN5ImGui17GetTextLineHeightEv"] = wasmExports["_ZN5ImGui17GetTextLineHeightEv"];
+
+var _igGetTextLineHeightWithSpacing = Module["_igGetTextLineHeightWithSpacing"] = wasmExports["igGetTextLineHeightWithSpacing"];
+
+var __ZN5ImGui28GetTextLineHeightWithSpacingEv = Module["__ZN5ImGui28GetTextLineHeightWithSpacingEv"] = wasmExports["_ZN5ImGui28GetTextLineHeightWithSpacingEv"];
+
+var _igGetFrameHeight = Module["_igGetFrameHeight"] = wasmExports["igGetFrameHeight"];
+
+var __ZN5ImGui14GetFrameHeightEv = Module["__ZN5ImGui14GetFrameHeightEv"] = wasmExports["_ZN5ImGui14GetFrameHeightEv"];
+
+var _igGetFrameHeightWithSpacing = Module["_igGetFrameHeightWithSpacing"] = wasmExports["igGetFrameHeightWithSpacing"];
+
+var __ZN5ImGui25GetFrameHeightWithSpacingEv = Module["__ZN5ImGui25GetFrameHeightWithSpacingEv"] = wasmExports["_ZN5ImGui25GetFrameHeightWithSpacingEv"];
+
+var _igPushID_Str = Module["_igPushID_Str"] = wasmExports["igPushID_Str"];
+
+var __ZN5ImGui6PushIDEPKc = Module["__ZN5ImGui6PushIDEPKc"] = wasmExports["_ZN5ImGui6PushIDEPKc"];
+
+var _igPushID_StrStr = Module["_igPushID_StrStr"] = wasmExports["igPushID_StrStr"];
+
+var __ZN5ImGui6PushIDEPKcS1_ = Module["__ZN5ImGui6PushIDEPKcS1_"] = wasmExports["_ZN5ImGui6PushIDEPKcS1_"];
+
+var _igPushID_Ptr = Module["_igPushID_Ptr"] = wasmExports["igPushID_Ptr"];
+
+var __ZN5ImGui6PushIDEPKv = Module["__ZN5ImGui6PushIDEPKv"] = wasmExports["_ZN5ImGui6PushIDEPKv"];
+
+var _igPushID_Int = Module["_igPushID_Int"] = wasmExports["igPushID_Int"];
+
+var __ZN5ImGui6PushIDEi = Module["__ZN5ImGui6PushIDEi"] = wasmExports["_ZN5ImGui6PushIDEi"];
+
+var _igPopID = Module["_igPopID"] = wasmExports["igPopID"];
+
+var __ZN5ImGui5PopIDEv = Module["__ZN5ImGui5PopIDEv"] = wasmExports["_ZN5ImGui5PopIDEv"];
+
+var _igGetID_Str = Module["_igGetID_Str"] = wasmExports["igGetID_Str"];
+
+var __ZN5ImGui5GetIDEPKc = Module["__ZN5ImGui5GetIDEPKc"] = wasmExports["_ZN5ImGui5GetIDEPKc"];
+
+var _igGetID_StrStr = Module["_igGetID_StrStr"] = wasmExports["igGetID_StrStr"];
+
+var __ZN5ImGui5GetIDEPKcS1_ = Module["__ZN5ImGui5GetIDEPKcS1_"] = wasmExports["_ZN5ImGui5GetIDEPKcS1_"];
+
+var _igGetID_Ptr = Module["_igGetID_Ptr"] = wasmExports["igGetID_Ptr"];
+
+var __ZN5ImGui5GetIDEPKv = Module["__ZN5ImGui5GetIDEPKv"] = wasmExports["_ZN5ImGui5GetIDEPKv"];
+
+var _igTextUnformatted = Module["_igTextUnformatted"] = wasmExports["igTextUnformatted"];
+
+var __ZN5ImGui15TextUnformattedEPKcS1_ = Module["__ZN5ImGui15TextUnformattedEPKcS1_"] = wasmExports["_ZN5ImGui15TextUnformattedEPKcS1_"];
+
+var _igText = Module["_igText"] = wasmExports["igText"];
+
+var __ZN5ImGui5TextVEPKcPv = Module["__ZN5ImGui5TextVEPKcPv"] = wasmExports["_ZN5ImGui5TextVEPKcPv"];
+
+var _igTextV = Module["_igTextV"] = wasmExports["igTextV"];
+
+var _igTextColored = Module["_igTextColored"] = wasmExports["igTextColored"];
+
+var __ZN5ImGui12TextColoredVERK6ImVec4PKcPv = Module["__ZN5ImGui12TextColoredVERK6ImVec4PKcPv"] = wasmExports["_ZN5ImGui12TextColoredVERK6ImVec4PKcPv"];
+
+var _igTextColoredV = Module["_igTextColoredV"] = wasmExports["igTextColoredV"];
+
+var _igTextDisabled = Module["_igTextDisabled"] = wasmExports["igTextDisabled"];
+
+var __ZN5ImGui13TextDisabledVEPKcPv = Module["__ZN5ImGui13TextDisabledVEPKcPv"] = wasmExports["_ZN5ImGui13TextDisabledVEPKcPv"];
+
+var _igTextDisabledV = Module["_igTextDisabledV"] = wasmExports["igTextDisabledV"];
+
+var _igTextWrapped = Module["_igTextWrapped"] = wasmExports["igTextWrapped"];
+
+var __ZN5ImGui12TextWrappedVEPKcPv = Module["__ZN5ImGui12TextWrappedVEPKcPv"] = wasmExports["_ZN5ImGui12TextWrappedVEPKcPv"];
+
+var _igTextWrappedV = Module["_igTextWrappedV"] = wasmExports["igTextWrappedV"];
+
+var _igLabelText = Module["_igLabelText"] = wasmExports["igLabelText"];
+
+var __ZN5ImGui10LabelTextVEPKcS1_Pv = Module["__ZN5ImGui10LabelTextVEPKcS1_Pv"] = wasmExports["_ZN5ImGui10LabelTextVEPKcS1_Pv"];
+
+var _igLabelTextV = Module["_igLabelTextV"] = wasmExports["igLabelTextV"];
+
+var _igBulletText = Module["_igBulletText"] = wasmExports["igBulletText"];
+
+var __ZN5ImGui11BulletTextVEPKcPv = Module["__ZN5ImGui11BulletTextVEPKcPv"] = wasmExports["_ZN5ImGui11BulletTextVEPKcPv"];
+
+var _igBulletTextV = Module["_igBulletTextV"] = wasmExports["igBulletTextV"];
+
+var _igSeparatorText = Module["_igSeparatorText"] = wasmExports["igSeparatorText"];
+
+var __ZN5ImGui13SeparatorTextEPKc = Module["__ZN5ImGui13SeparatorTextEPKc"] = wasmExports["_ZN5ImGui13SeparatorTextEPKc"];
+
+var _igButton = Module["_igButton"] = wasmExports["igButton"];
+
+var __ZN5ImGui6ButtonEPKcRK6ImVec2 = Module["__ZN5ImGui6ButtonEPKcRK6ImVec2"] = wasmExports["_ZN5ImGui6ButtonEPKcRK6ImVec2"];
+
+var _igSmallButton = Module["_igSmallButton"] = wasmExports["igSmallButton"];
+
+var __ZN5ImGui11SmallButtonEPKc = Module["__ZN5ImGui11SmallButtonEPKc"] = wasmExports["_ZN5ImGui11SmallButtonEPKc"];
+
+var _igInvisibleButton = Module["_igInvisibleButton"] = wasmExports["igInvisibleButton"];
+
+var __ZN5ImGui15InvisibleButtonEPKcRK6ImVec2i = Module["__ZN5ImGui15InvisibleButtonEPKcRK6ImVec2i"] = wasmExports["_ZN5ImGui15InvisibleButtonEPKcRK6ImVec2i"];
+
+var _igArrowButton = Module["_igArrowButton"] = wasmExports["igArrowButton"];
+
+var __ZN5ImGui11ArrowButtonEPKci = Module["__ZN5ImGui11ArrowButtonEPKci"] = wasmExports["_ZN5ImGui11ArrowButtonEPKci"];
+
+var _igCheckbox = Module["_igCheckbox"] = wasmExports["igCheckbox"];
+
+var __ZN5ImGui8CheckboxEPKcPb = Module["__ZN5ImGui8CheckboxEPKcPb"] = wasmExports["_ZN5ImGui8CheckboxEPKcPb"];
+
+var _igCheckboxFlags_IntPtr = Module["_igCheckboxFlags_IntPtr"] = wasmExports["igCheckboxFlags_IntPtr"];
+
+var __ZN5ImGui13CheckboxFlagsEPKcPii = Module["__ZN5ImGui13CheckboxFlagsEPKcPii"] = wasmExports["_ZN5ImGui13CheckboxFlagsEPKcPii"];
+
+var _igCheckboxFlags_UintPtr = Module["_igCheckboxFlags_UintPtr"] = wasmExports["igCheckboxFlags_UintPtr"];
+
+var __ZN5ImGui13CheckboxFlagsEPKcPjj = Module["__ZN5ImGui13CheckboxFlagsEPKcPjj"] = wasmExports["_ZN5ImGui13CheckboxFlagsEPKcPjj"];
+
+var _igRadioButton_Bool = Module["_igRadioButton_Bool"] = wasmExports["igRadioButton_Bool"];
+
+var __ZN5ImGui11RadioButtonEPKcb = Module["__ZN5ImGui11RadioButtonEPKcb"] = wasmExports["_ZN5ImGui11RadioButtonEPKcb"];
+
+var _igRadioButton_IntPtr = Module["_igRadioButton_IntPtr"] = wasmExports["igRadioButton_IntPtr"];
+
+var __ZN5ImGui11RadioButtonEPKcPii = Module["__ZN5ImGui11RadioButtonEPKcPii"] = wasmExports["_ZN5ImGui11RadioButtonEPKcPii"];
+
+var _igProgressBar = Module["_igProgressBar"] = wasmExports["igProgressBar"];
+
+var __ZN5ImGui11ProgressBarEfRK6ImVec2PKc = Module["__ZN5ImGui11ProgressBarEfRK6ImVec2PKc"] = wasmExports["_ZN5ImGui11ProgressBarEfRK6ImVec2PKc"];
+
+var _igBullet = Module["_igBullet"] = wasmExports["igBullet"];
+
+var __ZN5ImGui6BulletEv = Module["__ZN5ImGui6BulletEv"] = wasmExports["_ZN5ImGui6BulletEv"];
+
+var _igImage = Module["_igImage"] = wasmExports["igImage"];
+
+var __ZN5ImGui5ImageEPvRK6ImVec2S3_S3_RK6ImVec4S6_ = Module["__ZN5ImGui5ImageEPvRK6ImVec2S3_S3_RK6ImVec4S6_"] = wasmExports["_ZN5ImGui5ImageEPvRK6ImVec2S3_S3_RK6ImVec4S6_"];
+
+var _igImageButton = Module["_igImageButton"] = wasmExports["igImageButton"];
+
+var __ZN5ImGui11ImageButtonEPKcPvRK6ImVec2S5_S5_RK6ImVec4S8_ = Module["__ZN5ImGui11ImageButtonEPKcPvRK6ImVec2S5_S5_RK6ImVec4S8_"] = wasmExports["_ZN5ImGui11ImageButtonEPKcPvRK6ImVec2S5_S5_RK6ImVec4S8_"];
+
+var _igBeginCombo = Module["_igBeginCombo"] = wasmExports["igBeginCombo"];
+
+var __ZN5ImGui10BeginComboEPKcS1_i = Module["__ZN5ImGui10BeginComboEPKcS1_i"] = wasmExports["_ZN5ImGui10BeginComboEPKcS1_i"];
+
+var _igEndCombo = Module["_igEndCombo"] = wasmExports["igEndCombo"];
+
+var __ZN5ImGui8EndComboEv = Module["__ZN5ImGui8EndComboEv"] = wasmExports["_ZN5ImGui8EndComboEv"];
+
+var _igCombo_Str_arr = Module["_igCombo_Str_arr"] = wasmExports["igCombo_Str_arr"];
+
+var __ZN5ImGui5ComboEPKcPiPKS1_ii = Module["__ZN5ImGui5ComboEPKcPiPKS1_ii"] = wasmExports["_ZN5ImGui5ComboEPKcPiPKS1_ii"];
+
+var _igCombo_Str = Module["_igCombo_Str"] = wasmExports["igCombo_Str"];
+
+var __ZN5ImGui5ComboEPKcPiS1_i = Module["__ZN5ImGui5ComboEPKcPiS1_i"] = wasmExports["_ZN5ImGui5ComboEPKcPiS1_i"];
+
+var _igCombo_FnStrPtr = Module["_igCombo_FnStrPtr"] = wasmExports["igCombo_FnStrPtr"];
+
+var __ZN5ImGui5ComboEPKcPiPFS1_PviES3_ii = Module["__ZN5ImGui5ComboEPKcPiPFS1_PviES3_ii"] = wasmExports["_ZN5ImGui5ComboEPKcPiPFS1_PviES3_ii"];
+
+var _igDragFloat = Module["_igDragFloat"] = wasmExports["igDragFloat"];
+
+var __ZN5ImGui9DragFloatEPKcPffffS1_i = Module["__ZN5ImGui9DragFloatEPKcPffffS1_i"] = wasmExports["_ZN5ImGui9DragFloatEPKcPffffS1_i"];
+
+var _igDragFloat2 = Module["_igDragFloat2"] = wasmExports["igDragFloat2"];
+
+var __ZN5ImGui10DragFloat2EPKcPffffS1_i = Module["__ZN5ImGui10DragFloat2EPKcPffffS1_i"] = wasmExports["_ZN5ImGui10DragFloat2EPKcPffffS1_i"];
+
+var _igDragFloat3 = Module["_igDragFloat3"] = wasmExports["igDragFloat3"];
+
+var __ZN5ImGui10DragFloat3EPKcPffffS1_i = Module["__ZN5ImGui10DragFloat3EPKcPffffS1_i"] = wasmExports["_ZN5ImGui10DragFloat3EPKcPffffS1_i"];
+
+var _igDragFloat4 = Module["_igDragFloat4"] = wasmExports["igDragFloat4"];
+
+var __ZN5ImGui10DragFloat4EPKcPffffS1_i = Module["__ZN5ImGui10DragFloat4EPKcPffffS1_i"] = wasmExports["_ZN5ImGui10DragFloat4EPKcPffffS1_i"];
+
+var _igDragFloatRange2 = Module["_igDragFloatRange2"] = wasmExports["igDragFloatRange2"];
+
+var __ZN5ImGui15DragFloatRange2EPKcPfS2_fffS1_S1_i = Module["__ZN5ImGui15DragFloatRange2EPKcPfS2_fffS1_S1_i"] = wasmExports["_ZN5ImGui15DragFloatRange2EPKcPfS2_fffS1_S1_i"];
+
+var _igDragInt = Module["_igDragInt"] = wasmExports["igDragInt"];
+
+var __ZN5ImGui7DragIntEPKcPifiiS1_i = Module["__ZN5ImGui7DragIntEPKcPifiiS1_i"] = wasmExports["_ZN5ImGui7DragIntEPKcPifiiS1_i"];
+
+var _igDragInt2 = Module["_igDragInt2"] = wasmExports["igDragInt2"];
+
+var __ZN5ImGui8DragInt2EPKcPifiiS1_i = Module["__ZN5ImGui8DragInt2EPKcPifiiS1_i"] = wasmExports["_ZN5ImGui8DragInt2EPKcPifiiS1_i"];
+
+var _igDragInt3 = Module["_igDragInt3"] = wasmExports["igDragInt3"];
+
+var __ZN5ImGui8DragInt3EPKcPifiiS1_i = Module["__ZN5ImGui8DragInt3EPKcPifiiS1_i"] = wasmExports["_ZN5ImGui8DragInt3EPKcPifiiS1_i"];
+
+var _igDragInt4 = Module["_igDragInt4"] = wasmExports["igDragInt4"];
+
+var __ZN5ImGui8DragInt4EPKcPifiiS1_i = Module["__ZN5ImGui8DragInt4EPKcPifiiS1_i"] = wasmExports["_ZN5ImGui8DragInt4EPKcPifiiS1_i"];
+
+var _igDragIntRange2 = Module["_igDragIntRange2"] = wasmExports["igDragIntRange2"];
+
+var __ZN5ImGui13DragIntRange2EPKcPiS2_fiiS1_S1_i = Module["__ZN5ImGui13DragIntRange2EPKcPiS2_fiiS1_S1_i"] = wasmExports["_ZN5ImGui13DragIntRange2EPKcPiS2_fiiS1_S1_i"];
+
+var _igDragScalar = Module["_igDragScalar"] = wasmExports["igDragScalar"];
+
+var __ZN5ImGui10DragScalarEPKciPvfPKvS4_S1_i = Module["__ZN5ImGui10DragScalarEPKciPvfPKvS4_S1_i"] = wasmExports["_ZN5ImGui10DragScalarEPKciPvfPKvS4_S1_i"];
+
+var _igDragScalarN = Module["_igDragScalarN"] = wasmExports["igDragScalarN"];
+
+var __ZN5ImGui11DragScalarNEPKciPvifPKvS4_S1_i = Module["__ZN5ImGui11DragScalarNEPKciPvifPKvS4_S1_i"] = wasmExports["_ZN5ImGui11DragScalarNEPKciPvifPKvS4_S1_i"];
+
+var _igSliderFloat = Module["_igSliderFloat"] = wasmExports["igSliderFloat"];
+
+var __ZN5ImGui11SliderFloatEPKcPfffS1_i = Module["__ZN5ImGui11SliderFloatEPKcPfffS1_i"] = wasmExports["_ZN5ImGui11SliderFloatEPKcPfffS1_i"];
+
+var _igSliderFloat2 = Module["_igSliderFloat2"] = wasmExports["igSliderFloat2"];
+
+var __ZN5ImGui12SliderFloat2EPKcPfffS1_i = Module["__ZN5ImGui12SliderFloat2EPKcPfffS1_i"] = wasmExports["_ZN5ImGui12SliderFloat2EPKcPfffS1_i"];
+
+var _igSliderFloat3 = Module["_igSliderFloat3"] = wasmExports["igSliderFloat3"];
+
+var __ZN5ImGui12SliderFloat3EPKcPfffS1_i = Module["__ZN5ImGui12SliderFloat3EPKcPfffS1_i"] = wasmExports["_ZN5ImGui12SliderFloat3EPKcPfffS1_i"];
+
+var _igSliderFloat4 = Module["_igSliderFloat4"] = wasmExports["igSliderFloat4"];
+
+var __ZN5ImGui12SliderFloat4EPKcPfffS1_i = Module["__ZN5ImGui12SliderFloat4EPKcPfffS1_i"] = wasmExports["_ZN5ImGui12SliderFloat4EPKcPfffS1_i"];
+
+var _igSliderAngle = Module["_igSliderAngle"] = wasmExports["igSliderAngle"];
+
+var __ZN5ImGui11SliderAngleEPKcPfffS1_i = Module["__ZN5ImGui11SliderAngleEPKcPfffS1_i"] = wasmExports["_ZN5ImGui11SliderAngleEPKcPfffS1_i"];
+
+var _igSliderInt = Module["_igSliderInt"] = wasmExports["igSliderInt"];
+
+var __ZN5ImGui9SliderIntEPKcPiiiS1_i = Module["__ZN5ImGui9SliderIntEPKcPiiiS1_i"] = wasmExports["_ZN5ImGui9SliderIntEPKcPiiiS1_i"];
+
+var _igSliderInt2 = Module["_igSliderInt2"] = wasmExports["igSliderInt2"];
+
+var __ZN5ImGui10SliderInt2EPKcPiiiS1_i = Module["__ZN5ImGui10SliderInt2EPKcPiiiS1_i"] = wasmExports["_ZN5ImGui10SliderInt2EPKcPiiiS1_i"];
+
+var _igSliderInt3 = Module["_igSliderInt3"] = wasmExports["igSliderInt3"];
+
+var __ZN5ImGui10SliderInt3EPKcPiiiS1_i = Module["__ZN5ImGui10SliderInt3EPKcPiiiS1_i"] = wasmExports["_ZN5ImGui10SliderInt3EPKcPiiiS1_i"];
+
+var _igSliderInt4 = Module["_igSliderInt4"] = wasmExports["igSliderInt4"];
+
+var __ZN5ImGui10SliderInt4EPKcPiiiS1_i = Module["__ZN5ImGui10SliderInt4EPKcPiiiS1_i"] = wasmExports["_ZN5ImGui10SliderInt4EPKcPiiiS1_i"];
+
+var _igSliderScalar = Module["_igSliderScalar"] = wasmExports["igSliderScalar"];
+
+var __ZN5ImGui12SliderScalarEPKciPvPKvS4_S1_i = Module["__ZN5ImGui12SliderScalarEPKciPvPKvS4_S1_i"] = wasmExports["_ZN5ImGui12SliderScalarEPKciPvPKvS4_S1_i"];
+
+var _igSliderScalarN = Module["_igSliderScalarN"] = wasmExports["igSliderScalarN"];
+
+var __ZN5ImGui13SliderScalarNEPKciPviPKvS4_S1_i = Module["__ZN5ImGui13SliderScalarNEPKciPviPKvS4_S1_i"] = wasmExports["_ZN5ImGui13SliderScalarNEPKciPviPKvS4_S1_i"];
+
+var _igVSliderFloat = Module["_igVSliderFloat"] = wasmExports["igVSliderFloat"];
+
+var __ZN5ImGui12VSliderFloatEPKcRK6ImVec2PfffS1_i = Module["__ZN5ImGui12VSliderFloatEPKcRK6ImVec2PfffS1_i"] = wasmExports["_ZN5ImGui12VSliderFloatEPKcRK6ImVec2PfffS1_i"];
+
+var _igVSliderInt = Module["_igVSliderInt"] = wasmExports["igVSliderInt"];
+
+var __ZN5ImGui10VSliderIntEPKcRK6ImVec2PiiiS1_i = Module["__ZN5ImGui10VSliderIntEPKcRK6ImVec2PiiiS1_i"] = wasmExports["_ZN5ImGui10VSliderIntEPKcRK6ImVec2PiiiS1_i"];
+
+var _igVSliderScalar = Module["_igVSliderScalar"] = wasmExports["igVSliderScalar"];
+
+var __ZN5ImGui13VSliderScalarEPKcRK6ImVec2iPvPKvS7_S1_i = Module["__ZN5ImGui13VSliderScalarEPKcRK6ImVec2iPvPKvS7_S1_i"] = wasmExports["_ZN5ImGui13VSliderScalarEPKcRK6ImVec2iPvPKvS7_S1_i"];
+
+var _igInputText = Module["_igInputText"] = wasmExports["igInputText"];
+
+var __ZN5ImGui9InputTextEPKcPcmiPFiP26ImGuiInputTextCallbackDataEPv = Module["__ZN5ImGui9InputTextEPKcPcmiPFiP26ImGuiInputTextCallbackDataEPv"] = wasmExports["_ZN5ImGui9InputTextEPKcPcmiPFiP26ImGuiInputTextCallbackDataEPv"];
+
+var _igInputTextMultiline = Module["_igInputTextMultiline"] = wasmExports["igInputTextMultiline"];
+
+var __ZN5ImGui18InputTextMultilineEPKcPcmRK6ImVec2iPFiP26ImGuiInputTextCallbackDataEPv = Module["__ZN5ImGui18InputTextMultilineEPKcPcmRK6ImVec2iPFiP26ImGuiInputTextCallbackDataEPv"] = wasmExports["_ZN5ImGui18InputTextMultilineEPKcPcmRK6ImVec2iPFiP26ImGuiInputTextCallbackDataEPv"];
+
+var _igInputTextWithHint = Module["_igInputTextWithHint"] = wasmExports["igInputTextWithHint"];
+
+var __ZN5ImGui17InputTextWithHintEPKcS1_PcmiPFiP26ImGuiInputTextCallbackDataEPv = Module["__ZN5ImGui17InputTextWithHintEPKcS1_PcmiPFiP26ImGuiInputTextCallbackDataEPv"] = wasmExports["_ZN5ImGui17InputTextWithHintEPKcS1_PcmiPFiP26ImGuiInputTextCallbackDataEPv"];
+
+var _igInputFloat = Module["_igInputFloat"] = wasmExports["igInputFloat"];
+
+var __ZN5ImGui10InputFloatEPKcPfffS1_i = Module["__ZN5ImGui10InputFloatEPKcPfffS1_i"] = wasmExports["_ZN5ImGui10InputFloatEPKcPfffS1_i"];
+
+var _igInputFloat2 = Module["_igInputFloat2"] = wasmExports["igInputFloat2"];
+
+var __ZN5ImGui11InputFloat2EPKcPfS1_i = Module["__ZN5ImGui11InputFloat2EPKcPfS1_i"] = wasmExports["_ZN5ImGui11InputFloat2EPKcPfS1_i"];
+
+var _igInputFloat3 = Module["_igInputFloat3"] = wasmExports["igInputFloat3"];
+
+var __ZN5ImGui11InputFloat3EPKcPfS1_i = Module["__ZN5ImGui11InputFloat3EPKcPfS1_i"] = wasmExports["_ZN5ImGui11InputFloat3EPKcPfS1_i"];
+
+var _igInputFloat4 = Module["_igInputFloat4"] = wasmExports["igInputFloat4"];
+
+var __ZN5ImGui11InputFloat4EPKcPfS1_i = Module["__ZN5ImGui11InputFloat4EPKcPfS1_i"] = wasmExports["_ZN5ImGui11InputFloat4EPKcPfS1_i"];
+
+var _igInputInt = Module["_igInputInt"] = wasmExports["igInputInt"];
+
+var __ZN5ImGui8InputIntEPKcPiiii = Module["__ZN5ImGui8InputIntEPKcPiiii"] = wasmExports["_ZN5ImGui8InputIntEPKcPiiii"];
+
+var _igInputInt2 = Module["_igInputInt2"] = wasmExports["igInputInt2"];
+
+var __ZN5ImGui9InputInt2EPKcPii = Module["__ZN5ImGui9InputInt2EPKcPii"] = wasmExports["_ZN5ImGui9InputInt2EPKcPii"];
+
+var _igInputInt3 = Module["_igInputInt3"] = wasmExports["igInputInt3"];
+
+var __ZN5ImGui9InputInt3EPKcPii = Module["__ZN5ImGui9InputInt3EPKcPii"] = wasmExports["_ZN5ImGui9InputInt3EPKcPii"];
+
+var _igInputInt4 = Module["_igInputInt4"] = wasmExports["igInputInt4"];
+
+var __ZN5ImGui9InputInt4EPKcPii = Module["__ZN5ImGui9InputInt4EPKcPii"] = wasmExports["_ZN5ImGui9InputInt4EPKcPii"];
+
+var _igInputDouble = Module["_igInputDouble"] = wasmExports["igInputDouble"];
+
+var __ZN5ImGui11InputDoubleEPKcPdddS1_i = Module["__ZN5ImGui11InputDoubleEPKcPdddS1_i"] = wasmExports["_ZN5ImGui11InputDoubleEPKcPdddS1_i"];
+
+var _igInputScalar = Module["_igInputScalar"] = wasmExports["igInputScalar"];
+
+var __ZN5ImGui11InputScalarEPKciPvPKvS4_S1_i = Module["__ZN5ImGui11InputScalarEPKciPvPKvS4_S1_i"] = wasmExports["_ZN5ImGui11InputScalarEPKciPvPKvS4_S1_i"];
+
+var _igInputScalarN = Module["_igInputScalarN"] = wasmExports["igInputScalarN"];
+
+var __ZN5ImGui12InputScalarNEPKciPviPKvS4_S1_i = Module["__ZN5ImGui12InputScalarNEPKciPviPKvS4_S1_i"] = wasmExports["_ZN5ImGui12InputScalarNEPKciPviPKvS4_S1_i"];
+
+var _igColorEdit3 = Module["_igColorEdit3"] = wasmExports["igColorEdit3"];
+
+var __ZN5ImGui10ColorEdit3EPKcPfi = Module["__ZN5ImGui10ColorEdit3EPKcPfi"] = wasmExports["_ZN5ImGui10ColorEdit3EPKcPfi"];
+
+var _igColorEdit4 = Module["_igColorEdit4"] = wasmExports["igColorEdit4"];
+
+var __ZN5ImGui10ColorEdit4EPKcPfi = Module["__ZN5ImGui10ColorEdit4EPKcPfi"] = wasmExports["_ZN5ImGui10ColorEdit4EPKcPfi"];
+
+var _igColorPicker3 = Module["_igColorPicker3"] = wasmExports["igColorPicker3"];
+
+var __ZN5ImGui12ColorPicker3EPKcPfi = Module["__ZN5ImGui12ColorPicker3EPKcPfi"] = wasmExports["_ZN5ImGui12ColorPicker3EPKcPfi"];
+
+var _igColorPicker4 = Module["_igColorPicker4"] = wasmExports["igColorPicker4"];
+
+var __ZN5ImGui12ColorPicker4EPKcPfiPKf = Module["__ZN5ImGui12ColorPicker4EPKcPfiPKf"] = wasmExports["_ZN5ImGui12ColorPicker4EPKcPfiPKf"];
+
+var _igColorButton = Module["_igColorButton"] = wasmExports["igColorButton"];
+
+var __ZN5ImGui11ColorButtonEPKcRK6ImVec4iRK6ImVec2 = Module["__ZN5ImGui11ColorButtonEPKcRK6ImVec4iRK6ImVec2"] = wasmExports["_ZN5ImGui11ColorButtonEPKcRK6ImVec4iRK6ImVec2"];
+
+var _igSetColorEditOptions = Module["_igSetColorEditOptions"] = wasmExports["igSetColorEditOptions"];
+
+var __ZN5ImGui19SetColorEditOptionsEi = Module["__ZN5ImGui19SetColorEditOptionsEi"] = wasmExports["_ZN5ImGui19SetColorEditOptionsEi"];
+
+var _igTreeNode_Str = Module["_igTreeNode_Str"] = wasmExports["igTreeNode_Str"];
+
+var __ZN5ImGui8TreeNodeEPKc = Module["__ZN5ImGui8TreeNodeEPKc"] = wasmExports["_ZN5ImGui8TreeNodeEPKc"];
+
+var _igTreeNode_StrStr = Module["_igTreeNode_StrStr"] = wasmExports["igTreeNode_StrStr"];
+
+var __ZN5ImGui9TreeNodeVEPKcS1_Pv = Module["__ZN5ImGui9TreeNodeVEPKcS1_Pv"] = wasmExports["_ZN5ImGui9TreeNodeVEPKcS1_Pv"];
+
+var _igTreeNode_Ptr = Module["_igTreeNode_Ptr"] = wasmExports["igTreeNode_Ptr"];
+
+var __ZN5ImGui9TreeNodeVEPKvPKcPv = Module["__ZN5ImGui9TreeNodeVEPKvPKcPv"] = wasmExports["_ZN5ImGui9TreeNodeVEPKvPKcPv"];
+
+var _igTreeNodeV_Str = Module["_igTreeNodeV_Str"] = wasmExports["igTreeNodeV_Str"];
+
+var _igTreeNodeV_Ptr = Module["_igTreeNodeV_Ptr"] = wasmExports["igTreeNodeV_Ptr"];
+
+var _igTreeNodeEx_Str = Module["_igTreeNodeEx_Str"] = wasmExports["igTreeNodeEx_Str"];
+
+var __ZN5ImGui10TreeNodeExEPKci = Module["__ZN5ImGui10TreeNodeExEPKci"] = wasmExports["_ZN5ImGui10TreeNodeExEPKci"];
+
+var _igTreeNodeEx_StrStr = Module["_igTreeNodeEx_StrStr"] = wasmExports["igTreeNodeEx_StrStr"];
+
+var __ZN5ImGui11TreeNodeExVEPKciS1_Pv = Module["__ZN5ImGui11TreeNodeExVEPKciS1_Pv"] = wasmExports["_ZN5ImGui11TreeNodeExVEPKciS1_Pv"];
+
+var _igTreeNodeEx_Ptr = Module["_igTreeNodeEx_Ptr"] = wasmExports["igTreeNodeEx_Ptr"];
+
+var __ZN5ImGui11TreeNodeExVEPKviPKcPv = Module["__ZN5ImGui11TreeNodeExVEPKviPKcPv"] = wasmExports["_ZN5ImGui11TreeNodeExVEPKviPKcPv"];
+
+var _igTreeNodeExV_Str = Module["_igTreeNodeExV_Str"] = wasmExports["igTreeNodeExV_Str"];
+
+var _igTreeNodeExV_Ptr = Module["_igTreeNodeExV_Ptr"] = wasmExports["igTreeNodeExV_Ptr"];
+
+var _igTreePush_Str = Module["_igTreePush_Str"] = wasmExports["igTreePush_Str"];
+
+var __ZN5ImGui8TreePushEPKc = Module["__ZN5ImGui8TreePushEPKc"] = wasmExports["_ZN5ImGui8TreePushEPKc"];
+
+var _igTreePush_Ptr = Module["_igTreePush_Ptr"] = wasmExports["igTreePush_Ptr"];
+
+var __ZN5ImGui8TreePushEPKv = Module["__ZN5ImGui8TreePushEPKv"] = wasmExports["_ZN5ImGui8TreePushEPKv"];
+
+var _igTreePop = Module["_igTreePop"] = wasmExports["igTreePop"];
+
+var __ZN5ImGui7TreePopEv = Module["__ZN5ImGui7TreePopEv"] = wasmExports["_ZN5ImGui7TreePopEv"];
+
+var _igGetTreeNodeToLabelSpacing = Module["_igGetTreeNodeToLabelSpacing"] = wasmExports["igGetTreeNodeToLabelSpacing"];
+
+var __ZN5ImGui25GetTreeNodeToLabelSpacingEv = Module["__ZN5ImGui25GetTreeNodeToLabelSpacingEv"] = wasmExports["_ZN5ImGui25GetTreeNodeToLabelSpacingEv"];
+
+var _igCollapsingHeader_TreeNodeFlags = Module["_igCollapsingHeader_TreeNodeFlags"] = wasmExports["igCollapsingHeader_TreeNodeFlags"];
+
+var __ZN5ImGui16CollapsingHeaderEPKci = Module["__ZN5ImGui16CollapsingHeaderEPKci"] = wasmExports["_ZN5ImGui16CollapsingHeaderEPKci"];
+
+var _igCollapsingHeader_BoolPtr = Module["_igCollapsingHeader_BoolPtr"] = wasmExports["igCollapsingHeader_BoolPtr"];
+
+var __ZN5ImGui16CollapsingHeaderEPKcPbi = Module["__ZN5ImGui16CollapsingHeaderEPKcPbi"] = wasmExports["_ZN5ImGui16CollapsingHeaderEPKcPbi"];
+
+var _igSetNextItemOpen = Module["_igSetNextItemOpen"] = wasmExports["igSetNextItemOpen"];
+
+var __ZN5ImGui15SetNextItemOpenEbi = Module["__ZN5ImGui15SetNextItemOpenEbi"] = wasmExports["_ZN5ImGui15SetNextItemOpenEbi"];
+
+var _igSelectable_Bool = Module["_igSelectable_Bool"] = wasmExports["igSelectable_Bool"];
+
+var __ZN5ImGui10SelectableEPKcbiRK6ImVec2 = Module["__ZN5ImGui10SelectableEPKcbiRK6ImVec2"] = wasmExports["_ZN5ImGui10SelectableEPKcbiRK6ImVec2"];
+
+var _igSelectable_BoolPtr = Module["_igSelectable_BoolPtr"] = wasmExports["igSelectable_BoolPtr"];
+
+var __ZN5ImGui10SelectableEPKcPbiRK6ImVec2 = Module["__ZN5ImGui10SelectableEPKcPbiRK6ImVec2"] = wasmExports["_ZN5ImGui10SelectableEPKcPbiRK6ImVec2"];
+
+var _igBeginListBox = Module["_igBeginListBox"] = wasmExports["igBeginListBox"];
+
+var __ZN5ImGui12BeginListBoxEPKcRK6ImVec2 = Module["__ZN5ImGui12BeginListBoxEPKcRK6ImVec2"] = wasmExports["_ZN5ImGui12BeginListBoxEPKcRK6ImVec2"];
+
+var _igEndListBox = Module["_igEndListBox"] = wasmExports["igEndListBox"];
+
+var __ZN5ImGui10EndListBoxEv = Module["__ZN5ImGui10EndListBoxEv"] = wasmExports["_ZN5ImGui10EndListBoxEv"];
+
+var _igListBox_Str_arr = Module["_igListBox_Str_arr"] = wasmExports["igListBox_Str_arr"];
+
+var __ZN5ImGui7ListBoxEPKcPiPKS1_ii = Module["__ZN5ImGui7ListBoxEPKcPiPKS1_ii"] = wasmExports["_ZN5ImGui7ListBoxEPKcPiPKS1_ii"];
+
+var _igListBox_FnStrPtr = Module["_igListBox_FnStrPtr"] = wasmExports["igListBox_FnStrPtr"];
+
+var __ZN5ImGui7ListBoxEPKcPiPFS1_PviES3_ii = Module["__ZN5ImGui7ListBoxEPKcPiPFS1_PviES3_ii"] = wasmExports["_ZN5ImGui7ListBoxEPKcPiPFS1_PviES3_ii"];
+
+var _igPlotLines_FloatPtr = Module["_igPlotLines_FloatPtr"] = wasmExports["igPlotLines_FloatPtr"];
+
+var __ZN5ImGui9PlotLinesEPKcPKfiiS1_ff6ImVec2i = Module["__ZN5ImGui9PlotLinesEPKcPKfiiS1_ff6ImVec2i"] = wasmExports["_ZN5ImGui9PlotLinesEPKcPKfiiS1_ff6ImVec2i"];
+
+var _igPlotLines_FnFloatPtr = Module["_igPlotLines_FnFloatPtr"] = wasmExports["igPlotLines_FnFloatPtr"];
+
+var __ZN5ImGui9PlotLinesEPKcPFfPviES2_iiS1_ff6ImVec2 = Module["__ZN5ImGui9PlotLinesEPKcPFfPviES2_iiS1_ff6ImVec2"] = wasmExports["_ZN5ImGui9PlotLinesEPKcPFfPviES2_iiS1_ff6ImVec2"];
+
+var _igPlotHistogram_FloatPtr = Module["_igPlotHistogram_FloatPtr"] = wasmExports["igPlotHistogram_FloatPtr"];
+
+var __ZN5ImGui13PlotHistogramEPKcPKfiiS1_ff6ImVec2i = Module["__ZN5ImGui13PlotHistogramEPKcPKfiiS1_ff6ImVec2i"] = wasmExports["_ZN5ImGui13PlotHistogramEPKcPKfiiS1_ff6ImVec2i"];
+
+var _igPlotHistogram_FnFloatPtr = Module["_igPlotHistogram_FnFloatPtr"] = wasmExports["igPlotHistogram_FnFloatPtr"];
+
+var __ZN5ImGui13PlotHistogramEPKcPFfPviES2_iiS1_ff6ImVec2 = Module["__ZN5ImGui13PlotHistogramEPKcPFfPviES2_iiS1_ff6ImVec2"] = wasmExports["_ZN5ImGui13PlotHistogramEPKcPFfPviES2_iiS1_ff6ImVec2"];
+
+var _igValue_Bool = Module["_igValue_Bool"] = wasmExports["igValue_Bool"];
+
+var __ZN5ImGui5ValueEPKcb = Module["__ZN5ImGui5ValueEPKcb"] = wasmExports["_ZN5ImGui5ValueEPKcb"];
+
+var _igValue_Int = Module["_igValue_Int"] = wasmExports["igValue_Int"];
+
+var __ZN5ImGui5ValueEPKci = Module["__ZN5ImGui5ValueEPKci"] = wasmExports["_ZN5ImGui5ValueEPKci"];
+
+var _igValue_Uint = Module["_igValue_Uint"] = wasmExports["igValue_Uint"];
+
+var __ZN5ImGui5ValueEPKcj = Module["__ZN5ImGui5ValueEPKcj"] = wasmExports["_ZN5ImGui5ValueEPKcj"];
+
+var _igValue_Float = Module["_igValue_Float"] = wasmExports["igValue_Float"];
+
+var __ZN5ImGui5ValueEPKcfS1_ = Module["__ZN5ImGui5ValueEPKcfS1_"] = wasmExports["_ZN5ImGui5ValueEPKcfS1_"];
+
+var _igBeginMenuBar = Module["_igBeginMenuBar"] = wasmExports["igBeginMenuBar"];
+
+var __ZN5ImGui12BeginMenuBarEv = Module["__ZN5ImGui12BeginMenuBarEv"] = wasmExports["_ZN5ImGui12BeginMenuBarEv"];
+
+var _igEndMenuBar = Module["_igEndMenuBar"] = wasmExports["igEndMenuBar"];
+
+var __ZN5ImGui10EndMenuBarEv = Module["__ZN5ImGui10EndMenuBarEv"] = wasmExports["_ZN5ImGui10EndMenuBarEv"];
+
+var _igBeginMainMenuBar = Module["_igBeginMainMenuBar"] = wasmExports["igBeginMainMenuBar"];
+
+var __ZN5ImGui16BeginMainMenuBarEv = Module["__ZN5ImGui16BeginMainMenuBarEv"] = wasmExports["_ZN5ImGui16BeginMainMenuBarEv"];
+
+var _igEndMainMenuBar = Module["_igEndMainMenuBar"] = wasmExports["igEndMainMenuBar"];
+
+var __ZN5ImGui14EndMainMenuBarEv = Module["__ZN5ImGui14EndMainMenuBarEv"] = wasmExports["_ZN5ImGui14EndMainMenuBarEv"];
+
+var _igBeginMenu = Module["_igBeginMenu"] = wasmExports["igBeginMenu"];
+
+var __ZN5ImGui9BeginMenuEPKcb = Module["__ZN5ImGui9BeginMenuEPKcb"] = wasmExports["_ZN5ImGui9BeginMenuEPKcb"];
+
+var _igEndMenu = Module["_igEndMenu"] = wasmExports["igEndMenu"];
+
+var __ZN5ImGui7EndMenuEv = Module["__ZN5ImGui7EndMenuEv"] = wasmExports["_ZN5ImGui7EndMenuEv"];
+
+var _igMenuItem_Bool = Module["_igMenuItem_Bool"] = wasmExports["igMenuItem_Bool"];
+
+var __ZN5ImGui8MenuItemEPKcS1_bb = Module["__ZN5ImGui8MenuItemEPKcS1_bb"] = wasmExports["_ZN5ImGui8MenuItemEPKcS1_bb"];
+
+var _igMenuItem_BoolPtr = Module["_igMenuItem_BoolPtr"] = wasmExports["igMenuItem_BoolPtr"];
+
+var __ZN5ImGui8MenuItemEPKcS1_Pbb = Module["__ZN5ImGui8MenuItemEPKcS1_Pbb"] = wasmExports["_ZN5ImGui8MenuItemEPKcS1_Pbb"];
+
+var _igBeginTooltip = Module["_igBeginTooltip"] = wasmExports["igBeginTooltip"];
+
+var __ZN5ImGui12BeginTooltipEv = Module["__ZN5ImGui12BeginTooltipEv"] = wasmExports["_ZN5ImGui12BeginTooltipEv"];
+
+var _igEndTooltip = Module["_igEndTooltip"] = wasmExports["igEndTooltip"];
+
+var __ZN5ImGui10EndTooltipEv = Module["__ZN5ImGui10EndTooltipEv"] = wasmExports["_ZN5ImGui10EndTooltipEv"];
+
+var _igSetTooltip = Module["_igSetTooltip"] = wasmExports["igSetTooltip"];
+
+var __ZN5ImGui11SetTooltipVEPKcPv = Module["__ZN5ImGui11SetTooltipVEPKcPv"] = wasmExports["_ZN5ImGui11SetTooltipVEPKcPv"];
+
+var _igSetTooltipV = Module["_igSetTooltipV"] = wasmExports["igSetTooltipV"];
+
+var _igBeginItemTooltip = Module["_igBeginItemTooltip"] = wasmExports["igBeginItemTooltip"];
+
+var __ZN5ImGui16BeginItemTooltipEv = Module["__ZN5ImGui16BeginItemTooltipEv"] = wasmExports["_ZN5ImGui16BeginItemTooltipEv"];
+
+var _igSetItemTooltip = Module["_igSetItemTooltip"] = wasmExports["igSetItemTooltip"];
+
+var __ZN5ImGui15SetItemTooltipVEPKcPv = Module["__ZN5ImGui15SetItemTooltipVEPKcPv"] = wasmExports["_ZN5ImGui15SetItemTooltipVEPKcPv"];
+
+var _igSetItemTooltipV = Module["_igSetItemTooltipV"] = wasmExports["igSetItemTooltipV"];
+
+var _igBeginPopup = Module["_igBeginPopup"] = wasmExports["igBeginPopup"];
+
+var __ZN5ImGui10BeginPopupEPKci = Module["__ZN5ImGui10BeginPopupEPKci"] = wasmExports["_ZN5ImGui10BeginPopupEPKci"];
+
+var _igBeginPopupModal = Module["_igBeginPopupModal"] = wasmExports["igBeginPopupModal"];
+
+var __ZN5ImGui15BeginPopupModalEPKcPbi = Module["__ZN5ImGui15BeginPopupModalEPKcPbi"] = wasmExports["_ZN5ImGui15BeginPopupModalEPKcPbi"];
+
+var _igEndPopup = Module["_igEndPopup"] = wasmExports["igEndPopup"];
+
+var __ZN5ImGui8EndPopupEv = Module["__ZN5ImGui8EndPopupEv"] = wasmExports["_ZN5ImGui8EndPopupEv"];
+
+var _igOpenPopup_Str = Module["_igOpenPopup_Str"] = wasmExports["igOpenPopup_Str"];
+
+var __ZN5ImGui9OpenPopupEPKci = Module["__ZN5ImGui9OpenPopupEPKci"] = wasmExports["_ZN5ImGui9OpenPopupEPKci"];
+
+var _igOpenPopup_ID = Module["_igOpenPopup_ID"] = wasmExports["igOpenPopup_ID"];
+
+var __ZN5ImGui9OpenPopupEji = Module["__ZN5ImGui9OpenPopupEji"] = wasmExports["_ZN5ImGui9OpenPopupEji"];
+
+var _igOpenPopupOnItemClick = Module["_igOpenPopupOnItemClick"] = wasmExports["igOpenPopupOnItemClick"];
+
+var __ZN5ImGui20OpenPopupOnItemClickEPKci = Module["__ZN5ImGui20OpenPopupOnItemClickEPKci"] = wasmExports["_ZN5ImGui20OpenPopupOnItemClickEPKci"];
+
+var _igCloseCurrentPopup = Module["_igCloseCurrentPopup"] = wasmExports["igCloseCurrentPopup"];
+
+var __ZN5ImGui17CloseCurrentPopupEv = Module["__ZN5ImGui17CloseCurrentPopupEv"] = wasmExports["_ZN5ImGui17CloseCurrentPopupEv"];
+
+var _igBeginPopupContextItem = Module["_igBeginPopupContextItem"] = wasmExports["igBeginPopupContextItem"];
+
+var __ZN5ImGui21BeginPopupContextItemEPKci = Module["__ZN5ImGui21BeginPopupContextItemEPKci"] = wasmExports["_ZN5ImGui21BeginPopupContextItemEPKci"];
+
+var _igBeginPopupContextWindow = Module["_igBeginPopupContextWindow"] = wasmExports["igBeginPopupContextWindow"];
+
+var __ZN5ImGui23BeginPopupContextWindowEPKci = Module["__ZN5ImGui23BeginPopupContextWindowEPKci"] = wasmExports["_ZN5ImGui23BeginPopupContextWindowEPKci"];
+
+var _igBeginPopupContextVoid = Module["_igBeginPopupContextVoid"] = wasmExports["igBeginPopupContextVoid"];
+
+var __ZN5ImGui21BeginPopupContextVoidEPKci = Module["__ZN5ImGui21BeginPopupContextVoidEPKci"] = wasmExports["_ZN5ImGui21BeginPopupContextVoidEPKci"];
+
+var _igIsPopupOpen_Str = Module["_igIsPopupOpen_Str"] = wasmExports["igIsPopupOpen_Str"];
+
+var __ZN5ImGui11IsPopupOpenEPKci = Module["__ZN5ImGui11IsPopupOpenEPKci"] = wasmExports["_ZN5ImGui11IsPopupOpenEPKci"];
+
+var _igBeginTable = Module["_igBeginTable"] = wasmExports["igBeginTable"];
+
+var __ZN5ImGui10BeginTableEPKciiRK6ImVec2f = Module["__ZN5ImGui10BeginTableEPKciiRK6ImVec2f"] = wasmExports["_ZN5ImGui10BeginTableEPKciiRK6ImVec2f"];
+
+var _igEndTable = Module["_igEndTable"] = wasmExports["igEndTable"];
+
+var __ZN5ImGui8EndTableEv = Module["__ZN5ImGui8EndTableEv"] = wasmExports["_ZN5ImGui8EndTableEv"];
+
+var _igTableNextRow = Module["_igTableNextRow"] = wasmExports["igTableNextRow"];
+
+var __ZN5ImGui12TableNextRowEif = Module["__ZN5ImGui12TableNextRowEif"] = wasmExports["_ZN5ImGui12TableNextRowEif"];
+
+var _igTableNextColumn = Module["_igTableNextColumn"] = wasmExports["igTableNextColumn"];
+
+var __ZN5ImGui15TableNextColumnEv = Module["__ZN5ImGui15TableNextColumnEv"] = wasmExports["_ZN5ImGui15TableNextColumnEv"];
+
+var _igTableSetColumnIndex = Module["_igTableSetColumnIndex"] = wasmExports["igTableSetColumnIndex"];
+
+var __ZN5ImGui19TableSetColumnIndexEi = Module["__ZN5ImGui19TableSetColumnIndexEi"] = wasmExports["_ZN5ImGui19TableSetColumnIndexEi"];
+
+var _igTableSetupColumn = Module["_igTableSetupColumn"] = wasmExports["igTableSetupColumn"];
+
+var __ZN5ImGui16TableSetupColumnEPKcifj = Module["__ZN5ImGui16TableSetupColumnEPKcifj"] = wasmExports["_ZN5ImGui16TableSetupColumnEPKcifj"];
+
+var _igTableSetupScrollFreeze = Module["_igTableSetupScrollFreeze"] = wasmExports["igTableSetupScrollFreeze"];
+
+var __ZN5ImGui22TableSetupScrollFreezeEii = Module["__ZN5ImGui22TableSetupScrollFreezeEii"] = wasmExports["_ZN5ImGui22TableSetupScrollFreezeEii"];
+
+var _igTableHeader = Module["_igTableHeader"] = wasmExports["igTableHeader"];
+
+var __ZN5ImGui11TableHeaderEPKc = Module["__ZN5ImGui11TableHeaderEPKc"] = wasmExports["_ZN5ImGui11TableHeaderEPKc"];
+
+var _igTableHeadersRow = Module["_igTableHeadersRow"] = wasmExports["igTableHeadersRow"];
+
+var __ZN5ImGui15TableHeadersRowEv = Module["__ZN5ImGui15TableHeadersRowEv"] = wasmExports["_ZN5ImGui15TableHeadersRowEv"];
+
+var _igTableAngledHeadersRow = Module["_igTableAngledHeadersRow"] = wasmExports["igTableAngledHeadersRow"];
+
+var __ZN5ImGui21TableAngledHeadersRowEv = Module["__ZN5ImGui21TableAngledHeadersRowEv"] = wasmExports["_ZN5ImGui21TableAngledHeadersRowEv"];
+
+var _igTableGetSortSpecs = Module["_igTableGetSortSpecs"] = wasmExports["igTableGetSortSpecs"];
+
+var __ZN5ImGui17TableGetSortSpecsEv = Module["__ZN5ImGui17TableGetSortSpecsEv"] = wasmExports["_ZN5ImGui17TableGetSortSpecsEv"];
+
+var _igTableGetColumnCount = Module["_igTableGetColumnCount"] = wasmExports["igTableGetColumnCount"];
+
+var __ZN5ImGui19TableGetColumnCountEv = Module["__ZN5ImGui19TableGetColumnCountEv"] = wasmExports["_ZN5ImGui19TableGetColumnCountEv"];
+
+var _igTableGetColumnIndex = Module["_igTableGetColumnIndex"] = wasmExports["igTableGetColumnIndex"];
+
+var __ZN5ImGui19TableGetColumnIndexEv = Module["__ZN5ImGui19TableGetColumnIndexEv"] = wasmExports["_ZN5ImGui19TableGetColumnIndexEv"];
+
+var _igTableGetRowIndex = Module["_igTableGetRowIndex"] = wasmExports["igTableGetRowIndex"];
+
+var __ZN5ImGui16TableGetRowIndexEv = Module["__ZN5ImGui16TableGetRowIndexEv"] = wasmExports["_ZN5ImGui16TableGetRowIndexEv"];
+
+var _igTableGetColumnName_Int = Module["_igTableGetColumnName_Int"] = wasmExports["igTableGetColumnName_Int"];
+
+var __ZN5ImGui18TableGetColumnNameEi = Module["__ZN5ImGui18TableGetColumnNameEi"] = wasmExports["_ZN5ImGui18TableGetColumnNameEi"];
+
+var _igTableGetColumnFlags = Module["_igTableGetColumnFlags"] = wasmExports["igTableGetColumnFlags"];
+
+var __ZN5ImGui19TableGetColumnFlagsEi = Module["__ZN5ImGui19TableGetColumnFlagsEi"] = wasmExports["_ZN5ImGui19TableGetColumnFlagsEi"];
+
+var _igTableSetColumnEnabled = Module["_igTableSetColumnEnabled"] = wasmExports["igTableSetColumnEnabled"];
+
+var __ZN5ImGui21TableSetColumnEnabledEib = Module["__ZN5ImGui21TableSetColumnEnabledEib"] = wasmExports["_ZN5ImGui21TableSetColumnEnabledEib"];
+
+var _igTableSetBgColor = Module["_igTableSetBgColor"] = wasmExports["igTableSetBgColor"];
+
+var __ZN5ImGui15TableSetBgColorEiji = Module["__ZN5ImGui15TableSetBgColorEiji"] = wasmExports["_ZN5ImGui15TableSetBgColorEiji"];
+
+var _igColumns = Module["_igColumns"] = wasmExports["igColumns"];
+
+var __ZN5ImGui7ColumnsEiPKcb = Module["__ZN5ImGui7ColumnsEiPKcb"] = wasmExports["_ZN5ImGui7ColumnsEiPKcb"];
+
+var _igNextColumn = Module["_igNextColumn"] = wasmExports["igNextColumn"];
+
+var __ZN5ImGui10NextColumnEv = Module["__ZN5ImGui10NextColumnEv"] = wasmExports["_ZN5ImGui10NextColumnEv"];
+
+var _igGetColumnIndex = Module["_igGetColumnIndex"] = wasmExports["igGetColumnIndex"];
+
+var __ZN5ImGui14GetColumnIndexEv = Module["__ZN5ImGui14GetColumnIndexEv"] = wasmExports["_ZN5ImGui14GetColumnIndexEv"];
+
+var _igGetColumnWidth = Module["_igGetColumnWidth"] = wasmExports["igGetColumnWidth"];
+
+var __ZN5ImGui14GetColumnWidthEi = Module["__ZN5ImGui14GetColumnWidthEi"] = wasmExports["_ZN5ImGui14GetColumnWidthEi"];
+
+var _igSetColumnWidth = Module["_igSetColumnWidth"] = wasmExports["igSetColumnWidth"];
+
+var __ZN5ImGui14SetColumnWidthEif = Module["__ZN5ImGui14SetColumnWidthEif"] = wasmExports["_ZN5ImGui14SetColumnWidthEif"];
+
+var _igGetColumnOffset = Module["_igGetColumnOffset"] = wasmExports["igGetColumnOffset"];
+
+var __ZN5ImGui15GetColumnOffsetEi = Module["__ZN5ImGui15GetColumnOffsetEi"] = wasmExports["_ZN5ImGui15GetColumnOffsetEi"];
+
+var _igSetColumnOffset = Module["_igSetColumnOffset"] = wasmExports["igSetColumnOffset"];
+
+var __ZN5ImGui15SetColumnOffsetEif = Module["__ZN5ImGui15SetColumnOffsetEif"] = wasmExports["_ZN5ImGui15SetColumnOffsetEif"];
+
+var _igGetColumnsCount = Module["_igGetColumnsCount"] = wasmExports["igGetColumnsCount"];
+
+var __ZN5ImGui15GetColumnsCountEv = Module["__ZN5ImGui15GetColumnsCountEv"] = wasmExports["_ZN5ImGui15GetColumnsCountEv"];
+
+var _igBeginTabBar = Module["_igBeginTabBar"] = wasmExports["igBeginTabBar"];
+
+var __ZN5ImGui11BeginTabBarEPKci = Module["__ZN5ImGui11BeginTabBarEPKci"] = wasmExports["_ZN5ImGui11BeginTabBarEPKci"];
+
+var _igEndTabBar = Module["_igEndTabBar"] = wasmExports["igEndTabBar"];
+
+var __ZN5ImGui9EndTabBarEv = Module["__ZN5ImGui9EndTabBarEv"] = wasmExports["_ZN5ImGui9EndTabBarEv"];
+
+var _igBeginTabItem = Module["_igBeginTabItem"] = wasmExports["igBeginTabItem"];
+
+var __ZN5ImGui12BeginTabItemEPKcPbi = Module["__ZN5ImGui12BeginTabItemEPKcPbi"] = wasmExports["_ZN5ImGui12BeginTabItemEPKcPbi"];
+
+var _igEndTabItem = Module["_igEndTabItem"] = wasmExports["igEndTabItem"];
+
+var __ZN5ImGui10EndTabItemEv = Module["__ZN5ImGui10EndTabItemEv"] = wasmExports["_ZN5ImGui10EndTabItemEv"];
+
+var _igTabItemButton = Module["_igTabItemButton"] = wasmExports["igTabItemButton"];
+
+var __ZN5ImGui13TabItemButtonEPKci = Module["__ZN5ImGui13TabItemButtonEPKci"] = wasmExports["_ZN5ImGui13TabItemButtonEPKci"];
+
+var _igSetTabItemClosed = Module["_igSetTabItemClosed"] = wasmExports["igSetTabItemClosed"];
+
+var __ZN5ImGui16SetTabItemClosedEPKc = Module["__ZN5ImGui16SetTabItemClosedEPKc"] = wasmExports["_ZN5ImGui16SetTabItemClosedEPKc"];
+
+var _igDockSpace = Module["_igDockSpace"] = wasmExports["igDockSpace"];
+
+var __ZN5ImGui9DockSpaceEjRK6ImVec2iPK16ImGuiWindowClass = Module["__ZN5ImGui9DockSpaceEjRK6ImVec2iPK16ImGuiWindowClass"] = wasmExports["_ZN5ImGui9DockSpaceEjRK6ImVec2iPK16ImGuiWindowClass"];
+
+var _igDockSpaceOverViewport = Module["_igDockSpaceOverViewport"] = wasmExports["igDockSpaceOverViewport"];
+
+var __ZN5ImGui21DockSpaceOverViewportEPK13ImGuiViewportiPK16ImGuiWindowClass = Module["__ZN5ImGui21DockSpaceOverViewportEPK13ImGuiViewportiPK16ImGuiWindowClass"] = wasmExports["_ZN5ImGui21DockSpaceOverViewportEPK13ImGuiViewportiPK16ImGuiWindowClass"];
+
+var _igSetNextWindowDockID = Module["_igSetNextWindowDockID"] = wasmExports["igSetNextWindowDockID"];
+
+var __ZN5ImGui19SetNextWindowDockIDEji = Module["__ZN5ImGui19SetNextWindowDockIDEji"] = wasmExports["_ZN5ImGui19SetNextWindowDockIDEji"];
+
+var _igSetNextWindowClass = Module["_igSetNextWindowClass"] = wasmExports["igSetNextWindowClass"];
+
+var __ZN5ImGui18SetNextWindowClassEPK16ImGuiWindowClass = Module["__ZN5ImGui18SetNextWindowClassEPK16ImGuiWindowClass"] = wasmExports["_ZN5ImGui18SetNextWindowClassEPK16ImGuiWindowClass"];
+
+var _igGetWindowDockID = Module["_igGetWindowDockID"] = wasmExports["igGetWindowDockID"];
+
+var __ZN5ImGui15GetWindowDockIDEv = Module["__ZN5ImGui15GetWindowDockIDEv"] = wasmExports["_ZN5ImGui15GetWindowDockIDEv"];
+
+var _igIsWindowDocked = Module["_igIsWindowDocked"] = wasmExports["igIsWindowDocked"];
+
+var __ZN5ImGui14IsWindowDockedEv = Module["__ZN5ImGui14IsWindowDockedEv"] = wasmExports["_ZN5ImGui14IsWindowDockedEv"];
+
+var _igLogToTTY = Module["_igLogToTTY"] = wasmExports["igLogToTTY"];
+
+var __ZN5ImGui8LogToTTYEi = Module["__ZN5ImGui8LogToTTYEi"] = wasmExports["_ZN5ImGui8LogToTTYEi"];
+
+var _igLogToFile = Module["_igLogToFile"] = wasmExports["igLogToFile"];
+
+var __ZN5ImGui9LogToFileEiPKc = Module["__ZN5ImGui9LogToFileEiPKc"] = wasmExports["_ZN5ImGui9LogToFileEiPKc"];
+
+var _igLogToClipboard = Module["_igLogToClipboard"] = wasmExports["igLogToClipboard"];
+
+var __ZN5ImGui14LogToClipboardEi = Module["__ZN5ImGui14LogToClipboardEi"] = wasmExports["_ZN5ImGui14LogToClipboardEi"];
+
+var _igLogFinish = Module["_igLogFinish"] = wasmExports["igLogFinish"];
+
+var __ZN5ImGui9LogFinishEv = Module["__ZN5ImGui9LogFinishEv"] = wasmExports["_ZN5ImGui9LogFinishEv"];
+
+var _igLogButtons = Module["_igLogButtons"] = wasmExports["igLogButtons"];
+
+var __ZN5ImGui10LogButtonsEv = Module["__ZN5ImGui10LogButtonsEv"] = wasmExports["_ZN5ImGui10LogButtonsEv"];
+
+var _igLogTextV = Module["_igLogTextV"] = wasmExports["igLogTextV"];
+
+var __ZN5ImGui8LogTextVEPKcPv = Module["__ZN5ImGui8LogTextVEPKcPv"] = wasmExports["_ZN5ImGui8LogTextVEPKcPv"];
+
+var _igBeginDragDropSource = Module["_igBeginDragDropSource"] = wasmExports["igBeginDragDropSource"];
+
+var __ZN5ImGui19BeginDragDropSourceEi = Module["__ZN5ImGui19BeginDragDropSourceEi"] = wasmExports["_ZN5ImGui19BeginDragDropSourceEi"];
+
+var _igSetDragDropPayload = Module["_igSetDragDropPayload"] = wasmExports["igSetDragDropPayload"];
+
+var __ZN5ImGui18SetDragDropPayloadEPKcPKvmi = Module["__ZN5ImGui18SetDragDropPayloadEPKcPKvmi"] = wasmExports["_ZN5ImGui18SetDragDropPayloadEPKcPKvmi"];
+
+var _igEndDragDropSource = Module["_igEndDragDropSource"] = wasmExports["igEndDragDropSource"];
+
+var __ZN5ImGui17EndDragDropSourceEv = Module["__ZN5ImGui17EndDragDropSourceEv"] = wasmExports["_ZN5ImGui17EndDragDropSourceEv"];
+
+var _igBeginDragDropTarget = Module["_igBeginDragDropTarget"] = wasmExports["igBeginDragDropTarget"];
+
+var __ZN5ImGui19BeginDragDropTargetEv = Module["__ZN5ImGui19BeginDragDropTargetEv"] = wasmExports["_ZN5ImGui19BeginDragDropTargetEv"];
+
+var _igAcceptDragDropPayload = Module["_igAcceptDragDropPayload"] = wasmExports["igAcceptDragDropPayload"];
+
+var __ZN5ImGui21AcceptDragDropPayloadEPKci = Module["__ZN5ImGui21AcceptDragDropPayloadEPKci"] = wasmExports["_ZN5ImGui21AcceptDragDropPayloadEPKci"];
+
+var _igEndDragDropTarget = Module["_igEndDragDropTarget"] = wasmExports["igEndDragDropTarget"];
+
+var __ZN5ImGui17EndDragDropTargetEv = Module["__ZN5ImGui17EndDragDropTargetEv"] = wasmExports["_ZN5ImGui17EndDragDropTargetEv"];
+
+var _igGetDragDropPayload = Module["_igGetDragDropPayload"] = wasmExports["igGetDragDropPayload"];
+
+var __ZN5ImGui18GetDragDropPayloadEv = Module["__ZN5ImGui18GetDragDropPayloadEv"] = wasmExports["_ZN5ImGui18GetDragDropPayloadEv"];
+
+var _igBeginDisabled = Module["_igBeginDisabled"] = wasmExports["igBeginDisabled"];
+
+var __ZN5ImGui13BeginDisabledEb = Module["__ZN5ImGui13BeginDisabledEb"] = wasmExports["_ZN5ImGui13BeginDisabledEb"];
+
+var _igEndDisabled = Module["_igEndDisabled"] = wasmExports["igEndDisabled"];
+
+var __ZN5ImGui11EndDisabledEv = Module["__ZN5ImGui11EndDisabledEv"] = wasmExports["_ZN5ImGui11EndDisabledEv"];
+
+var _igPushClipRect = Module["_igPushClipRect"] = wasmExports["igPushClipRect"];
+
+var __ZN5ImGui12PushClipRectERK6ImVec2S2_b = Module["__ZN5ImGui12PushClipRectERK6ImVec2S2_b"] = wasmExports["_ZN5ImGui12PushClipRectERK6ImVec2S2_b"];
+
+var _igPopClipRect = Module["_igPopClipRect"] = wasmExports["igPopClipRect"];
+
+var __ZN5ImGui11PopClipRectEv = Module["__ZN5ImGui11PopClipRectEv"] = wasmExports["_ZN5ImGui11PopClipRectEv"];
+
+var _igSetItemDefaultFocus = Module["_igSetItemDefaultFocus"] = wasmExports["igSetItemDefaultFocus"];
+
+var __ZN5ImGui19SetItemDefaultFocusEv = Module["__ZN5ImGui19SetItemDefaultFocusEv"] = wasmExports["_ZN5ImGui19SetItemDefaultFocusEv"];
+
+var _igSetKeyboardFocusHere = Module["_igSetKeyboardFocusHere"] = wasmExports["igSetKeyboardFocusHere"];
+
+var __ZN5ImGui20SetKeyboardFocusHereEi = Module["__ZN5ImGui20SetKeyboardFocusHereEi"] = wasmExports["_ZN5ImGui20SetKeyboardFocusHereEi"];
+
+var _igSetNextItemAllowOverlap = Module["_igSetNextItemAllowOverlap"] = wasmExports["igSetNextItemAllowOverlap"];
+
+var __ZN5ImGui23SetNextItemAllowOverlapEv = Module["__ZN5ImGui23SetNextItemAllowOverlapEv"] = wasmExports["_ZN5ImGui23SetNextItemAllowOverlapEv"];
+
+var _igIsItemHovered = Module["_igIsItemHovered"] = wasmExports["igIsItemHovered"];
+
+var __ZN5ImGui13IsItemHoveredEi = Module["__ZN5ImGui13IsItemHoveredEi"] = wasmExports["_ZN5ImGui13IsItemHoveredEi"];
+
+var _igIsItemActive = Module["_igIsItemActive"] = wasmExports["igIsItemActive"];
+
+var __ZN5ImGui12IsItemActiveEv = Module["__ZN5ImGui12IsItemActiveEv"] = wasmExports["_ZN5ImGui12IsItemActiveEv"];
+
+var _igIsItemFocused = Module["_igIsItemFocused"] = wasmExports["igIsItemFocused"];
+
+var __ZN5ImGui13IsItemFocusedEv = Module["__ZN5ImGui13IsItemFocusedEv"] = wasmExports["_ZN5ImGui13IsItemFocusedEv"];
+
+var _igIsItemClicked = Module["_igIsItemClicked"] = wasmExports["igIsItemClicked"];
+
+var __ZN5ImGui13IsItemClickedEi = Module["__ZN5ImGui13IsItemClickedEi"] = wasmExports["_ZN5ImGui13IsItemClickedEi"];
+
+var _igIsItemVisible = Module["_igIsItemVisible"] = wasmExports["igIsItemVisible"];
+
+var __ZN5ImGui13IsItemVisibleEv = Module["__ZN5ImGui13IsItemVisibleEv"] = wasmExports["_ZN5ImGui13IsItemVisibleEv"];
+
+var _igIsItemEdited = Module["_igIsItemEdited"] = wasmExports["igIsItemEdited"];
+
+var __ZN5ImGui12IsItemEditedEv = Module["__ZN5ImGui12IsItemEditedEv"] = wasmExports["_ZN5ImGui12IsItemEditedEv"];
+
+var _igIsItemActivated = Module["_igIsItemActivated"] = wasmExports["igIsItemActivated"];
+
+var __ZN5ImGui15IsItemActivatedEv = Module["__ZN5ImGui15IsItemActivatedEv"] = wasmExports["_ZN5ImGui15IsItemActivatedEv"];
+
+var _igIsItemDeactivated = Module["_igIsItemDeactivated"] = wasmExports["igIsItemDeactivated"];
+
+var __ZN5ImGui17IsItemDeactivatedEv = Module["__ZN5ImGui17IsItemDeactivatedEv"] = wasmExports["_ZN5ImGui17IsItemDeactivatedEv"];
+
+var _igIsItemDeactivatedAfterEdit = Module["_igIsItemDeactivatedAfterEdit"] = wasmExports["igIsItemDeactivatedAfterEdit"];
+
+var __ZN5ImGui26IsItemDeactivatedAfterEditEv = Module["__ZN5ImGui26IsItemDeactivatedAfterEditEv"] = wasmExports["_ZN5ImGui26IsItemDeactivatedAfterEditEv"];
+
+var _igIsItemToggledOpen = Module["_igIsItemToggledOpen"] = wasmExports["igIsItemToggledOpen"];
+
+var __ZN5ImGui17IsItemToggledOpenEv = Module["__ZN5ImGui17IsItemToggledOpenEv"] = wasmExports["_ZN5ImGui17IsItemToggledOpenEv"];
+
+var _igIsAnyItemHovered = Module["_igIsAnyItemHovered"] = wasmExports["igIsAnyItemHovered"];
+
+var __ZN5ImGui16IsAnyItemHoveredEv = Module["__ZN5ImGui16IsAnyItemHoveredEv"] = wasmExports["_ZN5ImGui16IsAnyItemHoveredEv"];
+
+var _igIsAnyItemActive = Module["_igIsAnyItemActive"] = wasmExports["igIsAnyItemActive"];
+
+var __ZN5ImGui15IsAnyItemActiveEv = Module["__ZN5ImGui15IsAnyItemActiveEv"] = wasmExports["_ZN5ImGui15IsAnyItemActiveEv"];
+
+var _igIsAnyItemFocused = Module["_igIsAnyItemFocused"] = wasmExports["igIsAnyItemFocused"];
+
+var __ZN5ImGui16IsAnyItemFocusedEv = Module["__ZN5ImGui16IsAnyItemFocusedEv"] = wasmExports["_ZN5ImGui16IsAnyItemFocusedEv"];
+
+var _igGetItemID = Module["_igGetItemID"] = wasmExports["igGetItemID"];
+
+var __ZN5ImGui9GetItemIDEv = Module["__ZN5ImGui9GetItemIDEv"] = wasmExports["_ZN5ImGui9GetItemIDEv"];
+
+var _igGetItemRectMin = Module["_igGetItemRectMin"] = wasmExports["igGetItemRectMin"];
+
+var __ZN5ImGui14GetItemRectMinEv = Module["__ZN5ImGui14GetItemRectMinEv"] = wasmExports["_ZN5ImGui14GetItemRectMinEv"];
+
+var _igGetItemRectMax = Module["_igGetItemRectMax"] = wasmExports["igGetItemRectMax"];
+
+var __ZN5ImGui14GetItemRectMaxEv = Module["__ZN5ImGui14GetItemRectMaxEv"] = wasmExports["_ZN5ImGui14GetItemRectMaxEv"];
+
+var _igGetItemRectSize = Module["_igGetItemRectSize"] = wasmExports["igGetItemRectSize"];
+
+var __ZN5ImGui15GetItemRectSizeEv = Module["__ZN5ImGui15GetItemRectSizeEv"] = wasmExports["_ZN5ImGui15GetItemRectSizeEv"];
+
+var _igGetMainViewport = Module["_igGetMainViewport"] = wasmExports["igGetMainViewport"];
+
+var __ZN5ImGui15GetMainViewportEv = Module["__ZN5ImGui15GetMainViewportEv"] = wasmExports["_ZN5ImGui15GetMainViewportEv"];
+
+var _igGetBackgroundDrawList_Nil = Module["_igGetBackgroundDrawList_Nil"] = wasmExports["igGetBackgroundDrawList_Nil"];
+
+var __ZN5ImGui21GetBackgroundDrawListEv = Module["__ZN5ImGui21GetBackgroundDrawListEv"] = wasmExports["_ZN5ImGui21GetBackgroundDrawListEv"];
+
+var _igGetForegroundDrawList_Nil = Module["_igGetForegroundDrawList_Nil"] = wasmExports["igGetForegroundDrawList_Nil"];
+
+var __ZN5ImGui21GetForegroundDrawListEv = Module["__ZN5ImGui21GetForegroundDrawListEv"] = wasmExports["_ZN5ImGui21GetForegroundDrawListEv"];
+
+var _igGetBackgroundDrawList_ViewportPtr = Module["_igGetBackgroundDrawList_ViewportPtr"] = wasmExports["igGetBackgroundDrawList_ViewportPtr"];
+
+var __ZN5ImGui21GetBackgroundDrawListEP13ImGuiViewport = Module["__ZN5ImGui21GetBackgroundDrawListEP13ImGuiViewport"] = wasmExports["_ZN5ImGui21GetBackgroundDrawListEP13ImGuiViewport"];
+
+var _igGetForegroundDrawList_ViewportPtr = Module["_igGetForegroundDrawList_ViewportPtr"] = wasmExports["igGetForegroundDrawList_ViewportPtr"];
+
+var __ZN5ImGui21GetForegroundDrawListEP13ImGuiViewport = Module["__ZN5ImGui21GetForegroundDrawListEP13ImGuiViewport"] = wasmExports["_ZN5ImGui21GetForegroundDrawListEP13ImGuiViewport"];
+
+var _igIsRectVisible_Nil = Module["_igIsRectVisible_Nil"] = wasmExports["igIsRectVisible_Nil"];
+
+var __ZN5ImGui13IsRectVisibleERK6ImVec2 = Module["__ZN5ImGui13IsRectVisibleERK6ImVec2"] = wasmExports["_ZN5ImGui13IsRectVisibleERK6ImVec2"];
+
+var _igIsRectVisible_Vec2 = Module["_igIsRectVisible_Vec2"] = wasmExports["igIsRectVisible_Vec2"];
+
+var __ZN5ImGui13IsRectVisibleERK6ImVec2S2_ = Module["__ZN5ImGui13IsRectVisibleERK6ImVec2S2_"] = wasmExports["_ZN5ImGui13IsRectVisibleERK6ImVec2S2_"];
+
+var _igGetTime = Module["_igGetTime"] = wasmExports["igGetTime"];
+
+var __ZN5ImGui7GetTimeEv = Module["__ZN5ImGui7GetTimeEv"] = wasmExports["_ZN5ImGui7GetTimeEv"];
+
+var _igGetFrameCount = Module["_igGetFrameCount"] = wasmExports["igGetFrameCount"];
+
+var __ZN5ImGui13GetFrameCountEv = Module["__ZN5ImGui13GetFrameCountEv"] = wasmExports["_ZN5ImGui13GetFrameCountEv"];
+
+var _igGetDrawListSharedData = Module["_igGetDrawListSharedData"] = wasmExports["igGetDrawListSharedData"];
+
+var __ZN5ImGui21GetDrawListSharedDataEv = Module["__ZN5ImGui21GetDrawListSharedDataEv"] = wasmExports["_ZN5ImGui21GetDrawListSharedDataEv"];
+
+var _igGetStyleColorName = Module["_igGetStyleColorName"] = wasmExports["igGetStyleColorName"];
+
+var __ZN5ImGui17GetStyleColorNameEi = Module["__ZN5ImGui17GetStyleColorNameEi"] = wasmExports["_ZN5ImGui17GetStyleColorNameEi"];
+
+var _igSetStateStorage = Module["_igSetStateStorage"] = wasmExports["igSetStateStorage"];
+
+var __ZN5ImGui15SetStateStorageEP12ImGuiStorage = Module["__ZN5ImGui15SetStateStorageEP12ImGuiStorage"] = wasmExports["_ZN5ImGui15SetStateStorageEP12ImGuiStorage"];
+
+var _igGetStateStorage = Module["_igGetStateStorage"] = wasmExports["igGetStateStorage"];
+
+var __ZN5ImGui15GetStateStorageEv = Module["__ZN5ImGui15GetStateStorageEv"] = wasmExports["_ZN5ImGui15GetStateStorageEv"];
+
+var _igCalcTextSize = Module["_igCalcTextSize"] = wasmExports["igCalcTextSize"];
+
+var __ZN5ImGui12CalcTextSizeEPKcS1_bf = Module["__ZN5ImGui12CalcTextSizeEPKcS1_bf"] = wasmExports["_ZN5ImGui12CalcTextSizeEPKcS1_bf"];
+
+var _igColorConvertU32ToFloat4 = Module["_igColorConvertU32ToFloat4"] = wasmExports["igColorConvertU32ToFloat4"];
+
+var __ZN5ImGui23ColorConvertU32ToFloat4Ej = Module["__ZN5ImGui23ColorConvertU32ToFloat4Ej"] = wasmExports["_ZN5ImGui23ColorConvertU32ToFloat4Ej"];
+
+var _igColorConvertFloat4ToU32 = Module["_igColorConvertFloat4ToU32"] = wasmExports["igColorConvertFloat4ToU32"];
+
+var __ZN5ImGui23ColorConvertFloat4ToU32ERK6ImVec4 = Module["__ZN5ImGui23ColorConvertFloat4ToU32ERK6ImVec4"] = wasmExports["_ZN5ImGui23ColorConvertFloat4ToU32ERK6ImVec4"];
+
+var _igColorConvertRGBtoHSV = Module["_igColorConvertRGBtoHSV"] = wasmExports["igColorConvertRGBtoHSV"];
+
+var __ZN5ImGui20ColorConvertRGBtoHSVEfffRfS0_S0_ = Module["__ZN5ImGui20ColorConvertRGBtoHSVEfffRfS0_S0_"] = wasmExports["_ZN5ImGui20ColorConvertRGBtoHSVEfffRfS0_S0_"];
+
+var _igColorConvertHSVtoRGB = Module["_igColorConvertHSVtoRGB"] = wasmExports["igColorConvertHSVtoRGB"];
+
+var __ZN5ImGui20ColorConvertHSVtoRGBEfffRfS0_S0_ = Module["__ZN5ImGui20ColorConvertHSVtoRGBEfffRfS0_S0_"] = wasmExports["_ZN5ImGui20ColorConvertHSVtoRGBEfffRfS0_S0_"];
+
+var _igIsKeyDown_Nil = Module["_igIsKeyDown_Nil"] = wasmExports["igIsKeyDown_Nil"];
+
+var __ZN5ImGui9IsKeyDownE8ImGuiKey = Module["__ZN5ImGui9IsKeyDownE8ImGuiKey"] = wasmExports["_ZN5ImGui9IsKeyDownE8ImGuiKey"];
+
+var _igIsKeyPressed_Bool = Module["_igIsKeyPressed_Bool"] = wasmExports["igIsKeyPressed_Bool"];
+
+var __ZN5ImGui12IsKeyPressedE8ImGuiKeyb = Module["__ZN5ImGui12IsKeyPressedE8ImGuiKeyb"] = wasmExports["_ZN5ImGui12IsKeyPressedE8ImGuiKeyb"];
+
+var _igIsKeyReleased_Nil = Module["_igIsKeyReleased_Nil"] = wasmExports["igIsKeyReleased_Nil"];
+
+var __ZN5ImGui13IsKeyReleasedE8ImGuiKey = Module["__ZN5ImGui13IsKeyReleasedE8ImGuiKey"] = wasmExports["_ZN5ImGui13IsKeyReleasedE8ImGuiKey"];
+
+var _igIsKeyChordPressed_Nil = Module["_igIsKeyChordPressed_Nil"] = wasmExports["igIsKeyChordPressed_Nil"];
+
+var __ZN5ImGui17IsKeyChordPressedEi = Module["__ZN5ImGui17IsKeyChordPressedEi"] = wasmExports["_ZN5ImGui17IsKeyChordPressedEi"];
+
+var _igGetKeyPressedAmount = Module["_igGetKeyPressedAmount"] = wasmExports["igGetKeyPressedAmount"];
+
+var __ZN5ImGui19GetKeyPressedAmountE8ImGuiKeyff = Module["__ZN5ImGui19GetKeyPressedAmountE8ImGuiKeyff"] = wasmExports["_ZN5ImGui19GetKeyPressedAmountE8ImGuiKeyff"];
+
+var _igGetKeyName = Module["_igGetKeyName"] = wasmExports["igGetKeyName"];
+
+var __ZN5ImGui10GetKeyNameE8ImGuiKey = Module["__ZN5ImGui10GetKeyNameE8ImGuiKey"] = wasmExports["_ZN5ImGui10GetKeyNameE8ImGuiKey"];
+
+var _igSetNextFrameWantCaptureKeyboard = Module["_igSetNextFrameWantCaptureKeyboard"] = wasmExports["igSetNextFrameWantCaptureKeyboard"];
+
+var __ZN5ImGui31SetNextFrameWantCaptureKeyboardEb = Module["__ZN5ImGui31SetNextFrameWantCaptureKeyboardEb"] = wasmExports["_ZN5ImGui31SetNextFrameWantCaptureKeyboardEb"];
+
+var _igIsMouseDown_Nil = Module["_igIsMouseDown_Nil"] = wasmExports["igIsMouseDown_Nil"];
+
+var __ZN5ImGui11IsMouseDownEi = Module["__ZN5ImGui11IsMouseDownEi"] = wasmExports["_ZN5ImGui11IsMouseDownEi"];
+
+var _igIsMouseClicked_Bool = Module["_igIsMouseClicked_Bool"] = wasmExports["igIsMouseClicked_Bool"];
+
+var __ZN5ImGui14IsMouseClickedEib = Module["__ZN5ImGui14IsMouseClickedEib"] = wasmExports["_ZN5ImGui14IsMouseClickedEib"];
+
+var _igIsMouseReleased_Nil = Module["_igIsMouseReleased_Nil"] = wasmExports["igIsMouseReleased_Nil"];
+
+var __ZN5ImGui15IsMouseReleasedEi = Module["__ZN5ImGui15IsMouseReleasedEi"] = wasmExports["_ZN5ImGui15IsMouseReleasedEi"];
+
+var _igIsMouseDoubleClicked_Nil = Module["_igIsMouseDoubleClicked_Nil"] = wasmExports["igIsMouseDoubleClicked_Nil"];
+
+var __ZN5ImGui20IsMouseDoubleClickedEi = Module["__ZN5ImGui20IsMouseDoubleClickedEi"] = wasmExports["_ZN5ImGui20IsMouseDoubleClickedEi"];
+
+var _igGetMouseClickedCount = Module["_igGetMouseClickedCount"] = wasmExports["igGetMouseClickedCount"];
+
+var __ZN5ImGui20GetMouseClickedCountEi = Module["__ZN5ImGui20GetMouseClickedCountEi"] = wasmExports["_ZN5ImGui20GetMouseClickedCountEi"];
+
+var _igIsMouseHoveringRect = Module["_igIsMouseHoveringRect"] = wasmExports["igIsMouseHoveringRect"];
+
+var __ZN5ImGui19IsMouseHoveringRectERK6ImVec2S2_b = Module["__ZN5ImGui19IsMouseHoveringRectERK6ImVec2S2_b"] = wasmExports["_ZN5ImGui19IsMouseHoveringRectERK6ImVec2S2_b"];
+
+var _igIsMousePosValid = Module["_igIsMousePosValid"] = wasmExports["igIsMousePosValid"];
+
+var __ZN5ImGui15IsMousePosValidEPK6ImVec2 = Module["__ZN5ImGui15IsMousePosValidEPK6ImVec2"] = wasmExports["_ZN5ImGui15IsMousePosValidEPK6ImVec2"];
+
+var _igIsAnyMouseDown = Module["_igIsAnyMouseDown"] = wasmExports["igIsAnyMouseDown"];
+
+var __ZN5ImGui14IsAnyMouseDownEv = Module["__ZN5ImGui14IsAnyMouseDownEv"] = wasmExports["_ZN5ImGui14IsAnyMouseDownEv"];
+
+var _igGetMousePos = Module["_igGetMousePos"] = wasmExports["igGetMousePos"];
+
+var __ZN5ImGui11GetMousePosEv = Module["__ZN5ImGui11GetMousePosEv"] = wasmExports["_ZN5ImGui11GetMousePosEv"];
+
+var _igGetMousePosOnOpeningCurrentPopup = Module["_igGetMousePosOnOpeningCurrentPopup"] = wasmExports["igGetMousePosOnOpeningCurrentPopup"];
+
+var __ZN5ImGui32GetMousePosOnOpeningCurrentPopupEv = Module["__ZN5ImGui32GetMousePosOnOpeningCurrentPopupEv"] = wasmExports["_ZN5ImGui32GetMousePosOnOpeningCurrentPopupEv"];
+
+var _igIsMouseDragging = Module["_igIsMouseDragging"] = wasmExports["igIsMouseDragging"];
+
+var __ZN5ImGui15IsMouseDraggingEif = Module["__ZN5ImGui15IsMouseDraggingEif"] = wasmExports["_ZN5ImGui15IsMouseDraggingEif"];
+
+var _igGetMouseDragDelta = Module["_igGetMouseDragDelta"] = wasmExports["igGetMouseDragDelta"];
+
+var __ZN5ImGui17GetMouseDragDeltaEif = Module["__ZN5ImGui17GetMouseDragDeltaEif"] = wasmExports["_ZN5ImGui17GetMouseDragDeltaEif"];
+
+var _igResetMouseDragDelta = Module["_igResetMouseDragDelta"] = wasmExports["igResetMouseDragDelta"];
+
+var __ZN5ImGui19ResetMouseDragDeltaEi = Module["__ZN5ImGui19ResetMouseDragDeltaEi"] = wasmExports["_ZN5ImGui19ResetMouseDragDeltaEi"];
+
+var _igGetMouseCursor = Module["_igGetMouseCursor"] = wasmExports["igGetMouseCursor"];
+
+var __ZN5ImGui14GetMouseCursorEv = Module["__ZN5ImGui14GetMouseCursorEv"] = wasmExports["_ZN5ImGui14GetMouseCursorEv"];
+
+var _igSetMouseCursor = Module["_igSetMouseCursor"] = wasmExports["igSetMouseCursor"];
+
+var __ZN5ImGui14SetMouseCursorEi = Module["__ZN5ImGui14SetMouseCursorEi"] = wasmExports["_ZN5ImGui14SetMouseCursorEi"];
+
+var _igSetNextFrameWantCaptureMouse = Module["_igSetNextFrameWantCaptureMouse"] = wasmExports["igSetNextFrameWantCaptureMouse"];
+
+var __ZN5ImGui28SetNextFrameWantCaptureMouseEb = Module["__ZN5ImGui28SetNextFrameWantCaptureMouseEb"] = wasmExports["_ZN5ImGui28SetNextFrameWantCaptureMouseEb"];
+
+var _igGetClipboardText = Module["_igGetClipboardText"] = wasmExports["igGetClipboardText"];
+
+var __ZN5ImGui16GetClipboardTextEv = Module["__ZN5ImGui16GetClipboardTextEv"] = wasmExports["_ZN5ImGui16GetClipboardTextEv"];
+
+var _igSetClipboardText = Module["_igSetClipboardText"] = wasmExports["igSetClipboardText"];
+
+var __ZN5ImGui16SetClipboardTextEPKc = Module["__ZN5ImGui16SetClipboardTextEPKc"] = wasmExports["_ZN5ImGui16SetClipboardTextEPKc"];
+
+var _igLoadIniSettingsFromDisk = Module["_igLoadIniSettingsFromDisk"] = wasmExports["igLoadIniSettingsFromDisk"];
+
+var __ZN5ImGui23LoadIniSettingsFromDiskEPKc = Module["__ZN5ImGui23LoadIniSettingsFromDiskEPKc"] = wasmExports["_ZN5ImGui23LoadIniSettingsFromDiskEPKc"];
+
+var _igLoadIniSettingsFromMemory = Module["_igLoadIniSettingsFromMemory"] = wasmExports["igLoadIniSettingsFromMemory"];
+
+var __ZN5ImGui25LoadIniSettingsFromMemoryEPKcm = Module["__ZN5ImGui25LoadIniSettingsFromMemoryEPKcm"] = wasmExports["_ZN5ImGui25LoadIniSettingsFromMemoryEPKcm"];
+
+var _igSaveIniSettingsToDisk = Module["_igSaveIniSettingsToDisk"] = wasmExports["igSaveIniSettingsToDisk"];
+
+var __ZN5ImGui21SaveIniSettingsToDiskEPKc = Module["__ZN5ImGui21SaveIniSettingsToDiskEPKc"] = wasmExports["_ZN5ImGui21SaveIniSettingsToDiskEPKc"];
+
+var _igSaveIniSettingsToMemory = Module["_igSaveIniSettingsToMemory"] = wasmExports["igSaveIniSettingsToMemory"];
+
+var __ZN5ImGui23SaveIniSettingsToMemoryEPm = Module["__ZN5ImGui23SaveIniSettingsToMemoryEPm"] = wasmExports["_ZN5ImGui23SaveIniSettingsToMemoryEPm"];
+
+var _igDebugTextEncoding = Module["_igDebugTextEncoding"] = wasmExports["igDebugTextEncoding"];
+
+var __ZN5ImGui17DebugTextEncodingEPKc = Module["__ZN5ImGui17DebugTextEncodingEPKc"] = wasmExports["_ZN5ImGui17DebugTextEncodingEPKc"];
+
+var _igDebugFlashStyleColor = Module["_igDebugFlashStyleColor"] = wasmExports["igDebugFlashStyleColor"];
+
+var __ZN5ImGui20DebugFlashStyleColorEi = Module["__ZN5ImGui20DebugFlashStyleColorEi"] = wasmExports["_ZN5ImGui20DebugFlashStyleColorEi"];
+
+var _igDebugStartItemPicker = Module["_igDebugStartItemPicker"] = wasmExports["igDebugStartItemPicker"];
+
+var __ZN5ImGui20DebugStartItemPickerEv = Module["__ZN5ImGui20DebugStartItemPickerEv"] = wasmExports["_ZN5ImGui20DebugStartItemPickerEv"];
+
+var _igDebugCheckVersionAndDataLayout = Module["_igDebugCheckVersionAndDataLayout"] = wasmExports["igDebugCheckVersionAndDataLayout"];
+
+var __ZN5ImGui30DebugCheckVersionAndDataLayoutEPKcmmmmmm = Module["__ZN5ImGui30DebugCheckVersionAndDataLayoutEPKcmmmmmm"] = wasmExports["_ZN5ImGui30DebugCheckVersionAndDataLayoutEPKcmmmmmm"];
+
+var _igSetAllocatorFunctions = Module["_igSetAllocatorFunctions"] = wasmExports["igSetAllocatorFunctions"];
+
+var __ZN5ImGui21SetAllocatorFunctionsEPFPvmS0_EPFvS0_S0_ES0_ = Module["__ZN5ImGui21SetAllocatorFunctionsEPFPvmS0_EPFvS0_S0_ES0_"] = wasmExports["_ZN5ImGui21SetAllocatorFunctionsEPFPvmS0_EPFvS0_S0_ES0_"];
+
+var _igGetAllocatorFunctions = Module["_igGetAllocatorFunctions"] = wasmExports["igGetAllocatorFunctions"];
+
+var __ZN5ImGui21GetAllocatorFunctionsEPPFPvmS0_EPPFvS0_S0_EPS0_ = Module["__ZN5ImGui21GetAllocatorFunctionsEPPFPvmS0_EPPFvS0_S0_EPS0_"] = wasmExports["_ZN5ImGui21GetAllocatorFunctionsEPPFPvmS0_EPPFvS0_S0_EPS0_"];
+
+var _igMemAlloc = Module["_igMemAlloc"] = wasmExports["igMemAlloc"];
+
+var _igMemFree = Module["_igMemFree"] = wasmExports["igMemFree"];
+
+var _igGetPlatformIO = Module["_igGetPlatformIO"] = wasmExports["igGetPlatformIO"];
+
+var __ZN5ImGui13GetPlatformIOEv = Module["__ZN5ImGui13GetPlatformIOEv"] = wasmExports["_ZN5ImGui13GetPlatformIOEv"];
+
+var _igUpdatePlatformWindows = Module["_igUpdatePlatformWindows"] = wasmExports["igUpdatePlatformWindows"];
+
+var __ZN5ImGui21UpdatePlatformWindowsEv = Module["__ZN5ImGui21UpdatePlatformWindowsEv"] = wasmExports["_ZN5ImGui21UpdatePlatformWindowsEv"];
+
+var _igRenderPlatformWindowsDefault = Module["_igRenderPlatformWindowsDefault"] = wasmExports["igRenderPlatformWindowsDefault"];
+
+var __ZN5ImGui28RenderPlatformWindowsDefaultEPvS0_ = Module["__ZN5ImGui28RenderPlatformWindowsDefaultEPvS0_"] = wasmExports["_ZN5ImGui28RenderPlatformWindowsDefaultEPvS0_"];
+
+var _igDestroyPlatformWindows = Module["_igDestroyPlatformWindows"] = wasmExports["igDestroyPlatformWindows"];
+
+var __ZN5ImGui22DestroyPlatformWindowsEv = Module["__ZN5ImGui22DestroyPlatformWindowsEv"] = wasmExports["_ZN5ImGui22DestroyPlatformWindowsEv"];
+
+var _igFindViewportByID = Module["_igFindViewportByID"] = wasmExports["igFindViewportByID"];
+
+var __ZN5ImGui16FindViewportByIDEj = Module["__ZN5ImGui16FindViewportByIDEj"] = wasmExports["_ZN5ImGui16FindViewportByIDEj"];
+
+var _igFindViewportByPlatformHandle = Module["_igFindViewportByPlatformHandle"] = wasmExports["igFindViewportByPlatformHandle"];
+
+var __ZN5ImGui28FindViewportByPlatformHandleEPv = Module["__ZN5ImGui28FindViewportByPlatformHandleEPv"] = wasmExports["_ZN5ImGui28FindViewportByPlatformHandleEPv"];
+
+var _ImGuiTableSortSpecs_ImGuiTableSortSpecs = Module["_ImGuiTableSortSpecs_ImGuiTableSortSpecs"] = wasmExports["ImGuiTableSortSpecs_ImGuiTableSortSpecs"];
+
+var _ImGuiTableSortSpecs_destroy = Module["_ImGuiTableSortSpecs_destroy"] = wasmExports["ImGuiTableSortSpecs_destroy"];
+
+var _ImGuiTableColumnSortSpecs_ImGuiTableColumnSortSpecs = Module["_ImGuiTableColumnSortSpecs_ImGuiTableColumnSortSpecs"] = wasmExports["ImGuiTableColumnSortSpecs_ImGuiTableColumnSortSpecs"];
+
+var _ImGuiTableColumnSortSpecs_destroy = Module["_ImGuiTableColumnSortSpecs_destroy"] = wasmExports["ImGuiTableColumnSortSpecs_destroy"];
+
+var _ImGuiStyle_ImGuiStyle = Module["_ImGuiStyle_ImGuiStyle"] = wasmExports["ImGuiStyle_ImGuiStyle"];
+
+var __ZN10ImGuiStyleC1Ev = Module["__ZN10ImGuiStyleC1Ev"] = wasmExports["_ZN10ImGuiStyleC1Ev"];
+
+var _ImGuiStyle_destroy = Module["_ImGuiStyle_destroy"] = wasmExports["ImGuiStyle_destroy"];
+
+var _ImGuiStyle_ScaleAllSizes = Module["_ImGuiStyle_ScaleAllSizes"] = wasmExports["ImGuiStyle_ScaleAllSizes"];
+
+var __ZN10ImGuiStyle13ScaleAllSizesEf = Module["__ZN10ImGuiStyle13ScaleAllSizesEf"] = wasmExports["_ZN10ImGuiStyle13ScaleAllSizesEf"];
+
+var _ImGuiIO_AddKeyEvent = Module["_ImGuiIO_AddKeyEvent"] = wasmExports["ImGuiIO_AddKeyEvent"];
+
+var __ZN7ImGuiIO11AddKeyEventE8ImGuiKeyb = Module["__ZN7ImGuiIO11AddKeyEventE8ImGuiKeyb"] = wasmExports["_ZN7ImGuiIO11AddKeyEventE8ImGuiKeyb"];
+
+var _ImGuiIO_AddKeyAnalogEvent = Module["_ImGuiIO_AddKeyAnalogEvent"] = wasmExports["ImGuiIO_AddKeyAnalogEvent"];
+
+var __ZN7ImGuiIO17AddKeyAnalogEventE8ImGuiKeybf = Module["__ZN7ImGuiIO17AddKeyAnalogEventE8ImGuiKeybf"] = wasmExports["_ZN7ImGuiIO17AddKeyAnalogEventE8ImGuiKeybf"];
+
+var _ImGuiIO_AddMousePosEvent = Module["_ImGuiIO_AddMousePosEvent"] = wasmExports["ImGuiIO_AddMousePosEvent"];
+
+var __ZN7ImGuiIO16AddMousePosEventEff = Module["__ZN7ImGuiIO16AddMousePosEventEff"] = wasmExports["_ZN7ImGuiIO16AddMousePosEventEff"];
+
+var _ImGuiIO_AddMouseButtonEvent = Module["_ImGuiIO_AddMouseButtonEvent"] = wasmExports["ImGuiIO_AddMouseButtonEvent"];
+
+var __ZN7ImGuiIO19AddMouseButtonEventEib = Module["__ZN7ImGuiIO19AddMouseButtonEventEib"] = wasmExports["_ZN7ImGuiIO19AddMouseButtonEventEib"];
+
+var _ImGuiIO_AddMouseWheelEvent = Module["_ImGuiIO_AddMouseWheelEvent"] = wasmExports["ImGuiIO_AddMouseWheelEvent"];
+
+var __ZN7ImGuiIO18AddMouseWheelEventEff = Module["__ZN7ImGuiIO18AddMouseWheelEventEff"] = wasmExports["_ZN7ImGuiIO18AddMouseWheelEventEff"];
+
+var _ImGuiIO_AddMouseSourceEvent = Module["_ImGuiIO_AddMouseSourceEvent"] = wasmExports["ImGuiIO_AddMouseSourceEvent"];
+
+var __ZN7ImGuiIO19AddMouseSourceEventE16ImGuiMouseSource = Module["__ZN7ImGuiIO19AddMouseSourceEventE16ImGuiMouseSource"] = wasmExports["_ZN7ImGuiIO19AddMouseSourceEventE16ImGuiMouseSource"];
+
+var _ImGuiIO_AddMouseViewportEvent = Module["_ImGuiIO_AddMouseViewportEvent"] = wasmExports["ImGuiIO_AddMouseViewportEvent"];
+
+var __ZN7ImGuiIO21AddMouseViewportEventEj = Module["__ZN7ImGuiIO21AddMouseViewportEventEj"] = wasmExports["_ZN7ImGuiIO21AddMouseViewportEventEj"];
+
+var _ImGuiIO_AddFocusEvent = Module["_ImGuiIO_AddFocusEvent"] = wasmExports["ImGuiIO_AddFocusEvent"];
+
+var __ZN7ImGuiIO13AddFocusEventEb = Module["__ZN7ImGuiIO13AddFocusEventEb"] = wasmExports["_ZN7ImGuiIO13AddFocusEventEb"];
+
+var _ImGuiIO_AddInputCharacter = Module["_ImGuiIO_AddInputCharacter"] = wasmExports["ImGuiIO_AddInputCharacter"];
+
+var __ZN7ImGuiIO17AddInputCharacterEj = Module["__ZN7ImGuiIO17AddInputCharacterEj"] = wasmExports["_ZN7ImGuiIO17AddInputCharacterEj"];
+
+var _ImGuiIO_AddInputCharacterUTF16 = Module["_ImGuiIO_AddInputCharacterUTF16"] = wasmExports["ImGuiIO_AddInputCharacterUTF16"];
+
+var __ZN7ImGuiIO22AddInputCharacterUTF16Et = Module["__ZN7ImGuiIO22AddInputCharacterUTF16Et"] = wasmExports["_ZN7ImGuiIO22AddInputCharacterUTF16Et"];
+
+var _ImGuiIO_AddInputCharactersUTF8 = Module["_ImGuiIO_AddInputCharactersUTF8"] = wasmExports["ImGuiIO_AddInputCharactersUTF8"];
+
+var __ZN7ImGuiIO22AddInputCharactersUTF8EPKc = Module["__ZN7ImGuiIO22AddInputCharactersUTF8EPKc"] = wasmExports["_ZN7ImGuiIO22AddInputCharactersUTF8EPKc"];
+
+var _ImGuiIO_SetKeyEventNativeData = Module["_ImGuiIO_SetKeyEventNativeData"] = wasmExports["ImGuiIO_SetKeyEventNativeData"];
+
+var __ZN7ImGuiIO21SetKeyEventNativeDataE8ImGuiKeyiii = Module["__ZN7ImGuiIO21SetKeyEventNativeDataE8ImGuiKeyiii"] = wasmExports["_ZN7ImGuiIO21SetKeyEventNativeDataE8ImGuiKeyiii"];
+
+var _ImGuiIO_SetAppAcceptingEvents = Module["_ImGuiIO_SetAppAcceptingEvents"] = wasmExports["ImGuiIO_SetAppAcceptingEvents"];
+
+var __ZN7ImGuiIO21SetAppAcceptingEventsEb = Module["__ZN7ImGuiIO21SetAppAcceptingEventsEb"] = wasmExports["_ZN7ImGuiIO21SetAppAcceptingEventsEb"];
+
+var _ImGuiIO_ClearEventsQueue = Module["_ImGuiIO_ClearEventsQueue"] = wasmExports["ImGuiIO_ClearEventsQueue"];
+
+var __ZN7ImGuiIO16ClearEventsQueueEv = Module["__ZN7ImGuiIO16ClearEventsQueueEv"] = wasmExports["_ZN7ImGuiIO16ClearEventsQueueEv"];
+
+var _ImGuiIO_ClearInputKeys = Module["_ImGuiIO_ClearInputKeys"] = wasmExports["ImGuiIO_ClearInputKeys"];
+
+var __ZN7ImGuiIO14ClearInputKeysEv = Module["__ZN7ImGuiIO14ClearInputKeysEv"] = wasmExports["_ZN7ImGuiIO14ClearInputKeysEv"];
+
+var _ImGuiIO_ImGuiIO = Module["_ImGuiIO_ImGuiIO"] = wasmExports["ImGuiIO_ImGuiIO"];
+
+var __ZN7ImGuiIOC1Ev = Module["__ZN7ImGuiIOC1Ev"] = wasmExports["_ZN7ImGuiIOC1Ev"];
+
+var _ImGuiIO_destroy = Module["_ImGuiIO_destroy"] = wasmExports["ImGuiIO_destroy"];
+
+var _ImGuiInputTextCallbackData_ImGuiInputTextCallbackData = Module["_ImGuiInputTextCallbackData_ImGuiInputTextCallbackData"] = wasmExports["ImGuiInputTextCallbackData_ImGuiInputTextCallbackData"];
+
+var __ZN26ImGuiInputTextCallbackDataC1Ev = Module["__ZN26ImGuiInputTextCallbackDataC1Ev"] = wasmExports["_ZN26ImGuiInputTextCallbackDataC1Ev"];
+
+var _ImGuiInputTextCallbackData_destroy = Module["_ImGuiInputTextCallbackData_destroy"] = wasmExports["ImGuiInputTextCallbackData_destroy"];
+
+var _ImGuiInputTextCallbackData_DeleteChars = Module["_ImGuiInputTextCallbackData_DeleteChars"] = wasmExports["ImGuiInputTextCallbackData_DeleteChars"];
+
+var __ZN26ImGuiInputTextCallbackData11DeleteCharsEii = Module["__ZN26ImGuiInputTextCallbackData11DeleteCharsEii"] = wasmExports["_ZN26ImGuiInputTextCallbackData11DeleteCharsEii"];
+
+var _ImGuiInputTextCallbackData_InsertChars = Module["_ImGuiInputTextCallbackData_InsertChars"] = wasmExports["ImGuiInputTextCallbackData_InsertChars"];
+
+var __ZN26ImGuiInputTextCallbackData11InsertCharsEiPKcS1_ = Module["__ZN26ImGuiInputTextCallbackData11InsertCharsEiPKcS1_"] = wasmExports["_ZN26ImGuiInputTextCallbackData11InsertCharsEiPKcS1_"];
+
+var _ImGuiInputTextCallbackData_SelectAll = Module["_ImGuiInputTextCallbackData_SelectAll"] = wasmExports["ImGuiInputTextCallbackData_SelectAll"];
+
+var _ImGuiInputTextCallbackData_ClearSelection = Module["_ImGuiInputTextCallbackData_ClearSelection"] = wasmExports["ImGuiInputTextCallbackData_ClearSelection"];
+
+var _ImGuiInputTextCallbackData_HasSelection = Module["_ImGuiInputTextCallbackData_HasSelection"] = wasmExports["ImGuiInputTextCallbackData_HasSelection"];
+
+var _ImGuiWindowClass_ImGuiWindowClass = Module["_ImGuiWindowClass_ImGuiWindowClass"] = wasmExports["ImGuiWindowClass_ImGuiWindowClass"];
+
+var _ImGuiWindowClass_destroy = Module["_ImGuiWindowClass_destroy"] = wasmExports["ImGuiWindowClass_destroy"];
+
+var _ImGuiPayload_ImGuiPayload = Module["_ImGuiPayload_ImGuiPayload"] = wasmExports["ImGuiPayload_ImGuiPayload"];
+
+var _ImGuiPayload_destroy = Module["_ImGuiPayload_destroy"] = wasmExports["ImGuiPayload_destroy"];
+
+var _ImGuiPayload_Clear = Module["_ImGuiPayload_Clear"] = wasmExports["ImGuiPayload_Clear"];
+
+var _ImGuiPayload_IsDataType = Module["_ImGuiPayload_IsDataType"] = wasmExports["ImGuiPayload_IsDataType"];
+
+var _ImGuiPayload_IsPreview = Module["_ImGuiPayload_IsPreview"] = wasmExports["ImGuiPayload_IsPreview"];
+
+var _ImGuiPayload_IsDelivery = Module["_ImGuiPayload_IsDelivery"] = wasmExports["ImGuiPayload_IsDelivery"];
+
+var _ImGuiOnceUponAFrame_ImGuiOnceUponAFrame = Module["_ImGuiOnceUponAFrame_ImGuiOnceUponAFrame"] = wasmExports["ImGuiOnceUponAFrame_ImGuiOnceUponAFrame"];
+
+var _ImGuiOnceUponAFrame_destroy = Module["_ImGuiOnceUponAFrame_destroy"] = wasmExports["ImGuiOnceUponAFrame_destroy"];
+
+var _ImGuiTextFilter_ImGuiTextFilter = Module["_ImGuiTextFilter_ImGuiTextFilter"] = wasmExports["ImGuiTextFilter_ImGuiTextFilter"];
+
+var __ZN15ImGuiTextFilterC1EPKc = Module["__ZN15ImGuiTextFilterC1EPKc"] = wasmExports["_ZN15ImGuiTextFilterC1EPKc"];
+
+var _ImGuiTextFilter_destroy = Module["_ImGuiTextFilter_destroy"] = wasmExports["ImGuiTextFilter_destroy"];
+
+var _ImGuiTextFilter_Draw = Module["_ImGuiTextFilter_Draw"] = wasmExports["ImGuiTextFilter_Draw"];
+
+var __ZN15ImGuiTextFilter4DrawEPKcf = Module["__ZN15ImGuiTextFilter4DrawEPKcf"] = wasmExports["_ZN15ImGuiTextFilter4DrawEPKcf"];
+
+var _ImGuiTextFilter_PassFilter = Module["_ImGuiTextFilter_PassFilter"] = wasmExports["ImGuiTextFilter_PassFilter"];
+
+var __ZNK15ImGuiTextFilter10PassFilterEPKcS1_ = Module["__ZNK15ImGuiTextFilter10PassFilterEPKcS1_"] = wasmExports["_ZNK15ImGuiTextFilter10PassFilterEPKcS1_"];
+
+var _ImGuiTextFilter_Build = Module["_ImGuiTextFilter_Build"] = wasmExports["ImGuiTextFilter_Build"];
+
+var __ZN15ImGuiTextFilter5BuildEv = Module["__ZN15ImGuiTextFilter5BuildEv"] = wasmExports["_ZN15ImGuiTextFilter5BuildEv"];
+
+var _ImGuiTextFilter_Clear = Module["_ImGuiTextFilter_Clear"] = wasmExports["ImGuiTextFilter_Clear"];
+
+var _ImGuiTextFilter_IsActive = Module["_ImGuiTextFilter_IsActive"] = wasmExports["ImGuiTextFilter_IsActive"];
+
+var _ImGuiTextRange_ImGuiTextRange_Nil = Module["_ImGuiTextRange_ImGuiTextRange_Nil"] = wasmExports["ImGuiTextRange_ImGuiTextRange_Nil"];
+
+var _ImGuiTextRange_destroy = Module["_ImGuiTextRange_destroy"] = wasmExports["ImGuiTextRange_destroy"];
+
+var _ImGuiTextRange_ImGuiTextRange_Str = Module["_ImGuiTextRange_ImGuiTextRange_Str"] = wasmExports["ImGuiTextRange_ImGuiTextRange_Str"];
+
+var _ImGuiTextRange_empty = Module["_ImGuiTextRange_empty"] = wasmExports["ImGuiTextRange_empty"];
+
+var _ImGuiTextRange_split = Module["_ImGuiTextRange_split"] = wasmExports["ImGuiTextRange_split"];
+
+var __ZNK15ImGuiTextFilter14ImGuiTextRange5splitEcP8ImVectorIS0_E = Module["__ZNK15ImGuiTextFilter14ImGuiTextRange5splitEcP8ImVectorIS0_E"] = wasmExports["_ZNK15ImGuiTextFilter14ImGuiTextRange5splitEcP8ImVectorIS0_E"];
+
+var _ImGuiTextBuffer_ImGuiTextBuffer = Module["_ImGuiTextBuffer_ImGuiTextBuffer"] = wasmExports["ImGuiTextBuffer_ImGuiTextBuffer"];
+
+var _ImGuiTextBuffer_destroy = Module["_ImGuiTextBuffer_destroy"] = wasmExports["ImGuiTextBuffer_destroy"];
+
+var _ImGuiTextBuffer_begin = Module["_ImGuiTextBuffer_begin"] = wasmExports["ImGuiTextBuffer_begin"];
+
+var _ImGuiTextBuffer_end = Module["_ImGuiTextBuffer_end"] = wasmExports["ImGuiTextBuffer_end"];
+
+var _ImGuiTextBuffer_size = Module["_ImGuiTextBuffer_size"] = wasmExports["ImGuiTextBuffer_size"];
+
+var _ImGuiTextBuffer_empty = Module["_ImGuiTextBuffer_empty"] = wasmExports["ImGuiTextBuffer_empty"];
+
+var _ImGuiTextBuffer_clear = Module["_ImGuiTextBuffer_clear"] = wasmExports["ImGuiTextBuffer_clear"];
+
+var _ImGuiTextBuffer_reserve = Module["_ImGuiTextBuffer_reserve"] = wasmExports["ImGuiTextBuffer_reserve"];
+
+var _ImGuiTextBuffer_c_str = Module["_ImGuiTextBuffer_c_str"] = wasmExports["ImGuiTextBuffer_c_str"];
+
+var _ImGuiTextBuffer_append = Module["_ImGuiTextBuffer_append"] = wasmExports["ImGuiTextBuffer_append"];
+
+var __ZN15ImGuiTextBuffer6appendEPKcS1_ = Module["__ZN15ImGuiTextBuffer6appendEPKcS1_"] = wasmExports["_ZN15ImGuiTextBuffer6appendEPKcS1_"];
+
+var _ImGuiTextBuffer_appendfv = Module["_ImGuiTextBuffer_appendfv"] = wasmExports["ImGuiTextBuffer_appendfv"];
+
+var __ZN15ImGuiTextBuffer8appendfvEPKcPv = Module["__ZN15ImGuiTextBuffer8appendfvEPKcPv"] = wasmExports["_ZN15ImGuiTextBuffer8appendfvEPKcPv"];
+
+var _ImGuiStoragePair_ImGuiStoragePair_Int = Module["_ImGuiStoragePair_ImGuiStoragePair_Int"] = wasmExports["ImGuiStoragePair_ImGuiStoragePair_Int"];
+
+var _ImGuiStoragePair_destroy = Module["_ImGuiStoragePair_destroy"] = wasmExports["ImGuiStoragePair_destroy"];
+
+var _ImGuiStoragePair_ImGuiStoragePair_Float = Module["_ImGuiStoragePair_ImGuiStoragePair_Float"] = wasmExports["ImGuiStoragePair_ImGuiStoragePair_Float"];
+
+var _ImGuiStoragePair_ImGuiStoragePair_Ptr = Module["_ImGuiStoragePair_ImGuiStoragePair_Ptr"] = wasmExports["ImGuiStoragePair_ImGuiStoragePair_Ptr"];
+
+var _ImGuiStorage_Clear = Module["_ImGuiStorage_Clear"] = wasmExports["ImGuiStorage_Clear"];
+
+var _ImGuiStorage_GetInt = Module["_ImGuiStorage_GetInt"] = wasmExports["ImGuiStorage_GetInt"];
+
+var __ZNK12ImGuiStorage6GetIntEji = Module["__ZNK12ImGuiStorage6GetIntEji"] = wasmExports["_ZNK12ImGuiStorage6GetIntEji"];
+
+var _ImGuiStorage_SetInt = Module["_ImGuiStorage_SetInt"] = wasmExports["ImGuiStorage_SetInt"];
+
+var __ZN12ImGuiStorage6SetIntEji = Module["__ZN12ImGuiStorage6SetIntEji"] = wasmExports["_ZN12ImGuiStorage6SetIntEji"];
+
+var _ImGuiStorage_GetBool = Module["_ImGuiStorage_GetBool"] = wasmExports["ImGuiStorage_GetBool"];
+
+var __ZNK12ImGuiStorage7GetBoolEjb = Module["__ZNK12ImGuiStorage7GetBoolEjb"] = wasmExports["_ZNK12ImGuiStorage7GetBoolEjb"];
+
+var _ImGuiStorage_SetBool = Module["_ImGuiStorage_SetBool"] = wasmExports["ImGuiStorage_SetBool"];
+
+var __ZN12ImGuiStorage7SetBoolEjb = Module["__ZN12ImGuiStorage7SetBoolEjb"] = wasmExports["_ZN12ImGuiStorage7SetBoolEjb"];
+
+var _ImGuiStorage_GetFloat = Module["_ImGuiStorage_GetFloat"] = wasmExports["ImGuiStorage_GetFloat"];
+
+var __ZNK12ImGuiStorage8GetFloatEjf = Module["__ZNK12ImGuiStorage8GetFloatEjf"] = wasmExports["_ZNK12ImGuiStorage8GetFloatEjf"];
+
+var _ImGuiStorage_SetFloat = Module["_ImGuiStorage_SetFloat"] = wasmExports["ImGuiStorage_SetFloat"];
+
+var __ZN12ImGuiStorage8SetFloatEjf = Module["__ZN12ImGuiStorage8SetFloatEjf"] = wasmExports["_ZN12ImGuiStorage8SetFloatEjf"];
+
+var _ImGuiStorage_GetVoidPtr = Module["_ImGuiStorage_GetVoidPtr"] = wasmExports["ImGuiStorage_GetVoidPtr"];
+
+var __ZNK12ImGuiStorage10GetVoidPtrEj = Module["__ZNK12ImGuiStorage10GetVoidPtrEj"] = wasmExports["_ZNK12ImGuiStorage10GetVoidPtrEj"];
+
+var _ImGuiStorage_SetVoidPtr = Module["_ImGuiStorage_SetVoidPtr"] = wasmExports["ImGuiStorage_SetVoidPtr"];
+
+var __ZN12ImGuiStorage10SetVoidPtrEjPv = Module["__ZN12ImGuiStorage10SetVoidPtrEjPv"] = wasmExports["_ZN12ImGuiStorage10SetVoidPtrEjPv"];
+
+var _ImGuiStorage_GetIntRef = Module["_ImGuiStorage_GetIntRef"] = wasmExports["ImGuiStorage_GetIntRef"];
+
+var __ZN12ImGuiStorage9GetIntRefEji = Module["__ZN12ImGuiStorage9GetIntRefEji"] = wasmExports["_ZN12ImGuiStorage9GetIntRefEji"];
+
+var _ImGuiStorage_GetBoolRef = Module["_ImGuiStorage_GetBoolRef"] = wasmExports["ImGuiStorage_GetBoolRef"];
+
+var __ZN12ImGuiStorage10GetBoolRefEjb = Module["__ZN12ImGuiStorage10GetBoolRefEjb"] = wasmExports["_ZN12ImGuiStorage10GetBoolRefEjb"];
+
+var _ImGuiStorage_GetFloatRef = Module["_ImGuiStorage_GetFloatRef"] = wasmExports["ImGuiStorage_GetFloatRef"];
+
+var __ZN12ImGuiStorage11GetFloatRefEjf = Module["__ZN12ImGuiStorage11GetFloatRefEjf"] = wasmExports["_ZN12ImGuiStorage11GetFloatRefEjf"];
+
+var _ImGuiStorage_GetVoidPtrRef = Module["_ImGuiStorage_GetVoidPtrRef"] = wasmExports["ImGuiStorage_GetVoidPtrRef"];
+
+var __ZN12ImGuiStorage13GetVoidPtrRefEjPv = Module["__ZN12ImGuiStorage13GetVoidPtrRefEjPv"] = wasmExports["_ZN12ImGuiStorage13GetVoidPtrRefEjPv"];
+
+var _ImGuiStorage_BuildSortByKey = Module["_ImGuiStorage_BuildSortByKey"] = wasmExports["ImGuiStorage_BuildSortByKey"];
+
+var __ZN12ImGuiStorage14BuildSortByKeyEv = Module["__ZN12ImGuiStorage14BuildSortByKeyEv"] = wasmExports["_ZN12ImGuiStorage14BuildSortByKeyEv"];
+
+var _ImGuiStorage_SetAllInt = Module["_ImGuiStorage_SetAllInt"] = wasmExports["ImGuiStorage_SetAllInt"];
+
+var __ZN12ImGuiStorage9SetAllIntEi = Module["__ZN12ImGuiStorage9SetAllIntEi"] = wasmExports["_ZN12ImGuiStorage9SetAllIntEi"];
+
+var _ImGuiListClipper_ImGuiListClipper = Module["_ImGuiListClipper_ImGuiListClipper"] = wasmExports["ImGuiListClipper_ImGuiListClipper"];
+
+var __ZN16ImGuiListClipperC1Ev = Module["__ZN16ImGuiListClipperC1Ev"] = wasmExports["_ZN16ImGuiListClipperC1Ev"];
+
+var _ImGuiListClipper_destroy = Module["_ImGuiListClipper_destroy"] = wasmExports["ImGuiListClipper_destroy"];
+
+var __ZN16ImGuiListClipperD1Ev = Module["__ZN16ImGuiListClipperD1Ev"] = wasmExports["_ZN16ImGuiListClipperD1Ev"];
+
+var _ImGuiListClipper_Begin = Module["_ImGuiListClipper_Begin"] = wasmExports["ImGuiListClipper_Begin"];
+
+var __ZN16ImGuiListClipper5BeginEif = Module["__ZN16ImGuiListClipper5BeginEif"] = wasmExports["_ZN16ImGuiListClipper5BeginEif"];
+
+var _ImGuiListClipper_End = Module["_ImGuiListClipper_End"] = wasmExports["ImGuiListClipper_End"];
+
+var __ZN16ImGuiListClipper3EndEv = Module["__ZN16ImGuiListClipper3EndEv"] = wasmExports["_ZN16ImGuiListClipper3EndEv"];
+
+var _ImGuiListClipper_Step = Module["_ImGuiListClipper_Step"] = wasmExports["ImGuiListClipper_Step"];
+
+var __ZN16ImGuiListClipper4StepEv = Module["__ZN16ImGuiListClipper4StepEv"] = wasmExports["_ZN16ImGuiListClipper4StepEv"];
+
+var _ImGuiListClipper_IncludeItemByIndex = Module["_ImGuiListClipper_IncludeItemByIndex"] = wasmExports["ImGuiListClipper_IncludeItemByIndex"];
+
+var __ZN16ImGuiListClipper19IncludeItemsByIndexEii = Module["__ZN16ImGuiListClipper19IncludeItemsByIndexEii"] = wasmExports["_ZN16ImGuiListClipper19IncludeItemsByIndexEii"];
+
+var _ImGuiListClipper_IncludeItemsByIndex = Module["_ImGuiListClipper_IncludeItemsByIndex"] = wasmExports["ImGuiListClipper_IncludeItemsByIndex"];
+
+var _ImColor_ImColor_Nil = Module["_ImColor_ImColor_Nil"] = wasmExports["ImColor_ImColor_Nil"];
+
+var _ImColor_destroy = Module["_ImColor_destroy"] = wasmExports["ImColor_destroy"];
+
+var _ImColor_ImColor_Float = Module["_ImColor_ImColor_Float"] = wasmExports["ImColor_ImColor_Float"];
+
+var _ImColor_ImColor_Vec4 = Module["_ImColor_ImColor_Vec4"] = wasmExports["ImColor_ImColor_Vec4"];
+
+var _ImColor_ImColor_Int = Module["_ImColor_ImColor_Int"] = wasmExports["ImColor_ImColor_Int"];
+
+var _ImColor_ImColor_U32 = Module["_ImColor_ImColor_U32"] = wasmExports["ImColor_ImColor_U32"];
+
+var _ImColor_SetHSV = Module["_ImColor_SetHSV"] = wasmExports["ImColor_SetHSV"];
+
+var _ImColor_HSV = Module["_ImColor_HSV"] = wasmExports["ImColor_HSV"];
+
+var _ImDrawCmd_ImDrawCmd = Module["_ImDrawCmd_ImDrawCmd"] = wasmExports["ImDrawCmd_ImDrawCmd"];
+
+var _ImDrawCmd_destroy = Module["_ImDrawCmd_destroy"] = wasmExports["ImDrawCmd_destroy"];
+
+var _ImDrawCmd_GetTexID = Module["_ImDrawCmd_GetTexID"] = wasmExports["ImDrawCmd_GetTexID"];
+
+var _ImDrawListSplitter_ImDrawListSplitter = Module["_ImDrawListSplitter_ImDrawListSplitter"] = wasmExports["ImDrawListSplitter_ImDrawListSplitter"];
+
+var _ImDrawListSplitter_destroy = Module["_ImDrawListSplitter_destroy"] = wasmExports["ImDrawListSplitter_destroy"];
+
+var __ZN18ImDrawListSplitter15ClearFreeMemoryEv = Module["__ZN18ImDrawListSplitter15ClearFreeMemoryEv"] = wasmExports["_ZN18ImDrawListSplitter15ClearFreeMemoryEv"];
+
+var _ImDrawListSplitter_Clear = Module["_ImDrawListSplitter_Clear"] = wasmExports["ImDrawListSplitter_Clear"];
+
+var _ImDrawListSplitter_ClearFreeMemory = Module["_ImDrawListSplitter_ClearFreeMemory"] = wasmExports["ImDrawListSplitter_ClearFreeMemory"];
+
+var _ImDrawListSplitter_Split = Module["_ImDrawListSplitter_Split"] = wasmExports["ImDrawListSplitter_Split"];
+
+var __ZN18ImDrawListSplitter5SplitEP10ImDrawListi = Module["__ZN18ImDrawListSplitter5SplitEP10ImDrawListi"] = wasmExports["_ZN18ImDrawListSplitter5SplitEP10ImDrawListi"];
+
+var _ImDrawListSplitter_Merge = Module["_ImDrawListSplitter_Merge"] = wasmExports["ImDrawListSplitter_Merge"];
+
+var __ZN18ImDrawListSplitter5MergeEP10ImDrawList = Module["__ZN18ImDrawListSplitter5MergeEP10ImDrawList"] = wasmExports["_ZN18ImDrawListSplitter5MergeEP10ImDrawList"];
+
+var _ImDrawListSplitter_SetCurrentChannel = Module["_ImDrawListSplitter_SetCurrentChannel"] = wasmExports["ImDrawListSplitter_SetCurrentChannel"];
+
+var __ZN18ImDrawListSplitter17SetCurrentChannelEP10ImDrawListi = Module["__ZN18ImDrawListSplitter17SetCurrentChannelEP10ImDrawListi"] = wasmExports["_ZN18ImDrawListSplitter17SetCurrentChannelEP10ImDrawListi"];
+
+var _ImDrawList_ImDrawList = Module["_ImDrawList_ImDrawList"] = wasmExports["ImDrawList_ImDrawList"];
+
+var _ImDrawList_destroy = Module["_ImDrawList_destroy"] = wasmExports["ImDrawList_destroy"];
+
+var __ZN10ImDrawListD2Ev = Module["__ZN10ImDrawListD2Ev"] = wasmExports["_ZN10ImDrawListD2Ev"];
+
+var _ImDrawList_PushClipRect = Module["_ImDrawList_PushClipRect"] = wasmExports["ImDrawList_PushClipRect"];
+
+var __ZN10ImDrawList12PushClipRectERK6ImVec2S2_b = Module["__ZN10ImDrawList12PushClipRectERK6ImVec2S2_b"] = wasmExports["_ZN10ImDrawList12PushClipRectERK6ImVec2S2_b"];
+
+var _ImDrawList_PushClipRectFullScreen = Module["_ImDrawList_PushClipRectFullScreen"] = wasmExports["ImDrawList_PushClipRectFullScreen"];
+
+var __ZN10ImDrawList22PushClipRectFullScreenEv = Module["__ZN10ImDrawList22PushClipRectFullScreenEv"] = wasmExports["_ZN10ImDrawList22PushClipRectFullScreenEv"];
+
+var _ImDrawList_PopClipRect = Module["_ImDrawList_PopClipRect"] = wasmExports["ImDrawList_PopClipRect"];
+
+var __ZN10ImDrawList11PopClipRectEv = Module["__ZN10ImDrawList11PopClipRectEv"] = wasmExports["_ZN10ImDrawList11PopClipRectEv"];
+
+var _ImDrawList_PushTextureID = Module["_ImDrawList_PushTextureID"] = wasmExports["ImDrawList_PushTextureID"];
+
+var __ZN10ImDrawList13PushTextureIDEPv = Module["__ZN10ImDrawList13PushTextureIDEPv"] = wasmExports["_ZN10ImDrawList13PushTextureIDEPv"];
+
+var _ImDrawList_PopTextureID = Module["_ImDrawList_PopTextureID"] = wasmExports["ImDrawList_PopTextureID"];
+
+var __ZN10ImDrawList12PopTextureIDEv = Module["__ZN10ImDrawList12PopTextureIDEv"] = wasmExports["_ZN10ImDrawList12PopTextureIDEv"];
+
+var _ImDrawList_GetClipRectMin = Module["_ImDrawList_GetClipRectMin"] = wasmExports["ImDrawList_GetClipRectMin"];
+
+var _ImDrawList_GetClipRectMax = Module["_ImDrawList_GetClipRectMax"] = wasmExports["ImDrawList_GetClipRectMax"];
+
+var _ImDrawList_AddLine = Module["_ImDrawList_AddLine"] = wasmExports["ImDrawList_AddLine"];
+
+var __ZN10ImDrawList7AddLineERK6ImVec2S2_jf = Module["__ZN10ImDrawList7AddLineERK6ImVec2S2_jf"] = wasmExports["_ZN10ImDrawList7AddLineERK6ImVec2S2_jf"];
+
+var _ImDrawList_AddRect = Module["_ImDrawList_AddRect"] = wasmExports["ImDrawList_AddRect"];
+
+var __ZN10ImDrawList7AddRectERK6ImVec2S2_jfif = Module["__ZN10ImDrawList7AddRectERK6ImVec2S2_jfif"] = wasmExports["_ZN10ImDrawList7AddRectERK6ImVec2S2_jfif"];
+
+var _ImDrawList_AddRectFilled = Module["_ImDrawList_AddRectFilled"] = wasmExports["ImDrawList_AddRectFilled"];
+
+var __ZN10ImDrawList13AddRectFilledERK6ImVec2S2_jfi = Module["__ZN10ImDrawList13AddRectFilledERK6ImVec2S2_jfi"] = wasmExports["_ZN10ImDrawList13AddRectFilledERK6ImVec2S2_jfi"];
+
+var _ImDrawList_AddRectFilledMultiColor = Module["_ImDrawList_AddRectFilledMultiColor"] = wasmExports["ImDrawList_AddRectFilledMultiColor"];
+
+var __ZN10ImDrawList23AddRectFilledMultiColorERK6ImVec2S2_jjjj = Module["__ZN10ImDrawList23AddRectFilledMultiColorERK6ImVec2S2_jjjj"] = wasmExports["_ZN10ImDrawList23AddRectFilledMultiColorERK6ImVec2S2_jjjj"];
+
+var _ImDrawList_AddQuad = Module["_ImDrawList_AddQuad"] = wasmExports["ImDrawList_AddQuad"];
+
+var __ZN10ImDrawList7AddQuadERK6ImVec2S2_S2_S2_jf = Module["__ZN10ImDrawList7AddQuadERK6ImVec2S2_S2_S2_jf"] = wasmExports["_ZN10ImDrawList7AddQuadERK6ImVec2S2_S2_S2_jf"];
+
+var _ImDrawList_AddQuadFilled = Module["_ImDrawList_AddQuadFilled"] = wasmExports["ImDrawList_AddQuadFilled"];
+
+var __ZN10ImDrawList13AddQuadFilledERK6ImVec2S2_S2_S2_j = Module["__ZN10ImDrawList13AddQuadFilledERK6ImVec2S2_S2_S2_j"] = wasmExports["_ZN10ImDrawList13AddQuadFilledERK6ImVec2S2_S2_S2_j"];
+
+var _ImDrawList_AddTriangle = Module["_ImDrawList_AddTriangle"] = wasmExports["ImDrawList_AddTriangle"];
+
+var __ZN10ImDrawList11AddTriangleERK6ImVec2S2_S2_jf = Module["__ZN10ImDrawList11AddTriangleERK6ImVec2S2_S2_jf"] = wasmExports["_ZN10ImDrawList11AddTriangleERK6ImVec2S2_S2_jf"];
+
+var _ImDrawList_AddTriangleFilled = Module["_ImDrawList_AddTriangleFilled"] = wasmExports["ImDrawList_AddTriangleFilled"];
+
+var __ZN10ImDrawList17AddTriangleFilledERK6ImVec2S2_S2_j = Module["__ZN10ImDrawList17AddTriangleFilledERK6ImVec2S2_S2_j"] = wasmExports["_ZN10ImDrawList17AddTriangleFilledERK6ImVec2S2_S2_j"];
+
+var _ImDrawList_AddCircle = Module["_ImDrawList_AddCircle"] = wasmExports["ImDrawList_AddCircle"];
+
+var __ZN10ImDrawList9AddCircleERK6ImVec2fjif = Module["__ZN10ImDrawList9AddCircleERK6ImVec2fjif"] = wasmExports["_ZN10ImDrawList9AddCircleERK6ImVec2fjif"];
+
+var _ImDrawList_AddCircleFilled = Module["_ImDrawList_AddCircleFilled"] = wasmExports["ImDrawList_AddCircleFilled"];
+
+var __ZN10ImDrawList15AddCircleFilledERK6ImVec2fji = Module["__ZN10ImDrawList15AddCircleFilledERK6ImVec2fji"] = wasmExports["_ZN10ImDrawList15AddCircleFilledERK6ImVec2fji"];
+
+var _ImDrawList_AddNgon = Module["_ImDrawList_AddNgon"] = wasmExports["ImDrawList_AddNgon"];
+
+var __ZN10ImDrawList7AddNgonERK6ImVec2fjif = Module["__ZN10ImDrawList7AddNgonERK6ImVec2fjif"] = wasmExports["_ZN10ImDrawList7AddNgonERK6ImVec2fjif"];
+
+var _ImDrawList_AddNgonFilled = Module["_ImDrawList_AddNgonFilled"] = wasmExports["ImDrawList_AddNgonFilled"];
+
+var __ZN10ImDrawList13AddNgonFilledERK6ImVec2fji = Module["__ZN10ImDrawList13AddNgonFilledERK6ImVec2fji"] = wasmExports["_ZN10ImDrawList13AddNgonFilledERK6ImVec2fji"];
+
+var _ImDrawList_AddEllipse = Module["_ImDrawList_AddEllipse"] = wasmExports["ImDrawList_AddEllipse"];
+
+var __ZN10ImDrawList10AddEllipseERK6ImVec2S2_jfif = Module["__ZN10ImDrawList10AddEllipseERK6ImVec2S2_jfif"] = wasmExports["_ZN10ImDrawList10AddEllipseERK6ImVec2S2_jfif"];
+
+var _ImDrawList_AddEllipseFilled = Module["_ImDrawList_AddEllipseFilled"] = wasmExports["ImDrawList_AddEllipseFilled"];
+
+var __ZN10ImDrawList16AddEllipseFilledERK6ImVec2S2_jfi = Module["__ZN10ImDrawList16AddEllipseFilledERK6ImVec2S2_jfi"] = wasmExports["_ZN10ImDrawList16AddEllipseFilledERK6ImVec2S2_jfi"];
+
+var _ImDrawList_AddText_Vec2 = Module["_ImDrawList_AddText_Vec2"] = wasmExports["ImDrawList_AddText_Vec2"];
+
+var __ZN10ImDrawList7AddTextERK6ImVec2jPKcS4_ = Module["__ZN10ImDrawList7AddTextERK6ImVec2jPKcS4_"] = wasmExports["_ZN10ImDrawList7AddTextERK6ImVec2jPKcS4_"];
+
+var _ImDrawList_AddText_FontPtr = Module["_ImDrawList_AddText_FontPtr"] = wasmExports["ImDrawList_AddText_FontPtr"];
+
+var __ZN10ImDrawList7AddTextEPK6ImFontfRK6ImVec2jPKcS7_fPK6ImVec4 = Module["__ZN10ImDrawList7AddTextEPK6ImFontfRK6ImVec2jPKcS7_fPK6ImVec4"] = wasmExports["_ZN10ImDrawList7AddTextEPK6ImFontfRK6ImVec2jPKcS7_fPK6ImVec4"];
+
+var _ImDrawList_AddBezierCubic = Module["_ImDrawList_AddBezierCubic"] = wasmExports["ImDrawList_AddBezierCubic"];
+
+var __ZN10ImDrawList14AddBezierCubicERK6ImVec2S2_S2_S2_jfi = Module["__ZN10ImDrawList14AddBezierCubicERK6ImVec2S2_S2_S2_jfi"] = wasmExports["_ZN10ImDrawList14AddBezierCubicERK6ImVec2S2_S2_S2_jfi"];
+
+var _ImDrawList_AddBezierQuadratic = Module["_ImDrawList_AddBezierQuadratic"] = wasmExports["ImDrawList_AddBezierQuadratic"];
+
+var __ZN10ImDrawList18AddBezierQuadraticERK6ImVec2S2_S2_jfi = Module["__ZN10ImDrawList18AddBezierQuadraticERK6ImVec2S2_S2_jfi"] = wasmExports["_ZN10ImDrawList18AddBezierQuadraticERK6ImVec2S2_S2_jfi"];
+
+var _ImDrawList_AddPolyline = Module["_ImDrawList_AddPolyline"] = wasmExports["ImDrawList_AddPolyline"];
+
+var __ZN10ImDrawList11AddPolylineEPK6ImVec2ijif = Module["__ZN10ImDrawList11AddPolylineEPK6ImVec2ijif"] = wasmExports["_ZN10ImDrawList11AddPolylineEPK6ImVec2ijif"];
+
+var _ImDrawList_AddConvexPolyFilled = Module["_ImDrawList_AddConvexPolyFilled"] = wasmExports["ImDrawList_AddConvexPolyFilled"];
+
+var __ZN10ImDrawList19AddConvexPolyFilledEPK6ImVec2ij = Module["__ZN10ImDrawList19AddConvexPolyFilledEPK6ImVec2ij"] = wasmExports["_ZN10ImDrawList19AddConvexPolyFilledEPK6ImVec2ij"];
+
+var _ImDrawList_AddConcavePolyFilled = Module["_ImDrawList_AddConcavePolyFilled"] = wasmExports["ImDrawList_AddConcavePolyFilled"];
+
+var __ZN10ImDrawList20AddConcavePolyFilledEPK6ImVec2ij = Module["__ZN10ImDrawList20AddConcavePolyFilledEPK6ImVec2ij"] = wasmExports["_ZN10ImDrawList20AddConcavePolyFilledEPK6ImVec2ij"];
+
+var _ImDrawList_AddImage = Module["_ImDrawList_AddImage"] = wasmExports["ImDrawList_AddImage"];
+
+var __ZN10ImDrawList8AddImageEPvRK6ImVec2S3_S3_S3_j = Module["__ZN10ImDrawList8AddImageEPvRK6ImVec2S3_S3_S3_j"] = wasmExports["_ZN10ImDrawList8AddImageEPvRK6ImVec2S3_S3_S3_j"];
+
+var _ImDrawList_AddImageQuad = Module["_ImDrawList_AddImageQuad"] = wasmExports["ImDrawList_AddImageQuad"];
+
+var __ZN10ImDrawList12AddImageQuadEPvRK6ImVec2S3_S3_S3_S3_S3_S3_S3_j = Module["__ZN10ImDrawList12AddImageQuadEPvRK6ImVec2S3_S3_S3_S3_S3_S3_S3_j"] = wasmExports["_ZN10ImDrawList12AddImageQuadEPvRK6ImVec2S3_S3_S3_S3_S3_S3_S3_j"];
+
+var _ImDrawList_AddImageRounded = Module["_ImDrawList_AddImageRounded"] = wasmExports["ImDrawList_AddImageRounded"];
+
+var __ZN10ImDrawList15AddImageRoundedEPvRK6ImVec2S3_S3_S3_jfi = Module["__ZN10ImDrawList15AddImageRoundedEPvRK6ImVec2S3_S3_S3_jfi"] = wasmExports["_ZN10ImDrawList15AddImageRoundedEPvRK6ImVec2S3_S3_S3_jfi"];
+
+var _ImDrawList_PathClear = Module["_ImDrawList_PathClear"] = wasmExports["ImDrawList_PathClear"];
+
+var _ImDrawList_PathLineTo = Module["_ImDrawList_PathLineTo"] = wasmExports["ImDrawList_PathLineTo"];
+
+var _ImDrawList_PathLineToMergeDuplicate = Module["_ImDrawList_PathLineToMergeDuplicate"] = wasmExports["ImDrawList_PathLineToMergeDuplicate"];
+
+var _ImDrawList_PathFillConvex = Module["_ImDrawList_PathFillConvex"] = wasmExports["ImDrawList_PathFillConvex"];
+
+var _ImDrawList_PathFillConcave = Module["_ImDrawList_PathFillConcave"] = wasmExports["ImDrawList_PathFillConcave"];
+
+var _ImDrawList_PathStroke = Module["_ImDrawList_PathStroke"] = wasmExports["ImDrawList_PathStroke"];
+
+var _ImDrawList_PathArcTo = Module["_ImDrawList_PathArcTo"] = wasmExports["ImDrawList_PathArcTo"];
+
+var __ZN10ImDrawList9PathArcToERK6ImVec2fffi = Module["__ZN10ImDrawList9PathArcToERK6ImVec2fffi"] = wasmExports["_ZN10ImDrawList9PathArcToERK6ImVec2fffi"];
+
+var _ImDrawList_PathArcToFast = Module["_ImDrawList_PathArcToFast"] = wasmExports["ImDrawList_PathArcToFast"];
+
+var __ZN10ImDrawList13PathArcToFastERK6ImVec2fii = Module["__ZN10ImDrawList13PathArcToFastERK6ImVec2fii"] = wasmExports["_ZN10ImDrawList13PathArcToFastERK6ImVec2fii"];
+
+var _ImDrawList_PathEllipticalArcTo = Module["_ImDrawList_PathEllipticalArcTo"] = wasmExports["ImDrawList_PathEllipticalArcTo"];
+
+var __ZN10ImDrawList19PathEllipticalArcToERK6ImVec2S2_fffi = Module["__ZN10ImDrawList19PathEllipticalArcToERK6ImVec2S2_fffi"] = wasmExports["_ZN10ImDrawList19PathEllipticalArcToERK6ImVec2S2_fffi"];
+
+var _ImDrawList_PathBezierCubicCurveTo = Module["_ImDrawList_PathBezierCubicCurveTo"] = wasmExports["ImDrawList_PathBezierCubicCurveTo"];
+
+var __ZN10ImDrawList22PathBezierCubicCurveToERK6ImVec2S2_S2_i = Module["__ZN10ImDrawList22PathBezierCubicCurveToERK6ImVec2S2_S2_i"] = wasmExports["_ZN10ImDrawList22PathBezierCubicCurveToERK6ImVec2S2_S2_i"];
+
+var _ImDrawList_PathBezierQuadraticCurveTo = Module["_ImDrawList_PathBezierQuadraticCurveTo"] = wasmExports["ImDrawList_PathBezierQuadraticCurveTo"];
+
+var __ZN10ImDrawList26PathBezierQuadraticCurveToERK6ImVec2S2_i = Module["__ZN10ImDrawList26PathBezierQuadraticCurveToERK6ImVec2S2_i"] = wasmExports["_ZN10ImDrawList26PathBezierQuadraticCurveToERK6ImVec2S2_i"];
+
+var _ImDrawList_PathRect = Module["_ImDrawList_PathRect"] = wasmExports["ImDrawList_PathRect"];
+
+var __ZN10ImDrawList8PathRectERK6ImVec2S2_fi = Module["__ZN10ImDrawList8PathRectERK6ImVec2S2_fi"] = wasmExports["_ZN10ImDrawList8PathRectERK6ImVec2S2_fi"];
+
+var _ImDrawList_AddCallback = Module["_ImDrawList_AddCallback"] = wasmExports["ImDrawList_AddCallback"];
+
+var __ZN10ImDrawList11AddCallbackEPFvPKS_PK9ImDrawCmdEPv = Module["__ZN10ImDrawList11AddCallbackEPFvPKS_PK9ImDrawCmdEPv"] = wasmExports["_ZN10ImDrawList11AddCallbackEPFvPKS_PK9ImDrawCmdEPv"];
+
+var _ImDrawList_AddDrawCmd = Module["_ImDrawList_AddDrawCmd"] = wasmExports["ImDrawList_AddDrawCmd"];
+
+var __ZN10ImDrawList10AddDrawCmdEv = Module["__ZN10ImDrawList10AddDrawCmdEv"] = wasmExports["_ZN10ImDrawList10AddDrawCmdEv"];
+
+var _ImDrawList_CloneOutput = Module["_ImDrawList_CloneOutput"] = wasmExports["ImDrawList_CloneOutput"];
+
+var __ZNK10ImDrawList11CloneOutputEv = Module["__ZNK10ImDrawList11CloneOutputEv"] = wasmExports["_ZNK10ImDrawList11CloneOutputEv"];
+
+var _ImDrawList_ChannelsSplit = Module["_ImDrawList_ChannelsSplit"] = wasmExports["ImDrawList_ChannelsSplit"];
+
+var _ImDrawList_ChannelsMerge = Module["_ImDrawList_ChannelsMerge"] = wasmExports["ImDrawList_ChannelsMerge"];
+
+var _ImDrawList_ChannelsSetCurrent = Module["_ImDrawList_ChannelsSetCurrent"] = wasmExports["ImDrawList_ChannelsSetCurrent"];
+
+var _ImDrawList_PrimReserve = Module["_ImDrawList_PrimReserve"] = wasmExports["ImDrawList_PrimReserve"];
+
+var __ZN10ImDrawList11PrimReserveEii = Module["__ZN10ImDrawList11PrimReserveEii"] = wasmExports["_ZN10ImDrawList11PrimReserveEii"];
+
+var _ImDrawList_PrimUnreserve = Module["_ImDrawList_PrimUnreserve"] = wasmExports["ImDrawList_PrimUnreserve"];
+
+var __ZN10ImDrawList13PrimUnreserveEii = Module["__ZN10ImDrawList13PrimUnreserveEii"] = wasmExports["_ZN10ImDrawList13PrimUnreserveEii"];
+
+var _ImDrawList_PrimRect = Module["_ImDrawList_PrimRect"] = wasmExports["ImDrawList_PrimRect"];
+
+var __ZN10ImDrawList8PrimRectERK6ImVec2S2_j = Module["__ZN10ImDrawList8PrimRectERK6ImVec2S2_j"] = wasmExports["_ZN10ImDrawList8PrimRectERK6ImVec2S2_j"];
+
+var _ImDrawList_PrimRectUV = Module["_ImDrawList_PrimRectUV"] = wasmExports["ImDrawList_PrimRectUV"];
+
+var __ZN10ImDrawList10PrimRectUVERK6ImVec2S2_S2_S2_j = Module["__ZN10ImDrawList10PrimRectUVERK6ImVec2S2_S2_S2_j"] = wasmExports["_ZN10ImDrawList10PrimRectUVERK6ImVec2S2_S2_S2_j"];
+
+var _ImDrawList_PrimQuadUV = Module["_ImDrawList_PrimQuadUV"] = wasmExports["ImDrawList_PrimQuadUV"];
+
+var __ZN10ImDrawList10PrimQuadUVERK6ImVec2S2_S2_S2_S2_S2_S2_S2_j = Module["__ZN10ImDrawList10PrimQuadUVERK6ImVec2S2_S2_S2_S2_S2_S2_S2_j"] = wasmExports["_ZN10ImDrawList10PrimQuadUVERK6ImVec2S2_S2_S2_S2_S2_S2_S2_j"];
+
+var _ImDrawList_PrimWriteVtx = Module["_ImDrawList_PrimWriteVtx"] = wasmExports["ImDrawList_PrimWriteVtx"];
+
+var _ImDrawList_PrimWriteIdx = Module["_ImDrawList_PrimWriteIdx"] = wasmExports["ImDrawList_PrimWriteIdx"];
+
+var _ImDrawList_PrimVtx = Module["_ImDrawList_PrimVtx"] = wasmExports["ImDrawList_PrimVtx"];
+
+var _ImDrawList__ResetForNewFrame = Module["_ImDrawList__ResetForNewFrame"] = wasmExports["ImDrawList__ResetForNewFrame"];
+
+var __ZN10ImDrawList17_ResetForNewFrameEv = Module["__ZN10ImDrawList17_ResetForNewFrameEv"] = wasmExports["_ZN10ImDrawList17_ResetForNewFrameEv"];
+
+var _ImDrawList__ClearFreeMemory = Module["_ImDrawList__ClearFreeMemory"] = wasmExports["ImDrawList__ClearFreeMemory"];
+
+var __ZN10ImDrawList16_ClearFreeMemoryEv = Module["__ZN10ImDrawList16_ClearFreeMemoryEv"] = wasmExports["_ZN10ImDrawList16_ClearFreeMemoryEv"];
+
+var _ImDrawList__PopUnusedDrawCmd = Module["_ImDrawList__PopUnusedDrawCmd"] = wasmExports["ImDrawList__PopUnusedDrawCmd"];
+
+var __ZN10ImDrawList17_PopUnusedDrawCmdEv = Module["__ZN10ImDrawList17_PopUnusedDrawCmdEv"] = wasmExports["_ZN10ImDrawList17_PopUnusedDrawCmdEv"];
+
+var _ImDrawList__TryMergeDrawCmds = Module["_ImDrawList__TryMergeDrawCmds"] = wasmExports["ImDrawList__TryMergeDrawCmds"];
+
+var __ZN10ImDrawList17_TryMergeDrawCmdsEv = Module["__ZN10ImDrawList17_TryMergeDrawCmdsEv"] = wasmExports["_ZN10ImDrawList17_TryMergeDrawCmdsEv"];
+
+var _ImDrawList__OnChangedClipRect = Module["_ImDrawList__OnChangedClipRect"] = wasmExports["ImDrawList__OnChangedClipRect"];
+
+var __ZN10ImDrawList18_OnChangedClipRectEv = Module["__ZN10ImDrawList18_OnChangedClipRectEv"] = wasmExports["_ZN10ImDrawList18_OnChangedClipRectEv"];
+
+var _ImDrawList__OnChangedTextureID = Module["_ImDrawList__OnChangedTextureID"] = wasmExports["ImDrawList__OnChangedTextureID"];
+
+var __ZN10ImDrawList19_OnChangedTextureIDEv = Module["__ZN10ImDrawList19_OnChangedTextureIDEv"] = wasmExports["_ZN10ImDrawList19_OnChangedTextureIDEv"];
+
+var _ImDrawList__OnChangedVtxOffset = Module["_ImDrawList__OnChangedVtxOffset"] = wasmExports["ImDrawList__OnChangedVtxOffset"];
+
+var __ZN10ImDrawList19_OnChangedVtxOffsetEv = Module["__ZN10ImDrawList19_OnChangedVtxOffsetEv"] = wasmExports["_ZN10ImDrawList19_OnChangedVtxOffsetEv"];
+
+var _ImDrawList__CalcCircleAutoSegmentCount = Module["_ImDrawList__CalcCircleAutoSegmentCount"] = wasmExports["ImDrawList__CalcCircleAutoSegmentCount"];
+
+var __ZNK10ImDrawList27_CalcCircleAutoSegmentCountEf = Module["__ZNK10ImDrawList27_CalcCircleAutoSegmentCountEf"] = wasmExports["_ZNK10ImDrawList27_CalcCircleAutoSegmentCountEf"];
+
+var _ImDrawList__PathArcToFastEx = Module["_ImDrawList__PathArcToFastEx"] = wasmExports["ImDrawList__PathArcToFastEx"];
+
+var __ZN10ImDrawList16_PathArcToFastExERK6ImVec2fiii = Module["__ZN10ImDrawList16_PathArcToFastExERK6ImVec2fiii"] = wasmExports["_ZN10ImDrawList16_PathArcToFastExERK6ImVec2fiii"];
+
+var _ImDrawList__PathArcToN = Module["_ImDrawList__PathArcToN"] = wasmExports["ImDrawList__PathArcToN"];
+
+var __ZN10ImDrawList11_PathArcToNERK6ImVec2fffi = Module["__ZN10ImDrawList11_PathArcToNERK6ImVec2fffi"] = wasmExports["_ZN10ImDrawList11_PathArcToNERK6ImVec2fffi"];
+
+var _ImDrawData_ImDrawData = Module["_ImDrawData_ImDrawData"] = wasmExports["ImDrawData_ImDrawData"];
+
+var __ZN10ImDrawData5ClearEv = Module["__ZN10ImDrawData5ClearEv"] = wasmExports["_ZN10ImDrawData5ClearEv"];
+
+var _ImDrawData_destroy = Module["_ImDrawData_destroy"] = wasmExports["ImDrawData_destroy"];
+
+var _ImDrawData_Clear = Module["_ImDrawData_Clear"] = wasmExports["ImDrawData_Clear"];
+
+var _ImDrawData_AddDrawList = Module["_ImDrawData_AddDrawList"] = wasmExports["ImDrawData_AddDrawList"];
+
+var __ZN10ImDrawData11AddDrawListEP10ImDrawList = Module["__ZN10ImDrawData11AddDrawListEP10ImDrawList"] = wasmExports["_ZN10ImDrawData11AddDrawListEP10ImDrawList"];
+
+var _ImDrawData_DeIndexAllBuffers = Module["_ImDrawData_DeIndexAllBuffers"] = wasmExports["ImDrawData_DeIndexAllBuffers"];
+
+var __ZN10ImDrawData17DeIndexAllBuffersEv = Module["__ZN10ImDrawData17DeIndexAllBuffersEv"] = wasmExports["_ZN10ImDrawData17DeIndexAllBuffersEv"];
+
+var _ImDrawData_ScaleClipRects = Module["_ImDrawData_ScaleClipRects"] = wasmExports["ImDrawData_ScaleClipRects"];
+
+var __ZN10ImDrawData14ScaleClipRectsERK6ImVec2 = Module["__ZN10ImDrawData14ScaleClipRectsERK6ImVec2"] = wasmExports["_ZN10ImDrawData14ScaleClipRectsERK6ImVec2"];
+
+var _ImFontConfig_ImFontConfig = Module["_ImFontConfig_ImFontConfig"] = wasmExports["ImFontConfig_ImFontConfig"];
+
+var __ZN12ImFontConfigC1Ev = Module["__ZN12ImFontConfigC1Ev"] = wasmExports["_ZN12ImFontConfigC1Ev"];
+
+var _ImFontConfig_destroy = Module["_ImFontConfig_destroy"] = wasmExports["ImFontConfig_destroy"];
+
+var _ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder = Module["_ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder"] = wasmExports["ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder"];
+
+var _ImFontGlyphRangesBuilder_destroy = Module["_ImFontGlyphRangesBuilder_destroy"] = wasmExports["ImFontGlyphRangesBuilder_destroy"];
+
+var _ImFontGlyphRangesBuilder_Clear = Module["_ImFontGlyphRangesBuilder_Clear"] = wasmExports["ImFontGlyphRangesBuilder_Clear"];
+
+var _ImFontGlyphRangesBuilder_GetBit = Module["_ImFontGlyphRangesBuilder_GetBit"] = wasmExports["ImFontGlyphRangesBuilder_GetBit"];
+
+var _ImFontGlyphRangesBuilder_SetBit = Module["_ImFontGlyphRangesBuilder_SetBit"] = wasmExports["ImFontGlyphRangesBuilder_SetBit"];
+
+var _ImFontGlyphRangesBuilder_AddChar = Module["_ImFontGlyphRangesBuilder_AddChar"] = wasmExports["ImFontGlyphRangesBuilder_AddChar"];
+
+var _ImFontGlyphRangesBuilder_AddText = Module["_ImFontGlyphRangesBuilder_AddText"] = wasmExports["ImFontGlyphRangesBuilder_AddText"];
+
+var __ZN24ImFontGlyphRangesBuilder7AddTextEPKcS1_ = Module["__ZN24ImFontGlyphRangesBuilder7AddTextEPKcS1_"] = wasmExports["_ZN24ImFontGlyphRangesBuilder7AddTextEPKcS1_"];
+
+var _ImFontGlyphRangesBuilder_AddRanges = Module["_ImFontGlyphRangesBuilder_AddRanges"] = wasmExports["ImFontGlyphRangesBuilder_AddRanges"];
+
+var __ZN24ImFontGlyphRangesBuilder9AddRangesEPKt = Module["__ZN24ImFontGlyphRangesBuilder9AddRangesEPKt"] = wasmExports["_ZN24ImFontGlyphRangesBuilder9AddRangesEPKt"];
+
+var _ImFontGlyphRangesBuilder_BuildRanges = Module["_ImFontGlyphRangesBuilder_BuildRanges"] = wasmExports["ImFontGlyphRangesBuilder_BuildRanges"];
+
+var __ZN24ImFontGlyphRangesBuilder11BuildRangesEP8ImVectorItE = Module["__ZN24ImFontGlyphRangesBuilder11BuildRangesEP8ImVectorItE"] = wasmExports["_ZN24ImFontGlyphRangesBuilder11BuildRangesEP8ImVectorItE"];
+
+var _ImFontAtlasCustomRect_ImFontAtlasCustomRect = Module["_ImFontAtlasCustomRect_ImFontAtlasCustomRect"] = wasmExports["ImFontAtlasCustomRect_ImFontAtlasCustomRect"];
+
+var _ImFontAtlasCustomRect_destroy = Module["_ImFontAtlasCustomRect_destroy"] = wasmExports["ImFontAtlasCustomRect_destroy"];
+
+var _ImFontAtlasCustomRect_IsPacked = Module["_ImFontAtlasCustomRect_IsPacked"] = wasmExports["ImFontAtlasCustomRect_IsPacked"];
+
+var _ImFontAtlas_ImFontAtlas = Module["_ImFontAtlas_ImFontAtlas"] = wasmExports["ImFontAtlas_ImFontAtlas"];
+
+var __ZN11ImFontAtlasC1Ev = Module["__ZN11ImFontAtlasC1Ev"] = wasmExports["_ZN11ImFontAtlasC1Ev"];
+
+var _ImFontAtlas_destroy = Module["_ImFontAtlas_destroy"] = wasmExports["ImFontAtlas_destroy"];
+
+var __ZN11ImFontAtlasD1Ev = Module["__ZN11ImFontAtlasD1Ev"] = wasmExports["_ZN11ImFontAtlasD1Ev"];
+
+var _ImFontAtlas_AddFont = Module["_ImFontAtlas_AddFont"] = wasmExports["ImFontAtlas_AddFont"];
+
+var __ZN11ImFontAtlas7AddFontEPK12ImFontConfig = Module["__ZN11ImFontAtlas7AddFontEPK12ImFontConfig"] = wasmExports["_ZN11ImFontAtlas7AddFontEPK12ImFontConfig"];
+
+var _ImFontAtlas_AddFontDefault = Module["_ImFontAtlas_AddFontDefault"] = wasmExports["ImFontAtlas_AddFontDefault"];
+
+var __ZN11ImFontAtlas14AddFontDefaultEPK12ImFontConfig = Module["__ZN11ImFontAtlas14AddFontDefaultEPK12ImFontConfig"] = wasmExports["_ZN11ImFontAtlas14AddFontDefaultEPK12ImFontConfig"];
+
+var _ImFontAtlas_AddFontFromFileTTF = Module["_ImFontAtlas_AddFontFromFileTTF"] = wasmExports["ImFontAtlas_AddFontFromFileTTF"];
+
+var __ZN11ImFontAtlas18AddFontFromFileTTFEPKcfPK12ImFontConfigPKt = Module["__ZN11ImFontAtlas18AddFontFromFileTTFEPKcfPK12ImFontConfigPKt"] = wasmExports["_ZN11ImFontAtlas18AddFontFromFileTTFEPKcfPK12ImFontConfigPKt"];
+
+var _ImFontAtlas_AddFontFromMemoryTTF = Module["_ImFontAtlas_AddFontFromMemoryTTF"] = wasmExports["ImFontAtlas_AddFontFromMemoryTTF"];
+
+var __ZN11ImFontAtlas20AddFontFromMemoryTTFEPvifPK12ImFontConfigPKt = Module["__ZN11ImFontAtlas20AddFontFromMemoryTTFEPvifPK12ImFontConfigPKt"] = wasmExports["_ZN11ImFontAtlas20AddFontFromMemoryTTFEPvifPK12ImFontConfigPKt"];
+
+var _ImFontAtlas_AddFontFromMemoryCompressedTTF = Module["_ImFontAtlas_AddFontFromMemoryCompressedTTF"] = wasmExports["ImFontAtlas_AddFontFromMemoryCompressedTTF"];
+
+var __ZN11ImFontAtlas30AddFontFromMemoryCompressedTTFEPKvifPK12ImFontConfigPKt = Module["__ZN11ImFontAtlas30AddFontFromMemoryCompressedTTFEPKvifPK12ImFontConfigPKt"] = wasmExports["_ZN11ImFontAtlas30AddFontFromMemoryCompressedTTFEPKvifPK12ImFontConfigPKt"];
+
+var _ImFontAtlas_AddFontFromMemoryCompressedBase85TTF = Module["_ImFontAtlas_AddFontFromMemoryCompressedBase85TTF"] = wasmExports["ImFontAtlas_AddFontFromMemoryCompressedBase85TTF"];
+
+var __ZN11ImFontAtlas36AddFontFromMemoryCompressedBase85TTFEPKcfPK12ImFontConfigPKt = Module["__ZN11ImFontAtlas36AddFontFromMemoryCompressedBase85TTFEPKcfPK12ImFontConfigPKt"] = wasmExports["_ZN11ImFontAtlas36AddFontFromMemoryCompressedBase85TTFEPKcfPK12ImFontConfigPKt"];
+
+var _ImFontAtlas_ClearInputData = Module["_ImFontAtlas_ClearInputData"] = wasmExports["ImFontAtlas_ClearInputData"];
+
+var __ZN11ImFontAtlas14ClearInputDataEv = Module["__ZN11ImFontAtlas14ClearInputDataEv"] = wasmExports["_ZN11ImFontAtlas14ClearInputDataEv"];
+
+var _ImFontAtlas_ClearTexData = Module["_ImFontAtlas_ClearTexData"] = wasmExports["ImFontAtlas_ClearTexData"];
+
+var __ZN11ImFontAtlas12ClearTexDataEv = Module["__ZN11ImFontAtlas12ClearTexDataEv"] = wasmExports["_ZN11ImFontAtlas12ClearTexDataEv"];
+
+var _ImFontAtlas_ClearFonts = Module["_ImFontAtlas_ClearFonts"] = wasmExports["ImFontAtlas_ClearFonts"];
+
+var __ZN11ImFontAtlas10ClearFontsEv = Module["__ZN11ImFontAtlas10ClearFontsEv"] = wasmExports["_ZN11ImFontAtlas10ClearFontsEv"];
+
+var _ImFontAtlas_Clear = Module["_ImFontAtlas_Clear"] = wasmExports["ImFontAtlas_Clear"];
+
+var __ZN11ImFontAtlas5ClearEv = Module["__ZN11ImFontAtlas5ClearEv"] = wasmExports["_ZN11ImFontAtlas5ClearEv"];
+
+var _ImFontAtlas_Build = Module["_ImFontAtlas_Build"] = wasmExports["ImFontAtlas_Build"];
+
+var __ZN11ImFontAtlas5BuildEv = Module["__ZN11ImFontAtlas5BuildEv"] = wasmExports["_ZN11ImFontAtlas5BuildEv"];
+
+var _ImFontAtlas_GetTexDataAsAlpha8 = Module["_ImFontAtlas_GetTexDataAsAlpha8"] = wasmExports["ImFontAtlas_GetTexDataAsAlpha8"];
+
+var __ZN11ImFontAtlas18GetTexDataAsAlpha8EPPhPiS2_S2_ = Module["__ZN11ImFontAtlas18GetTexDataAsAlpha8EPPhPiS2_S2_"] = wasmExports["_ZN11ImFontAtlas18GetTexDataAsAlpha8EPPhPiS2_S2_"];
+
+var _ImFontAtlas_GetTexDataAsRGBA32 = Module["_ImFontAtlas_GetTexDataAsRGBA32"] = wasmExports["ImFontAtlas_GetTexDataAsRGBA32"];
+
+var __ZN11ImFontAtlas18GetTexDataAsRGBA32EPPhPiS2_S2_ = Module["__ZN11ImFontAtlas18GetTexDataAsRGBA32EPPhPiS2_S2_"] = wasmExports["_ZN11ImFontAtlas18GetTexDataAsRGBA32EPPhPiS2_S2_"];
+
+var _ImFontAtlas_IsBuilt = Module["_ImFontAtlas_IsBuilt"] = wasmExports["ImFontAtlas_IsBuilt"];
+
+var _ImFontAtlas_SetTexID = Module["_ImFontAtlas_SetTexID"] = wasmExports["ImFontAtlas_SetTexID"];
+
+var _ImFontAtlas_GetGlyphRangesDefault = Module["_ImFontAtlas_GetGlyphRangesDefault"] = wasmExports["ImFontAtlas_GetGlyphRangesDefault"];
+
+var __ZN11ImFontAtlas21GetGlyphRangesDefaultEv = Module["__ZN11ImFontAtlas21GetGlyphRangesDefaultEv"] = wasmExports["_ZN11ImFontAtlas21GetGlyphRangesDefaultEv"];
+
+var _ImFontAtlas_GetGlyphRangesGreek = Module["_ImFontAtlas_GetGlyphRangesGreek"] = wasmExports["ImFontAtlas_GetGlyphRangesGreek"];
+
+var __ZN11ImFontAtlas19GetGlyphRangesGreekEv = Module["__ZN11ImFontAtlas19GetGlyphRangesGreekEv"] = wasmExports["_ZN11ImFontAtlas19GetGlyphRangesGreekEv"];
+
+var _ImFontAtlas_GetGlyphRangesKorean = Module["_ImFontAtlas_GetGlyphRangesKorean"] = wasmExports["ImFontAtlas_GetGlyphRangesKorean"];
+
+var __ZN11ImFontAtlas20GetGlyphRangesKoreanEv = Module["__ZN11ImFontAtlas20GetGlyphRangesKoreanEv"] = wasmExports["_ZN11ImFontAtlas20GetGlyphRangesKoreanEv"];
+
+var _ImFontAtlas_GetGlyphRangesJapanese = Module["_ImFontAtlas_GetGlyphRangesJapanese"] = wasmExports["ImFontAtlas_GetGlyphRangesJapanese"];
+
+var __ZN11ImFontAtlas22GetGlyphRangesJapaneseEv = Module["__ZN11ImFontAtlas22GetGlyphRangesJapaneseEv"] = wasmExports["_ZN11ImFontAtlas22GetGlyphRangesJapaneseEv"];
+
+var _ImFontAtlas_GetGlyphRangesChineseFull = Module["_ImFontAtlas_GetGlyphRangesChineseFull"] = wasmExports["ImFontAtlas_GetGlyphRangesChineseFull"];
+
+var __ZN11ImFontAtlas25GetGlyphRangesChineseFullEv = Module["__ZN11ImFontAtlas25GetGlyphRangesChineseFullEv"] = wasmExports["_ZN11ImFontAtlas25GetGlyphRangesChineseFullEv"];
+
+var _ImFontAtlas_GetGlyphRangesChineseSimplifiedCommon = Module["_ImFontAtlas_GetGlyphRangesChineseSimplifiedCommon"] = wasmExports["ImFontAtlas_GetGlyphRangesChineseSimplifiedCommon"];
+
+var __ZN11ImFontAtlas37GetGlyphRangesChineseSimplifiedCommonEv = Module["__ZN11ImFontAtlas37GetGlyphRangesChineseSimplifiedCommonEv"] = wasmExports["_ZN11ImFontAtlas37GetGlyphRangesChineseSimplifiedCommonEv"];
+
+var _ImFontAtlas_GetGlyphRangesCyrillic = Module["_ImFontAtlas_GetGlyphRangesCyrillic"] = wasmExports["ImFontAtlas_GetGlyphRangesCyrillic"];
+
+var __ZN11ImFontAtlas22GetGlyphRangesCyrillicEv = Module["__ZN11ImFontAtlas22GetGlyphRangesCyrillicEv"] = wasmExports["_ZN11ImFontAtlas22GetGlyphRangesCyrillicEv"];
+
+var _ImFontAtlas_GetGlyphRangesThai = Module["_ImFontAtlas_GetGlyphRangesThai"] = wasmExports["ImFontAtlas_GetGlyphRangesThai"];
+
+var __ZN11ImFontAtlas18GetGlyphRangesThaiEv = Module["__ZN11ImFontAtlas18GetGlyphRangesThaiEv"] = wasmExports["_ZN11ImFontAtlas18GetGlyphRangesThaiEv"];
+
+var _ImFontAtlas_GetGlyphRangesVietnamese = Module["_ImFontAtlas_GetGlyphRangesVietnamese"] = wasmExports["ImFontAtlas_GetGlyphRangesVietnamese"];
+
+var __ZN11ImFontAtlas24GetGlyphRangesVietnameseEv = Module["__ZN11ImFontAtlas24GetGlyphRangesVietnameseEv"] = wasmExports["_ZN11ImFontAtlas24GetGlyphRangesVietnameseEv"];
+
+var _ImFontAtlas_AddCustomRectRegular = Module["_ImFontAtlas_AddCustomRectRegular"] = wasmExports["ImFontAtlas_AddCustomRectRegular"];
+
+var __ZN11ImFontAtlas20AddCustomRectRegularEii = Module["__ZN11ImFontAtlas20AddCustomRectRegularEii"] = wasmExports["_ZN11ImFontAtlas20AddCustomRectRegularEii"];
+
+var _ImFontAtlas_AddCustomRectFontGlyph = Module["_ImFontAtlas_AddCustomRectFontGlyph"] = wasmExports["ImFontAtlas_AddCustomRectFontGlyph"];
+
+var __ZN11ImFontAtlas22AddCustomRectFontGlyphEP6ImFonttiifRK6ImVec2 = Module["__ZN11ImFontAtlas22AddCustomRectFontGlyphEP6ImFonttiifRK6ImVec2"] = wasmExports["_ZN11ImFontAtlas22AddCustomRectFontGlyphEP6ImFonttiifRK6ImVec2"];
+
+var _ImFontAtlas_GetCustomRectByIndex = Module["_ImFontAtlas_GetCustomRectByIndex"] = wasmExports["ImFontAtlas_GetCustomRectByIndex"];
+
+var _ImFontAtlas_CalcCustomRectUV = Module["_ImFontAtlas_CalcCustomRectUV"] = wasmExports["ImFontAtlas_CalcCustomRectUV"];
+
+var __ZNK11ImFontAtlas16CalcCustomRectUVEPK21ImFontAtlasCustomRectP6ImVec2S4_ = Module["__ZNK11ImFontAtlas16CalcCustomRectUVEPK21ImFontAtlasCustomRectP6ImVec2S4_"] = wasmExports["_ZNK11ImFontAtlas16CalcCustomRectUVEPK21ImFontAtlasCustomRectP6ImVec2S4_"];
+
+var _ImFontAtlas_GetMouseCursorTexData = Module["_ImFontAtlas_GetMouseCursorTexData"] = wasmExports["ImFontAtlas_GetMouseCursorTexData"];
+
+var __ZN11ImFontAtlas21GetMouseCursorTexDataEiP6ImVec2S1_S1_S1_ = Module["__ZN11ImFontAtlas21GetMouseCursorTexDataEiP6ImVec2S1_S1_S1_"] = wasmExports["_ZN11ImFontAtlas21GetMouseCursorTexDataEiP6ImVec2S1_S1_S1_"];
+
+var _ImFont_ImFont = Module["_ImFont_ImFont"] = wasmExports["ImFont_ImFont"];
+
+var __ZN6ImFontC1Ev = Module["__ZN6ImFontC1Ev"] = wasmExports["_ZN6ImFontC1Ev"];
+
+var _ImFont_destroy = Module["_ImFont_destroy"] = wasmExports["ImFont_destroy"];
+
+var __ZN6ImFontD1Ev = Module["__ZN6ImFontD1Ev"] = wasmExports["_ZN6ImFontD1Ev"];
+
+var _ImFont_FindGlyph = Module["_ImFont_FindGlyph"] = wasmExports["ImFont_FindGlyph"];
+
+var __ZNK6ImFont9FindGlyphEt = Module["__ZNK6ImFont9FindGlyphEt"] = wasmExports["_ZNK6ImFont9FindGlyphEt"];
+
+var _ImFont_FindGlyphNoFallback = Module["_ImFont_FindGlyphNoFallback"] = wasmExports["ImFont_FindGlyphNoFallback"];
+
+var __ZNK6ImFont19FindGlyphNoFallbackEt = Module["__ZNK6ImFont19FindGlyphNoFallbackEt"] = wasmExports["_ZNK6ImFont19FindGlyphNoFallbackEt"];
+
+var _ImFont_GetCharAdvance = Module["_ImFont_GetCharAdvance"] = wasmExports["ImFont_GetCharAdvance"];
+
+var _ImFont_IsLoaded = Module["_ImFont_IsLoaded"] = wasmExports["ImFont_IsLoaded"];
+
+var _ImFont_GetDebugName = Module["_ImFont_GetDebugName"] = wasmExports["ImFont_GetDebugName"];
+
+var _ImFont_CalcTextSizeA = Module["_ImFont_CalcTextSizeA"] = wasmExports["ImFont_CalcTextSizeA"];
+
+var __ZNK6ImFont13CalcTextSizeAEfffPKcS1_PS1_ = Module["__ZNK6ImFont13CalcTextSizeAEfffPKcS1_PS1_"] = wasmExports["_ZNK6ImFont13CalcTextSizeAEfffPKcS1_PS1_"];
+
+var _ImFont_CalcWordWrapPositionA = Module["_ImFont_CalcWordWrapPositionA"] = wasmExports["ImFont_CalcWordWrapPositionA"];
+
+var __ZNK6ImFont21CalcWordWrapPositionAEfPKcS1_f = Module["__ZNK6ImFont21CalcWordWrapPositionAEfPKcS1_f"] = wasmExports["_ZNK6ImFont21CalcWordWrapPositionAEfPKcS1_f"];
+
+var _ImFont_RenderChar = Module["_ImFont_RenderChar"] = wasmExports["ImFont_RenderChar"];
+
+var __ZNK6ImFont10RenderCharEP10ImDrawListfRK6ImVec2jt = Module["__ZNK6ImFont10RenderCharEP10ImDrawListfRK6ImVec2jt"] = wasmExports["_ZNK6ImFont10RenderCharEP10ImDrawListfRK6ImVec2jt"];
+
+var _ImFont_RenderText = Module["_ImFont_RenderText"] = wasmExports["ImFont_RenderText"];
+
+var __ZNK6ImFont10RenderTextEP10ImDrawListfRK6ImVec2jRK6ImVec4PKcS9_fb = Module["__ZNK6ImFont10RenderTextEP10ImDrawListfRK6ImVec2jRK6ImVec4PKcS9_fb"] = wasmExports["_ZNK6ImFont10RenderTextEP10ImDrawListfRK6ImVec2jRK6ImVec4PKcS9_fb"];
+
+var _ImFont_BuildLookupTable = Module["_ImFont_BuildLookupTable"] = wasmExports["ImFont_BuildLookupTable"];
+
+var __ZN6ImFont16BuildLookupTableEv = Module["__ZN6ImFont16BuildLookupTableEv"] = wasmExports["_ZN6ImFont16BuildLookupTableEv"];
+
+var _ImFont_ClearOutputData = Module["_ImFont_ClearOutputData"] = wasmExports["ImFont_ClearOutputData"];
+
+var __ZN6ImFont15ClearOutputDataEv = Module["__ZN6ImFont15ClearOutputDataEv"] = wasmExports["_ZN6ImFont15ClearOutputDataEv"];
+
+var _ImFont_GrowIndex = Module["_ImFont_GrowIndex"] = wasmExports["ImFont_GrowIndex"];
+
+var __ZN6ImFont9GrowIndexEi = Module["__ZN6ImFont9GrowIndexEi"] = wasmExports["_ZN6ImFont9GrowIndexEi"];
+
+var _ImFont_AddGlyph = Module["_ImFont_AddGlyph"] = wasmExports["ImFont_AddGlyph"];
+
+var __ZN6ImFont8AddGlyphEPK12ImFontConfigtfffffffff = Module["__ZN6ImFont8AddGlyphEPK12ImFontConfigtfffffffff"] = wasmExports["_ZN6ImFont8AddGlyphEPK12ImFontConfigtfffffffff"];
+
+var _ImFont_AddRemapChar = Module["_ImFont_AddRemapChar"] = wasmExports["ImFont_AddRemapChar"];
+
+var __ZN6ImFont12AddRemapCharEttb = Module["__ZN6ImFont12AddRemapCharEttb"] = wasmExports["_ZN6ImFont12AddRemapCharEttb"];
+
+var _ImFont_SetGlyphVisible = Module["_ImFont_SetGlyphVisible"] = wasmExports["ImFont_SetGlyphVisible"];
+
+var __ZN6ImFont15SetGlyphVisibleEtb = Module["__ZN6ImFont15SetGlyphVisibleEtb"] = wasmExports["_ZN6ImFont15SetGlyphVisibleEtb"];
+
+var _ImFont_IsGlyphRangeUnused = Module["_ImFont_IsGlyphRangeUnused"] = wasmExports["ImFont_IsGlyphRangeUnused"];
+
+var __ZN6ImFont18IsGlyphRangeUnusedEjj = Module["__ZN6ImFont18IsGlyphRangeUnusedEjj"] = wasmExports["_ZN6ImFont18IsGlyphRangeUnusedEjj"];
+
+var _ImGuiViewport_ImGuiViewport = Module["_ImGuiViewport_ImGuiViewport"] = wasmExports["ImGuiViewport_ImGuiViewport"];
+
+var _ImGuiViewport_destroy = Module["_ImGuiViewport_destroy"] = wasmExports["ImGuiViewport_destroy"];
+
+var _ImGuiViewport_GetCenter = Module["_ImGuiViewport_GetCenter"] = wasmExports["ImGuiViewport_GetCenter"];
+
+var _ImGuiViewport_GetWorkCenter = Module["_ImGuiViewport_GetWorkCenter"] = wasmExports["ImGuiViewport_GetWorkCenter"];
+
+var _ImGuiPlatformIO_ImGuiPlatformIO = Module["_ImGuiPlatformIO_ImGuiPlatformIO"] = wasmExports["ImGuiPlatformIO_ImGuiPlatformIO"];
+
+var _ImGuiPlatformIO_destroy = Module["_ImGuiPlatformIO_destroy"] = wasmExports["ImGuiPlatformIO_destroy"];
+
+var _ImGuiPlatformMonitor_ImGuiPlatformMonitor = Module["_ImGuiPlatformMonitor_ImGuiPlatformMonitor"] = wasmExports["ImGuiPlatformMonitor_ImGuiPlatformMonitor"];
+
+var _ImGuiPlatformMonitor_destroy = Module["_ImGuiPlatformMonitor_destroy"] = wasmExports["ImGuiPlatformMonitor_destroy"];
+
+var _ImGuiPlatformImeData_ImGuiPlatformImeData = Module["_ImGuiPlatformImeData_ImGuiPlatformImeData"] = wasmExports["ImGuiPlatformImeData_ImGuiPlatformImeData"];
+
+var _ImGuiPlatformImeData_destroy = Module["_ImGuiPlatformImeData_destroy"] = wasmExports["ImGuiPlatformImeData_destroy"];
+
+var _igImHashData = Module["_igImHashData"] = wasmExports["igImHashData"];
+
+var __Z10ImHashDataPKvmj = Module["__Z10ImHashDataPKvmj"] = wasmExports["_Z10ImHashDataPKvmj"];
+
+var _igImHashStr = Module["_igImHashStr"] = wasmExports["igImHashStr"];
+
+var __Z9ImHashStrPKcmj = Module["__Z9ImHashStrPKcmj"] = wasmExports["_Z9ImHashStrPKcmj"];
+
+var _igImQsort = Module["_igImQsort"] = wasmExports["igImQsort"];
+
+var _qsort = Module["_qsort"] = wasmExports["qsort"];
+
+var _igImAlphaBlendColors = Module["_igImAlphaBlendColors"] = wasmExports["igImAlphaBlendColors"];
+
+var __Z18ImAlphaBlendColorsjj = Module["__Z18ImAlphaBlendColorsjj"] = wasmExports["_Z18ImAlphaBlendColorsjj"];
+
+var _igImIsPowerOfTwo_Int = Module["_igImIsPowerOfTwo_Int"] = wasmExports["igImIsPowerOfTwo_Int"];
+
+var _igImIsPowerOfTwo_U64 = Module["_igImIsPowerOfTwo_U64"] = wasmExports["igImIsPowerOfTwo_U64"];
+
+var _igImUpperPowerOfTwo = Module["_igImUpperPowerOfTwo"] = wasmExports["igImUpperPowerOfTwo"];
+
+var _igImStricmp = Module["_igImStricmp"] = wasmExports["igImStricmp"];
+
+var __Z9ImStricmpPKcS0_ = Module["__Z9ImStricmpPKcS0_"] = wasmExports["_Z9ImStricmpPKcS0_"];
+
+var _igImStrnicmp = Module["_igImStrnicmp"] = wasmExports["igImStrnicmp"];
+
+var __Z10ImStrnicmpPKcS0_m = Module["__Z10ImStrnicmpPKcS0_m"] = wasmExports["_Z10ImStrnicmpPKcS0_m"];
+
+var _igImStrncpy = Module["_igImStrncpy"] = wasmExports["igImStrncpy"];
+
+var __Z9ImStrncpyPcPKcm = Module["__Z9ImStrncpyPcPKcm"] = wasmExports["_Z9ImStrncpyPcPKcm"];
+
+var _igImStrdup = Module["_igImStrdup"] = wasmExports["igImStrdup"];
+
+var __Z8ImStrdupPKc = Module["__Z8ImStrdupPKc"] = wasmExports["_Z8ImStrdupPKc"];
+
+var _igImStrdupcpy = Module["_igImStrdupcpy"] = wasmExports["igImStrdupcpy"];
+
+var __Z11ImStrdupcpyPcPmPKc = Module["__Z11ImStrdupcpyPcPmPKc"] = wasmExports["_Z11ImStrdupcpyPcPmPKc"];
+
+var _igImStrchrRange = Module["_igImStrchrRange"] = wasmExports["igImStrchrRange"];
+
+var __Z13ImStrchrRangePKcS0_c = Module["__Z13ImStrchrRangePKcS0_c"] = wasmExports["_Z13ImStrchrRangePKcS0_c"];
+
+var _igImStreolRange = Module["_igImStreolRange"] = wasmExports["igImStreolRange"];
+
+var __Z13ImStreolRangePKcS0_ = Module["__Z13ImStreolRangePKcS0_"] = wasmExports["_Z13ImStreolRangePKcS0_"];
+
+var _igImStristr = Module["_igImStristr"] = wasmExports["igImStristr"];
+
+var __Z9ImStristrPKcS0_S0_S0_ = Module["__Z9ImStristrPKcS0_S0_S0_"] = wasmExports["_Z9ImStristrPKcS0_S0_S0_"];
+
+var _igImStrTrimBlanks = Module["_igImStrTrimBlanks"] = wasmExports["igImStrTrimBlanks"];
+
+var __Z15ImStrTrimBlanksPc = Module["__Z15ImStrTrimBlanksPc"] = wasmExports["_Z15ImStrTrimBlanksPc"];
+
+var _igImStrSkipBlank = Module["_igImStrSkipBlank"] = wasmExports["igImStrSkipBlank"];
+
+var __Z14ImStrSkipBlankPKc = Module["__Z14ImStrSkipBlankPKc"] = wasmExports["_Z14ImStrSkipBlankPKc"];
+
+var _igImStrlenW = Module["_igImStrlenW"] = wasmExports["igImStrlenW"];
+
+var __Z9ImStrlenWPKt = Module["__Z9ImStrlenWPKt"] = wasmExports["_Z9ImStrlenWPKt"];
+
+var _igImStrbolW = Module["_igImStrbolW"] = wasmExports["igImStrbolW"];
+
+var __Z9ImStrbolWPKtS0_ = Module["__Z9ImStrbolWPKtS0_"] = wasmExports["_Z9ImStrbolWPKtS0_"];
+
+var _igImToUpper = Module["_igImToUpper"] = wasmExports["igImToUpper"];
+
+var _igImCharIsBlankA = Module["_igImCharIsBlankA"] = wasmExports["igImCharIsBlankA"];
+
+var _igImCharIsBlankW = Module["_igImCharIsBlankW"] = wasmExports["igImCharIsBlankW"];
+
+var _igImFormatString = Module["_igImFormatString"] = wasmExports["igImFormatString"];
+
+var __Z15ImFormatStringVPcmPKcPv = Module["__Z15ImFormatStringVPcmPKcPv"] = wasmExports["_Z15ImFormatStringVPcmPKcPv"];
+
+var _igImFormatStringV = Module["_igImFormatStringV"] = wasmExports["igImFormatStringV"];
+
+var _igImFormatStringToTempBuffer = Module["_igImFormatStringToTempBuffer"] = wasmExports["igImFormatStringToTempBuffer"];
+
+var __Z27ImFormatStringToTempBufferVPPKcS1_S0_Pv = Module["__Z27ImFormatStringToTempBufferVPPKcS1_S0_Pv"] = wasmExports["_Z27ImFormatStringToTempBufferVPPKcS1_S0_Pv"];
+
+var _igImFormatStringToTempBufferV = Module["_igImFormatStringToTempBufferV"] = wasmExports["igImFormatStringToTempBufferV"];
+
+var _igImParseFormatFindStart = Module["_igImParseFormatFindStart"] = wasmExports["igImParseFormatFindStart"];
+
+var __Z22ImParseFormatFindStartPKc = Module["__Z22ImParseFormatFindStartPKc"] = wasmExports["_Z22ImParseFormatFindStartPKc"];
+
+var _igImParseFormatFindEnd = Module["_igImParseFormatFindEnd"] = wasmExports["igImParseFormatFindEnd"];
+
+var __Z20ImParseFormatFindEndPKc = Module["__Z20ImParseFormatFindEndPKc"] = wasmExports["_Z20ImParseFormatFindEndPKc"];
+
+var _igImParseFormatTrimDecorations = Module["_igImParseFormatTrimDecorations"] = wasmExports["igImParseFormatTrimDecorations"];
+
+var __Z28ImParseFormatTrimDecorationsPKcPcm = Module["__Z28ImParseFormatTrimDecorationsPKcPcm"] = wasmExports["_Z28ImParseFormatTrimDecorationsPKcPcm"];
+
+var _igImParseFormatSanitizeForPrinting = Module["_igImParseFormatSanitizeForPrinting"] = wasmExports["igImParseFormatSanitizeForPrinting"];
+
+var __Z32ImParseFormatSanitizeForPrintingPKcPcm = Module["__Z32ImParseFormatSanitizeForPrintingPKcPcm"] = wasmExports["_Z32ImParseFormatSanitizeForPrintingPKcPcm"];
+
+var _igImParseFormatSanitizeForScanning = Module["_igImParseFormatSanitizeForScanning"] = wasmExports["igImParseFormatSanitizeForScanning"];
+
+var __Z32ImParseFormatSanitizeForScanningPKcPcm = Module["__Z32ImParseFormatSanitizeForScanningPKcPcm"] = wasmExports["_Z32ImParseFormatSanitizeForScanningPKcPcm"];
+
+var _igImParseFormatPrecision = Module["_igImParseFormatPrecision"] = wasmExports["igImParseFormatPrecision"];
+
+var __Z22ImParseFormatPrecisionPKci = Module["__Z22ImParseFormatPrecisionPKci"] = wasmExports["_Z22ImParseFormatPrecisionPKci"];
+
+var _igImTextCharToUtf8 = Module["_igImTextCharToUtf8"] = wasmExports["igImTextCharToUtf8"];
+
+var __Z16ImTextCharToUtf8Pcj = Module["__Z16ImTextCharToUtf8Pcj"] = wasmExports["_Z16ImTextCharToUtf8Pcj"];
+
+var _igImTextStrToUtf8 = Module["_igImTextStrToUtf8"] = wasmExports["igImTextStrToUtf8"];
+
+var __Z15ImTextStrToUtf8PciPKtS1_ = Module["__Z15ImTextStrToUtf8PciPKtS1_"] = wasmExports["_Z15ImTextStrToUtf8PciPKtS1_"];
+
+var _igImTextCharFromUtf8 = Module["_igImTextCharFromUtf8"] = wasmExports["igImTextCharFromUtf8"];
+
+var __Z18ImTextCharFromUtf8PjPKcS1_ = Module["__Z18ImTextCharFromUtf8PjPKcS1_"] = wasmExports["_Z18ImTextCharFromUtf8PjPKcS1_"];
+
+var _igImTextStrFromUtf8 = Module["_igImTextStrFromUtf8"] = wasmExports["igImTextStrFromUtf8"];
+
+var __Z17ImTextStrFromUtf8PtiPKcS1_PS1_ = Module["__Z17ImTextStrFromUtf8PtiPKcS1_PS1_"] = wasmExports["_Z17ImTextStrFromUtf8PtiPKcS1_PS1_"];
+
+var _igImTextCountCharsFromUtf8 = Module["_igImTextCountCharsFromUtf8"] = wasmExports["igImTextCountCharsFromUtf8"];
+
+var __Z24ImTextCountCharsFromUtf8PKcS0_ = Module["__Z24ImTextCountCharsFromUtf8PKcS0_"] = wasmExports["_Z24ImTextCountCharsFromUtf8PKcS0_"];
+
+var _igImTextCountUtf8BytesFromChar = Module["_igImTextCountUtf8BytesFromChar"] = wasmExports["igImTextCountUtf8BytesFromChar"];
+
+var __Z28ImTextCountUtf8BytesFromCharPKcS0_ = Module["__Z28ImTextCountUtf8BytesFromCharPKcS0_"] = wasmExports["_Z28ImTextCountUtf8BytesFromCharPKcS0_"];
+
+var _igImTextCountUtf8BytesFromStr = Module["_igImTextCountUtf8BytesFromStr"] = wasmExports["igImTextCountUtf8BytesFromStr"];
+
+var __Z27ImTextCountUtf8BytesFromStrPKtS0_ = Module["__Z27ImTextCountUtf8BytesFromStrPKtS0_"] = wasmExports["_Z27ImTextCountUtf8BytesFromStrPKtS0_"];
+
+var _igImTextFindPreviousUtf8Codepoint = Module["_igImTextFindPreviousUtf8Codepoint"] = wasmExports["igImTextFindPreviousUtf8Codepoint"];
+
+var __Z31ImTextFindPreviousUtf8CodepointPKcS0_ = Module["__Z31ImTextFindPreviousUtf8CodepointPKcS0_"] = wasmExports["_Z31ImTextFindPreviousUtf8CodepointPKcS0_"];
+
+var _igImFileOpen = Module["_igImFileOpen"] = wasmExports["igImFileOpen"];
+
+var __Z10ImFileOpenPKcS0_ = Module["__Z10ImFileOpenPKcS0_"] = wasmExports["_Z10ImFileOpenPKcS0_"];
+
+var _igImFileClose = Module["_igImFileClose"] = wasmExports["igImFileClose"];
+
+var __Z11ImFileCloseP8_IO_FILE = Module["__Z11ImFileCloseP8_IO_FILE"] = wasmExports["_Z11ImFileCloseP8_IO_FILE"];
+
+var _igImFileGetSize = Module["_igImFileGetSize"] = wasmExports["igImFileGetSize"];
+
+var __Z13ImFileGetSizeP8_IO_FILE = Module["__Z13ImFileGetSizeP8_IO_FILE"] = wasmExports["_Z13ImFileGetSizeP8_IO_FILE"];
+
+var _igImFileRead = Module["_igImFileRead"] = wasmExports["igImFileRead"];
+
+var __Z10ImFileReadPvyyP8_IO_FILE = Module["__Z10ImFileReadPvyyP8_IO_FILE"] = wasmExports["_Z10ImFileReadPvyyP8_IO_FILE"];
+
+var _igImFileWrite = Module["_igImFileWrite"] = wasmExports["igImFileWrite"];
+
+var __Z11ImFileWritePKvyyP8_IO_FILE = Module["__Z11ImFileWritePKvyyP8_IO_FILE"] = wasmExports["_Z11ImFileWritePKvyyP8_IO_FILE"];
+
+var _igImFileLoadToMemory = Module["_igImFileLoadToMemory"] = wasmExports["igImFileLoadToMemory"];
+
+var __Z18ImFileLoadToMemoryPKcS0_Pmi = Module["__Z18ImFileLoadToMemoryPKcS0_Pmi"] = wasmExports["_Z18ImFileLoadToMemoryPKcS0_Pmi"];
+
+var _igImPow_Float = Module["_igImPow_Float"] = wasmExports["igImPow_Float"];
+
+var _powf = Module["_powf"] = wasmExports["powf"];
+
+var _igImPow_double = Module["_igImPow_double"] = wasmExports["igImPow_double"];
+
+var _igImLog_Float = Module["_igImLog_Float"] = wasmExports["igImLog_Float"];
+
+var _logf = Module["_logf"] = wasmExports["logf"];
+
+var _igImLog_double = Module["_igImLog_double"] = wasmExports["igImLog_double"];
+
+var _igImAbs_Int = Module["_igImAbs_Int"] = wasmExports["igImAbs_Int"];
+
+var _igImAbs_Float = Module["_igImAbs_Float"] = wasmExports["igImAbs_Float"];
+
+var _igImAbs_double = Module["_igImAbs_double"] = wasmExports["igImAbs_double"];
+
+var _igImSign_Float = Module["_igImSign_Float"] = wasmExports["igImSign_Float"];
+
+var _igImSign_double = Module["_igImSign_double"] = wasmExports["igImSign_double"];
+
+var _igImRsqrt_Float = Module["_igImRsqrt_Float"] = wasmExports["igImRsqrt_Float"];
+
+var _igImRsqrt_double = Module["_igImRsqrt_double"] = wasmExports["igImRsqrt_double"];
+
+var _igImMin = Module["_igImMin"] = wasmExports["igImMin"];
+
+var _igImMax = Module["_igImMax"] = wasmExports["igImMax"];
+
+var _igImClamp = Module["_igImClamp"] = wasmExports["igImClamp"];
+
+var _igImLerp_Vec2Float = Module["_igImLerp_Vec2Float"] = wasmExports["igImLerp_Vec2Float"];
+
+var _igImLerp_Vec2Vec2 = Module["_igImLerp_Vec2Vec2"] = wasmExports["igImLerp_Vec2Vec2"];
+
+var _igImLerp_Vec4 = Module["_igImLerp_Vec4"] = wasmExports["igImLerp_Vec4"];
+
+var _igImSaturate = Module["_igImSaturate"] = wasmExports["igImSaturate"];
+
+var _igImLengthSqr_Vec2 = Module["_igImLengthSqr_Vec2"] = wasmExports["igImLengthSqr_Vec2"];
+
+var _igImLengthSqr_Vec4 = Module["_igImLengthSqr_Vec4"] = wasmExports["igImLengthSqr_Vec4"];
+
+var _igImInvLength = Module["_igImInvLength"] = wasmExports["igImInvLength"];
+
+var _igImTrunc_Float = Module["_igImTrunc_Float"] = wasmExports["igImTrunc_Float"];
+
+var _igImTrunc_Vec2 = Module["_igImTrunc_Vec2"] = wasmExports["igImTrunc_Vec2"];
+
+var _igImFloor_Float = Module["_igImFloor_Float"] = wasmExports["igImFloor_Float"];
+
+var _igImFloor_Vec2 = Module["_igImFloor_Vec2"] = wasmExports["igImFloor_Vec2"];
+
+var _igImModPositive = Module["_igImModPositive"] = wasmExports["igImModPositive"];
+
+var _igImDot = Module["_igImDot"] = wasmExports["igImDot"];
+
+var _igImRotate = Module["_igImRotate"] = wasmExports["igImRotate"];
+
+var _igImLinearSweep = Module["_igImLinearSweep"] = wasmExports["igImLinearSweep"];
+
+var _igImMul = Module["_igImMul"] = wasmExports["igImMul"];
+
+var _igImIsFloatAboveGuaranteedIntegerPrecision = Module["_igImIsFloatAboveGuaranteedIntegerPrecision"] = wasmExports["igImIsFloatAboveGuaranteedIntegerPrecision"];
+
+var _igImExponentialMovingAverage = Module["_igImExponentialMovingAverage"] = wasmExports["igImExponentialMovingAverage"];
+
+var _igImBezierCubicCalc = Module["_igImBezierCubicCalc"] = wasmExports["igImBezierCubicCalc"];
+
+var __Z17ImBezierCubicCalcRK6ImVec2S1_S1_S1_f = Module["__Z17ImBezierCubicCalcRK6ImVec2S1_S1_S1_f"] = wasmExports["_Z17ImBezierCubicCalcRK6ImVec2S1_S1_S1_f"];
+
+var _igImBezierCubicClosestPoint = Module["_igImBezierCubicClosestPoint"] = wasmExports["igImBezierCubicClosestPoint"];
+
+var __Z25ImBezierCubicClosestPointRK6ImVec2S1_S1_S1_S1_i = Module["__Z25ImBezierCubicClosestPointRK6ImVec2S1_S1_S1_S1_i"] = wasmExports["_Z25ImBezierCubicClosestPointRK6ImVec2S1_S1_S1_S1_i"];
+
+var _igImBezierCubicClosestPointCasteljau = Module["_igImBezierCubicClosestPointCasteljau"] = wasmExports["igImBezierCubicClosestPointCasteljau"];
+
+var __Z34ImBezierCubicClosestPointCasteljauRK6ImVec2S1_S1_S1_S1_f = Module["__Z34ImBezierCubicClosestPointCasteljauRK6ImVec2S1_S1_S1_S1_f"] = wasmExports["_Z34ImBezierCubicClosestPointCasteljauRK6ImVec2S1_S1_S1_S1_f"];
+
+var _igImBezierQuadraticCalc = Module["_igImBezierQuadraticCalc"] = wasmExports["igImBezierQuadraticCalc"];
+
+var __Z21ImBezierQuadraticCalcRK6ImVec2S1_S1_f = Module["__Z21ImBezierQuadraticCalcRK6ImVec2S1_S1_f"] = wasmExports["_Z21ImBezierQuadraticCalcRK6ImVec2S1_S1_f"];
+
+var _igImLineClosestPoint = Module["_igImLineClosestPoint"] = wasmExports["igImLineClosestPoint"];
+
+var __Z18ImLineClosestPointRK6ImVec2S1_S1_ = Module["__Z18ImLineClosestPointRK6ImVec2S1_S1_"] = wasmExports["_Z18ImLineClosestPointRK6ImVec2S1_S1_"];
+
+var _igImTriangleContainsPoint = Module["_igImTriangleContainsPoint"] = wasmExports["igImTriangleContainsPoint"];
+
+var __Z23ImTriangleContainsPointRK6ImVec2S1_S1_S1_ = Module["__Z23ImTriangleContainsPointRK6ImVec2S1_S1_S1_"] = wasmExports["_Z23ImTriangleContainsPointRK6ImVec2S1_S1_S1_"];
+
+var _igImTriangleClosestPoint = Module["_igImTriangleClosestPoint"] = wasmExports["igImTriangleClosestPoint"];
+
+var __Z22ImTriangleClosestPointRK6ImVec2S1_S1_S1_ = Module["__Z22ImTriangleClosestPointRK6ImVec2S1_S1_S1_"] = wasmExports["_Z22ImTriangleClosestPointRK6ImVec2S1_S1_S1_"];
+
+var _igImTriangleBarycentricCoords = Module["_igImTriangleBarycentricCoords"] = wasmExports["igImTriangleBarycentricCoords"];
+
+var __Z27ImTriangleBarycentricCoordsRK6ImVec2S1_S1_S1_RfS2_S2_ = Module["__Z27ImTriangleBarycentricCoordsRK6ImVec2S1_S1_S1_RfS2_S2_"] = wasmExports["_Z27ImTriangleBarycentricCoordsRK6ImVec2S1_S1_S1_RfS2_S2_"];
+
+var _igImTriangleArea = Module["_igImTriangleArea"] = wasmExports["igImTriangleArea"];
+
+var _igImTriangleIsClockwise = Module["_igImTriangleIsClockwise"] = wasmExports["igImTriangleIsClockwise"];
+
+var _ImVec1_ImVec1_Nil = Module["_ImVec1_ImVec1_Nil"] = wasmExports["ImVec1_ImVec1_Nil"];
+
+var _ImVec1_destroy = Module["_ImVec1_destroy"] = wasmExports["ImVec1_destroy"];
+
+var _ImVec1_ImVec1_Float = Module["_ImVec1_ImVec1_Float"] = wasmExports["ImVec1_ImVec1_Float"];
+
+var _ImVec2ih_ImVec2ih_Nil = Module["_ImVec2ih_ImVec2ih_Nil"] = wasmExports["ImVec2ih_ImVec2ih_Nil"];
+
+var _ImVec2ih_destroy = Module["_ImVec2ih_destroy"] = wasmExports["ImVec2ih_destroy"];
+
+var _ImVec2ih_ImVec2ih_short = Module["_ImVec2ih_ImVec2ih_short"] = wasmExports["ImVec2ih_ImVec2ih_short"];
+
+var _ImVec2ih_ImVec2ih_Vec2 = Module["_ImVec2ih_ImVec2ih_Vec2"] = wasmExports["ImVec2ih_ImVec2ih_Vec2"];
+
+var _ImRect_ImRect_Nil = Module["_ImRect_ImRect_Nil"] = wasmExports["ImRect_ImRect_Nil"];
+
+var _ImRect_destroy = Module["_ImRect_destroy"] = wasmExports["ImRect_destroy"];
+
+var _ImRect_ImRect_Vec2 = Module["_ImRect_ImRect_Vec2"] = wasmExports["ImRect_ImRect_Vec2"];
+
+var _ImRect_ImRect_Vec4 = Module["_ImRect_ImRect_Vec4"] = wasmExports["ImRect_ImRect_Vec4"];
+
+var _ImRect_ImRect_Float = Module["_ImRect_ImRect_Float"] = wasmExports["ImRect_ImRect_Float"];
+
+var _ImRect_GetCenter = Module["_ImRect_GetCenter"] = wasmExports["ImRect_GetCenter"];
+
+var _ImRect_GetSize = Module["_ImRect_GetSize"] = wasmExports["ImRect_GetSize"];
+
+var _ImRect_GetWidth = Module["_ImRect_GetWidth"] = wasmExports["ImRect_GetWidth"];
+
+var _ImRect_GetHeight = Module["_ImRect_GetHeight"] = wasmExports["ImRect_GetHeight"];
+
+var _ImRect_GetArea = Module["_ImRect_GetArea"] = wasmExports["ImRect_GetArea"];
+
+var _ImRect_GetTL = Module["_ImRect_GetTL"] = wasmExports["ImRect_GetTL"];
+
+var _ImRect_GetTR = Module["_ImRect_GetTR"] = wasmExports["ImRect_GetTR"];
+
+var _ImRect_GetBL = Module["_ImRect_GetBL"] = wasmExports["ImRect_GetBL"];
+
+var _ImRect_GetBR = Module["_ImRect_GetBR"] = wasmExports["ImRect_GetBR"];
+
+var _ImRect_Contains_Vec2 = Module["_ImRect_Contains_Vec2"] = wasmExports["ImRect_Contains_Vec2"];
+
+var _ImRect_Contains_Rect = Module["_ImRect_Contains_Rect"] = wasmExports["ImRect_Contains_Rect"];
+
+var _ImRect_ContainsWithPad = Module["_ImRect_ContainsWithPad"] = wasmExports["ImRect_ContainsWithPad"];
+
+var _ImRect_Overlaps = Module["_ImRect_Overlaps"] = wasmExports["ImRect_Overlaps"];
+
+var _ImRect_Add_Vec2 = Module["_ImRect_Add_Vec2"] = wasmExports["ImRect_Add_Vec2"];
+
+var _ImRect_Add_Rect = Module["_ImRect_Add_Rect"] = wasmExports["ImRect_Add_Rect"];
+
+var _ImRect_Expand_Float = Module["_ImRect_Expand_Float"] = wasmExports["ImRect_Expand_Float"];
+
+var _ImRect_Expand_Vec2 = Module["_ImRect_Expand_Vec2"] = wasmExports["ImRect_Expand_Vec2"];
+
+var _ImRect_Translate = Module["_ImRect_Translate"] = wasmExports["ImRect_Translate"];
+
+var _ImRect_TranslateX = Module["_ImRect_TranslateX"] = wasmExports["ImRect_TranslateX"];
+
+var _ImRect_TranslateY = Module["_ImRect_TranslateY"] = wasmExports["ImRect_TranslateY"];
+
+var _ImRect_ClipWith = Module["_ImRect_ClipWith"] = wasmExports["ImRect_ClipWith"];
+
+var _ImRect_ClipWithFull = Module["_ImRect_ClipWithFull"] = wasmExports["ImRect_ClipWithFull"];
+
+var _ImRect_Floor = Module["_ImRect_Floor"] = wasmExports["ImRect_Floor"];
+
+var _ImRect_IsInverted = Module["_ImRect_IsInverted"] = wasmExports["ImRect_IsInverted"];
+
+var _ImRect_ToVec4 = Module["_ImRect_ToVec4"] = wasmExports["ImRect_ToVec4"];
+
+var _igImBitArrayGetStorageSizeInBytes = Module["_igImBitArrayGetStorageSizeInBytes"] = wasmExports["igImBitArrayGetStorageSizeInBytes"];
+
+var _igImBitArrayClearAllBits = Module["_igImBitArrayClearAllBits"] = wasmExports["igImBitArrayClearAllBits"];
+
+var _igImBitArrayTestBit = Module["_igImBitArrayTestBit"] = wasmExports["igImBitArrayTestBit"];
+
+var _igImBitArrayClearBit = Module["_igImBitArrayClearBit"] = wasmExports["igImBitArrayClearBit"];
+
+var _igImBitArraySetBit = Module["_igImBitArraySetBit"] = wasmExports["igImBitArraySetBit"];
+
+var _igImBitArraySetBitRange = Module["_igImBitArraySetBitRange"] = wasmExports["igImBitArraySetBitRange"];
+
+var _ImBitVector_Create = Module["_ImBitVector_Create"] = wasmExports["ImBitVector_Create"];
+
+var _ImBitVector_Clear = Module["_ImBitVector_Clear"] = wasmExports["ImBitVector_Clear"];
+
+var _ImBitVector_TestBit = Module["_ImBitVector_TestBit"] = wasmExports["ImBitVector_TestBit"];
+
+var _ImBitVector_SetBit = Module["_ImBitVector_SetBit"] = wasmExports["ImBitVector_SetBit"];
+
+var _ImBitVector_ClearBit = Module["_ImBitVector_ClearBit"] = wasmExports["ImBitVector_ClearBit"];
+
+var _ImGuiTextIndex_clear = Module["_ImGuiTextIndex_clear"] = wasmExports["ImGuiTextIndex_clear"];
+
+var _ImGuiTextIndex_size = Module["_ImGuiTextIndex_size"] = wasmExports["ImGuiTextIndex_size"];
+
+var _ImGuiTextIndex_get_line_begin = Module["_ImGuiTextIndex_get_line_begin"] = wasmExports["ImGuiTextIndex_get_line_begin"];
+
+var _ImGuiTextIndex_get_line_end = Module["_ImGuiTextIndex_get_line_end"] = wasmExports["ImGuiTextIndex_get_line_end"];
+
+var _ImGuiTextIndex_append = Module["_ImGuiTextIndex_append"] = wasmExports["ImGuiTextIndex_append"];
+
+var __ZN14ImGuiTextIndex6appendEPKcii = Module["__ZN14ImGuiTextIndex6appendEPKcii"] = wasmExports["_ZN14ImGuiTextIndex6appendEPKcii"];
+
+var _ImDrawListSharedData_ImDrawListSharedData = Module["_ImDrawListSharedData_ImDrawListSharedData"] = wasmExports["ImDrawListSharedData_ImDrawListSharedData"];
+
+var __ZN20ImDrawListSharedDataC1Ev = Module["__ZN20ImDrawListSharedDataC1Ev"] = wasmExports["_ZN20ImDrawListSharedDataC1Ev"];
+
+var _ImDrawListSharedData_destroy = Module["_ImDrawListSharedData_destroy"] = wasmExports["ImDrawListSharedData_destroy"];
+
+var _ImDrawListSharedData_SetCircleTessellationMaxError = Module["_ImDrawListSharedData_SetCircleTessellationMaxError"] = wasmExports["ImDrawListSharedData_SetCircleTessellationMaxError"];
+
+var __ZN20ImDrawListSharedData29SetCircleTessellationMaxErrorEf = Module["__ZN20ImDrawListSharedData29SetCircleTessellationMaxErrorEf"] = wasmExports["_ZN20ImDrawListSharedData29SetCircleTessellationMaxErrorEf"];
+
+var _ImDrawDataBuilder_ImDrawDataBuilder = Module["_ImDrawDataBuilder_ImDrawDataBuilder"] = wasmExports["ImDrawDataBuilder_ImDrawDataBuilder"];
+
+var _ImDrawDataBuilder_destroy = Module["_ImDrawDataBuilder_destroy"] = wasmExports["ImDrawDataBuilder_destroy"];
+
+var _ImGuiStyleMod_ImGuiStyleMod_Int = Module["_ImGuiStyleMod_ImGuiStyleMod_Int"] = wasmExports["ImGuiStyleMod_ImGuiStyleMod_Int"];
+
+var _ImGuiStyleMod_destroy = Module["_ImGuiStyleMod_destroy"] = wasmExports["ImGuiStyleMod_destroy"];
+
+var _ImGuiStyleMod_ImGuiStyleMod_Float = Module["_ImGuiStyleMod_ImGuiStyleMod_Float"] = wasmExports["ImGuiStyleMod_ImGuiStyleMod_Float"];
+
+var _ImGuiStyleMod_ImGuiStyleMod_Vec2 = Module["_ImGuiStyleMod_ImGuiStyleMod_Vec2"] = wasmExports["ImGuiStyleMod_ImGuiStyleMod_Vec2"];
+
+var _ImGuiComboPreviewData_ImGuiComboPreviewData = Module["_ImGuiComboPreviewData_ImGuiComboPreviewData"] = wasmExports["ImGuiComboPreviewData_ImGuiComboPreviewData"];
+
+var _ImGuiComboPreviewData_destroy = Module["_ImGuiComboPreviewData_destroy"] = wasmExports["ImGuiComboPreviewData_destroy"];
+
+var _ImGuiMenuColumns_ImGuiMenuColumns = Module["_ImGuiMenuColumns_ImGuiMenuColumns"] = wasmExports["ImGuiMenuColumns_ImGuiMenuColumns"];
+
+var _ImGuiMenuColumns_destroy = Module["_ImGuiMenuColumns_destroy"] = wasmExports["ImGuiMenuColumns_destroy"];
+
+var _ImGuiMenuColumns_Update = Module["_ImGuiMenuColumns_Update"] = wasmExports["ImGuiMenuColumns_Update"];
+
+var __ZN16ImGuiMenuColumns6UpdateEfb = Module["__ZN16ImGuiMenuColumns6UpdateEfb"] = wasmExports["_ZN16ImGuiMenuColumns6UpdateEfb"];
+
+var _ImGuiMenuColumns_DeclColumns = Module["_ImGuiMenuColumns_DeclColumns"] = wasmExports["ImGuiMenuColumns_DeclColumns"];
+
+var __ZN16ImGuiMenuColumns11DeclColumnsEffff = Module["__ZN16ImGuiMenuColumns11DeclColumnsEffff"] = wasmExports["_ZN16ImGuiMenuColumns11DeclColumnsEffff"];
+
+var _ImGuiMenuColumns_CalcNextTotalWidth = Module["_ImGuiMenuColumns_CalcNextTotalWidth"] = wasmExports["ImGuiMenuColumns_CalcNextTotalWidth"];
+
+var __ZN16ImGuiMenuColumns18CalcNextTotalWidthEb = Module["__ZN16ImGuiMenuColumns18CalcNextTotalWidthEb"] = wasmExports["_ZN16ImGuiMenuColumns18CalcNextTotalWidthEb"];
+
+var _ImGuiInputTextDeactivatedState_ImGuiInputTextDeactivatedState = Module["_ImGuiInputTextDeactivatedState_ImGuiInputTextDeactivatedState"] = wasmExports["ImGuiInputTextDeactivatedState_ImGuiInputTextDeactivatedState"];
+
+var _ImGuiInputTextDeactivatedState_destroy = Module["_ImGuiInputTextDeactivatedState_destroy"] = wasmExports["ImGuiInputTextDeactivatedState_destroy"];
+
+var _ImGuiInputTextDeactivatedState_ClearFreeMemory = Module["_ImGuiInputTextDeactivatedState_ClearFreeMemory"] = wasmExports["ImGuiInputTextDeactivatedState_ClearFreeMemory"];
+
+var _ImGuiInputTextState_ImGuiInputTextState = Module["_ImGuiInputTextState_ImGuiInputTextState"] = wasmExports["ImGuiInputTextState_ImGuiInputTextState"];
+
+var _ImGuiInputTextState_destroy = Module["_ImGuiInputTextState_destroy"] = wasmExports["ImGuiInputTextState_destroy"];
+
+var _ImGuiInputTextState_ClearText = Module["_ImGuiInputTextState_ClearText"] = wasmExports["ImGuiInputTextState_ClearText"];
+
+var _ImGuiInputTextState_ClearFreeMemory = Module["_ImGuiInputTextState_ClearFreeMemory"] = wasmExports["ImGuiInputTextState_ClearFreeMemory"];
+
+var _ImGuiInputTextState_GetUndoAvailCount = Module["_ImGuiInputTextState_GetUndoAvailCount"] = wasmExports["ImGuiInputTextState_GetUndoAvailCount"];
+
+var _ImGuiInputTextState_GetRedoAvailCount = Module["_ImGuiInputTextState_GetRedoAvailCount"] = wasmExports["ImGuiInputTextState_GetRedoAvailCount"];
+
+var _ImGuiInputTextState_OnKeyPressed = Module["_ImGuiInputTextState_OnKeyPressed"] = wasmExports["ImGuiInputTextState_OnKeyPressed"];
+
+var __ZN19ImGuiInputTextState12OnKeyPressedEi = Module["__ZN19ImGuiInputTextState12OnKeyPressedEi"] = wasmExports["_ZN19ImGuiInputTextState12OnKeyPressedEi"];
+
+var _ImGuiInputTextState_CursorAnimReset = Module["_ImGuiInputTextState_CursorAnimReset"] = wasmExports["ImGuiInputTextState_CursorAnimReset"];
+
+var _ImGuiInputTextState_CursorClamp = Module["_ImGuiInputTextState_CursorClamp"] = wasmExports["ImGuiInputTextState_CursorClamp"];
+
+var _ImGuiInputTextState_HasSelection = Module["_ImGuiInputTextState_HasSelection"] = wasmExports["ImGuiInputTextState_HasSelection"];
+
+var _ImGuiInputTextState_ClearSelection = Module["_ImGuiInputTextState_ClearSelection"] = wasmExports["ImGuiInputTextState_ClearSelection"];
+
+var _ImGuiInputTextState_GetCursorPos = Module["_ImGuiInputTextState_GetCursorPos"] = wasmExports["ImGuiInputTextState_GetCursorPos"];
+
+var _ImGuiInputTextState_GetSelectionStart = Module["_ImGuiInputTextState_GetSelectionStart"] = wasmExports["ImGuiInputTextState_GetSelectionStart"];
+
+var _ImGuiInputTextState_GetSelectionEnd = Module["_ImGuiInputTextState_GetSelectionEnd"] = wasmExports["ImGuiInputTextState_GetSelectionEnd"];
+
+var _ImGuiInputTextState_SelectAll = Module["_ImGuiInputTextState_SelectAll"] = wasmExports["ImGuiInputTextState_SelectAll"];
+
+var _ImGuiInputTextState_ReloadUserBufAndSelectAll = Module["_ImGuiInputTextState_ReloadUserBufAndSelectAll"] = wasmExports["ImGuiInputTextState_ReloadUserBufAndSelectAll"];
+
+var _ImGuiInputTextState_ReloadUserBufAndKeepSelection = Module["_ImGuiInputTextState_ReloadUserBufAndKeepSelection"] = wasmExports["ImGuiInputTextState_ReloadUserBufAndKeepSelection"];
+
+var _ImGuiInputTextState_ReloadUserBufAndMoveToEnd = Module["_ImGuiInputTextState_ReloadUserBufAndMoveToEnd"] = wasmExports["ImGuiInputTextState_ReloadUserBufAndMoveToEnd"];
+
+var _ImGuiNextWindowData_ImGuiNextWindowData = Module["_ImGuiNextWindowData_ImGuiNextWindowData"] = wasmExports["ImGuiNextWindowData_ImGuiNextWindowData"];
+
+var _ImGuiNextWindowData_destroy = Module["_ImGuiNextWindowData_destroy"] = wasmExports["ImGuiNextWindowData_destroy"];
+
+var _ImGuiNextWindowData_ClearFlags = Module["_ImGuiNextWindowData_ClearFlags"] = wasmExports["ImGuiNextWindowData_ClearFlags"];
+
+var _ImGuiNextItemData_ImGuiNextItemData = Module["_ImGuiNextItemData_ImGuiNextItemData"] = wasmExports["ImGuiNextItemData_ImGuiNextItemData"];
+
+var _ImGuiNextItemData_destroy = Module["_ImGuiNextItemData_destroy"] = wasmExports["ImGuiNextItemData_destroy"];
+
+var _ImGuiNextItemData_ClearFlags = Module["_ImGuiNextItemData_ClearFlags"] = wasmExports["ImGuiNextItemData_ClearFlags"];
+
+var _ImGuiLastItemData_ImGuiLastItemData = Module["_ImGuiLastItemData_ImGuiLastItemData"] = wasmExports["ImGuiLastItemData_ImGuiLastItemData"];
+
+var _ImGuiLastItemData_destroy = Module["_ImGuiLastItemData_destroy"] = wasmExports["ImGuiLastItemData_destroy"];
+
+var _ImGuiStackSizes_ImGuiStackSizes = Module["_ImGuiStackSizes_ImGuiStackSizes"] = wasmExports["ImGuiStackSizes_ImGuiStackSizes"];
+
+var _ImGuiStackSizes_destroy = Module["_ImGuiStackSizes_destroy"] = wasmExports["ImGuiStackSizes_destroy"];
+
+var _ImGuiStackSizes_SetToContextState = Module["_ImGuiStackSizes_SetToContextState"] = wasmExports["ImGuiStackSizes_SetToContextState"];
+
+var __ZN15ImGuiStackSizes17SetToContextStateEP12ImGuiContext = Module["__ZN15ImGuiStackSizes17SetToContextStateEP12ImGuiContext"] = wasmExports["_ZN15ImGuiStackSizes17SetToContextStateEP12ImGuiContext"];
+
+var _ImGuiStackSizes_CompareWithContextState = Module["_ImGuiStackSizes_CompareWithContextState"] = wasmExports["ImGuiStackSizes_CompareWithContextState"];
+
+var __ZN15ImGuiStackSizes23CompareWithContextStateEP12ImGuiContext = Module["__ZN15ImGuiStackSizes23CompareWithContextStateEP12ImGuiContext"] = wasmExports["_ZN15ImGuiStackSizes23CompareWithContextStateEP12ImGuiContext"];
+
+var _ImGuiPtrOrIndex_ImGuiPtrOrIndex_Ptr = Module["_ImGuiPtrOrIndex_ImGuiPtrOrIndex_Ptr"] = wasmExports["ImGuiPtrOrIndex_ImGuiPtrOrIndex_Ptr"];
+
+var _ImGuiPtrOrIndex_destroy = Module["_ImGuiPtrOrIndex_destroy"] = wasmExports["ImGuiPtrOrIndex_destroy"];
+
+var _ImGuiPtrOrIndex_ImGuiPtrOrIndex_Int = Module["_ImGuiPtrOrIndex_ImGuiPtrOrIndex_Int"] = wasmExports["ImGuiPtrOrIndex_ImGuiPtrOrIndex_Int"];
+
+var _ImGuiDataVarInfo_GetVarPtr = Module["_ImGuiDataVarInfo_GetVarPtr"] = wasmExports["ImGuiDataVarInfo_GetVarPtr"];
+
+var _ImGuiPopupData_ImGuiPopupData = Module["_ImGuiPopupData_ImGuiPopupData"] = wasmExports["ImGuiPopupData_ImGuiPopupData"];
+
+var _ImGuiPopupData_destroy = Module["_ImGuiPopupData_destroy"] = wasmExports["ImGuiPopupData_destroy"];
+
+var _ImGuiInputEvent_ImGuiInputEvent = Module["_ImGuiInputEvent_ImGuiInputEvent"] = wasmExports["ImGuiInputEvent_ImGuiInputEvent"];
+
+var _ImGuiInputEvent_destroy = Module["_ImGuiInputEvent_destroy"] = wasmExports["ImGuiInputEvent_destroy"];
+
+var _ImGuiKeyRoutingData_ImGuiKeyRoutingData = Module["_ImGuiKeyRoutingData_ImGuiKeyRoutingData"] = wasmExports["ImGuiKeyRoutingData_ImGuiKeyRoutingData"];
+
+var _ImGuiKeyRoutingData_destroy = Module["_ImGuiKeyRoutingData_destroy"] = wasmExports["ImGuiKeyRoutingData_destroy"];
+
+var _ImGuiKeyRoutingTable_ImGuiKeyRoutingTable = Module["_ImGuiKeyRoutingTable_ImGuiKeyRoutingTable"] = wasmExports["ImGuiKeyRoutingTable_ImGuiKeyRoutingTable"];
+
+var _ImGuiKeyRoutingTable_destroy = Module["_ImGuiKeyRoutingTable_destroy"] = wasmExports["ImGuiKeyRoutingTable_destroy"];
+
+var _ImGuiKeyRoutingTable_Clear = Module["_ImGuiKeyRoutingTable_Clear"] = wasmExports["ImGuiKeyRoutingTable_Clear"];
+
+var _ImGuiKeyOwnerData_ImGuiKeyOwnerData = Module["_ImGuiKeyOwnerData_ImGuiKeyOwnerData"] = wasmExports["ImGuiKeyOwnerData_ImGuiKeyOwnerData"];
+
+var _ImGuiKeyOwnerData_destroy = Module["_ImGuiKeyOwnerData_destroy"] = wasmExports["ImGuiKeyOwnerData_destroy"];
+
+var _ImGuiListClipperRange_FromIndices = Module["_ImGuiListClipperRange_FromIndices"] = wasmExports["ImGuiListClipperRange_FromIndices"];
+
+var _ImGuiListClipperRange_FromPositions = Module["_ImGuiListClipperRange_FromPositions"] = wasmExports["ImGuiListClipperRange_FromPositions"];
+
+var _ImGuiListClipperData_ImGuiListClipperData = Module["_ImGuiListClipperData_ImGuiListClipperData"] = wasmExports["ImGuiListClipperData_ImGuiListClipperData"];
+
+var _ImGuiListClipperData_destroy = Module["_ImGuiListClipperData_destroy"] = wasmExports["ImGuiListClipperData_destroy"];
+
+var _ImGuiListClipperData_Reset = Module["_ImGuiListClipperData_Reset"] = wasmExports["ImGuiListClipperData_Reset"];
+
+var _ImGuiNavItemData_ImGuiNavItemData = Module["_ImGuiNavItemData_ImGuiNavItemData"] = wasmExports["ImGuiNavItemData_ImGuiNavItemData"];
+
+var _ImGuiNavItemData_destroy = Module["_ImGuiNavItemData_destroy"] = wasmExports["ImGuiNavItemData_destroy"];
+
+var _ImGuiNavItemData_Clear = Module["_ImGuiNavItemData_Clear"] = wasmExports["ImGuiNavItemData_Clear"];
+
+var _ImGuiTypingSelectState_ImGuiTypingSelectState = Module["_ImGuiTypingSelectState_ImGuiTypingSelectState"] = wasmExports["ImGuiTypingSelectState_ImGuiTypingSelectState"];
+
+var _ImGuiTypingSelectState_destroy = Module["_ImGuiTypingSelectState_destroy"] = wasmExports["ImGuiTypingSelectState_destroy"];
+
+var _ImGuiTypingSelectState_Clear = Module["_ImGuiTypingSelectState_Clear"] = wasmExports["ImGuiTypingSelectState_Clear"];
+
+var _ImGuiOldColumnData_ImGuiOldColumnData = Module["_ImGuiOldColumnData_ImGuiOldColumnData"] = wasmExports["ImGuiOldColumnData_ImGuiOldColumnData"];
+
+var _ImGuiOldColumnData_destroy = Module["_ImGuiOldColumnData_destroy"] = wasmExports["ImGuiOldColumnData_destroy"];
+
+var _ImGuiOldColumns_ImGuiOldColumns = Module["_ImGuiOldColumns_ImGuiOldColumns"] = wasmExports["ImGuiOldColumns_ImGuiOldColumns"];
+
+var _ImGuiOldColumns_destroy = Module["_ImGuiOldColumns_destroy"] = wasmExports["ImGuiOldColumns_destroy"];
+
+var _ImGuiDockNode_ImGuiDockNode = Module["_ImGuiDockNode_ImGuiDockNode"] = wasmExports["ImGuiDockNode_ImGuiDockNode"];
+
+var __ZN13ImGuiDockNodeC1Ej = Module["__ZN13ImGuiDockNodeC1Ej"] = wasmExports["_ZN13ImGuiDockNodeC1Ej"];
+
+var _ImGuiDockNode_destroy = Module["_ImGuiDockNode_destroy"] = wasmExports["ImGuiDockNode_destroy"];
+
+var __ZN13ImGuiDockNodeD1Ev = Module["__ZN13ImGuiDockNodeD1Ev"] = wasmExports["_ZN13ImGuiDockNodeD1Ev"];
+
+var _ImGuiDockNode_IsRootNode = Module["_ImGuiDockNode_IsRootNode"] = wasmExports["ImGuiDockNode_IsRootNode"];
+
+var _ImGuiDockNode_IsDockSpace = Module["_ImGuiDockNode_IsDockSpace"] = wasmExports["ImGuiDockNode_IsDockSpace"];
+
+var _ImGuiDockNode_IsFloatingNode = Module["_ImGuiDockNode_IsFloatingNode"] = wasmExports["ImGuiDockNode_IsFloatingNode"];
+
+var _ImGuiDockNode_IsCentralNode = Module["_ImGuiDockNode_IsCentralNode"] = wasmExports["ImGuiDockNode_IsCentralNode"];
+
+var _ImGuiDockNode_IsHiddenTabBar = Module["_ImGuiDockNode_IsHiddenTabBar"] = wasmExports["ImGuiDockNode_IsHiddenTabBar"];
+
+var _ImGuiDockNode_IsNoTabBar = Module["_ImGuiDockNode_IsNoTabBar"] = wasmExports["ImGuiDockNode_IsNoTabBar"];
+
+var _ImGuiDockNode_IsSplitNode = Module["_ImGuiDockNode_IsSplitNode"] = wasmExports["ImGuiDockNode_IsSplitNode"];
+
+var _ImGuiDockNode_IsLeafNode = Module["_ImGuiDockNode_IsLeafNode"] = wasmExports["ImGuiDockNode_IsLeafNode"];
+
+var _ImGuiDockNode_IsEmpty = Module["_ImGuiDockNode_IsEmpty"] = wasmExports["ImGuiDockNode_IsEmpty"];
+
+var _ImGuiDockNode_Rect = Module["_ImGuiDockNode_Rect"] = wasmExports["ImGuiDockNode_Rect"];
+
+var _ImGuiDockNode_SetLocalFlags = Module["_ImGuiDockNode_SetLocalFlags"] = wasmExports["ImGuiDockNode_SetLocalFlags"];
+
+var _ImGuiDockNode_UpdateMergedFlags = Module["_ImGuiDockNode_UpdateMergedFlags"] = wasmExports["ImGuiDockNode_UpdateMergedFlags"];
+
+var _ImGuiDockContext_ImGuiDockContext = Module["_ImGuiDockContext_ImGuiDockContext"] = wasmExports["ImGuiDockContext_ImGuiDockContext"];
+
+var _ImGuiDockContext_destroy = Module["_ImGuiDockContext_destroy"] = wasmExports["ImGuiDockContext_destroy"];
+
+var _ImGuiViewportP_ImGuiViewportP = Module["_ImGuiViewportP_ImGuiViewportP"] = wasmExports["ImGuiViewportP_ImGuiViewportP"];
+
+var _ImGuiViewportP_destroy = Module["_ImGuiViewportP_destroy"] = wasmExports["ImGuiViewportP_destroy"];
+
+var __ZN14ImGuiViewportPD2Ev = Module["__ZN14ImGuiViewportPD2Ev"] = wasmExports["_ZN14ImGuiViewportPD2Ev"];
+
+var _ImGuiViewportP_ClearRequestFlags = Module["_ImGuiViewportP_ClearRequestFlags"] = wasmExports["ImGuiViewportP_ClearRequestFlags"];
+
+var _ImGuiViewportP_CalcWorkRectPos = Module["_ImGuiViewportP_CalcWorkRectPos"] = wasmExports["ImGuiViewportP_CalcWorkRectPos"];
+
+var _ImGuiViewportP_CalcWorkRectSize = Module["_ImGuiViewportP_CalcWorkRectSize"] = wasmExports["ImGuiViewportP_CalcWorkRectSize"];
+
+var _ImGuiViewportP_UpdateWorkRect = Module["_ImGuiViewportP_UpdateWorkRect"] = wasmExports["ImGuiViewportP_UpdateWorkRect"];
+
+var _ImGuiViewportP_GetMainRect = Module["_ImGuiViewportP_GetMainRect"] = wasmExports["ImGuiViewportP_GetMainRect"];
+
+var _ImGuiViewportP_GetWorkRect = Module["_ImGuiViewportP_GetWorkRect"] = wasmExports["ImGuiViewportP_GetWorkRect"];
+
+var _ImGuiViewportP_GetBuildWorkRect = Module["_ImGuiViewportP_GetBuildWorkRect"] = wasmExports["ImGuiViewportP_GetBuildWorkRect"];
+
+var _ImGuiWindowSettings_ImGuiWindowSettings = Module["_ImGuiWindowSettings_ImGuiWindowSettings"] = wasmExports["ImGuiWindowSettings_ImGuiWindowSettings"];
+
+var _ImGuiWindowSettings_destroy = Module["_ImGuiWindowSettings_destroy"] = wasmExports["ImGuiWindowSettings_destroy"];
+
+var _ImGuiWindowSettings_GetName = Module["_ImGuiWindowSettings_GetName"] = wasmExports["ImGuiWindowSettings_GetName"];
+
+var _ImGuiSettingsHandler_ImGuiSettingsHandler = Module["_ImGuiSettingsHandler_ImGuiSettingsHandler"] = wasmExports["ImGuiSettingsHandler_ImGuiSettingsHandler"];
+
+var _ImGuiSettingsHandler_destroy = Module["_ImGuiSettingsHandler_destroy"] = wasmExports["ImGuiSettingsHandler_destroy"];
+
+var _ImGuiDebugAllocInfo_ImGuiDebugAllocInfo = Module["_ImGuiDebugAllocInfo_ImGuiDebugAllocInfo"] = wasmExports["ImGuiDebugAllocInfo_ImGuiDebugAllocInfo"];
+
+var _ImGuiDebugAllocInfo_destroy = Module["_ImGuiDebugAllocInfo_destroy"] = wasmExports["ImGuiDebugAllocInfo_destroy"];
+
+var _ImGuiStackLevelInfo_ImGuiStackLevelInfo = Module["_ImGuiStackLevelInfo_ImGuiStackLevelInfo"] = wasmExports["ImGuiStackLevelInfo_ImGuiStackLevelInfo"];
+
+var _ImGuiStackLevelInfo_destroy = Module["_ImGuiStackLevelInfo_destroy"] = wasmExports["ImGuiStackLevelInfo_destroy"];
+
+var _ImGuiIDStackTool_ImGuiIDStackTool = Module["_ImGuiIDStackTool_ImGuiIDStackTool"] = wasmExports["ImGuiIDStackTool_ImGuiIDStackTool"];
+
+var _ImGuiIDStackTool_destroy = Module["_ImGuiIDStackTool_destroy"] = wasmExports["ImGuiIDStackTool_destroy"];
+
+var _ImGuiContextHook_ImGuiContextHook = Module["_ImGuiContextHook_ImGuiContextHook"] = wasmExports["ImGuiContextHook_ImGuiContextHook"];
+
+var _ImGuiContextHook_destroy = Module["_ImGuiContextHook_destroy"] = wasmExports["ImGuiContextHook_destroy"];
+
+var _ImGuiContext_ImGuiContext = Module["_ImGuiContext_ImGuiContext"] = wasmExports["ImGuiContext_ImGuiContext"];
+
+var __ZN12ImGuiContextC2EP11ImFontAtlas = Module["__ZN12ImGuiContextC2EP11ImFontAtlas"] = wasmExports["_ZN12ImGuiContextC2EP11ImFontAtlas"];
+
+var _ImGuiContext_destroy = Module["_ImGuiContext_destroy"] = wasmExports["ImGuiContext_destroy"];
+
+var __ZN12ImGuiContextD2Ev = Module["__ZN12ImGuiContextD2Ev"] = wasmExports["_ZN12ImGuiContextD2Ev"];
+
+var _ImGuiWindow_ImGuiWindow = Module["_ImGuiWindow_ImGuiWindow"] = wasmExports["ImGuiWindow_ImGuiWindow"];
+
+var __ZN11ImGuiWindowC1EP12ImGuiContextPKc = Module["__ZN11ImGuiWindowC1EP12ImGuiContextPKc"] = wasmExports["_ZN11ImGuiWindowC1EP12ImGuiContextPKc"];
+
+var _ImGuiWindow_destroy = Module["_ImGuiWindow_destroy"] = wasmExports["ImGuiWindow_destroy"];
+
+var __ZN11ImGuiWindowD1Ev = Module["__ZN11ImGuiWindowD1Ev"] = wasmExports["_ZN11ImGuiWindowD1Ev"];
+
+var _ImGuiWindow_GetID_Str = Module["_ImGuiWindow_GetID_Str"] = wasmExports["ImGuiWindow_GetID_Str"];
+
+var __ZN11ImGuiWindow5GetIDEPKcS1_ = Module["__ZN11ImGuiWindow5GetIDEPKcS1_"] = wasmExports["_ZN11ImGuiWindow5GetIDEPKcS1_"];
+
+var _ImGuiWindow_GetID_Ptr = Module["_ImGuiWindow_GetID_Ptr"] = wasmExports["ImGuiWindow_GetID_Ptr"];
+
+var __ZN11ImGuiWindow5GetIDEPKv = Module["__ZN11ImGuiWindow5GetIDEPKv"] = wasmExports["_ZN11ImGuiWindow5GetIDEPKv"];
+
+var _ImGuiWindow_GetID_Int = Module["_ImGuiWindow_GetID_Int"] = wasmExports["ImGuiWindow_GetID_Int"];
+
+var __ZN11ImGuiWindow5GetIDEi = Module["__ZN11ImGuiWindow5GetIDEi"] = wasmExports["_ZN11ImGuiWindow5GetIDEi"];
+
+var _ImGuiWindow_GetIDFromRectangle = Module["_ImGuiWindow_GetIDFromRectangle"] = wasmExports["ImGuiWindow_GetIDFromRectangle"];
+
+var __ZN11ImGuiWindow18GetIDFromRectangleERK6ImRect = Module["__ZN11ImGuiWindow18GetIDFromRectangleERK6ImRect"] = wasmExports["_ZN11ImGuiWindow18GetIDFromRectangleERK6ImRect"];
+
+var _ImGuiWindow_Rect = Module["_ImGuiWindow_Rect"] = wasmExports["ImGuiWindow_Rect"];
+
+var _ImGuiWindow_CalcFontSize = Module["_ImGuiWindow_CalcFontSize"] = wasmExports["ImGuiWindow_CalcFontSize"];
+
+var _ImGuiWindow_TitleBarHeight = Module["_ImGuiWindow_TitleBarHeight"] = wasmExports["ImGuiWindow_TitleBarHeight"];
+
+var _ImGuiWindow_TitleBarRect = Module["_ImGuiWindow_TitleBarRect"] = wasmExports["ImGuiWindow_TitleBarRect"];
+
+var _ImGuiWindow_MenuBarHeight = Module["_ImGuiWindow_MenuBarHeight"] = wasmExports["ImGuiWindow_MenuBarHeight"];
+
+var _ImGuiWindow_MenuBarRect = Module["_ImGuiWindow_MenuBarRect"] = wasmExports["ImGuiWindow_MenuBarRect"];
+
+var _ImGuiTabItem_ImGuiTabItem = Module["_ImGuiTabItem_ImGuiTabItem"] = wasmExports["ImGuiTabItem_ImGuiTabItem"];
+
+var _ImGuiTabItem_destroy = Module["_ImGuiTabItem_destroy"] = wasmExports["ImGuiTabItem_destroy"];
+
+var _ImGuiTabBar_ImGuiTabBar = Module["_ImGuiTabBar_ImGuiTabBar"] = wasmExports["ImGuiTabBar_ImGuiTabBar"];
+
+var __ZN11ImGuiTabBarC1Ev = Module["__ZN11ImGuiTabBarC1Ev"] = wasmExports["_ZN11ImGuiTabBarC1Ev"];
+
+var _ImGuiTabBar_destroy = Module["_ImGuiTabBar_destroy"] = wasmExports["ImGuiTabBar_destroy"];
+
+var _ImGuiTableColumn_ImGuiTableColumn = Module["_ImGuiTableColumn_ImGuiTableColumn"] = wasmExports["ImGuiTableColumn_ImGuiTableColumn"];
+
+var _ImGuiTableColumn_destroy = Module["_ImGuiTableColumn_destroy"] = wasmExports["ImGuiTableColumn_destroy"];
+
+var _ImGuiTableInstanceData_ImGuiTableInstanceData = Module["_ImGuiTableInstanceData_ImGuiTableInstanceData"] = wasmExports["ImGuiTableInstanceData_ImGuiTableInstanceData"];
+
+var _ImGuiTableInstanceData_destroy = Module["_ImGuiTableInstanceData_destroy"] = wasmExports["ImGuiTableInstanceData_destroy"];
+
+var _ImGuiTable_ImGuiTable = Module["_ImGuiTable_ImGuiTable"] = wasmExports["ImGuiTable_ImGuiTable"];
+
+var _ImGuiTable_destroy = Module["_ImGuiTable_destroy"] = wasmExports["ImGuiTable_destroy"];
+
+var _ImGuiTableTempData_ImGuiTableTempData = Module["_ImGuiTableTempData_ImGuiTableTempData"] = wasmExports["ImGuiTableTempData_ImGuiTableTempData"];
+
+var _ImGuiTableTempData_destroy = Module["_ImGuiTableTempData_destroy"] = wasmExports["ImGuiTableTempData_destroy"];
+
+var _ImGuiTableColumnSettings_ImGuiTableColumnSettings = Module["_ImGuiTableColumnSettings_ImGuiTableColumnSettings"] = wasmExports["ImGuiTableColumnSettings_ImGuiTableColumnSettings"];
+
+var _ImGuiTableColumnSettings_destroy = Module["_ImGuiTableColumnSettings_destroy"] = wasmExports["ImGuiTableColumnSettings_destroy"];
+
+var _ImGuiTableSettings_ImGuiTableSettings = Module["_ImGuiTableSettings_ImGuiTableSettings"] = wasmExports["ImGuiTableSettings_ImGuiTableSettings"];
+
+var _ImGuiTableSettings_destroy = Module["_ImGuiTableSettings_destroy"] = wasmExports["ImGuiTableSettings_destroy"];
+
+var _ImGuiTableSettings_GetColumnSettings = Module["_ImGuiTableSettings_GetColumnSettings"] = wasmExports["ImGuiTableSettings_GetColumnSettings"];
+
+var _igGetCurrentWindowRead = Module["_igGetCurrentWindowRead"] = wasmExports["igGetCurrentWindowRead"];
+
+var _igGetCurrentWindow = Module["_igGetCurrentWindow"] = wasmExports["igGetCurrentWindow"];
+
+var _igFindWindowByID = Module["_igFindWindowByID"] = wasmExports["igFindWindowByID"];
+
+var __ZN5ImGui14FindWindowByIDEj = Module["__ZN5ImGui14FindWindowByIDEj"] = wasmExports["_ZN5ImGui14FindWindowByIDEj"];
+
+var _igFindWindowByName = Module["_igFindWindowByName"] = wasmExports["igFindWindowByName"];
+
+var __ZN5ImGui16FindWindowByNameEPKc = Module["__ZN5ImGui16FindWindowByNameEPKc"] = wasmExports["_ZN5ImGui16FindWindowByNameEPKc"];
+
+var _igUpdateWindowParentAndRootLinks = Module["_igUpdateWindowParentAndRootLinks"] = wasmExports["igUpdateWindowParentAndRootLinks"];
+
+var __ZN5ImGui30UpdateWindowParentAndRootLinksEP11ImGuiWindowiS1_ = Module["__ZN5ImGui30UpdateWindowParentAndRootLinksEP11ImGuiWindowiS1_"] = wasmExports["_ZN5ImGui30UpdateWindowParentAndRootLinksEP11ImGuiWindowiS1_"];
+
+var _igCalcWindowNextAutoFitSize = Module["_igCalcWindowNextAutoFitSize"] = wasmExports["igCalcWindowNextAutoFitSize"];
+
+var __ZN5ImGui25CalcWindowNextAutoFitSizeEP11ImGuiWindow = Module["__ZN5ImGui25CalcWindowNextAutoFitSizeEP11ImGuiWindow"] = wasmExports["_ZN5ImGui25CalcWindowNextAutoFitSizeEP11ImGuiWindow"];
+
+var _igIsWindowChildOf = Module["_igIsWindowChildOf"] = wasmExports["igIsWindowChildOf"];
+
+var __ZN5ImGui15IsWindowChildOfEP11ImGuiWindowS1_bb = Module["__ZN5ImGui15IsWindowChildOfEP11ImGuiWindowS1_bb"] = wasmExports["_ZN5ImGui15IsWindowChildOfEP11ImGuiWindowS1_bb"];
+
+var _igIsWindowWithinBeginStackOf = Module["_igIsWindowWithinBeginStackOf"] = wasmExports["igIsWindowWithinBeginStackOf"];
+
+var __ZN5ImGui26IsWindowWithinBeginStackOfEP11ImGuiWindowS1_ = Module["__ZN5ImGui26IsWindowWithinBeginStackOfEP11ImGuiWindowS1_"] = wasmExports["_ZN5ImGui26IsWindowWithinBeginStackOfEP11ImGuiWindowS1_"];
+
+var _igIsWindowAbove = Module["_igIsWindowAbove"] = wasmExports["igIsWindowAbove"];
+
+var __ZN5ImGui13IsWindowAboveEP11ImGuiWindowS1_ = Module["__ZN5ImGui13IsWindowAboveEP11ImGuiWindowS1_"] = wasmExports["_ZN5ImGui13IsWindowAboveEP11ImGuiWindowS1_"];
+
+var _igIsWindowNavFocusable = Module["_igIsWindowNavFocusable"] = wasmExports["igIsWindowNavFocusable"];
+
+var __ZN5ImGui20IsWindowNavFocusableEP11ImGuiWindow = Module["__ZN5ImGui20IsWindowNavFocusableEP11ImGuiWindow"] = wasmExports["_ZN5ImGui20IsWindowNavFocusableEP11ImGuiWindow"];
+
+var _igSetWindowPos_WindowPtr = Module["_igSetWindowPos_WindowPtr"] = wasmExports["igSetWindowPos_WindowPtr"];
+
+var __ZN5ImGui12SetWindowPosEP11ImGuiWindowRK6ImVec2i = Module["__ZN5ImGui12SetWindowPosEP11ImGuiWindowRK6ImVec2i"] = wasmExports["_ZN5ImGui12SetWindowPosEP11ImGuiWindowRK6ImVec2i"];
+
+var _igSetWindowSize_WindowPtr = Module["_igSetWindowSize_WindowPtr"] = wasmExports["igSetWindowSize_WindowPtr"];
+
+var __ZN5ImGui13SetWindowSizeEP11ImGuiWindowRK6ImVec2i = Module["__ZN5ImGui13SetWindowSizeEP11ImGuiWindowRK6ImVec2i"] = wasmExports["_ZN5ImGui13SetWindowSizeEP11ImGuiWindowRK6ImVec2i"];
+
+var _igSetWindowCollapsed_WindowPtr = Module["_igSetWindowCollapsed_WindowPtr"] = wasmExports["igSetWindowCollapsed_WindowPtr"];
+
+var __ZN5ImGui18SetWindowCollapsedEP11ImGuiWindowbi = Module["__ZN5ImGui18SetWindowCollapsedEP11ImGuiWindowbi"] = wasmExports["_ZN5ImGui18SetWindowCollapsedEP11ImGuiWindowbi"];
+
+var _igSetWindowHitTestHole = Module["_igSetWindowHitTestHole"] = wasmExports["igSetWindowHitTestHole"];
+
+var __ZN5ImGui20SetWindowHitTestHoleEP11ImGuiWindowRK6ImVec2S4_ = Module["__ZN5ImGui20SetWindowHitTestHoleEP11ImGuiWindowRK6ImVec2S4_"] = wasmExports["_ZN5ImGui20SetWindowHitTestHoleEP11ImGuiWindowRK6ImVec2S4_"];
+
+var _igSetWindowHiddenAndSkipItemsForCurrentFrame = Module["_igSetWindowHiddenAndSkipItemsForCurrentFrame"] = wasmExports["igSetWindowHiddenAndSkipItemsForCurrentFrame"];
+
+var __ZN5ImGui42SetWindowHiddenAndSkipItemsForCurrentFrameEP11ImGuiWindow = Module["__ZN5ImGui42SetWindowHiddenAndSkipItemsForCurrentFrameEP11ImGuiWindow"] = wasmExports["_ZN5ImGui42SetWindowHiddenAndSkipItemsForCurrentFrameEP11ImGuiWindow"];
+
+var _igSetWindowParentWindowForFocusRoute = Module["_igSetWindowParentWindowForFocusRoute"] = wasmExports["igSetWindowParentWindowForFocusRoute"];
+
+var _igWindowRectAbsToRel = Module["_igWindowRectAbsToRel"] = wasmExports["igWindowRectAbsToRel"];
+
+var _igWindowRectRelToAbs = Module["_igWindowRectRelToAbs"] = wasmExports["igWindowRectRelToAbs"];
+
+var _igWindowPosRelToAbs = Module["_igWindowPosRelToAbs"] = wasmExports["igWindowPosRelToAbs"];
+
+var _igFocusWindow = Module["_igFocusWindow"] = wasmExports["igFocusWindow"];
+
+var __ZN5ImGui11FocusWindowEP11ImGuiWindowi = Module["__ZN5ImGui11FocusWindowEP11ImGuiWindowi"] = wasmExports["_ZN5ImGui11FocusWindowEP11ImGuiWindowi"];
+
+var _igFocusTopMostWindowUnderOne = Module["_igFocusTopMostWindowUnderOne"] = wasmExports["igFocusTopMostWindowUnderOne"];
+
+var __ZN5ImGui26FocusTopMostWindowUnderOneEP11ImGuiWindowS1_P13ImGuiViewporti = Module["__ZN5ImGui26FocusTopMostWindowUnderOneEP11ImGuiWindowS1_P13ImGuiViewporti"] = wasmExports["_ZN5ImGui26FocusTopMostWindowUnderOneEP11ImGuiWindowS1_P13ImGuiViewporti"];
+
+var _igBringWindowToFocusFront = Module["_igBringWindowToFocusFront"] = wasmExports["igBringWindowToFocusFront"];
+
+var __ZN5ImGui23BringWindowToFocusFrontEP11ImGuiWindow = Module["__ZN5ImGui23BringWindowToFocusFrontEP11ImGuiWindow"] = wasmExports["_ZN5ImGui23BringWindowToFocusFrontEP11ImGuiWindow"];
+
+var _igBringWindowToDisplayFront = Module["_igBringWindowToDisplayFront"] = wasmExports["igBringWindowToDisplayFront"];
+
+var __ZN5ImGui25BringWindowToDisplayFrontEP11ImGuiWindow = Module["__ZN5ImGui25BringWindowToDisplayFrontEP11ImGuiWindow"] = wasmExports["_ZN5ImGui25BringWindowToDisplayFrontEP11ImGuiWindow"];
+
+var _igBringWindowToDisplayBack = Module["_igBringWindowToDisplayBack"] = wasmExports["igBringWindowToDisplayBack"];
+
+var __ZN5ImGui24BringWindowToDisplayBackEP11ImGuiWindow = Module["__ZN5ImGui24BringWindowToDisplayBackEP11ImGuiWindow"] = wasmExports["_ZN5ImGui24BringWindowToDisplayBackEP11ImGuiWindow"];
+
+var _igBringWindowToDisplayBehind = Module["_igBringWindowToDisplayBehind"] = wasmExports["igBringWindowToDisplayBehind"];
+
+var __ZN5ImGui26BringWindowToDisplayBehindEP11ImGuiWindowS1_ = Module["__ZN5ImGui26BringWindowToDisplayBehindEP11ImGuiWindowS1_"] = wasmExports["_ZN5ImGui26BringWindowToDisplayBehindEP11ImGuiWindowS1_"];
+
+var _igFindWindowDisplayIndex = Module["_igFindWindowDisplayIndex"] = wasmExports["igFindWindowDisplayIndex"];
+
+var __ZN5ImGui22FindWindowDisplayIndexEP11ImGuiWindow = Module["__ZN5ImGui22FindWindowDisplayIndexEP11ImGuiWindow"] = wasmExports["_ZN5ImGui22FindWindowDisplayIndexEP11ImGuiWindow"];
+
+var _igFindBottomMostVisibleWindowWithinBeginStack = Module["_igFindBottomMostVisibleWindowWithinBeginStack"] = wasmExports["igFindBottomMostVisibleWindowWithinBeginStack"];
+
+var __ZN5ImGui43FindBottomMostVisibleWindowWithinBeginStackEP11ImGuiWindow = Module["__ZN5ImGui43FindBottomMostVisibleWindowWithinBeginStackEP11ImGuiWindow"] = wasmExports["_ZN5ImGui43FindBottomMostVisibleWindowWithinBeginStackEP11ImGuiWindow"];
+
+var _igSetCurrentFont = Module["_igSetCurrentFont"] = wasmExports["igSetCurrentFont"];
+
+var __ZN5ImGui14SetCurrentFontEP6ImFont = Module["__ZN5ImGui14SetCurrentFontEP6ImFont"] = wasmExports["_ZN5ImGui14SetCurrentFontEP6ImFont"];
+
+var _igGetDefaultFont = Module["_igGetDefaultFont"] = wasmExports["igGetDefaultFont"];
+
+var _igGetForegroundDrawList_WindowPtr = Module["_igGetForegroundDrawList_WindowPtr"] = wasmExports["igGetForegroundDrawList_WindowPtr"];
+
+var _igAddDrawListToDrawDataEx = Module["_igAddDrawListToDrawDataEx"] = wasmExports["igAddDrawListToDrawDataEx"];
+
+var __ZN5ImGui23AddDrawListToDrawDataExEP10ImDrawDataP8ImVectorIP10ImDrawListES4_ = Module["__ZN5ImGui23AddDrawListToDrawDataExEP10ImDrawDataP8ImVectorIP10ImDrawListES4_"] = wasmExports["_ZN5ImGui23AddDrawListToDrawDataExEP10ImDrawDataP8ImVectorIP10ImDrawListES4_"];
+
+var _igInitialize = Module["_igInitialize"] = wasmExports["igInitialize"];
+
+var __ZN5ImGui10InitializeEv = Module["__ZN5ImGui10InitializeEv"] = wasmExports["_ZN5ImGui10InitializeEv"];
+
+var _igShutdown = Module["_igShutdown"] = wasmExports["igShutdown"];
+
+var __ZN5ImGui8ShutdownEv = Module["__ZN5ImGui8ShutdownEv"] = wasmExports["_ZN5ImGui8ShutdownEv"];
+
+var _igUpdateInputEvents = Module["_igUpdateInputEvents"] = wasmExports["igUpdateInputEvents"];
+
+var __ZN5ImGui17UpdateInputEventsEb = Module["__ZN5ImGui17UpdateInputEventsEb"] = wasmExports["_ZN5ImGui17UpdateInputEventsEb"];
+
+var _igUpdateHoveredWindowAndCaptureFlags = Module["_igUpdateHoveredWindowAndCaptureFlags"] = wasmExports["igUpdateHoveredWindowAndCaptureFlags"];
+
+var __ZN5ImGui34UpdateHoveredWindowAndCaptureFlagsEv = Module["__ZN5ImGui34UpdateHoveredWindowAndCaptureFlagsEv"] = wasmExports["_ZN5ImGui34UpdateHoveredWindowAndCaptureFlagsEv"];
+
+var _igStartMouseMovingWindow = Module["_igStartMouseMovingWindow"] = wasmExports["igStartMouseMovingWindow"];
+
+var __ZN5ImGui22StartMouseMovingWindowEP11ImGuiWindow = Module["__ZN5ImGui22StartMouseMovingWindowEP11ImGuiWindow"] = wasmExports["_ZN5ImGui22StartMouseMovingWindowEP11ImGuiWindow"];
+
+var _igStartMouseMovingWindowOrNode = Module["_igStartMouseMovingWindowOrNode"] = wasmExports["igStartMouseMovingWindowOrNode"];
+
+var __ZN5ImGui28StartMouseMovingWindowOrNodeEP11ImGuiWindowP13ImGuiDockNodeb = Module["__ZN5ImGui28StartMouseMovingWindowOrNodeEP11ImGuiWindowP13ImGuiDockNodeb"] = wasmExports["_ZN5ImGui28StartMouseMovingWindowOrNodeEP11ImGuiWindowP13ImGuiDockNodeb"];
+
+var _igUpdateMouseMovingWindowNewFrame = Module["_igUpdateMouseMovingWindowNewFrame"] = wasmExports["igUpdateMouseMovingWindowNewFrame"];
+
+var __ZN5ImGui31UpdateMouseMovingWindowNewFrameEv = Module["__ZN5ImGui31UpdateMouseMovingWindowNewFrameEv"] = wasmExports["_ZN5ImGui31UpdateMouseMovingWindowNewFrameEv"];
+
+var _igUpdateMouseMovingWindowEndFrame = Module["_igUpdateMouseMovingWindowEndFrame"] = wasmExports["igUpdateMouseMovingWindowEndFrame"];
+
+var __ZN5ImGui31UpdateMouseMovingWindowEndFrameEv = Module["__ZN5ImGui31UpdateMouseMovingWindowEndFrameEv"] = wasmExports["_ZN5ImGui31UpdateMouseMovingWindowEndFrameEv"];
+
+var _igAddContextHook = Module["_igAddContextHook"] = wasmExports["igAddContextHook"];
+
+var __ZN5ImGui14AddContextHookEP12ImGuiContextPK16ImGuiContextHook = Module["__ZN5ImGui14AddContextHookEP12ImGuiContextPK16ImGuiContextHook"] = wasmExports["_ZN5ImGui14AddContextHookEP12ImGuiContextPK16ImGuiContextHook"];
+
+var _igRemoveContextHook = Module["_igRemoveContextHook"] = wasmExports["igRemoveContextHook"];
+
+var __ZN5ImGui17RemoveContextHookEP12ImGuiContextj = Module["__ZN5ImGui17RemoveContextHookEP12ImGuiContextj"] = wasmExports["_ZN5ImGui17RemoveContextHookEP12ImGuiContextj"];
+
+var _igCallContextHooks = Module["_igCallContextHooks"] = wasmExports["igCallContextHooks"];
+
+var __ZN5ImGui16CallContextHooksEP12ImGuiContext20ImGuiContextHookType = Module["__ZN5ImGui16CallContextHooksEP12ImGuiContext20ImGuiContextHookType"] = wasmExports["_ZN5ImGui16CallContextHooksEP12ImGuiContext20ImGuiContextHookType"];
+
+var _igTranslateWindowsInViewport = Module["_igTranslateWindowsInViewport"] = wasmExports["igTranslateWindowsInViewport"];
+
+var __ZN5ImGui26TranslateWindowsInViewportEP14ImGuiViewportPRK6ImVec2S4_ = Module["__ZN5ImGui26TranslateWindowsInViewportEP14ImGuiViewportPRK6ImVec2S4_"] = wasmExports["_ZN5ImGui26TranslateWindowsInViewportEP14ImGuiViewportPRK6ImVec2S4_"];
+
+var _igScaleWindowsInViewport = Module["_igScaleWindowsInViewport"] = wasmExports["igScaleWindowsInViewport"];
+
+var __ZN5ImGui22ScaleWindowsInViewportEP14ImGuiViewportPf = Module["__ZN5ImGui22ScaleWindowsInViewportEP14ImGuiViewportPf"] = wasmExports["_ZN5ImGui22ScaleWindowsInViewportEP14ImGuiViewportPf"];
+
+var _igDestroyPlatformWindow = Module["_igDestroyPlatformWindow"] = wasmExports["igDestroyPlatformWindow"];
+
+var __ZN5ImGui21DestroyPlatformWindowEP14ImGuiViewportP = Module["__ZN5ImGui21DestroyPlatformWindowEP14ImGuiViewportP"] = wasmExports["_ZN5ImGui21DestroyPlatformWindowEP14ImGuiViewportP"];
+
+var _igSetWindowViewport = Module["_igSetWindowViewport"] = wasmExports["igSetWindowViewport"];
+
+var __ZN5ImGui17SetWindowViewportEP11ImGuiWindowP14ImGuiViewportP = Module["__ZN5ImGui17SetWindowViewportEP11ImGuiWindowP14ImGuiViewportP"] = wasmExports["_ZN5ImGui17SetWindowViewportEP11ImGuiWindowP14ImGuiViewportP"];
+
+var _igSetCurrentViewport = Module["_igSetCurrentViewport"] = wasmExports["igSetCurrentViewport"];
+
+var __ZN5ImGui18SetCurrentViewportEP11ImGuiWindowP14ImGuiViewportP = Module["__ZN5ImGui18SetCurrentViewportEP11ImGuiWindowP14ImGuiViewportP"] = wasmExports["_ZN5ImGui18SetCurrentViewportEP11ImGuiWindowP14ImGuiViewportP"];
+
+var _igGetViewportPlatformMonitor = Module["_igGetViewportPlatformMonitor"] = wasmExports["igGetViewportPlatformMonitor"];
+
+var __ZN5ImGui26GetViewportPlatformMonitorEP13ImGuiViewport = Module["__ZN5ImGui26GetViewportPlatformMonitorEP13ImGuiViewport"] = wasmExports["_ZN5ImGui26GetViewportPlatformMonitorEP13ImGuiViewport"];
+
+var _igFindHoveredViewportFromPlatformWindowStack = Module["_igFindHoveredViewportFromPlatformWindowStack"] = wasmExports["igFindHoveredViewportFromPlatformWindowStack"];
+
+var __ZN5ImGui42FindHoveredViewportFromPlatformWindowStackERK6ImVec2 = Module["__ZN5ImGui42FindHoveredViewportFromPlatformWindowStackERK6ImVec2"] = wasmExports["_ZN5ImGui42FindHoveredViewportFromPlatformWindowStackERK6ImVec2"];
+
+var _igMarkIniSettingsDirty_Nil = Module["_igMarkIniSettingsDirty_Nil"] = wasmExports["igMarkIniSettingsDirty_Nil"];
+
+var __ZN5ImGui20MarkIniSettingsDirtyEv = Module["__ZN5ImGui20MarkIniSettingsDirtyEv"] = wasmExports["_ZN5ImGui20MarkIniSettingsDirtyEv"];
+
+var _igMarkIniSettingsDirty_WindowPtr = Module["_igMarkIniSettingsDirty_WindowPtr"] = wasmExports["igMarkIniSettingsDirty_WindowPtr"];
+
+var __ZN5ImGui20MarkIniSettingsDirtyEP11ImGuiWindow = Module["__ZN5ImGui20MarkIniSettingsDirtyEP11ImGuiWindow"] = wasmExports["_ZN5ImGui20MarkIniSettingsDirtyEP11ImGuiWindow"];
+
+var _igClearIniSettings = Module["_igClearIniSettings"] = wasmExports["igClearIniSettings"];
+
+var __ZN5ImGui16ClearIniSettingsEv = Module["__ZN5ImGui16ClearIniSettingsEv"] = wasmExports["_ZN5ImGui16ClearIniSettingsEv"];
+
+var _igAddSettingsHandler = Module["_igAddSettingsHandler"] = wasmExports["igAddSettingsHandler"];
+
+var __ZN5ImGui18AddSettingsHandlerEPK20ImGuiSettingsHandler = Module["__ZN5ImGui18AddSettingsHandlerEPK20ImGuiSettingsHandler"] = wasmExports["_ZN5ImGui18AddSettingsHandlerEPK20ImGuiSettingsHandler"];
+
+var _igRemoveSettingsHandler = Module["_igRemoveSettingsHandler"] = wasmExports["igRemoveSettingsHandler"];
+
+var __ZN5ImGui21RemoveSettingsHandlerEPKc = Module["__ZN5ImGui21RemoveSettingsHandlerEPKc"] = wasmExports["_ZN5ImGui21RemoveSettingsHandlerEPKc"];
+
+var _igFindSettingsHandler = Module["_igFindSettingsHandler"] = wasmExports["igFindSettingsHandler"];
+
+var __ZN5ImGui19FindSettingsHandlerEPKc = Module["__ZN5ImGui19FindSettingsHandlerEPKc"] = wasmExports["_ZN5ImGui19FindSettingsHandlerEPKc"];
+
+var _igCreateNewWindowSettings = Module["_igCreateNewWindowSettings"] = wasmExports["igCreateNewWindowSettings"];
+
+var __ZN5ImGui23CreateNewWindowSettingsEPKc = Module["__ZN5ImGui23CreateNewWindowSettingsEPKc"] = wasmExports["_ZN5ImGui23CreateNewWindowSettingsEPKc"];
+
+var _igFindWindowSettingsByID = Module["_igFindWindowSettingsByID"] = wasmExports["igFindWindowSettingsByID"];
+
+var __ZN5ImGui22FindWindowSettingsByIDEj = Module["__ZN5ImGui22FindWindowSettingsByIDEj"] = wasmExports["_ZN5ImGui22FindWindowSettingsByIDEj"];
+
+var _igFindWindowSettingsByWindow = Module["_igFindWindowSettingsByWindow"] = wasmExports["igFindWindowSettingsByWindow"];
+
+var __ZN5ImGui26FindWindowSettingsByWindowEP11ImGuiWindow = Module["__ZN5ImGui26FindWindowSettingsByWindowEP11ImGuiWindow"] = wasmExports["_ZN5ImGui26FindWindowSettingsByWindowEP11ImGuiWindow"];
+
+var _igClearWindowSettings = Module["_igClearWindowSettings"] = wasmExports["igClearWindowSettings"];
+
+var __ZN5ImGui19ClearWindowSettingsEPKc = Module["__ZN5ImGui19ClearWindowSettingsEPKc"] = wasmExports["_ZN5ImGui19ClearWindowSettingsEPKc"];
+
+var _igLocalizeRegisterEntries = Module["_igLocalizeRegisterEntries"] = wasmExports["igLocalizeRegisterEntries"];
+
+var __ZN5ImGui23LocalizeRegisterEntriesEPK13ImGuiLocEntryi = Module["__ZN5ImGui23LocalizeRegisterEntriesEPK13ImGuiLocEntryi"] = wasmExports["_ZN5ImGui23LocalizeRegisterEntriesEPK13ImGuiLocEntryi"];
+
+var _igLocalizeGetMsg = Module["_igLocalizeGetMsg"] = wasmExports["igLocalizeGetMsg"];
+
+var _igSetScrollX_WindowPtr = Module["_igSetScrollX_WindowPtr"] = wasmExports["igSetScrollX_WindowPtr"];
+
+var __ZN5ImGui10SetScrollXEP11ImGuiWindowf = Module["__ZN5ImGui10SetScrollXEP11ImGuiWindowf"] = wasmExports["_ZN5ImGui10SetScrollXEP11ImGuiWindowf"];
+
+var _igSetScrollY_WindowPtr = Module["_igSetScrollY_WindowPtr"] = wasmExports["igSetScrollY_WindowPtr"];
+
+var __ZN5ImGui10SetScrollYEP11ImGuiWindowf = Module["__ZN5ImGui10SetScrollYEP11ImGuiWindowf"] = wasmExports["_ZN5ImGui10SetScrollYEP11ImGuiWindowf"];
+
+var _igSetScrollFromPosX_WindowPtr = Module["_igSetScrollFromPosX_WindowPtr"] = wasmExports["igSetScrollFromPosX_WindowPtr"];
+
+var __ZN5ImGui17SetScrollFromPosXEP11ImGuiWindowff = Module["__ZN5ImGui17SetScrollFromPosXEP11ImGuiWindowff"] = wasmExports["_ZN5ImGui17SetScrollFromPosXEP11ImGuiWindowff"];
+
+var _igSetScrollFromPosY_WindowPtr = Module["_igSetScrollFromPosY_WindowPtr"] = wasmExports["igSetScrollFromPosY_WindowPtr"];
+
+var __ZN5ImGui17SetScrollFromPosYEP11ImGuiWindowff = Module["__ZN5ImGui17SetScrollFromPosYEP11ImGuiWindowff"] = wasmExports["_ZN5ImGui17SetScrollFromPosYEP11ImGuiWindowff"];
+
+var _igScrollToItem = Module["_igScrollToItem"] = wasmExports["igScrollToItem"];
+
+var __ZN5ImGui12ScrollToItemEi = Module["__ZN5ImGui12ScrollToItemEi"] = wasmExports["_ZN5ImGui12ScrollToItemEi"];
+
+var _igScrollToRect = Module["_igScrollToRect"] = wasmExports["igScrollToRect"];
+
+var __ZN5ImGui12ScrollToRectEP11ImGuiWindowRK6ImRecti = Module["__ZN5ImGui12ScrollToRectEP11ImGuiWindowRK6ImRecti"] = wasmExports["_ZN5ImGui12ScrollToRectEP11ImGuiWindowRK6ImRecti"];
+
+var _igScrollToRectEx = Module["_igScrollToRectEx"] = wasmExports["igScrollToRectEx"];
+
+var __ZN5ImGui14ScrollToRectExEP11ImGuiWindowRK6ImRecti = Module["__ZN5ImGui14ScrollToRectExEP11ImGuiWindowRK6ImRecti"] = wasmExports["_ZN5ImGui14ScrollToRectExEP11ImGuiWindowRK6ImRecti"];
+
+var _igScrollToBringRectIntoView = Module["_igScrollToBringRectIntoView"] = wasmExports["igScrollToBringRectIntoView"];
+
+var _igGetItemStatusFlags = Module["_igGetItemStatusFlags"] = wasmExports["igGetItemStatusFlags"];
+
+var _igGetItemFlags = Module["_igGetItemFlags"] = wasmExports["igGetItemFlags"];
+
+var _igGetActiveID = Module["_igGetActiveID"] = wasmExports["igGetActiveID"];
+
+var _igGetFocusID = Module["_igGetFocusID"] = wasmExports["igGetFocusID"];
+
+var _igSetActiveID = Module["_igSetActiveID"] = wasmExports["igSetActiveID"];
+
+var __ZN5ImGui11SetActiveIDEjP11ImGuiWindow = Module["__ZN5ImGui11SetActiveIDEjP11ImGuiWindow"] = wasmExports["_ZN5ImGui11SetActiveIDEjP11ImGuiWindow"];
+
+var _igSetFocusID = Module["_igSetFocusID"] = wasmExports["igSetFocusID"];
+
+var __ZN5ImGui10SetFocusIDEjP11ImGuiWindow = Module["__ZN5ImGui10SetFocusIDEjP11ImGuiWindow"] = wasmExports["_ZN5ImGui10SetFocusIDEjP11ImGuiWindow"];
+
+var _igClearActiveID = Module["_igClearActiveID"] = wasmExports["igClearActiveID"];
+
+var __ZN5ImGui13ClearActiveIDEv = Module["__ZN5ImGui13ClearActiveIDEv"] = wasmExports["_ZN5ImGui13ClearActiveIDEv"];
+
+var _igGetHoveredID = Module["_igGetHoveredID"] = wasmExports["igGetHoveredID"];
+
+var __ZN5ImGui12GetHoveredIDEv = Module["__ZN5ImGui12GetHoveredIDEv"] = wasmExports["_ZN5ImGui12GetHoveredIDEv"];
+
+var _igSetHoveredID = Module["_igSetHoveredID"] = wasmExports["igSetHoveredID"];
+
+var __ZN5ImGui12SetHoveredIDEj = Module["__ZN5ImGui12SetHoveredIDEj"] = wasmExports["_ZN5ImGui12SetHoveredIDEj"];
+
+var _igKeepAliveID = Module["_igKeepAliveID"] = wasmExports["igKeepAliveID"];
+
+var __ZN5ImGui11KeepAliveIDEj = Module["__ZN5ImGui11KeepAliveIDEj"] = wasmExports["_ZN5ImGui11KeepAliveIDEj"];
+
+var _igMarkItemEdited = Module["_igMarkItemEdited"] = wasmExports["igMarkItemEdited"];
+
+var __ZN5ImGui14MarkItemEditedEj = Module["__ZN5ImGui14MarkItemEditedEj"] = wasmExports["_ZN5ImGui14MarkItemEditedEj"];
+
+var _igPushOverrideID = Module["_igPushOverrideID"] = wasmExports["igPushOverrideID"];
+
+var __ZN5ImGui14PushOverrideIDEj = Module["__ZN5ImGui14PushOverrideIDEj"] = wasmExports["_ZN5ImGui14PushOverrideIDEj"];
+
+var _igGetIDWithSeed_Str = Module["_igGetIDWithSeed_Str"] = wasmExports["igGetIDWithSeed_Str"];
+
+var __ZN5ImGui13GetIDWithSeedEPKcS1_j = Module["__ZN5ImGui13GetIDWithSeedEPKcS1_j"] = wasmExports["_ZN5ImGui13GetIDWithSeedEPKcS1_j"];
+
+var _igGetIDWithSeed_Int = Module["_igGetIDWithSeed_Int"] = wasmExports["igGetIDWithSeed_Int"];
+
+var __ZN5ImGui13GetIDWithSeedEij = Module["__ZN5ImGui13GetIDWithSeedEij"] = wasmExports["_ZN5ImGui13GetIDWithSeedEij"];
+
+var _igItemSize_Vec2 = Module["_igItemSize_Vec2"] = wasmExports["igItemSize_Vec2"];
+
+var __ZN5ImGui8ItemSizeERK6ImVec2f = Module["__ZN5ImGui8ItemSizeERK6ImVec2f"] = wasmExports["_ZN5ImGui8ItemSizeERK6ImVec2f"];
+
+var _igItemSize_Rect = Module["_igItemSize_Rect"] = wasmExports["igItemSize_Rect"];
+
+var _igItemAdd = Module["_igItemAdd"] = wasmExports["igItemAdd"];
+
+var __ZN5ImGui7ItemAddERK6ImRectjPS1_i = Module["__ZN5ImGui7ItemAddERK6ImRectjPS1_i"] = wasmExports["_ZN5ImGui7ItemAddERK6ImRectjPS1_i"];
+
+var _igItemHoverable = Module["_igItemHoverable"] = wasmExports["igItemHoverable"];
+
+var __ZN5ImGui13ItemHoverableERK6ImRectji = Module["__ZN5ImGui13ItemHoverableERK6ImRectji"] = wasmExports["_ZN5ImGui13ItemHoverableERK6ImRectji"];
+
+var _igIsWindowContentHoverable = Module["_igIsWindowContentHoverable"] = wasmExports["igIsWindowContentHoverable"];
+
+var __ZN5ImGui24IsWindowContentHoverableEP11ImGuiWindowi = Module["__ZN5ImGui24IsWindowContentHoverableEP11ImGuiWindowi"] = wasmExports["_ZN5ImGui24IsWindowContentHoverableEP11ImGuiWindowi"];
+
+var _igIsClippedEx = Module["_igIsClippedEx"] = wasmExports["igIsClippedEx"];
+
+var __ZN5ImGui11IsClippedExERK6ImRectj = Module["__ZN5ImGui11IsClippedExERK6ImRectj"] = wasmExports["_ZN5ImGui11IsClippedExERK6ImRectj"];
+
+var _igSetLastItemData = Module["_igSetLastItemData"] = wasmExports["igSetLastItemData"];
+
+var __ZN5ImGui15SetLastItemDataEjiiRK6ImRect = Module["__ZN5ImGui15SetLastItemDataEjiiRK6ImRect"] = wasmExports["_ZN5ImGui15SetLastItemDataEjiiRK6ImRect"];
+
+var _igCalcItemSize = Module["_igCalcItemSize"] = wasmExports["igCalcItemSize"];
+
+var __ZN5ImGui12CalcItemSizeE6ImVec2ff = Module["__ZN5ImGui12CalcItemSizeE6ImVec2ff"] = wasmExports["_ZN5ImGui12CalcItemSizeE6ImVec2ff"];
+
+var _igCalcWrapWidthForPos = Module["_igCalcWrapWidthForPos"] = wasmExports["igCalcWrapWidthForPos"];
+
+var __ZN5ImGui19CalcWrapWidthForPosERK6ImVec2f = Module["__ZN5ImGui19CalcWrapWidthForPosERK6ImVec2f"] = wasmExports["_ZN5ImGui19CalcWrapWidthForPosERK6ImVec2f"];
+
+var _igPushMultiItemsWidths = Module["_igPushMultiItemsWidths"] = wasmExports["igPushMultiItemsWidths"];
+
+var __ZN5ImGui20PushMultiItemsWidthsEif = Module["__ZN5ImGui20PushMultiItemsWidthsEif"] = wasmExports["_ZN5ImGui20PushMultiItemsWidthsEif"];
+
+var _igIsItemToggledSelection = Module["_igIsItemToggledSelection"] = wasmExports["igIsItemToggledSelection"];
+
+var __ZN5ImGui22IsItemToggledSelectionEv = Module["__ZN5ImGui22IsItemToggledSelectionEv"] = wasmExports["_ZN5ImGui22IsItemToggledSelectionEv"];
+
+var _igGetContentRegionMaxAbs = Module["_igGetContentRegionMaxAbs"] = wasmExports["igGetContentRegionMaxAbs"];
+
+var __ZN5ImGui22GetContentRegionMaxAbsEv = Module["__ZN5ImGui22GetContentRegionMaxAbsEv"] = wasmExports["_ZN5ImGui22GetContentRegionMaxAbsEv"];
+
+var _igShrinkWidths = Module["_igShrinkWidths"] = wasmExports["igShrinkWidths"];
+
+var __ZN5ImGui12ShrinkWidthsEP20ImGuiShrinkWidthItemif = Module["__ZN5ImGui12ShrinkWidthsEP20ImGuiShrinkWidthItemif"] = wasmExports["_ZN5ImGui12ShrinkWidthsEP20ImGuiShrinkWidthItemif"];
+
+var _igPushItemFlag = Module["_igPushItemFlag"] = wasmExports["igPushItemFlag"];
+
+var __ZN5ImGui12PushItemFlagEib = Module["__ZN5ImGui12PushItemFlagEib"] = wasmExports["_ZN5ImGui12PushItemFlagEib"];
+
+var _igPopItemFlag = Module["_igPopItemFlag"] = wasmExports["igPopItemFlag"];
+
+var __ZN5ImGui11PopItemFlagEv = Module["__ZN5ImGui11PopItemFlagEv"] = wasmExports["_ZN5ImGui11PopItemFlagEv"];
+
+var _igGetStyleVarInfo = Module["_igGetStyleVarInfo"] = wasmExports["igGetStyleVarInfo"];
+
+var __ZN5ImGui15GetStyleVarInfoEi = Module["__ZN5ImGui15GetStyleVarInfoEi"] = wasmExports["_ZN5ImGui15GetStyleVarInfoEi"];
+
+var _igLogBegin = Module["_igLogBegin"] = wasmExports["igLogBegin"];
+
+var __ZN5ImGui8LogBeginE12ImGuiLogTypei = Module["__ZN5ImGui8LogBeginE12ImGuiLogTypei"] = wasmExports["_ZN5ImGui8LogBeginE12ImGuiLogTypei"];
+
+var _igLogToBuffer = Module["_igLogToBuffer"] = wasmExports["igLogToBuffer"];
+
+var __ZN5ImGui11LogToBufferEi = Module["__ZN5ImGui11LogToBufferEi"] = wasmExports["_ZN5ImGui11LogToBufferEi"];
+
+var _igLogRenderedText = Module["_igLogRenderedText"] = wasmExports["igLogRenderedText"];
+
+var __ZN5ImGui15LogRenderedTextEPK6ImVec2PKcS4_ = Module["__ZN5ImGui15LogRenderedTextEPK6ImVec2PKcS4_"] = wasmExports["_ZN5ImGui15LogRenderedTextEPK6ImVec2PKcS4_"];
+
+var _igLogSetNextTextDecoration = Module["_igLogSetNextTextDecoration"] = wasmExports["igLogSetNextTextDecoration"];
+
+var __ZN5ImGui24LogSetNextTextDecorationEPKcS1_ = Module["__ZN5ImGui24LogSetNextTextDecorationEPKcS1_"] = wasmExports["_ZN5ImGui24LogSetNextTextDecorationEPKcS1_"];
+
+var _igBeginChildEx = Module["_igBeginChildEx"] = wasmExports["igBeginChildEx"];
+
+var __ZN5ImGui12BeginChildExEPKcjRK6ImVec2ii = Module["__ZN5ImGui12BeginChildExEPKcjRK6ImVec2ii"] = wasmExports["_ZN5ImGui12BeginChildExEPKcjRK6ImVec2ii"];
+
+var _igOpenPopupEx = Module["_igOpenPopupEx"] = wasmExports["igOpenPopupEx"];
+
+var __ZN5ImGui11OpenPopupExEji = Module["__ZN5ImGui11OpenPopupExEji"] = wasmExports["_ZN5ImGui11OpenPopupExEji"];
+
+var _igClosePopupToLevel = Module["_igClosePopupToLevel"] = wasmExports["igClosePopupToLevel"];
+
+var __ZN5ImGui17ClosePopupToLevelEib = Module["__ZN5ImGui17ClosePopupToLevelEib"] = wasmExports["_ZN5ImGui17ClosePopupToLevelEib"];
+
+var _igClosePopupsOverWindow = Module["_igClosePopupsOverWindow"] = wasmExports["igClosePopupsOverWindow"];
+
+var __ZN5ImGui21ClosePopupsOverWindowEP11ImGuiWindowb = Module["__ZN5ImGui21ClosePopupsOverWindowEP11ImGuiWindowb"] = wasmExports["_ZN5ImGui21ClosePopupsOverWindowEP11ImGuiWindowb"];
+
+var _igClosePopupsExceptModals = Module["_igClosePopupsExceptModals"] = wasmExports["igClosePopupsExceptModals"];
+
+var __ZN5ImGui23ClosePopupsExceptModalsEv = Module["__ZN5ImGui23ClosePopupsExceptModalsEv"] = wasmExports["_ZN5ImGui23ClosePopupsExceptModalsEv"];
+
+var _igIsPopupOpen_ID = Module["_igIsPopupOpen_ID"] = wasmExports["igIsPopupOpen_ID"];
+
+var __ZN5ImGui11IsPopupOpenEji = Module["__ZN5ImGui11IsPopupOpenEji"] = wasmExports["_ZN5ImGui11IsPopupOpenEji"];
+
+var _igBeginPopupEx = Module["_igBeginPopupEx"] = wasmExports["igBeginPopupEx"];
+
+var __ZN5ImGui12BeginPopupExEji = Module["__ZN5ImGui12BeginPopupExEji"] = wasmExports["_ZN5ImGui12BeginPopupExEji"];
+
+var _igBeginTooltipEx = Module["_igBeginTooltipEx"] = wasmExports["igBeginTooltipEx"];
+
+var __ZN5ImGui14BeginTooltipExEii = Module["__ZN5ImGui14BeginTooltipExEii"] = wasmExports["_ZN5ImGui14BeginTooltipExEii"];
+
+var _igBeginTooltipHidden = Module["_igBeginTooltipHidden"] = wasmExports["igBeginTooltipHidden"];
+
+var __ZN5ImGui18BeginTooltipHiddenEv = Module["__ZN5ImGui18BeginTooltipHiddenEv"] = wasmExports["_ZN5ImGui18BeginTooltipHiddenEv"];
+
+var _igGetPopupAllowedExtentRect = Module["_igGetPopupAllowedExtentRect"] = wasmExports["igGetPopupAllowedExtentRect"];
+
+var __ZN5ImGui25GetPopupAllowedExtentRectEP11ImGuiWindow = Module["__ZN5ImGui25GetPopupAllowedExtentRectEP11ImGuiWindow"] = wasmExports["_ZN5ImGui25GetPopupAllowedExtentRectEP11ImGuiWindow"];
+
+var _igGetTopMostPopupModal = Module["_igGetTopMostPopupModal"] = wasmExports["igGetTopMostPopupModal"];
+
+var __ZN5ImGui20GetTopMostPopupModalEv = Module["__ZN5ImGui20GetTopMostPopupModalEv"] = wasmExports["_ZN5ImGui20GetTopMostPopupModalEv"];
+
+var _igGetTopMostAndVisiblePopupModal = Module["_igGetTopMostAndVisiblePopupModal"] = wasmExports["igGetTopMostAndVisiblePopupModal"];
+
+var __ZN5ImGui30GetTopMostAndVisiblePopupModalEv = Module["__ZN5ImGui30GetTopMostAndVisiblePopupModalEv"] = wasmExports["_ZN5ImGui30GetTopMostAndVisiblePopupModalEv"];
+
+var _igFindBlockingModal = Module["_igFindBlockingModal"] = wasmExports["igFindBlockingModal"];
+
+var __ZN5ImGui17FindBlockingModalEP11ImGuiWindow = Module["__ZN5ImGui17FindBlockingModalEP11ImGuiWindow"] = wasmExports["_ZN5ImGui17FindBlockingModalEP11ImGuiWindow"];
+
+var _igFindBestWindowPosForPopup = Module["_igFindBestWindowPosForPopup"] = wasmExports["igFindBestWindowPosForPopup"];
+
+var __ZN5ImGui25FindBestWindowPosForPopupEP11ImGuiWindow = Module["__ZN5ImGui25FindBestWindowPosForPopupEP11ImGuiWindow"] = wasmExports["_ZN5ImGui25FindBestWindowPosForPopupEP11ImGuiWindow"];
+
+var _igFindBestWindowPosForPopupEx = Module["_igFindBestWindowPosForPopupEx"] = wasmExports["igFindBestWindowPosForPopupEx"];
+
+var __ZN5ImGui27FindBestWindowPosForPopupExERK6ImVec2S2_PiRK6ImRectS6_24ImGuiPopupPositionPolicy = Module["__ZN5ImGui27FindBestWindowPosForPopupExERK6ImVec2S2_PiRK6ImRectS6_24ImGuiPopupPositionPolicy"] = wasmExports["_ZN5ImGui27FindBestWindowPosForPopupExERK6ImVec2S2_PiRK6ImRectS6_24ImGuiPopupPositionPolicy"];
+
+var _igBeginViewportSideBar = Module["_igBeginViewportSideBar"] = wasmExports["igBeginViewportSideBar"];
+
+var __ZN5ImGui20BeginViewportSideBarEPKcP13ImGuiViewportifi = Module["__ZN5ImGui20BeginViewportSideBarEPKcP13ImGuiViewportifi"] = wasmExports["_ZN5ImGui20BeginViewportSideBarEPKcP13ImGuiViewportifi"];
+
+var _igBeginMenuEx = Module["_igBeginMenuEx"] = wasmExports["igBeginMenuEx"];
+
+var __ZN5ImGui11BeginMenuExEPKcS1_b = Module["__ZN5ImGui11BeginMenuExEPKcS1_b"] = wasmExports["_ZN5ImGui11BeginMenuExEPKcS1_b"];
+
+var _igMenuItemEx = Module["_igMenuItemEx"] = wasmExports["igMenuItemEx"];
+
+var __ZN5ImGui10MenuItemExEPKcS1_S1_bb = Module["__ZN5ImGui10MenuItemExEPKcS1_S1_bb"] = wasmExports["_ZN5ImGui10MenuItemExEPKcS1_S1_bb"];
+
+var _igBeginComboPopup = Module["_igBeginComboPopup"] = wasmExports["igBeginComboPopup"];
+
+var __ZN5ImGui15BeginComboPopupEjRK6ImRecti = Module["__ZN5ImGui15BeginComboPopupEjRK6ImRecti"] = wasmExports["_ZN5ImGui15BeginComboPopupEjRK6ImRecti"];
+
+var _igBeginComboPreview = Module["_igBeginComboPreview"] = wasmExports["igBeginComboPreview"];
+
+var __ZN5ImGui17BeginComboPreviewEv = Module["__ZN5ImGui17BeginComboPreviewEv"] = wasmExports["_ZN5ImGui17BeginComboPreviewEv"];
+
+var _igEndComboPreview = Module["_igEndComboPreview"] = wasmExports["igEndComboPreview"];
+
+var __ZN5ImGui15EndComboPreviewEv = Module["__ZN5ImGui15EndComboPreviewEv"] = wasmExports["_ZN5ImGui15EndComboPreviewEv"];
+
+var _igNavInitWindow = Module["_igNavInitWindow"] = wasmExports["igNavInitWindow"];
+
+var __ZN5ImGui13NavInitWindowEP11ImGuiWindowb = Module["__ZN5ImGui13NavInitWindowEP11ImGuiWindowb"] = wasmExports["_ZN5ImGui13NavInitWindowEP11ImGuiWindowb"];
+
+var _igNavInitRequestApplyResult = Module["_igNavInitRequestApplyResult"] = wasmExports["igNavInitRequestApplyResult"];
+
+var __ZN5ImGui25NavInitRequestApplyResultEv = Module["__ZN5ImGui25NavInitRequestApplyResultEv"] = wasmExports["_ZN5ImGui25NavInitRequestApplyResultEv"];
+
+var _igNavMoveRequestButNoResultYet = Module["_igNavMoveRequestButNoResultYet"] = wasmExports["igNavMoveRequestButNoResultYet"];
+
+var __ZN5ImGui28NavMoveRequestButNoResultYetEv = Module["__ZN5ImGui28NavMoveRequestButNoResultYetEv"] = wasmExports["_ZN5ImGui28NavMoveRequestButNoResultYetEv"];
+
+var _igNavMoveRequestSubmit = Module["_igNavMoveRequestSubmit"] = wasmExports["igNavMoveRequestSubmit"];
+
+var __ZN5ImGui20NavMoveRequestSubmitEiiii = Module["__ZN5ImGui20NavMoveRequestSubmitEiiii"] = wasmExports["_ZN5ImGui20NavMoveRequestSubmitEiiii"];
+
+var _igNavMoveRequestForward = Module["_igNavMoveRequestForward"] = wasmExports["igNavMoveRequestForward"];
+
+var __ZN5ImGui21NavMoveRequestForwardEiiii = Module["__ZN5ImGui21NavMoveRequestForwardEiiii"] = wasmExports["_ZN5ImGui21NavMoveRequestForwardEiiii"];
+
+var _igNavMoveRequestResolveWithLastItem = Module["_igNavMoveRequestResolveWithLastItem"] = wasmExports["igNavMoveRequestResolveWithLastItem"];
+
+var __ZN5ImGui33NavMoveRequestResolveWithLastItemEP16ImGuiNavItemData = Module["__ZN5ImGui33NavMoveRequestResolveWithLastItemEP16ImGuiNavItemData"] = wasmExports["_ZN5ImGui33NavMoveRequestResolveWithLastItemEP16ImGuiNavItemData"];
+
+var _igNavMoveRequestResolveWithPastTreeNode = Module["_igNavMoveRequestResolveWithPastTreeNode"] = wasmExports["igNavMoveRequestResolveWithPastTreeNode"];
+
+var __ZN5ImGui37NavMoveRequestResolveWithPastTreeNodeEP16ImGuiNavItemDataP20ImGuiNavTreeNodeData = Module["__ZN5ImGui37NavMoveRequestResolveWithPastTreeNodeEP16ImGuiNavItemDataP20ImGuiNavTreeNodeData"] = wasmExports["_ZN5ImGui37NavMoveRequestResolveWithPastTreeNodeEP16ImGuiNavItemDataP20ImGuiNavTreeNodeData"];
+
+var _igNavMoveRequestCancel = Module["_igNavMoveRequestCancel"] = wasmExports["igNavMoveRequestCancel"];
+
+var __ZN5ImGui20NavMoveRequestCancelEv = Module["__ZN5ImGui20NavMoveRequestCancelEv"] = wasmExports["_ZN5ImGui20NavMoveRequestCancelEv"];
+
+var _igNavMoveRequestApplyResult = Module["_igNavMoveRequestApplyResult"] = wasmExports["igNavMoveRequestApplyResult"];
+
+var __ZN5ImGui25NavMoveRequestApplyResultEv = Module["__ZN5ImGui25NavMoveRequestApplyResultEv"] = wasmExports["_ZN5ImGui25NavMoveRequestApplyResultEv"];
+
+var _igNavMoveRequestTryWrapping = Module["_igNavMoveRequestTryWrapping"] = wasmExports["igNavMoveRequestTryWrapping"];
+
+var __ZN5ImGui25NavMoveRequestTryWrappingEP11ImGuiWindowi = Module["__ZN5ImGui25NavMoveRequestTryWrappingEP11ImGuiWindowi"] = wasmExports["_ZN5ImGui25NavMoveRequestTryWrappingEP11ImGuiWindowi"];
+
+var _igNavHighlightActivated = Module["_igNavHighlightActivated"] = wasmExports["igNavHighlightActivated"];
+
+var __ZN5ImGui21NavHighlightActivatedEj = Module["__ZN5ImGui21NavHighlightActivatedEj"] = wasmExports["_ZN5ImGui21NavHighlightActivatedEj"];
+
+var _igNavClearPreferredPosForAxis = Module["_igNavClearPreferredPosForAxis"] = wasmExports["igNavClearPreferredPosForAxis"];
+
+var __ZN5ImGui27NavClearPreferredPosForAxisE9ImGuiAxis = Module["__ZN5ImGui27NavClearPreferredPosForAxisE9ImGuiAxis"] = wasmExports["_ZN5ImGui27NavClearPreferredPosForAxisE9ImGuiAxis"];
+
+var _igNavRestoreHighlightAfterMove = Module["_igNavRestoreHighlightAfterMove"] = wasmExports["igNavRestoreHighlightAfterMove"];
+
+var __ZN5ImGui28NavRestoreHighlightAfterMoveEv = Module["__ZN5ImGui28NavRestoreHighlightAfterMoveEv"] = wasmExports["_ZN5ImGui28NavRestoreHighlightAfterMoveEv"];
+
+var _igNavUpdateCurrentWindowIsScrollPushableX = Module["_igNavUpdateCurrentWindowIsScrollPushableX"] = wasmExports["igNavUpdateCurrentWindowIsScrollPushableX"];
+
+var __ZN5ImGui39NavUpdateCurrentWindowIsScrollPushableXEv = Module["__ZN5ImGui39NavUpdateCurrentWindowIsScrollPushableXEv"] = wasmExports["_ZN5ImGui39NavUpdateCurrentWindowIsScrollPushableXEv"];
+
+var _igSetNavWindow = Module["_igSetNavWindow"] = wasmExports["igSetNavWindow"];
+
+var __ZN5ImGui12SetNavWindowEP11ImGuiWindow = Module["__ZN5ImGui12SetNavWindowEP11ImGuiWindow"] = wasmExports["_ZN5ImGui12SetNavWindowEP11ImGuiWindow"];
+
+var _igSetNavID = Module["_igSetNavID"] = wasmExports["igSetNavID"];
+
+var __ZN5ImGui8SetNavIDEj13ImGuiNavLayerjRK6ImRect = Module["__ZN5ImGui8SetNavIDEj13ImGuiNavLayerjRK6ImRect"] = wasmExports["_ZN5ImGui8SetNavIDEj13ImGuiNavLayerjRK6ImRect"];
+
+var _igSetNavFocusScope = Module["_igSetNavFocusScope"] = wasmExports["igSetNavFocusScope"];
+
+var __ZN5ImGui16SetNavFocusScopeEj = Module["__ZN5ImGui16SetNavFocusScopeEj"] = wasmExports["_ZN5ImGui16SetNavFocusScopeEj"];
+
+var _igFocusItem = Module["_igFocusItem"] = wasmExports["igFocusItem"];
+
+var __ZN5ImGui9FocusItemEv = Module["__ZN5ImGui9FocusItemEv"] = wasmExports["_ZN5ImGui9FocusItemEv"];
+
+var _igActivateItemByID = Module["_igActivateItemByID"] = wasmExports["igActivateItemByID"];
+
+var __ZN5ImGui16ActivateItemByIDEj = Module["__ZN5ImGui16ActivateItemByIDEj"] = wasmExports["_ZN5ImGui16ActivateItemByIDEj"];
+
+var _igIsNamedKey = Module["_igIsNamedKey"] = wasmExports["igIsNamedKey"];
+
+var _igIsNamedKeyOrModKey = Module["_igIsNamedKeyOrModKey"] = wasmExports["igIsNamedKeyOrModKey"];
+
+var _igIsLegacyKey = Module["_igIsLegacyKey"] = wasmExports["igIsLegacyKey"];
+
+var _igIsKeyboardKey = Module["_igIsKeyboardKey"] = wasmExports["igIsKeyboardKey"];
+
+var _igIsGamepadKey = Module["_igIsGamepadKey"] = wasmExports["igIsGamepadKey"];
+
+var _igIsMouseKey = Module["_igIsMouseKey"] = wasmExports["igIsMouseKey"];
+
+var _igIsAliasKey = Module["_igIsAliasKey"] = wasmExports["igIsAliasKey"];
+
+var _igIsModKey = Module["_igIsModKey"] = wasmExports["igIsModKey"];
+
+var _igFixupKeyChord = Module["_igFixupKeyChord"] = wasmExports["igFixupKeyChord"];
+
+var __ZN5ImGui13FixupKeyChordEP12ImGuiContexti = Module["__ZN5ImGui13FixupKeyChordEP12ImGuiContexti"] = wasmExports["_ZN5ImGui13FixupKeyChordEP12ImGuiContexti"];
+
+var _igConvertSingleModFlagToKey = Module["_igConvertSingleModFlagToKey"] = wasmExports["igConvertSingleModFlagToKey"];
+
+var _igGetKeyData_ContextPtr = Module["_igGetKeyData_ContextPtr"] = wasmExports["igGetKeyData_ContextPtr"];
+
+var __ZN5ImGui10GetKeyDataEP12ImGuiContext8ImGuiKey = Module["__ZN5ImGui10GetKeyDataEP12ImGuiContext8ImGuiKey"] = wasmExports["_ZN5ImGui10GetKeyDataEP12ImGuiContext8ImGuiKey"];
+
+var _igGetKeyData_Key = Module["_igGetKeyData_Key"] = wasmExports["igGetKeyData_Key"];
+
+var _igGetKeyChordName = Module["_igGetKeyChordName"] = wasmExports["igGetKeyChordName"];
+
+var __ZN5ImGui15GetKeyChordNameEi = Module["__ZN5ImGui15GetKeyChordNameEi"] = wasmExports["_ZN5ImGui15GetKeyChordNameEi"];
+
+var _igMouseButtonToKey = Module["_igMouseButtonToKey"] = wasmExports["igMouseButtonToKey"];
+
+var _igIsMouseDragPastThreshold = Module["_igIsMouseDragPastThreshold"] = wasmExports["igIsMouseDragPastThreshold"];
+
+var __ZN5ImGui24IsMouseDragPastThresholdEif = Module["__ZN5ImGui24IsMouseDragPastThresholdEif"] = wasmExports["_ZN5ImGui24IsMouseDragPastThresholdEif"];
+
+var _igGetKeyMagnitude2d = Module["_igGetKeyMagnitude2d"] = wasmExports["igGetKeyMagnitude2d"];
+
+var __ZN5ImGui17GetKeyMagnitude2dE8ImGuiKeyS0_S0_S0_ = Module["__ZN5ImGui17GetKeyMagnitude2dE8ImGuiKeyS0_S0_S0_"] = wasmExports["_ZN5ImGui17GetKeyMagnitude2dE8ImGuiKeyS0_S0_S0_"];
+
+var _igGetNavTweakPressedAmount = Module["_igGetNavTweakPressedAmount"] = wasmExports["igGetNavTweakPressedAmount"];
+
+var __ZN5ImGui24GetNavTweakPressedAmountE9ImGuiAxis = Module["__ZN5ImGui24GetNavTweakPressedAmountE9ImGuiAxis"] = wasmExports["_ZN5ImGui24GetNavTweakPressedAmountE9ImGuiAxis"];
+
+var _igCalcTypematicRepeatAmount = Module["_igCalcTypematicRepeatAmount"] = wasmExports["igCalcTypematicRepeatAmount"];
+
+var __ZN5ImGui25CalcTypematicRepeatAmountEffff = Module["__ZN5ImGui25CalcTypematicRepeatAmountEffff"] = wasmExports["_ZN5ImGui25CalcTypematicRepeatAmountEffff"];
+
+var _igGetTypematicRepeatRate = Module["_igGetTypematicRepeatRate"] = wasmExports["igGetTypematicRepeatRate"];
+
+var __ZN5ImGui22GetTypematicRepeatRateEiPfS0_ = Module["__ZN5ImGui22GetTypematicRepeatRateEiPfS0_"] = wasmExports["_ZN5ImGui22GetTypematicRepeatRateEiPfS0_"];
+
+var _igTeleportMousePos = Module["_igTeleportMousePos"] = wasmExports["igTeleportMousePos"];
+
+var __ZN5ImGui16TeleportMousePosERK6ImVec2 = Module["__ZN5ImGui16TeleportMousePosERK6ImVec2"] = wasmExports["_ZN5ImGui16TeleportMousePosERK6ImVec2"];
+
+var _igSetActiveIdUsingAllKeyboardKeys = Module["_igSetActiveIdUsingAllKeyboardKeys"] = wasmExports["igSetActiveIdUsingAllKeyboardKeys"];
+
+var __ZN5ImGui31SetActiveIdUsingAllKeyboardKeysEv = Module["__ZN5ImGui31SetActiveIdUsingAllKeyboardKeysEv"] = wasmExports["_ZN5ImGui31SetActiveIdUsingAllKeyboardKeysEv"];
+
+var _igIsActiveIdUsingNavDir = Module["_igIsActiveIdUsingNavDir"] = wasmExports["igIsActiveIdUsingNavDir"];
+
+var _igGetKeyOwner = Module["_igGetKeyOwner"] = wasmExports["igGetKeyOwner"];
+
+var __ZN5ImGui11GetKeyOwnerE8ImGuiKey = Module["__ZN5ImGui11GetKeyOwnerE8ImGuiKey"] = wasmExports["_ZN5ImGui11GetKeyOwnerE8ImGuiKey"];
+
+var _igSetKeyOwner = Module["_igSetKeyOwner"] = wasmExports["igSetKeyOwner"];
+
+var __ZN5ImGui11SetKeyOwnerE8ImGuiKeyji = Module["__ZN5ImGui11SetKeyOwnerE8ImGuiKeyji"] = wasmExports["_ZN5ImGui11SetKeyOwnerE8ImGuiKeyji"];
+
+var _igSetKeyOwnersForKeyChord = Module["_igSetKeyOwnersForKeyChord"] = wasmExports["igSetKeyOwnersForKeyChord"];
+
+var __ZN5ImGui23SetKeyOwnersForKeyChordEiji = Module["__ZN5ImGui23SetKeyOwnersForKeyChordEiji"] = wasmExports["_ZN5ImGui23SetKeyOwnersForKeyChordEiji"];
+
+var _igSetItemKeyOwner = Module["_igSetItemKeyOwner"] = wasmExports["igSetItemKeyOwner"];
+
+var __ZN5ImGui15SetItemKeyOwnerE8ImGuiKeyi = Module["__ZN5ImGui15SetItemKeyOwnerE8ImGuiKeyi"] = wasmExports["_ZN5ImGui15SetItemKeyOwnerE8ImGuiKeyi"];
+
+var _igTestKeyOwner = Module["_igTestKeyOwner"] = wasmExports["igTestKeyOwner"];
+
+var __ZN5ImGui12TestKeyOwnerE8ImGuiKeyj = Module["__ZN5ImGui12TestKeyOwnerE8ImGuiKeyj"] = wasmExports["_ZN5ImGui12TestKeyOwnerE8ImGuiKeyj"];
+
+var _igGetKeyOwnerData = Module["_igGetKeyOwnerData"] = wasmExports["igGetKeyOwnerData"];
+
+var _igIsKeyDown_ID = Module["_igIsKeyDown_ID"] = wasmExports["igIsKeyDown_ID"];
+
+var __ZN5ImGui9IsKeyDownE8ImGuiKeyj = Module["__ZN5ImGui9IsKeyDownE8ImGuiKeyj"] = wasmExports["_ZN5ImGui9IsKeyDownE8ImGuiKeyj"];
+
+var _igIsKeyPressed_ID = Module["_igIsKeyPressed_ID"] = wasmExports["igIsKeyPressed_ID"];
+
+var __ZN5ImGui12IsKeyPressedE8ImGuiKeyji = Module["__ZN5ImGui12IsKeyPressedE8ImGuiKeyji"] = wasmExports["_ZN5ImGui12IsKeyPressedE8ImGuiKeyji"];
+
+var _igIsKeyReleased_ID = Module["_igIsKeyReleased_ID"] = wasmExports["igIsKeyReleased_ID"];
+
+var __ZN5ImGui13IsKeyReleasedE8ImGuiKeyj = Module["__ZN5ImGui13IsKeyReleasedE8ImGuiKeyj"] = wasmExports["_ZN5ImGui13IsKeyReleasedE8ImGuiKeyj"];
+
+var _igIsMouseDown_ID = Module["_igIsMouseDown_ID"] = wasmExports["igIsMouseDown_ID"];
+
+var __ZN5ImGui11IsMouseDownEij = Module["__ZN5ImGui11IsMouseDownEij"] = wasmExports["_ZN5ImGui11IsMouseDownEij"];
+
+var _igIsMouseClicked_ID = Module["_igIsMouseClicked_ID"] = wasmExports["igIsMouseClicked_ID"];
+
+var __ZN5ImGui14IsMouseClickedEiji = Module["__ZN5ImGui14IsMouseClickedEiji"] = wasmExports["_ZN5ImGui14IsMouseClickedEiji"];
+
+var _igIsMouseReleased_ID = Module["_igIsMouseReleased_ID"] = wasmExports["igIsMouseReleased_ID"];
+
+var __ZN5ImGui15IsMouseReleasedEij = Module["__ZN5ImGui15IsMouseReleasedEij"] = wasmExports["_ZN5ImGui15IsMouseReleasedEij"];
+
+var _igIsMouseDoubleClicked_ID = Module["_igIsMouseDoubleClicked_ID"] = wasmExports["igIsMouseDoubleClicked_ID"];
+
+var __ZN5ImGui20IsMouseDoubleClickedEij = Module["__ZN5ImGui20IsMouseDoubleClickedEij"] = wasmExports["_ZN5ImGui20IsMouseDoubleClickedEij"];
+
+var _igIsKeyChordPressed_ID = Module["_igIsKeyChordPressed_ID"] = wasmExports["igIsKeyChordPressed_ID"];
+
+var __ZN5ImGui17IsKeyChordPressedEiji = Module["__ZN5ImGui17IsKeyChordPressedEiji"] = wasmExports["_ZN5ImGui17IsKeyChordPressedEiji"];
+
+var _igSetNextItemShortcut = Module["_igSetNextItemShortcut"] = wasmExports["igSetNextItemShortcut"];
+
+var __ZN5ImGui19SetNextItemShortcutEi = Module["__ZN5ImGui19SetNextItemShortcutEi"] = wasmExports["_ZN5ImGui19SetNextItemShortcutEi"];
+
+var _igShortcut = Module["_igShortcut"] = wasmExports["igShortcut"];
+
+var __ZN5ImGui8ShortcutEiji = Module["__ZN5ImGui8ShortcutEiji"] = wasmExports["_ZN5ImGui8ShortcutEiji"];
+
+var _igSetShortcutRouting = Module["_igSetShortcutRouting"] = wasmExports["igSetShortcutRouting"];
+
+var __ZN5ImGui18SetShortcutRoutingEiji = Module["__ZN5ImGui18SetShortcutRoutingEiji"] = wasmExports["_ZN5ImGui18SetShortcutRoutingEiji"];
+
+var _igTestShortcutRouting = Module["_igTestShortcutRouting"] = wasmExports["igTestShortcutRouting"];
+
+var __ZN5ImGui19TestShortcutRoutingEij = Module["__ZN5ImGui19TestShortcutRoutingEij"] = wasmExports["_ZN5ImGui19TestShortcutRoutingEij"];
+
+var _igGetShortcutRoutingData = Module["_igGetShortcutRoutingData"] = wasmExports["igGetShortcutRoutingData"];
+
+var __ZN5ImGui22GetShortcutRoutingDataEi = Module["__ZN5ImGui22GetShortcutRoutingDataEi"] = wasmExports["_ZN5ImGui22GetShortcutRoutingDataEi"];
+
+var _igDockContextInitialize = Module["_igDockContextInitialize"] = wasmExports["igDockContextInitialize"];
+
+var __ZN5ImGui21DockContextInitializeEP12ImGuiContext = Module["__ZN5ImGui21DockContextInitializeEP12ImGuiContext"] = wasmExports["_ZN5ImGui21DockContextInitializeEP12ImGuiContext"];
+
+var _igDockContextShutdown = Module["_igDockContextShutdown"] = wasmExports["igDockContextShutdown"];
+
+var __ZN5ImGui19DockContextShutdownEP12ImGuiContext = Module["__ZN5ImGui19DockContextShutdownEP12ImGuiContext"] = wasmExports["_ZN5ImGui19DockContextShutdownEP12ImGuiContext"];
+
+var _igDockContextClearNodes = Module["_igDockContextClearNodes"] = wasmExports["igDockContextClearNodes"];
+
+var __ZN5ImGui21DockContextClearNodesEP12ImGuiContextjb = Module["__ZN5ImGui21DockContextClearNodesEP12ImGuiContextjb"] = wasmExports["_ZN5ImGui21DockContextClearNodesEP12ImGuiContextjb"];
+
+var _igDockContextRebuildNodes = Module["_igDockContextRebuildNodes"] = wasmExports["igDockContextRebuildNodes"];
+
+var __ZN5ImGui23DockContextRebuildNodesEP12ImGuiContext = Module["__ZN5ImGui23DockContextRebuildNodesEP12ImGuiContext"] = wasmExports["_ZN5ImGui23DockContextRebuildNodesEP12ImGuiContext"];
+
+var _igDockContextNewFrameUpdateUndocking = Module["_igDockContextNewFrameUpdateUndocking"] = wasmExports["igDockContextNewFrameUpdateUndocking"];
+
+var __ZN5ImGui34DockContextNewFrameUpdateUndockingEP12ImGuiContext = Module["__ZN5ImGui34DockContextNewFrameUpdateUndockingEP12ImGuiContext"] = wasmExports["_ZN5ImGui34DockContextNewFrameUpdateUndockingEP12ImGuiContext"];
+
+var _igDockContextNewFrameUpdateDocking = Module["_igDockContextNewFrameUpdateDocking"] = wasmExports["igDockContextNewFrameUpdateDocking"];
+
+var __ZN5ImGui32DockContextNewFrameUpdateDockingEP12ImGuiContext = Module["__ZN5ImGui32DockContextNewFrameUpdateDockingEP12ImGuiContext"] = wasmExports["_ZN5ImGui32DockContextNewFrameUpdateDockingEP12ImGuiContext"];
+
+var _igDockContextEndFrame = Module["_igDockContextEndFrame"] = wasmExports["igDockContextEndFrame"];
+
+var __ZN5ImGui19DockContextEndFrameEP12ImGuiContext = Module["__ZN5ImGui19DockContextEndFrameEP12ImGuiContext"] = wasmExports["_ZN5ImGui19DockContextEndFrameEP12ImGuiContext"];
+
+var _igDockContextGenNodeID = Module["_igDockContextGenNodeID"] = wasmExports["igDockContextGenNodeID"];
+
+var __ZN5ImGui20DockContextGenNodeIDEP12ImGuiContext = Module["__ZN5ImGui20DockContextGenNodeIDEP12ImGuiContext"] = wasmExports["_ZN5ImGui20DockContextGenNodeIDEP12ImGuiContext"];
+
+var _igDockContextQueueDock = Module["_igDockContextQueueDock"] = wasmExports["igDockContextQueueDock"];
+
+var __ZN5ImGui20DockContextQueueDockEP12ImGuiContextP11ImGuiWindowP13ImGuiDockNodeS3_ifb = Module["__ZN5ImGui20DockContextQueueDockEP12ImGuiContextP11ImGuiWindowP13ImGuiDockNodeS3_ifb"] = wasmExports["_ZN5ImGui20DockContextQueueDockEP12ImGuiContextP11ImGuiWindowP13ImGuiDockNodeS3_ifb"];
+
+var _igDockContextQueueUndockWindow = Module["_igDockContextQueueUndockWindow"] = wasmExports["igDockContextQueueUndockWindow"];
+
+var __ZN5ImGui28DockContextQueueUndockWindowEP12ImGuiContextP11ImGuiWindow = Module["__ZN5ImGui28DockContextQueueUndockWindowEP12ImGuiContextP11ImGuiWindow"] = wasmExports["_ZN5ImGui28DockContextQueueUndockWindowEP12ImGuiContextP11ImGuiWindow"];
+
+var _igDockContextQueueUndockNode = Module["_igDockContextQueueUndockNode"] = wasmExports["igDockContextQueueUndockNode"];
+
+var __ZN5ImGui26DockContextQueueUndockNodeEP12ImGuiContextP13ImGuiDockNode = Module["__ZN5ImGui26DockContextQueueUndockNodeEP12ImGuiContextP13ImGuiDockNode"] = wasmExports["_ZN5ImGui26DockContextQueueUndockNodeEP12ImGuiContextP13ImGuiDockNode"];
+
+var _igDockContextProcessUndockWindow = Module["_igDockContextProcessUndockWindow"] = wasmExports["igDockContextProcessUndockWindow"];
+
+var __ZN5ImGui30DockContextProcessUndockWindowEP12ImGuiContextP11ImGuiWindowb = Module["__ZN5ImGui30DockContextProcessUndockWindowEP12ImGuiContextP11ImGuiWindowb"] = wasmExports["_ZN5ImGui30DockContextProcessUndockWindowEP12ImGuiContextP11ImGuiWindowb"];
+
+var _igDockContextProcessUndockNode = Module["_igDockContextProcessUndockNode"] = wasmExports["igDockContextProcessUndockNode"];
+
+var __ZN5ImGui28DockContextProcessUndockNodeEP12ImGuiContextP13ImGuiDockNode = Module["__ZN5ImGui28DockContextProcessUndockNodeEP12ImGuiContextP13ImGuiDockNode"] = wasmExports["_ZN5ImGui28DockContextProcessUndockNodeEP12ImGuiContextP13ImGuiDockNode"];
+
+var _igDockContextCalcDropPosForDocking = Module["_igDockContextCalcDropPosForDocking"] = wasmExports["igDockContextCalcDropPosForDocking"];
+
+var __ZN5ImGui32DockContextCalcDropPosForDockingEP11ImGuiWindowP13ImGuiDockNodeS1_S3_ibP6ImVec2 = Module["__ZN5ImGui32DockContextCalcDropPosForDockingEP11ImGuiWindowP13ImGuiDockNodeS1_S3_ibP6ImVec2"] = wasmExports["_ZN5ImGui32DockContextCalcDropPosForDockingEP11ImGuiWindowP13ImGuiDockNodeS1_S3_ibP6ImVec2"];
+
+var _igDockContextFindNodeByID = Module["_igDockContextFindNodeByID"] = wasmExports["igDockContextFindNodeByID"];
+
+var __ZN5ImGui23DockContextFindNodeByIDEP12ImGuiContextj = Module["__ZN5ImGui23DockContextFindNodeByIDEP12ImGuiContextj"] = wasmExports["_ZN5ImGui23DockContextFindNodeByIDEP12ImGuiContextj"];
+
+var _igDockNodeWindowMenuHandler_Default = Module["_igDockNodeWindowMenuHandler_Default"] = wasmExports["igDockNodeWindowMenuHandler_Default"];
+
+var __ZN5ImGui33DockNodeWindowMenuHandler_DefaultEP12ImGuiContextP13ImGuiDockNodeP11ImGuiTabBar = Module["__ZN5ImGui33DockNodeWindowMenuHandler_DefaultEP12ImGuiContextP13ImGuiDockNodeP11ImGuiTabBar"] = wasmExports["_ZN5ImGui33DockNodeWindowMenuHandler_DefaultEP12ImGuiContextP13ImGuiDockNodeP11ImGuiTabBar"];
+
+var _igDockNodeBeginAmendTabBar = Module["_igDockNodeBeginAmendTabBar"] = wasmExports["igDockNodeBeginAmendTabBar"];
+
+var __ZN5ImGui24DockNodeBeginAmendTabBarEP13ImGuiDockNode = Module["__ZN5ImGui24DockNodeBeginAmendTabBarEP13ImGuiDockNode"] = wasmExports["_ZN5ImGui24DockNodeBeginAmendTabBarEP13ImGuiDockNode"];
+
+var _igDockNodeEndAmendTabBar = Module["_igDockNodeEndAmendTabBar"] = wasmExports["igDockNodeEndAmendTabBar"];
+
+var __ZN5ImGui22DockNodeEndAmendTabBarEv = Module["__ZN5ImGui22DockNodeEndAmendTabBarEv"] = wasmExports["_ZN5ImGui22DockNodeEndAmendTabBarEv"];
+
+var _igDockNodeGetRootNode = Module["_igDockNodeGetRootNode"] = wasmExports["igDockNodeGetRootNode"];
+
+var _igDockNodeIsInHierarchyOf = Module["_igDockNodeIsInHierarchyOf"] = wasmExports["igDockNodeIsInHierarchyOf"];
+
+var _igDockNodeGetDepth = Module["_igDockNodeGetDepth"] = wasmExports["igDockNodeGetDepth"];
+
+var _igDockNodeGetWindowMenuButtonId = Module["_igDockNodeGetWindowMenuButtonId"] = wasmExports["igDockNodeGetWindowMenuButtonId"];
+
+var _igGetWindowDockNode = Module["_igGetWindowDockNode"] = wasmExports["igGetWindowDockNode"];
+
+var _igGetWindowAlwaysWantOwnTabBar = Module["_igGetWindowAlwaysWantOwnTabBar"] = wasmExports["igGetWindowAlwaysWantOwnTabBar"];
+
+var __ZN5ImGui28GetWindowAlwaysWantOwnTabBarEP11ImGuiWindow = Module["__ZN5ImGui28GetWindowAlwaysWantOwnTabBarEP11ImGuiWindow"] = wasmExports["_ZN5ImGui28GetWindowAlwaysWantOwnTabBarEP11ImGuiWindow"];
+
+var _igBeginDocked = Module["_igBeginDocked"] = wasmExports["igBeginDocked"];
+
+var __ZN5ImGui11BeginDockedEP11ImGuiWindowPb = Module["__ZN5ImGui11BeginDockedEP11ImGuiWindowPb"] = wasmExports["_ZN5ImGui11BeginDockedEP11ImGuiWindowPb"];
+
+var _igBeginDockableDragDropSource = Module["_igBeginDockableDragDropSource"] = wasmExports["igBeginDockableDragDropSource"];
+
+var __ZN5ImGui27BeginDockableDragDropSourceEP11ImGuiWindow = Module["__ZN5ImGui27BeginDockableDragDropSourceEP11ImGuiWindow"] = wasmExports["_ZN5ImGui27BeginDockableDragDropSourceEP11ImGuiWindow"];
+
+var _igBeginDockableDragDropTarget = Module["_igBeginDockableDragDropTarget"] = wasmExports["igBeginDockableDragDropTarget"];
+
+var __ZN5ImGui27BeginDockableDragDropTargetEP11ImGuiWindow = Module["__ZN5ImGui27BeginDockableDragDropTargetEP11ImGuiWindow"] = wasmExports["_ZN5ImGui27BeginDockableDragDropTargetEP11ImGuiWindow"];
+
+var _igSetWindowDock = Module["_igSetWindowDock"] = wasmExports["igSetWindowDock"];
+
+var __ZN5ImGui13SetWindowDockEP11ImGuiWindowji = Module["__ZN5ImGui13SetWindowDockEP11ImGuiWindowji"] = wasmExports["_ZN5ImGui13SetWindowDockEP11ImGuiWindowji"];
+
+var _igDockBuilderDockWindow = Module["_igDockBuilderDockWindow"] = wasmExports["igDockBuilderDockWindow"];
+
+var __ZN5ImGui21DockBuilderDockWindowEPKcj = Module["__ZN5ImGui21DockBuilderDockWindowEPKcj"] = wasmExports["_ZN5ImGui21DockBuilderDockWindowEPKcj"];
+
+var _igDockBuilderGetNode = Module["_igDockBuilderGetNode"] = wasmExports["igDockBuilderGetNode"];
+
+var __ZN5ImGui18DockBuilderGetNodeEj = Module["__ZN5ImGui18DockBuilderGetNodeEj"] = wasmExports["_ZN5ImGui18DockBuilderGetNodeEj"];
+
+var _igDockBuilderGetCentralNode = Module["_igDockBuilderGetCentralNode"] = wasmExports["igDockBuilderGetCentralNode"];
+
+var _igDockBuilderAddNode = Module["_igDockBuilderAddNode"] = wasmExports["igDockBuilderAddNode"];
+
+var __ZN5ImGui18DockBuilderAddNodeEji = Module["__ZN5ImGui18DockBuilderAddNodeEji"] = wasmExports["_ZN5ImGui18DockBuilderAddNodeEji"];
+
+var _igDockBuilderRemoveNode = Module["_igDockBuilderRemoveNode"] = wasmExports["igDockBuilderRemoveNode"];
+
+var __ZN5ImGui21DockBuilderRemoveNodeEj = Module["__ZN5ImGui21DockBuilderRemoveNodeEj"] = wasmExports["_ZN5ImGui21DockBuilderRemoveNodeEj"];
+
+var _igDockBuilderRemoveNodeDockedWindows = Module["_igDockBuilderRemoveNodeDockedWindows"] = wasmExports["igDockBuilderRemoveNodeDockedWindows"];
+
+var __ZN5ImGui34DockBuilderRemoveNodeDockedWindowsEjb = Module["__ZN5ImGui34DockBuilderRemoveNodeDockedWindowsEjb"] = wasmExports["_ZN5ImGui34DockBuilderRemoveNodeDockedWindowsEjb"];
+
+var _igDockBuilderRemoveNodeChildNodes = Module["_igDockBuilderRemoveNodeChildNodes"] = wasmExports["igDockBuilderRemoveNodeChildNodes"];
+
+var __ZN5ImGui31DockBuilderRemoveNodeChildNodesEj = Module["__ZN5ImGui31DockBuilderRemoveNodeChildNodesEj"] = wasmExports["_ZN5ImGui31DockBuilderRemoveNodeChildNodesEj"];
+
+var _igDockBuilderSetNodePos = Module["_igDockBuilderSetNodePos"] = wasmExports["igDockBuilderSetNodePos"];
+
+var __ZN5ImGui21DockBuilderSetNodePosEj6ImVec2 = Module["__ZN5ImGui21DockBuilderSetNodePosEj6ImVec2"] = wasmExports["_ZN5ImGui21DockBuilderSetNodePosEj6ImVec2"];
+
+var _igDockBuilderSetNodeSize = Module["_igDockBuilderSetNodeSize"] = wasmExports["igDockBuilderSetNodeSize"];
+
+var __ZN5ImGui22DockBuilderSetNodeSizeEj6ImVec2 = Module["__ZN5ImGui22DockBuilderSetNodeSizeEj6ImVec2"] = wasmExports["_ZN5ImGui22DockBuilderSetNodeSizeEj6ImVec2"];
+
+var _igDockBuilderSplitNode = Module["_igDockBuilderSplitNode"] = wasmExports["igDockBuilderSplitNode"];
+
+var __ZN5ImGui20DockBuilderSplitNodeEjifPjS0_ = Module["__ZN5ImGui20DockBuilderSplitNodeEjifPjS0_"] = wasmExports["_ZN5ImGui20DockBuilderSplitNodeEjifPjS0_"];
+
+var _igDockBuilderCopyDockSpace = Module["_igDockBuilderCopyDockSpace"] = wasmExports["igDockBuilderCopyDockSpace"];
+
+var __ZN5ImGui24DockBuilderCopyDockSpaceEjjP8ImVectorIPKcE = Module["__ZN5ImGui24DockBuilderCopyDockSpaceEjjP8ImVectorIPKcE"] = wasmExports["_ZN5ImGui24DockBuilderCopyDockSpaceEjjP8ImVectorIPKcE"];
+
+var _igDockBuilderCopyNode = Module["_igDockBuilderCopyNode"] = wasmExports["igDockBuilderCopyNode"];
+
+var __ZN5ImGui19DockBuilderCopyNodeEjjP8ImVectorIjE = Module["__ZN5ImGui19DockBuilderCopyNodeEjjP8ImVectorIjE"] = wasmExports["_ZN5ImGui19DockBuilderCopyNodeEjjP8ImVectorIjE"];
+
+var _igDockBuilderCopyWindowSettings = Module["_igDockBuilderCopyWindowSettings"] = wasmExports["igDockBuilderCopyWindowSettings"];
+
+var __ZN5ImGui29DockBuilderCopyWindowSettingsEPKcS1_ = Module["__ZN5ImGui29DockBuilderCopyWindowSettingsEPKcS1_"] = wasmExports["_ZN5ImGui29DockBuilderCopyWindowSettingsEPKcS1_"];
+
+var _igDockBuilderFinish = Module["_igDockBuilderFinish"] = wasmExports["igDockBuilderFinish"];
+
+var __ZN5ImGui17DockBuilderFinishEj = Module["__ZN5ImGui17DockBuilderFinishEj"] = wasmExports["_ZN5ImGui17DockBuilderFinishEj"];
+
+var _igPushFocusScope = Module["_igPushFocusScope"] = wasmExports["igPushFocusScope"];
+
+var __ZN5ImGui14PushFocusScopeEj = Module["__ZN5ImGui14PushFocusScopeEj"] = wasmExports["_ZN5ImGui14PushFocusScopeEj"];
+
+var _igPopFocusScope = Module["_igPopFocusScope"] = wasmExports["igPopFocusScope"];
+
+var __ZN5ImGui13PopFocusScopeEv = Module["__ZN5ImGui13PopFocusScopeEv"] = wasmExports["_ZN5ImGui13PopFocusScopeEv"];
+
+var _igGetCurrentFocusScope = Module["_igGetCurrentFocusScope"] = wasmExports["igGetCurrentFocusScope"];
+
+var _igIsDragDropActive = Module["_igIsDragDropActive"] = wasmExports["igIsDragDropActive"];
+
+var __ZN5ImGui16IsDragDropActiveEv = Module["__ZN5ImGui16IsDragDropActiveEv"] = wasmExports["_ZN5ImGui16IsDragDropActiveEv"];
+
+var _igBeginDragDropTargetCustom = Module["_igBeginDragDropTargetCustom"] = wasmExports["igBeginDragDropTargetCustom"];
+
+var __ZN5ImGui25BeginDragDropTargetCustomERK6ImRectj = Module["__ZN5ImGui25BeginDragDropTargetCustomERK6ImRectj"] = wasmExports["_ZN5ImGui25BeginDragDropTargetCustomERK6ImRectj"];
+
+var _igClearDragDrop = Module["_igClearDragDrop"] = wasmExports["igClearDragDrop"];
+
+var __ZN5ImGui13ClearDragDropEv = Module["__ZN5ImGui13ClearDragDropEv"] = wasmExports["_ZN5ImGui13ClearDragDropEv"];
+
+var _igIsDragDropPayloadBeingAccepted = Module["_igIsDragDropPayloadBeingAccepted"] = wasmExports["igIsDragDropPayloadBeingAccepted"];
+
+var __ZN5ImGui30IsDragDropPayloadBeingAcceptedEv = Module["__ZN5ImGui30IsDragDropPayloadBeingAcceptedEv"] = wasmExports["_ZN5ImGui30IsDragDropPayloadBeingAcceptedEv"];
+
+var _igRenderDragDropTargetRect = Module["_igRenderDragDropTargetRect"] = wasmExports["igRenderDragDropTargetRect"];
+
+var __ZN5ImGui24RenderDragDropTargetRectERK6ImRectS2_ = Module["__ZN5ImGui24RenderDragDropTargetRectERK6ImRectS2_"] = wasmExports["_ZN5ImGui24RenderDragDropTargetRectERK6ImRectS2_"];
+
+var _igGetTypingSelectRequest = Module["_igGetTypingSelectRequest"] = wasmExports["igGetTypingSelectRequest"];
+
+var __ZN5ImGui22GetTypingSelectRequestEi = Module["__ZN5ImGui22GetTypingSelectRequestEi"] = wasmExports["_ZN5ImGui22GetTypingSelectRequestEi"];
+
+var _igTypingSelectFindMatch = Module["_igTypingSelectFindMatch"] = wasmExports["igTypingSelectFindMatch"];
+
+var __ZN5ImGui21TypingSelectFindMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_i = Module["__ZN5ImGui21TypingSelectFindMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_i"] = wasmExports["_ZN5ImGui21TypingSelectFindMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_i"];
+
+var _igTypingSelectFindNextSingleCharMatch = Module["_igTypingSelectFindNextSingleCharMatch"] = wasmExports["igTypingSelectFindNextSingleCharMatch"];
+
+var __ZN5ImGui35TypingSelectFindNextSingleCharMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_i = Module["__ZN5ImGui35TypingSelectFindNextSingleCharMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_i"] = wasmExports["_ZN5ImGui35TypingSelectFindNextSingleCharMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_i"];
+
+var _igTypingSelectFindBestLeadingMatch = Module["_igTypingSelectFindBestLeadingMatch"] = wasmExports["igTypingSelectFindBestLeadingMatch"];
+
+var __ZN5ImGui32TypingSelectFindBestLeadingMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_ = Module["__ZN5ImGui32TypingSelectFindBestLeadingMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_"] = wasmExports["_ZN5ImGui32TypingSelectFindBestLeadingMatchEP24ImGuiTypingSelectRequestiPFPKcPviES4_"];
+
+var _igSetWindowClipRectBeforeSetChannel = Module["_igSetWindowClipRectBeforeSetChannel"] = wasmExports["igSetWindowClipRectBeforeSetChannel"];
+
+var __ZN5ImGui33SetWindowClipRectBeforeSetChannelEP11ImGuiWindowRK6ImRect = Module["__ZN5ImGui33SetWindowClipRectBeforeSetChannelEP11ImGuiWindowRK6ImRect"] = wasmExports["_ZN5ImGui33SetWindowClipRectBeforeSetChannelEP11ImGuiWindowRK6ImRect"];
+
+var _igBeginColumns = Module["_igBeginColumns"] = wasmExports["igBeginColumns"];
+
+var __ZN5ImGui12BeginColumnsEPKcii = Module["__ZN5ImGui12BeginColumnsEPKcii"] = wasmExports["_ZN5ImGui12BeginColumnsEPKcii"];
+
+var _igEndColumns = Module["_igEndColumns"] = wasmExports["igEndColumns"];
+
+var __ZN5ImGui10EndColumnsEv = Module["__ZN5ImGui10EndColumnsEv"] = wasmExports["_ZN5ImGui10EndColumnsEv"];
+
+var _igPushColumnClipRect = Module["_igPushColumnClipRect"] = wasmExports["igPushColumnClipRect"];
+
+var __ZN5ImGui18PushColumnClipRectEi = Module["__ZN5ImGui18PushColumnClipRectEi"] = wasmExports["_ZN5ImGui18PushColumnClipRectEi"];
+
+var _igPushColumnsBackground = Module["_igPushColumnsBackground"] = wasmExports["igPushColumnsBackground"];
+
+var __ZN5ImGui21PushColumnsBackgroundEv = Module["__ZN5ImGui21PushColumnsBackgroundEv"] = wasmExports["_ZN5ImGui21PushColumnsBackgroundEv"];
+
+var _igPopColumnsBackground = Module["_igPopColumnsBackground"] = wasmExports["igPopColumnsBackground"];
+
+var __ZN5ImGui20PopColumnsBackgroundEv = Module["__ZN5ImGui20PopColumnsBackgroundEv"] = wasmExports["_ZN5ImGui20PopColumnsBackgroundEv"];
+
+var _igGetColumnsID = Module["_igGetColumnsID"] = wasmExports["igGetColumnsID"];
+
+var __ZN5ImGui12GetColumnsIDEPKci = Module["__ZN5ImGui12GetColumnsIDEPKci"] = wasmExports["_ZN5ImGui12GetColumnsIDEPKci"];
+
+var _igFindOrCreateColumns = Module["_igFindOrCreateColumns"] = wasmExports["igFindOrCreateColumns"];
+
+var __ZN5ImGui19FindOrCreateColumnsEP11ImGuiWindowj = Module["__ZN5ImGui19FindOrCreateColumnsEP11ImGuiWindowj"] = wasmExports["_ZN5ImGui19FindOrCreateColumnsEP11ImGuiWindowj"];
+
+var _igGetColumnOffsetFromNorm = Module["_igGetColumnOffsetFromNorm"] = wasmExports["igGetColumnOffsetFromNorm"];
+
+var __ZN5ImGui23GetColumnOffsetFromNormEPK15ImGuiOldColumnsf = Module["__ZN5ImGui23GetColumnOffsetFromNormEPK15ImGuiOldColumnsf"] = wasmExports["_ZN5ImGui23GetColumnOffsetFromNormEPK15ImGuiOldColumnsf"];
+
+var _igGetColumnNormFromOffset = Module["_igGetColumnNormFromOffset"] = wasmExports["igGetColumnNormFromOffset"];
+
+var __ZN5ImGui23GetColumnNormFromOffsetEPK15ImGuiOldColumnsf = Module["__ZN5ImGui23GetColumnNormFromOffsetEPK15ImGuiOldColumnsf"] = wasmExports["_ZN5ImGui23GetColumnNormFromOffsetEPK15ImGuiOldColumnsf"];
+
+var _igTableOpenContextMenu = Module["_igTableOpenContextMenu"] = wasmExports["igTableOpenContextMenu"];
+
+var __ZN5ImGui20TableOpenContextMenuEi = Module["__ZN5ImGui20TableOpenContextMenuEi"] = wasmExports["_ZN5ImGui20TableOpenContextMenuEi"];
+
+var _igTableSetColumnWidth = Module["_igTableSetColumnWidth"] = wasmExports["igTableSetColumnWidth"];
+
+var __ZN5ImGui19TableSetColumnWidthEif = Module["__ZN5ImGui19TableSetColumnWidthEif"] = wasmExports["_ZN5ImGui19TableSetColumnWidthEif"];
+
+var _igTableSetColumnSortDirection = Module["_igTableSetColumnSortDirection"] = wasmExports["igTableSetColumnSortDirection"];
+
+var __ZN5ImGui27TableSetColumnSortDirectionEiib = Module["__ZN5ImGui27TableSetColumnSortDirectionEiib"] = wasmExports["_ZN5ImGui27TableSetColumnSortDirectionEiib"];
+
+var _igTableGetHoveredColumn = Module["_igTableGetHoveredColumn"] = wasmExports["igTableGetHoveredColumn"];
+
+var __ZN5ImGui21TableGetHoveredColumnEv = Module["__ZN5ImGui21TableGetHoveredColumnEv"] = wasmExports["_ZN5ImGui21TableGetHoveredColumnEv"];
+
+var _igTableGetHoveredRow = Module["_igTableGetHoveredRow"] = wasmExports["igTableGetHoveredRow"];
+
+var __ZN5ImGui18TableGetHoveredRowEv = Module["__ZN5ImGui18TableGetHoveredRowEv"] = wasmExports["_ZN5ImGui18TableGetHoveredRowEv"];
+
+var _igTableGetHeaderRowHeight = Module["_igTableGetHeaderRowHeight"] = wasmExports["igTableGetHeaderRowHeight"];
+
+var __ZN5ImGui23TableGetHeaderRowHeightEv = Module["__ZN5ImGui23TableGetHeaderRowHeightEv"] = wasmExports["_ZN5ImGui23TableGetHeaderRowHeightEv"];
+
+var _igTableGetHeaderAngledMaxLabelWidth = Module["_igTableGetHeaderAngledMaxLabelWidth"] = wasmExports["igTableGetHeaderAngledMaxLabelWidth"];
+
+var __ZN5ImGui33TableGetHeaderAngledMaxLabelWidthEv = Module["__ZN5ImGui33TableGetHeaderAngledMaxLabelWidthEv"] = wasmExports["_ZN5ImGui33TableGetHeaderAngledMaxLabelWidthEv"];
+
+var _igTablePushBackgroundChannel = Module["_igTablePushBackgroundChannel"] = wasmExports["igTablePushBackgroundChannel"];
+
+var __ZN5ImGui26TablePushBackgroundChannelEv = Module["__ZN5ImGui26TablePushBackgroundChannelEv"] = wasmExports["_ZN5ImGui26TablePushBackgroundChannelEv"];
+
+var _igTablePopBackgroundChannel = Module["_igTablePopBackgroundChannel"] = wasmExports["igTablePopBackgroundChannel"];
+
+var __ZN5ImGui25TablePopBackgroundChannelEv = Module["__ZN5ImGui25TablePopBackgroundChannelEv"] = wasmExports["_ZN5ImGui25TablePopBackgroundChannelEv"];
+
+var _igTableAngledHeadersRowEx = Module["_igTableAngledHeadersRowEx"] = wasmExports["igTableAngledHeadersRowEx"];
+
+var __ZN5ImGui23TableAngledHeadersRowExEff = Module["__ZN5ImGui23TableAngledHeadersRowExEff"] = wasmExports["_ZN5ImGui23TableAngledHeadersRowExEff"];
+
+var _igGetCurrentTable = Module["_igGetCurrentTable"] = wasmExports["igGetCurrentTable"];
+
+var _igTableFindByID = Module["_igTableFindByID"] = wasmExports["igTableFindByID"];
+
+var __ZN5ImGui13TableFindByIDEj = Module["__ZN5ImGui13TableFindByIDEj"] = wasmExports["_ZN5ImGui13TableFindByIDEj"];
+
+var _igBeginTableEx = Module["_igBeginTableEx"] = wasmExports["igBeginTableEx"];
+
+var __ZN5ImGui12BeginTableExEPKcjiiRK6ImVec2f = Module["__ZN5ImGui12BeginTableExEPKcjiiRK6ImVec2f"] = wasmExports["_ZN5ImGui12BeginTableExEPKcjiiRK6ImVec2f"];
+
+var _igTableBeginInitMemory = Module["_igTableBeginInitMemory"] = wasmExports["igTableBeginInitMemory"];
+
+var __ZN5ImGui20TableBeginInitMemoryEP10ImGuiTablei = Module["__ZN5ImGui20TableBeginInitMemoryEP10ImGuiTablei"] = wasmExports["_ZN5ImGui20TableBeginInitMemoryEP10ImGuiTablei"];
+
+var _igTableBeginApplyRequests = Module["_igTableBeginApplyRequests"] = wasmExports["igTableBeginApplyRequests"];
+
+var __ZN5ImGui23TableBeginApplyRequestsEP10ImGuiTable = Module["__ZN5ImGui23TableBeginApplyRequestsEP10ImGuiTable"] = wasmExports["_ZN5ImGui23TableBeginApplyRequestsEP10ImGuiTable"];
+
+var _igTableSetupDrawChannels = Module["_igTableSetupDrawChannels"] = wasmExports["igTableSetupDrawChannels"];
+
+var __ZN5ImGui22TableSetupDrawChannelsEP10ImGuiTable = Module["__ZN5ImGui22TableSetupDrawChannelsEP10ImGuiTable"] = wasmExports["_ZN5ImGui22TableSetupDrawChannelsEP10ImGuiTable"];
+
+var _igTableUpdateLayout = Module["_igTableUpdateLayout"] = wasmExports["igTableUpdateLayout"];
+
+var __ZN5ImGui17TableUpdateLayoutEP10ImGuiTable = Module["__ZN5ImGui17TableUpdateLayoutEP10ImGuiTable"] = wasmExports["_ZN5ImGui17TableUpdateLayoutEP10ImGuiTable"];
+
+var _igTableUpdateBorders = Module["_igTableUpdateBorders"] = wasmExports["igTableUpdateBorders"];
+
+var __ZN5ImGui18TableUpdateBordersEP10ImGuiTable = Module["__ZN5ImGui18TableUpdateBordersEP10ImGuiTable"] = wasmExports["_ZN5ImGui18TableUpdateBordersEP10ImGuiTable"];
+
+var _igTableUpdateColumnsWeightFromWidth = Module["_igTableUpdateColumnsWeightFromWidth"] = wasmExports["igTableUpdateColumnsWeightFromWidth"];
+
+var __ZN5ImGui33TableUpdateColumnsWeightFromWidthEP10ImGuiTable = Module["__ZN5ImGui33TableUpdateColumnsWeightFromWidthEP10ImGuiTable"] = wasmExports["_ZN5ImGui33TableUpdateColumnsWeightFromWidthEP10ImGuiTable"];
+
+var _igTableDrawBorders = Module["_igTableDrawBorders"] = wasmExports["igTableDrawBorders"];
+
+var __ZN5ImGui16TableDrawBordersEP10ImGuiTable = Module["__ZN5ImGui16TableDrawBordersEP10ImGuiTable"] = wasmExports["_ZN5ImGui16TableDrawBordersEP10ImGuiTable"];
+
+var _igTableDrawDefaultContextMenu = Module["_igTableDrawDefaultContextMenu"] = wasmExports["igTableDrawDefaultContextMenu"];
+
+var __ZN5ImGui27TableDrawDefaultContextMenuEP10ImGuiTablei = Module["__ZN5ImGui27TableDrawDefaultContextMenuEP10ImGuiTablei"] = wasmExports["_ZN5ImGui27TableDrawDefaultContextMenuEP10ImGuiTablei"];
+
+var _igTableBeginContextMenuPopup = Module["_igTableBeginContextMenuPopup"] = wasmExports["igTableBeginContextMenuPopup"];
+
+var __ZN5ImGui26TableBeginContextMenuPopupEP10ImGuiTable = Module["__ZN5ImGui26TableBeginContextMenuPopupEP10ImGuiTable"] = wasmExports["_ZN5ImGui26TableBeginContextMenuPopupEP10ImGuiTable"];
+
+var _igTableMergeDrawChannels = Module["_igTableMergeDrawChannels"] = wasmExports["igTableMergeDrawChannels"];
+
+var __ZN5ImGui22TableMergeDrawChannelsEP10ImGuiTable = Module["__ZN5ImGui22TableMergeDrawChannelsEP10ImGuiTable"] = wasmExports["_ZN5ImGui22TableMergeDrawChannelsEP10ImGuiTable"];
+
+var _igTableGetInstanceData = Module["_igTableGetInstanceData"] = wasmExports["igTableGetInstanceData"];
+
+var _igTableGetInstanceID = Module["_igTableGetInstanceID"] = wasmExports["igTableGetInstanceID"];
+
+var _igTableSortSpecsSanitize = Module["_igTableSortSpecsSanitize"] = wasmExports["igTableSortSpecsSanitize"];
+
+var __ZN5ImGui22TableSortSpecsSanitizeEP10ImGuiTable = Module["__ZN5ImGui22TableSortSpecsSanitizeEP10ImGuiTable"] = wasmExports["_ZN5ImGui22TableSortSpecsSanitizeEP10ImGuiTable"];
+
+var _igTableSortSpecsBuild = Module["_igTableSortSpecsBuild"] = wasmExports["igTableSortSpecsBuild"];
+
+var __ZN5ImGui19TableSortSpecsBuildEP10ImGuiTable = Module["__ZN5ImGui19TableSortSpecsBuildEP10ImGuiTable"] = wasmExports["_ZN5ImGui19TableSortSpecsBuildEP10ImGuiTable"];
+
+var _igTableGetColumnNextSortDirection = Module["_igTableGetColumnNextSortDirection"] = wasmExports["igTableGetColumnNextSortDirection"];
+
+var __ZN5ImGui31TableGetColumnNextSortDirectionEP16ImGuiTableColumn = Module["__ZN5ImGui31TableGetColumnNextSortDirectionEP16ImGuiTableColumn"] = wasmExports["_ZN5ImGui31TableGetColumnNextSortDirectionEP16ImGuiTableColumn"];
+
+var _igTableFixColumnSortDirection = Module["_igTableFixColumnSortDirection"] = wasmExports["igTableFixColumnSortDirection"];
+
+var __ZN5ImGui27TableFixColumnSortDirectionEP10ImGuiTableP16ImGuiTableColumn = Module["__ZN5ImGui27TableFixColumnSortDirectionEP10ImGuiTableP16ImGuiTableColumn"] = wasmExports["_ZN5ImGui27TableFixColumnSortDirectionEP10ImGuiTableP16ImGuiTableColumn"];
+
+var _igTableGetColumnWidthAuto = Module["_igTableGetColumnWidthAuto"] = wasmExports["igTableGetColumnWidthAuto"];
+
+var __ZN5ImGui23TableGetColumnWidthAutoEP10ImGuiTableP16ImGuiTableColumn = Module["__ZN5ImGui23TableGetColumnWidthAutoEP10ImGuiTableP16ImGuiTableColumn"] = wasmExports["_ZN5ImGui23TableGetColumnWidthAutoEP10ImGuiTableP16ImGuiTableColumn"];
+
+var _igTableBeginRow = Module["_igTableBeginRow"] = wasmExports["igTableBeginRow"];
+
+var __ZN5ImGui13TableBeginRowEP10ImGuiTable = Module["__ZN5ImGui13TableBeginRowEP10ImGuiTable"] = wasmExports["_ZN5ImGui13TableBeginRowEP10ImGuiTable"];
+
+var _igTableEndRow = Module["_igTableEndRow"] = wasmExports["igTableEndRow"];
+
+var __ZN5ImGui11TableEndRowEP10ImGuiTable = Module["__ZN5ImGui11TableEndRowEP10ImGuiTable"] = wasmExports["_ZN5ImGui11TableEndRowEP10ImGuiTable"];
+
+var _igTableBeginCell = Module["_igTableBeginCell"] = wasmExports["igTableBeginCell"];
+
+var __ZN5ImGui14TableBeginCellEP10ImGuiTablei = Module["__ZN5ImGui14TableBeginCellEP10ImGuiTablei"] = wasmExports["_ZN5ImGui14TableBeginCellEP10ImGuiTablei"];
+
+var _igTableEndCell = Module["_igTableEndCell"] = wasmExports["igTableEndCell"];
+
+var __ZN5ImGui12TableEndCellEP10ImGuiTable = Module["__ZN5ImGui12TableEndCellEP10ImGuiTable"] = wasmExports["_ZN5ImGui12TableEndCellEP10ImGuiTable"];
+
+var _igTableGetCellBgRect = Module["_igTableGetCellBgRect"] = wasmExports["igTableGetCellBgRect"];
+
+var __ZN5ImGui18TableGetCellBgRectEPK10ImGuiTablei = Module["__ZN5ImGui18TableGetCellBgRectEPK10ImGuiTablei"] = wasmExports["_ZN5ImGui18TableGetCellBgRectEPK10ImGuiTablei"];
+
+var _igTableGetColumnName_TablePtr = Module["_igTableGetColumnName_TablePtr"] = wasmExports["igTableGetColumnName_TablePtr"];
+
+var __ZN5ImGui18TableGetColumnNameEPK10ImGuiTablei = Module["__ZN5ImGui18TableGetColumnNameEPK10ImGuiTablei"] = wasmExports["_ZN5ImGui18TableGetColumnNameEPK10ImGuiTablei"];
+
+var _igTableGetColumnResizeID = Module["_igTableGetColumnResizeID"] = wasmExports["igTableGetColumnResizeID"];
+
+var __ZN5ImGui22TableGetColumnResizeIDEP10ImGuiTableii = Module["__ZN5ImGui22TableGetColumnResizeIDEP10ImGuiTableii"] = wasmExports["_ZN5ImGui22TableGetColumnResizeIDEP10ImGuiTableii"];
+
+var _igTableGetMaxColumnWidth = Module["_igTableGetMaxColumnWidth"] = wasmExports["igTableGetMaxColumnWidth"];
+
+var __ZN5ImGui22TableGetMaxColumnWidthEPK10ImGuiTablei = Module["__ZN5ImGui22TableGetMaxColumnWidthEPK10ImGuiTablei"] = wasmExports["_ZN5ImGui22TableGetMaxColumnWidthEPK10ImGuiTablei"];
+
+var _igTableSetColumnWidthAutoSingle = Module["_igTableSetColumnWidthAutoSingle"] = wasmExports["igTableSetColumnWidthAutoSingle"];
+
+var __ZN5ImGui29TableSetColumnWidthAutoSingleEP10ImGuiTablei = Module["__ZN5ImGui29TableSetColumnWidthAutoSingleEP10ImGuiTablei"] = wasmExports["_ZN5ImGui29TableSetColumnWidthAutoSingleEP10ImGuiTablei"];
+
+var _igTableSetColumnWidthAutoAll = Module["_igTableSetColumnWidthAutoAll"] = wasmExports["igTableSetColumnWidthAutoAll"];
+
+var __ZN5ImGui26TableSetColumnWidthAutoAllEP10ImGuiTable = Module["__ZN5ImGui26TableSetColumnWidthAutoAllEP10ImGuiTable"] = wasmExports["_ZN5ImGui26TableSetColumnWidthAutoAllEP10ImGuiTable"];
+
+var _igTableRemove = Module["_igTableRemove"] = wasmExports["igTableRemove"];
+
+var __ZN5ImGui11TableRemoveEP10ImGuiTable = Module["__ZN5ImGui11TableRemoveEP10ImGuiTable"] = wasmExports["_ZN5ImGui11TableRemoveEP10ImGuiTable"];
+
+var _igTableGcCompactTransientBuffers_TablePtr = Module["_igTableGcCompactTransientBuffers_TablePtr"] = wasmExports["igTableGcCompactTransientBuffers_TablePtr"];
+
+var __ZN5ImGui30TableGcCompactTransientBuffersEP10ImGuiTable = Module["__ZN5ImGui30TableGcCompactTransientBuffersEP10ImGuiTable"] = wasmExports["_ZN5ImGui30TableGcCompactTransientBuffersEP10ImGuiTable"];
+
+var _igTableGcCompactTransientBuffers_TableTempDataPtr = Module["_igTableGcCompactTransientBuffers_TableTempDataPtr"] = wasmExports["igTableGcCompactTransientBuffers_TableTempDataPtr"];
+
+var __ZN5ImGui30TableGcCompactTransientBuffersEP18ImGuiTableTempData = Module["__ZN5ImGui30TableGcCompactTransientBuffersEP18ImGuiTableTempData"] = wasmExports["_ZN5ImGui30TableGcCompactTransientBuffersEP18ImGuiTableTempData"];
+
+var _igTableGcCompactSettings = Module["_igTableGcCompactSettings"] = wasmExports["igTableGcCompactSettings"];
+
+var __ZN5ImGui22TableGcCompactSettingsEv = Module["__ZN5ImGui22TableGcCompactSettingsEv"] = wasmExports["_ZN5ImGui22TableGcCompactSettingsEv"];
+
+var _igTableLoadSettings = Module["_igTableLoadSettings"] = wasmExports["igTableLoadSettings"];
+
+var __ZN5ImGui17TableLoadSettingsEP10ImGuiTable = Module["__ZN5ImGui17TableLoadSettingsEP10ImGuiTable"] = wasmExports["_ZN5ImGui17TableLoadSettingsEP10ImGuiTable"];
+
+var _igTableSaveSettings = Module["_igTableSaveSettings"] = wasmExports["igTableSaveSettings"];
+
+var __ZN5ImGui17TableSaveSettingsEP10ImGuiTable = Module["__ZN5ImGui17TableSaveSettingsEP10ImGuiTable"] = wasmExports["_ZN5ImGui17TableSaveSettingsEP10ImGuiTable"];
+
+var _igTableResetSettings = Module["_igTableResetSettings"] = wasmExports["igTableResetSettings"];
+
+var __ZN5ImGui18TableResetSettingsEP10ImGuiTable = Module["__ZN5ImGui18TableResetSettingsEP10ImGuiTable"] = wasmExports["_ZN5ImGui18TableResetSettingsEP10ImGuiTable"];
+
+var _igTableGetBoundSettings = Module["_igTableGetBoundSettings"] = wasmExports["igTableGetBoundSettings"];
+
+var __ZN5ImGui21TableGetBoundSettingsEP10ImGuiTable = Module["__ZN5ImGui21TableGetBoundSettingsEP10ImGuiTable"] = wasmExports["_ZN5ImGui21TableGetBoundSettingsEP10ImGuiTable"];
+
+var _igTableSettingsAddSettingsHandler = Module["_igTableSettingsAddSettingsHandler"] = wasmExports["igTableSettingsAddSettingsHandler"];
+
+var __ZN5ImGui31TableSettingsAddSettingsHandlerEv = Module["__ZN5ImGui31TableSettingsAddSettingsHandlerEv"] = wasmExports["_ZN5ImGui31TableSettingsAddSettingsHandlerEv"];
+
+var _igTableSettingsCreate = Module["_igTableSettingsCreate"] = wasmExports["igTableSettingsCreate"];
+
+var __ZN5ImGui19TableSettingsCreateEji = Module["__ZN5ImGui19TableSettingsCreateEji"] = wasmExports["_ZN5ImGui19TableSettingsCreateEji"];
+
+var _igTableSettingsFindByID = Module["_igTableSettingsFindByID"] = wasmExports["igTableSettingsFindByID"];
+
+var __ZN5ImGui21TableSettingsFindByIDEj = Module["__ZN5ImGui21TableSettingsFindByIDEj"] = wasmExports["_ZN5ImGui21TableSettingsFindByIDEj"];
+
+var _igGetCurrentTabBar = Module["_igGetCurrentTabBar"] = wasmExports["igGetCurrentTabBar"];
+
+var _igBeginTabBarEx = Module["_igBeginTabBarEx"] = wasmExports["igBeginTabBarEx"];
+
+var __ZN5ImGui13BeginTabBarExEP11ImGuiTabBarRK6ImRecti = Module["__ZN5ImGui13BeginTabBarExEP11ImGuiTabBarRK6ImRecti"] = wasmExports["_ZN5ImGui13BeginTabBarExEP11ImGuiTabBarRK6ImRecti"];
+
+var _igTabBarFindTabByID = Module["_igTabBarFindTabByID"] = wasmExports["igTabBarFindTabByID"];
+
+var __ZN5ImGui17TabBarFindTabByIDEP11ImGuiTabBarj = Module["__ZN5ImGui17TabBarFindTabByIDEP11ImGuiTabBarj"] = wasmExports["_ZN5ImGui17TabBarFindTabByIDEP11ImGuiTabBarj"];
+
+var _igTabBarFindTabByOrder = Module["_igTabBarFindTabByOrder"] = wasmExports["igTabBarFindTabByOrder"];
+
+var __ZN5ImGui20TabBarFindTabByOrderEP11ImGuiTabBari = Module["__ZN5ImGui20TabBarFindTabByOrderEP11ImGuiTabBari"] = wasmExports["_ZN5ImGui20TabBarFindTabByOrderEP11ImGuiTabBari"];
+
+var _igTabBarFindMostRecentlySelectedTabForActiveWindow = Module["_igTabBarFindMostRecentlySelectedTabForActiveWindow"] = wasmExports["igTabBarFindMostRecentlySelectedTabForActiveWindow"];
+
+var __ZN5ImGui48TabBarFindMostRecentlySelectedTabForActiveWindowEP11ImGuiTabBar = Module["__ZN5ImGui48TabBarFindMostRecentlySelectedTabForActiveWindowEP11ImGuiTabBar"] = wasmExports["_ZN5ImGui48TabBarFindMostRecentlySelectedTabForActiveWindowEP11ImGuiTabBar"];
+
+var _igTabBarGetCurrentTab = Module["_igTabBarGetCurrentTab"] = wasmExports["igTabBarGetCurrentTab"];
+
+var __ZN5ImGui19TabBarGetCurrentTabEP11ImGuiTabBar = Module["__ZN5ImGui19TabBarGetCurrentTabEP11ImGuiTabBar"] = wasmExports["_ZN5ImGui19TabBarGetCurrentTabEP11ImGuiTabBar"];
+
+var _igTabBarGetTabOrder = Module["_igTabBarGetTabOrder"] = wasmExports["igTabBarGetTabOrder"];
+
+var _igTabBarGetTabName = Module["_igTabBarGetTabName"] = wasmExports["igTabBarGetTabName"];
+
+var __ZN5ImGui16TabBarGetTabNameEP11ImGuiTabBarP12ImGuiTabItem = Module["__ZN5ImGui16TabBarGetTabNameEP11ImGuiTabBarP12ImGuiTabItem"] = wasmExports["_ZN5ImGui16TabBarGetTabNameEP11ImGuiTabBarP12ImGuiTabItem"];
+
+var _igTabBarAddTab = Module["_igTabBarAddTab"] = wasmExports["igTabBarAddTab"];
+
+var __ZN5ImGui12TabBarAddTabEP11ImGuiTabBariP11ImGuiWindow = Module["__ZN5ImGui12TabBarAddTabEP11ImGuiTabBariP11ImGuiWindow"] = wasmExports["_ZN5ImGui12TabBarAddTabEP11ImGuiTabBariP11ImGuiWindow"];
+
+var _igTabBarRemoveTab = Module["_igTabBarRemoveTab"] = wasmExports["igTabBarRemoveTab"];
+
+var __ZN5ImGui15TabBarRemoveTabEP11ImGuiTabBarj = Module["__ZN5ImGui15TabBarRemoveTabEP11ImGuiTabBarj"] = wasmExports["_ZN5ImGui15TabBarRemoveTabEP11ImGuiTabBarj"];
+
+var _igTabBarCloseTab = Module["_igTabBarCloseTab"] = wasmExports["igTabBarCloseTab"];
+
+var __ZN5ImGui14TabBarCloseTabEP11ImGuiTabBarP12ImGuiTabItem = Module["__ZN5ImGui14TabBarCloseTabEP11ImGuiTabBarP12ImGuiTabItem"] = wasmExports["_ZN5ImGui14TabBarCloseTabEP11ImGuiTabBarP12ImGuiTabItem"];
+
+var _igTabBarQueueFocus = Module["_igTabBarQueueFocus"] = wasmExports["igTabBarQueueFocus"];
+
+var __ZN5ImGui16TabBarQueueFocusEP11ImGuiTabBarP12ImGuiTabItem = Module["__ZN5ImGui16TabBarQueueFocusEP11ImGuiTabBarP12ImGuiTabItem"] = wasmExports["_ZN5ImGui16TabBarQueueFocusEP11ImGuiTabBarP12ImGuiTabItem"];
+
+var _igTabBarQueueReorder = Module["_igTabBarQueueReorder"] = wasmExports["igTabBarQueueReorder"];
+
+var __ZN5ImGui18TabBarQueueReorderEP11ImGuiTabBarP12ImGuiTabItemi = Module["__ZN5ImGui18TabBarQueueReorderEP11ImGuiTabBarP12ImGuiTabItemi"] = wasmExports["_ZN5ImGui18TabBarQueueReorderEP11ImGuiTabBarP12ImGuiTabItemi"];
+
+var _igTabBarQueueReorderFromMousePos = Module["_igTabBarQueueReorderFromMousePos"] = wasmExports["igTabBarQueueReorderFromMousePos"];
+
+var __ZN5ImGui30TabBarQueueReorderFromMousePosEP11ImGuiTabBarP12ImGuiTabItem6ImVec2 = Module["__ZN5ImGui30TabBarQueueReorderFromMousePosEP11ImGuiTabBarP12ImGuiTabItem6ImVec2"] = wasmExports["_ZN5ImGui30TabBarQueueReorderFromMousePosEP11ImGuiTabBarP12ImGuiTabItem6ImVec2"];
+
+var _igTabBarProcessReorder = Module["_igTabBarProcessReorder"] = wasmExports["igTabBarProcessReorder"];
+
+var __ZN5ImGui20TabBarProcessReorderEP11ImGuiTabBar = Module["__ZN5ImGui20TabBarProcessReorderEP11ImGuiTabBar"] = wasmExports["_ZN5ImGui20TabBarProcessReorderEP11ImGuiTabBar"];
+
+var _igTabItemEx = Module["_igTabItemEx"] = wasmExports["igTabItemEx"];
+
+var __ZN5ImGui9TabItemExEP11ImGuiTabBarPKcPbiP11ImGuiWindow = Module["__ZN5ImGui9TabItemExEP11ImGuiTabBarPKcPbiP11ImGuiWindow"] = wasmExports["_ZN5ImGui9TabItemExEP11ImGuiTabBarPKcPbiP11ImGuiWindow"];
+
+var _igTabItemCalcSize_Str = Module["_igTabItemCalcSize_Str"] = wasmExports["igTabItemCalcSize_Str"];
+
+var __ZN5ImGui15TabItemCalcSizeEPKcb = Module["__ZN5ImGui15TabItemCalcSizeEPKcb"] = wasmExports["_ZN5ImGui15TabItemCalcSizeEPKcb"];
+
+var _igTabItemCalcSize_WindowPtr = Module["_igTabItemCalcSize_WindowPtr"] = wasmExports["igTabItemCalcSize_WindowPtr"];
+
+var __ZN5ImGui15TabItemCalcSizeEP11ImGuiWindow = Module["__ZN5ImGui15TabItemCalcSizeEP11ImGuiWindow"] = wasmExports["_ZN5ImGui15TabItemCalcSizeEP11ImGuiWindow"];
+
+var _igTabItemBackground = Module["_igTabItemBackground"] = wasmExports["igTabItemBackground"];
+
+var __ZN5ImGui17TabItemBackgroundEP10ImDrawListRK6ImRectij = Module["__ZN5ImGui17TabItemBackgroundEP10ImDrawListRK6ImRectij"] = wasmExports["_ZN5ImGui17TabItemBackgroundEP10ImDrawListRK6ImRectij"];
+
+var _igTabItemLabelAndCloseButton = Module["_igTabItemLabelAndCloseButton"] = wasmExports["igTabItemLabelAndCloseButton"];
+
+var __ZN5ImGui26TabItemLabelAndCloseButtonEP10ImDrawListRK6ImRecti6ImVec2PKcjjbPbS8_ = Module["__ZN5ImGui26TabItemLabelAndCloseButtonEP10ImDrawListRK6ImRecti6ImVec2PKcjjbPbS8_"] = wasmExports["_ZN5ImGui26TabItemLabelAndCloseButtonEP10ImDrawListRK6ImRecti6ImVec2PKcjjbPbS8_"];
+
+var _igRenderText = Module["_igRenderText"] = wasmExports["igRenderText"];
+
+var __ZN5ImGui10RenderTextE6ImVec2PKcS2_b = Module["__ZN5ImGui10RenderTextE6ImVec2PKcS2_b"] = wasmExports["_ZN5ImGui10RenderTextE6ImVec2PKcS2_b"];
+
+var _igRenderTextWrapped = Module["_igRenderTextWrapped"] = wasmExports["igRenderTextWrapped"];
+
+var __ZN5ImGui17RenderTextWrappedE6ImVec2PKcS2_f = Module["__ZN5ImGui17RenderTextWrappedE6ImVec2PKcS2_f"] = wasmExports["_ZN5ImGui17RenderTextWrappedE6ImVec2PKcS2_f"];
+
+var _igRenderTextClipped = Module["_igRenderTextClipped"] = wasmExports["igRenderTextClipped"];
+
+var __ZN5ImGui17RenderTextClippedERK6ImVec2S2_PKcS4_PS1_S2_PK6ImRect = Module["__ZN5ImGui17RenderTextClippedERK6ImVec2S2_PKcS4_PS1_S2_PK6ImRect"] = wasmExports["_ZN5ImGui17RenderTextClippedERK6ImVec2S2_PKcS4_PS1_S2_PK6ImRect"];
+
+var _igRenderTextClippedEx = Module["_igRenderTextClippedEx"] = wasmExports["igRenderTextClippedEx"];
+
+var __ZN5ImGui19RenderTextClippedExEP10ImDrawListRK6ImVec2S4_PKcS6_PS3_S4_PK6ImRect = Module["__ZN5ImGui19RenderTextClippedExEP10ImDrawListRK6ImVec2S4_PKcS6_PS3_S4_PK6ImRect"] = wasmExports["_ZN5ImGui19RenderTextClippedExEP10ImDrawListRK6ImVec2S4_PKcS6_PS3_S4_PK6ImRect"];
+
+var _igRenderTextEllipsis = Module["_igRenderTextEllipsis"] = wasmExports["igRenderTextEllipsis"];
+
+var __ZN5ImGui18RenderTextEllipsisEP10ImDrawListRK6ImVec2S4_ffPKcS6_PS3_ = Module["__ZN5ImGui18RenderTextEllipsisEP10ImDrawListRK6ImVec2S4_ffPKcS6_PS3_"] = wasmExports["_ZN5ImGui18RenderTextEllipsisEP10ImDrawListRK6ImVec2S4_ffPKcS6_PS3_"];
+
+var _igRenderFrame = Module["_igRenderFrame"] = wasmExports["igRenderFrame"];
+
+var __ZN5ImGui11RenderFrameE6ImVec2S0_jbf = Module["__ZN5ImGui11RenderFrameE6ImVec2S0_jbf"] = wasmExports["_ZN5ImGui11RenderFrameE6ImVec2S0_jbf"];
+
+var _igRenderFrameBorder = Module["_igRenderFrameBorder"] = wasmExports["igRenderFrameBorder"];
+
+var __ZN5ImGui17RenderFrameBorderE6ImVec2S0_f = Module["__ZN5ImGui17RenderFrameBorderE6ImVec2S0_f"] = wasmExports["_ZN5ImGui17RenderFrameBorderE6ImVec2S0_f"];
+
+var _igRenderColorRectWithAlphaCheckerboard = Module["_igRenderColorRectWithAlphaCheckerboard"] = wasmExports["igRenderColorRectWithAlphaCheckerboard"];
+
+var __ZN5ImGui36RenderColorRectWithAlphaCheckerboardEP10ImDrawList6ImVec2S2_jfS2_fi = Module["__ZN5ImGui36RenderColorRectWithAlphaCheckerboardEP10ImDrawList6ImVec2S2_jfS2_fi"] = wasmExports["_ZN5ImGui36RenderColorRectWithAlphaCheckerboardEP10ImDrawList6ImVec2S2_jfS2_fi"];
+
+var _igRenderNavHighlight = Module["_igRenderNavHighlight"] = wasmExports["igRenderNavHighlight"];
+
+var __ZN5ImGui18RenderNavHighlightERK6ImRectji = Module["__ZN5ImGui18RenderNavHighlightERK6ImRectji"] = wasmExports["_ZN5ImGui18RenderNavHighlightERK6ImRectji"];
+
+var _igFindRenderedTextEnd = Module["_igFindRenderedTextEnd"] = wasmExports["igFindRenderedTextEnd"];
+
+var __ZN5ImGui19FindRenderedTextEndEPKcS1_ = Module["__ZN5ImGui19FindRenderedTextEndEPKcS1_"] = wasmExports["_ZN5ImGui19FindRenderedTextEndEPKcS1_"];
+
+var _igRenderMouseCursor = Module["_igRenderMouseCursor"] = wasmExports["igRenderMouseCursor"];
+
+var __ZN5ImGui17RenderMouseCursorE6ImVec2fijjj = Module["__ZN5ImGui17RenderMouseCursorE6ImVec2fijjj"] = wasmExports["_ZN5ImGui17RenderMouseCursorE6ImVec2fijjj"];
+
+var _igRenderArrow = Module["_igRenderArrow"] = wasmExports["igRenderArrow"];
+
+var __ZN5ImGui11RenderArrowEP10ImDrawList6ImVec2jif = Module["__ZN5ImGui11RenderArrowEP10ImDrawList6ImVec2jif"] = wasmExports["_ZN5ImGui11RenderArrowEP10ImDrawList6ImVec2jif"];
+
+var _igRenderBullet = Module["_igRenderBullet"] = wasmExports["igRenderBullet"];
+
+var __ZN5ImGui12RenderBulletEP10ImDrawList6ImVec2j = Module["__ZN5ImGui12RenderBulletEP10ImDrawList6ImVec2j"] = wasmExports["_ZN5ImGui12RenderBulletEP10ImDrawList6ImVec2j"];
+
+var _igRenderCheckMark = Module["_igRenderCheckMark"] = wasmExports["igRenderCheckMark"];
+
+var __ZN5ImGui15RenderCheckMarkEP10ImDrawList6ImVec2jf = Module["__ZN5ImGui15RenderCheckMarkEP10ImDrawList6ImVec2jf"] = wasmExports["_ZN5ImGui15RenderCheckMarkEP10ImDrawList6ImVec2jf"];
+
+var _igRenderArrowPointingAt = Module["_igRenderArrowPointingAt"] = wasmExports["igRenderArrowPointingAt"];
+
+var __ZN5ImGui21RenderArrowPointingAtEP10ImDrawList6ImVec2S2_ij = Module["__ZN5ImGui21RenderArrowPointingAtEP10ImDrawList6ImVec2S2_ij"] = wasmExports["_ZN5ImGui21RenderArrowPointingAtEP10ImDrawList6ImVec2S2_ij"];
+
+var _igRenderArrowDockMenu = Module["_igRenderArrowDockMenu"] = wasmExports["igRenderArrowDockMenu"];
+
+var __ZN5ImGui19RenderArrowDockMenuEP10ImDrawList6ImVec2fj = Module["__ZN5ImGui19RenderArrowDockMenuEP10ImDrawList6ImVec2fj"] = wasmExports["_ZN5ImGui19RenderArrowDockMenuEP10ImDrawList6ImVec2fj"];
+
+var _igRenderRectFilledRangeH = Module["_igRenderRectFilledRangeH"] = wasmExports["igRenderRectFilledRangeH"];
+
+var __ZN5ImGui22RenderRectFilledRangeHEP10ImDrawListRK6ImRectjfff = Module["__ZN5ImGui22RenderRectFilledRangeHEP10ImDrawListRK6ImRectjfff"] = wasmExports["_ZN5ImGui22RenderRectFilledRangeHEP10ImDrawListRK6ImRectjfff"];
+
+var _igRenderRectFilledWithHole = Module["_igRenderRectFilledWithHole"] = wasmExports["igRenderRectFilledWithHole"];
+
+var __ZN5ImGui24RenderRectFilledWithHoleEP10ImDrawListRK6ImRectS4_jf = Module["__ZN5ImGui24RenderRectFilledWithHoleEP10ImDrawListRK6ImRectS4_jf"] = wasmExports["_ZN5ImGui24RenderRectFilledWithHoleEP10ImDrawListRK6ImRectS4_jf"];
+
+var _igCalcRoundingFlagsForRectInRect = Module["_igCalcRoundingFlagsForRectInRect"] = wasmExports["igCalcRoundingFlagsForRectInRect"];
+
+var __ZN5ImGui30CalcRoundingFlagsForRectInRectERK6ImRectS2_f = Module["__ZN5ImGui30CalcRoundingFlagsForRectInRectERK6ImRectS2_f"] = wasmExports["_ZN5ImGui30CalcRoundingFlagsForRectInRectERK6ImRectS2_f"];
+
+var _igTextEx = Module["_igTextEx"] = wasmExports["igTextEx"];
+
+var __ZN5ImGui6TextExEPKcS1_i = Module["__ZN5ImGui6TextExEPKcS1_i"] = wasmExports["_ZN5ImGui6TextExEPKcS1_i"];
+
+var _igButtonEx = Module["_igButtonEx"] = wasmExports["igButtonEx"];
+
+var __ZN5ImGui8ButtonExEPKcRK6ImVec2i = Module["__ZN5ImGui8ButtonExEPKcRK6ImVec2i"] = wasmExports["_ZN5ImGui8ButtonExEPKcRK6ImVec2i"];
+
+var _igArrowButtonEx = Module["_igArrowButtonEx"] = wasmExports["igArrowButtonEx"];
+
+var __ZN5ImGui13ArrowButtonExEPKci6ImVec2i = Module["__ZN5ImGui13ArrowButtonExEPKci6ImVec2i"] = wasmExports["_ZN5ImGui13ArrowButtonExEPKci6ImVec2i"];
+
+var _igImageButtonEx = Module["_igImageButtonEx"] = wasmExports["igImageButtonEx"];
+
+var __ZN5ImGui13ImageButtonExEjPvRK6ImVec2S3_S3_RK6ImVec4S6_i = Module["__ZN5ImGui13ImageButtonExEjPvRK6ImVec2S3_S3_RK6ImVec4S6_i"] = wasmExports["_ZN5ImGui13ImageButtonExEjPvRK6ImVec2S3_S3_RK6ImVec4S6_i"];
+
+var _igSeparatorEx = Module["_igSeparatorEx"] = wasmExports["igSeparatorEx"];
+
+var __ZN5ImGui11SeparatorExEif = Module["__ZN5ImGui11SeparatorExEif"] = wasmExports["_ZN5ImGui11SeparatorExEif"];
+
+var _igSeparatorTextEx = Module["_igSeparatorTextEx"] = wasmExports["igSeparatorTextEx"];
+
+var __ZN5ImGui15SeparatorTextExEjPKcS1_f = Module["__ZN5ImGui15SeparatorTextExEjPKcS1_f"] = wasmExports["_ZN5ImGui15SeparatorTextExEjPKcS1_f"];
+
+var _igCheckboxFlags_S64Ptr = Module["_igCheckboxFlags_S64Ptr"] = wasmExports["igCheckboxFlags_S64Ptr"];
+
+var __ZN5ImGui13CheckboxFlagsEPKcPxx = Module["__ZN5ImGui13CheckboxFlagsEPKcPxx"] = wasmExports["_ZN5ImGui13CheckboxFlagsEPKcPxx"];
+
+var _igCheckboxFlags_U64Ptr = Module["_igCheckboxFlags_U64Ptr"] = wasmExports["igCheckboxFlags_U64Ptr"];
+
+var __ZN5ImGui13CheckboxFlagsEPKcPyy = Module["__ZN5ImGui13CheckboxFlagsEPKcPyy"] = wasmExports["_ZN5ImGui13CheckboxFlagsEPKcPyy"];
+
+var _igCloseButton = Module["_igCloseButton"] = wasmExports["igCloseButton"];
+
+var __ZN5ImGui11CloseButtonEjRK6ImVec2 = Module["__ZN5ImGui11CloseButtonEjRK6ImVec2"] = wasmExports["_ZN5ImGui11CloseButtonEjRK6ImVec2"];
+
+var _igCollapseButton = Module["_igCollapseButton"] = wasmExports["igCollapseButton"];
+
+var __ZN5ImGui14CollapseButtonEjRK6ImVec2P13ImGuiDockNode = Module["__ZN5ImGui14CollapseButtonEjRK6ImVec2P13ImGuiDockNode"] = wasmExports["_ZN5ImGui14CollapseButtonEjRK6ImVec2P13ImGuiDockNode"];
+
+var _igScrollbar = Module["_igScrollbar"] = wasmExports["igScrollbar"];
+
+var __ZN5ImGui9ScrollbarE9ImGuiAxis = Module["__ZN5ImGui9ScrollbarE9ImGuiAxis"] = wasmExports["_ZN5ImGui9ScrollbarE9ImGuiAxis"];
+
+var _igScrollbarEx = Module["_igScrollbarEx"] = wasmExports["igScrollbarEx"];
+
+var __ZN5ImGui11ScrollbarExERK6ImRectj9ImGuiAxisPxxxi = Module["__ZN5ImGui11ScrollbarExERK6ImRectj9ImGuiAxisPxxxi"] = wasmExports["_ZN5ImGui11ScrollbarExERK6ImRectj9ImGuiAxisPxxxi"];
+
+var _igGetWindowScrollbarRect = Module["_igGetWindowScrollbarRect"] = wasmExports["igGetWindowScrollbarRect"];
+
+var __ZN5ImGui22GetWindowScrollbarRectEP11ImGuiWindow9ImGuiAxis = Module["__ZN5ImGui22GetWindowScrollbarRectEP11ImGuiWindow9ImGuiAxis"] = wasmExports["_ZN5ImGui22GetWindowScrollbarRectEP11ImGuiWindow9ImGuiAxis"];
+
+var _igGetWindowScrollbarID = Module["_igGetWindowScrollbarID"] = wasmExports["igGetWindowScrollbarID"];
+
+var __ZN5ImGui20GetWindowScrollbarIDEP11ImGuiWindow9ImGuiAxis = Module["__ZN5ImGui20GetWindowScrollbarIDEP11ImGuiWindow9ImGuiAxis"] = wasmExports["_ZN5ImGui20GetWindowScrollbarIDEP11ImGuiWindow9ImGuiAxis"];
+
+var _igGetWindowResizeCornerID = Module["_igGetWindowResizeCornerID"] = wasmExports["igGetWindowResizeCornerID"];
+
+var __ZN5ImGui23GetWindowResizeCornerIDEP11ImGuiWindowi = Module["__ZN5ImGui23GetWindowResizeCornerIDEP11ImGuiWindowi"] = wasmExports["_ZN5ImGui23GetWindowResizeCornerIDEP11ImGuiWindowi"];
+
+var _igGetWindowResizeBorderID = Module["_igGetWindowResizeBorderID"] = wasmExports["igGetWindowResizeBorderID"];
+
+var __ZN5ImGui23GetWindowResizeBorderIDEP11ImGuiWindowi = Module["__ZN5ImGui23GetWindowResizeBorderIDEP11ImGuiWindowi"] = wasmExports["_ZN5ImGui23GetWindowResizeBorderIDEP11ImGuiWindowi"];
+
+var _igButtonBehavior = Module["_igButtonBehavior"] = wasmExports["igButtonBehavior"];
+
+var __ZN5ImGui14ButtonBehaviorERK6ImRectjPbS3_i = Module["__ZN5ImGui14ButtonBehaviorERK6ImRectjPbS3_i"] = wasmExports["_ZN5ImGui14ButtonBehaviorERK6ImRectjPbS3_i"];
+
+var _igDragBehavior = Module["_igDragBehavior"] = wasmExports["igDragBehavior"];
+
+var __ZN5ImGui12DragBehaviorEjiPvfPKvS2_PKci = Module["__ZN5ImGui12DragBehaviorEjiPvfPKvS2_PKci"] = wasmExports["_ZN5ImGui12DragBehaviorEjiPvfPKvS2_PKci"];
+
+var _igSliderBehavior = Module["_igSliderBehavior"] = wasmExports["igSliderBehavior"];
+
+var __ZN5ImGui14SliderBehaviorERK6ImRectjiPvPKvS5_PKciPS0_ = Module["__ZN5ImGui14SliderBehaviorERK6ImRectjiPvPKvS5_PKciPS0_"] = wasmExports["_ZN5ImGui14SliderBehaviorERK6ImRectjiPvPKvS5_PKciPS0_"];
+
+var _igSplitterBehavior = Module["_igSplitterBehavior"] = wasmExports["igSplitterBehavior"];
+
+var __ZN5ImGui16SplitterBehaviorERK6ImRectj9ImGuiAxisPfS4_ffffj = Module["__ZN5ImGui16SplitterBehaviorERK6ImRectj9ImGuiAxisPfS4_ffffj"] = wasmExports["_ZN5ImGui16SplitterBehaviorERK6ImRectj9ImGuiAxisPfS4_ffffj"];
+
+var _igTreeNodeBehavior = Module["_igTreeNodeBehavior"] = wasmExports["igTreeNodeBehavior"];
+
+var __ZN5ImGui16TreeNodeBehaviorEjiPKcS1_ = Module["__ZN5ImGui16TreeNodeBehaviorEjiPKcS1_"] = wasmExports["_ZN5ImGui16TreeNodeBehaviorEjiPKcS1_"];
+
+var _igTreePushOverrideID = Module["_igTreePushOverrideID"] = wasmExports["igTreePushOverrideID"];
+
+var __ZN5ImGui18TreePushOverrideIDEj = Module["__ZN5ImGui18TreePushOverrideIDEj"] = wasmExports["_ZN5ImGui18TreePushOverrideIDEj"];
+
+var _igTreeNodeSetOpen = Module["_igTreeNodeSetOpen"] = wasmExports["igTreeNodeSetOpen"];
+
+var __ZN5ImGui15TreeNodeSetOpenEjb = Module["__ZN5ImGui15TreeNodeSetOpenEjb"] = wasmExports["_ZN5ImGui15TreeNodeSetOpenEjb"];
+
+var _igTreeNodeUpdateNextOpen = Module["_igTreeNodeUpdateNextOpen"] = wasmExports["igTreeNodeUpdateNextOpen"];
+
+var __ZN5ImGui22TreeNodeUpdateNextOpenEji = Module["__ZN5ImGui22TreeNodeUpdateNextOpenEji"] = wasmExports["_ZN5ImGui22TreeNodeUpdateNextOpenEji"];
+
+var _igSetNextItemSelectionUserData = Module["_igSetNextItemSelectionUserData"] = wasmExports["igSetNextItemSelectionUserData"];
+
+var __ZN5ImGui28SetNextItemSelectionUserDataEx = Module["__ZN5ImGui28SetNextItemSelectionUserDataEx"] = wasmExports["_ZN5ImGui28SetNextItemSelectionUserDataEx"];
+
+var _igDataTypeGetInfo = Module["_igDataTypeGetInfo"] = wasmExports["igDataTypeGetInfo"];
+
+var __ZN5ImGui15DataTypeGetInfoEi = Module["__ZN5ImGui15DataTypeGetInfoEi"] = wasmExports["_ZN5ImGui15DataTypeGetInfoEi"];
+
+var _igDataTypeFormatString = Module["_igDataTypeFormatString"] = wasmExports["igDataTypeFormatString"];
+
+var __ZN5ImGui20DataTypeFormatStringEPciiPKvPKc = Module["__ZN5ImGui20DataTypeFormatStringEPciiPKvPKc"] = wasmExports["_ZN5ImGui20DataTypeFormatStringEPciiPKvPKc"];
+
+var _igDataTypeApplyOp = Module["_igDataTypeApplyOp"] = wasmExports["igDataTypeApplyOp"];
+
+var __ZN5ImGui15DataTypeApplyOpEiiPvPKvS2_ = Module["__ZN5ImGui15DataTypeApplyOpEiiPvPKvS2_"] = wasmExports["_ZN5ImGui15DataTypeApplyOpEiiPvPKvS2_"];
+
+var _igDataTypeApplyFromText = Module["_igDataTypeApplyFromText"] = wasmExports["igDataTypeApplyFromText"];
+
+var __ZN5ImGui21DataTypeApplyFromTextEPKciPvS1_ = Module["__ZN5ImGui21DataTypeApplyFromTextEPKciPvS1_"] = wasmExports["_ZN5ImGui21DataTypeApplyFromTextEPKciPvS1_"];
+
+var _igDataTypeCompare = Module["_igDataTypeCompare"] = wasmExports["igDataTypeCompare"];
+
+var __ZN5ImGui15DataTypeCompareEiPKvS1_ = Module["__ZN5ImGui15DataTypeCompareEiPKvS1_"] = wasmExports["_ZN5ImGui15DataTypeCompareEiPKvS1_"];
+
+var _igDataTypeClamp = Module["_igDataTypeClamp"] = wasmExports["igDataTypeClamp"];
+
+var __ZN5ImGui13DataTypeClampEiPvPKvS2_ = Module["__ZN5ImGui13DataTypeClampEiPvPKvS2_"] = wasmExports["_ZN5ImGui13DataTypeClampEiPvPKvS2_"];
+
+var _igInputTextEx = Module["_igInputTextEx"] = wasmExports["igInputTextEx"];
+
+var __ZN5ImGui11InputTextExEPKcS1_PciRK6ImVec2iPFiP26ImGuiInputTextCallbackDataEPv = Module["__ZN5ImGui11InputTextExEPKcS1_PciRK6ImVec2iPFiP26ImGuiInputTextCallbackDataEPv"] = wasmExports["_ZN5ImGui11InputTextExEPKcS1_PciRK6ImVec2iPFiP26ImGuiInputTextCallbackDataEPv"];
+
+var _igInputTextDeactivateHook = Module["_igInputTextDeactivateHook"] = wasmExports["igInputTextDeactivateHook"];
+
+var __ZN5ImGui23InputTextDeactivateHookEj = Module["__ZN5ImGui23InputTextDeactivateHookEj"] = wasmExports["_ZN5ImGui23InputTextDeactivateHookEj"];
+
+var _igTempInputText = Module["_igTempInputText"] = wasmExports["igTempInputText"];
+
+var __ZN5ImGui13TempInputTextERK6ImRectjPKcPcii = Module["__ZN5ImGui13TempInputTextERK6ImRectjPKcPcii"] = wasmExports["_ZN5ImGui13TempInputTextERK6ImRectjPKcPcii"];
+
+var _igTempInputScalar = Module["_igTempInputScalar"] = wasmExports["igTempInputScalar"];
+
+var __ZN5ImGui15TempInputScalarERK6ImRectjPKciPvS4_PKvS7_ = Module["__ZN5ImGui15TempInputScalarERK6ImRectjPKciPvS4_PKvS7_"] = wasmExports["_ZN5ImGui15TempInputScalarERK6ImRectjPKciPvS4_PKvS7_"];
+
+var _igTempInputIsActive = Module["_igTempInputIsActive"] = wasmExports["igTempInputIsActive"];
+
+var _igGetInputTextState = Module["_igGetInputTextState"] = wasmExports["igGetInputTextState"];
+
+var _igColorTooltip = Module["_igColorTooltip"] = wasmExports["igColorTooltip"];
+
+var __ZN5ImGui12ColorTooltipEPKcPKfi = Module["__ZN5ImGui12ColorTooltipEPKcPKfi"] = wasmExports["_ZN5ImGui12ColorTooltipEPKcPKfi"];
+
+var _igColorEditOptionsPopup = Module["_igColorEditOptionsPopup"] = wasmExports["igColorEditOptionsPopup"];
+
+var __ZN5ImGui21ColorEditOptionsPopupEPKfi = Module["__ZN5ImGui21ColorEditOptionsPopupEPKfi"] = wasmExports["_ZN5ImGui21ColorEditOptionsPopupEPKfi"];
+
+var _igColorPickerOptionsPopup = Module["_igColorPickerOptionsPopup"] = wasmExports["igColorPickerOptionsPopup"];
+
+var __ZN5ImGui23ColorPickerOptionsPopupEPKfi = Module["__ZN5ImGui23ColorPickerOptionsPopupEPKfi"] = wasmExports["_ZN5ImGui23ColorPickerOptionsPopupEPKfi"];
+
+var _igPlotEx = Module["_igPlotEx"] = wasmExports["igPlotEx"];
+
+var __ZN5ImGui6PlotExE13ImGuiPlotTypePKcPFfPviES3_iiS2_ffRK6ImVec2 = Module["__ZN5ImGui6PlotExE13ImGuiPlotTypePKcPFfPviES3_iiS2_ffRK6ImVec2"] = wasmExports["_ZN5ImGui6PlotExE13ImGuiPlotTypePKcPFfPviES3_iiS2_ffRK6ImVec2"];
+
+var _igShadeVertsLinearColorGradientKeepAlpha = Module["_igShadeVertsLinearColorGradientKeepAlpha"] = wasmExports["igShadeVertsLinearColorGradientKeepAlpha"];
+
+var __ZN5ImGui38ShadeVertsLinearColorGradientKeepAlphaEP10ImDrawListii6ImVec2S2_jj = Module["__ZN5ImGui38ShadeVertsLinearColorGradientKeepAlphaEP10ImDrawListii6ImVec2S2_jj"] = wasmExports["_ZN5ImGui38ShadeVertsLinearColorGradientKeepAlphaEP10ImDrawListii6ImVec2S2_jj"];
+
+var _igShadeVertsLinearUV = Module["_igShadeVertsLinearUV"] = wasmExports["igShadeVertsLinearUV"];
+
+var __ZN5ImGui18ShadeVertsLinearUVEP10ImDrawListiiRK6ImVec2S4_S4_S4_b = Module["__ZN5ImGui18ShadeVertsLinearUVEP10ImDrawListiiRK6ImVec2S4_S4_S4_b"] = wasmExports["_ZN5ImGui18ShadeVertsLinearUVEP10ImDrawListiiRK6ImVec2S4_S4_S4_b"];
+
+var _igShadeVertsTransformPos = Module["_igShadeVertsTransformPos"] = wasmExports["igShadeVertsTransformPos"];
+
+var __ZN5ImGui22ShadeVertsTransformPosEP10ImDrawListiiRK6ImVec2ffS4_ = Module["__ZN5ImGui22ShadeVertsTransformPosEP10ImDrawListiiRK6ImVec2ffS4_"] = wasmExports["_ZN5ImGui22ShadeVertsTransformPosEP10ImDrawListiiRK6ImVec2ffS4_"];
+
+var _igGcCompactTransientMiscBuffers = Module["_igGcCompactTransientMiscBuffers"] = wasmExports["igGcCompactTransientMiscBuffers"];
+
+var __ZN5ImGui29GcCompactTransientMiscBuffersEv = Module["__ZN5ImGui29GcCompactTransientMiscBuffersEv"] = wasmExports["_ZN5ImGui29GcCompactTransientMiscBuffersEv"];
+
+var _igGcCompactTransientWindowBuffers = Module["_igGcCompactTransientWindowBuffers"] = wasmExports["igGcCompactTransientWindowBuffers"];
+
+var __ZN5ImGui31GcCompactTransientWindowBuffersEP11ImGuiWindow = Module["__ZN5ImGui31GcCompactTransientWindowBuffersEP11ImGuiWindow"] = wasmExports["_ZN5ImGui31GcCompactTransientWindowBuffersEP11ImGuiWindow"];
+
+var _igGcAwakeTransientWindowBuffers = Module["_igGcAwakeTransientWindowBuffers"] = wasmExports["igGcAwakeTransientWindowBuffers"];
+
+var __ZN5ImGui29GcAwakeTransientWindowBuffersEP11ImGuiWindow = Module["__ZN5ImGui29GcAwakeTransientWindowBuffersEP11ImGuiWindow"] = wasmExports["_ZN5ImGui29GcAwakeTransientWindowBuffersEP11ImGuiWindow"];
+
+var _igDebugLog = Module["_igDebugLog"] = wasmExports["igDebugLog"];
+
+var __ZN5ImGui9DebugLogVEPKcPv = Module["__ZN5ImGui9DebugLogVEPKcPv"] = wasmExports["_ZN5ImGui9DebugLogVEPKcPv"];
+
+var _igDebugLogV = Module["_igDebugLogV"] = wasmExports["igDebugLogV"];
+
+var _igDebugAllocHook = Module["_igDebugAllocHook"] = wasmExports["igDebugAllocHook"];
+
+var __ZN5ImGui14DebugAllocHookEP19ImGuiDebugAllocInfoiPvm = Module["__ZN5ImGui14DebugAllocHookEP19ImGuiDebugAllocInfoiPvm"] = wasmExports["_ZN5ImGui14DebugAllocHookEP19ImGuiDebugAllocInfoiPvm"];
+
+var _igErrorCheckEndFrameRecover = Module["_igErrorCheckEndFrameRecover"] = wasmExports["igErrorCheckEndFrameRecover"];
+
+var __ZN5ImGui25ErrorCheckEndFrameRecoverEPFvPvPKczES0_ = Module["__ZN5ImGui25ErrorCheckEndFrameRecoverEPFvPvPKczES0_"] = wasmExports["_ZN5ImGui25ErrorCheckEndFrameRecoverEPFvPvPKczES0_"];
+
+var _igErrorCheckEndWindowRecover = Module["_igErrorCheckEndWindowRecover"] = wasmExports["igErrorCheckEndWindowRecover"];
+
+var __ZN5ImGui26ErrorCheckEndWindowRecoverEPFvPvPKczES0_ = Module["__ZN5ImGui26ErrorCheckEndWindowRecoverEPFvPvPKczES0_"] = wasmExports["_ZN5ImGui26ErrorCheckEndWindowRecoverEPFvPvPKczES0_"];
+
+var _igErrorCheckUsingSetCursorPosToExtendParentBoundaries = Module["_igErrorCheckUsingSetCursorPosToExtendParentBoundaries"] = wasmExports["igErrorCheckUsingSetCursorPosToExtendParentBoundaries"];
+
+var __ZN5ImGui51ErrorCheckUsingSetCursorPosToExtendParentBoundariesEv = Module["__ZN5ImGui51ErrorCheckUsingSetCursorPosToExtendParentBoundariesEv"] = wasmExports["_ZN5ImGui51ErrorCheckUsingSetCursorPosToExtendParentBoundariesEv"];
+
+var _igDebugDrawCursorPos = Module["_igDebugDrawCursorPos"] = wasmExports["igDebugDrawCursorPos"];
+
+var __ZN5ImGui18DebugDrawCursorPosEj = Module["__ZN5ImGui18DebugDrawCursorPosEj"] = wasmExports["_ZN5ImGui18DebugDrawCursorPosEj"];
+
+var _igDebugDrawLineExtents = Module["_igDebugDrawLineExtents"] = wasmExports["igDebugDrawLineExtents"];
+
+var __ZN5ImGui20DebugDrawLineExtentsEj = Module["__ZN5ImGui20DebugDrawLineExtentsEj"] = wasmExports["_ZN5ImGui20DebugDrawLineExtentsEj"];
+
+var _igDebugDrawItemRect = Module["_igDebugDrawItemRect"] = wasmExports["igDebugDrawItemRect"];
+
+var __ZN5ImGui17DebugDrawItemRectEj = Module["__ZN5ImGui17DebugDrawItemRectEj"] = wasmExports["_ZN5ImGui17DebugDrawItemRectEj"];
+
+var _igDebugLocateItem = Module["_igDebugLocateItem"] = wasmExports["igDebugLocateItem"];
+
+var __ZN5ImGui15DebugLocateItemEj = Module["__ZN5ImGui15DebugLocateItemEj"] = wasmExports["_ZN5ImGui15DebugLocateItemEj"];
+
+var _igDebugLocateItemOnHover = Module["_igDebugLocateItemOnHover"] = wasmExports["igDebugLocateItemOnHover"];
+
+var __ZN5ImGui22DebugLocateItemOnHoverEj = Module["__ZN5ImGui22DebugLocateItemOnHoverEj"] = wasmExports["_ZN5ImGui22DebugLocateItemOnHoverEj"];
+
+var _igDebugLocateItemResolveWithLastItem = Module["_igDebugLocateItemResolveWithLastItem"] = wasmExports["igDebugLocateItemResolveWithLastItem"];
+
+var __ZN5ImGui34DebugLocateItemResolveWithLastItemEv = Module["__ZN5ImGui34DebugLocateItemResolveWithLastItemEv"] = wasmExports["_ZN5ImGui34DebugLocateItemResolveWithLastItemEv"];
+
+var _igDebugBreakClearData = Module["_igDebugBreakClearData"] = wasmExports["igDebugBreakClearData"];
+
+var __ZN5ImGui19DebugBreakClearDataEv = Module["__ZN5ImGui19DebugBreakClearDataEv"] = wasmExports["_ZN5ImGui19DebugBreakClearDataEv"];
+
+var _igDebugBreakButton = Module["_igDebugBreakButton"] = wasmExports["igDebugBreakButton"];
+
+var __ZN5ImGui16DebugBreakButtonEPKcS1_ = Module["__ZN5ImGui16DebugBreakButtonEPKcS1_"] = wasmExports["_ZN5ImGui16DebugBreakButtonEPKcS1_"];
+
+var _igDebugBreakButtonTooltip = Module["_igDebugBreakButtonTooltip"] = wasmExports["igDebugBreakButtonTooltip"];
+
+var __ZN5ImGui23DebugBreakButtonTooltipEbPKc = Module["__ZN5ImGui23DebugBreakButtonTooltipEbPKc"] = wasmExports["_ZN5ImGui23DebugBreakButtonTooltipEbPKc"];
+
+var _igShowFontAtlas = Module["_igShowFontAtlas"] = wasmExports["igShowFontAtlas"];
+
+var __ZN5ImGui13ShowFontAtlasEP11ImFontAtlas = Module["__ZN5ImGui13ShowFontAtlasEP11ImFontAtlas"] = wasmExports["_ZN5ImGui13ShowFontAtlasEP11ImFontAtlas"];
+
+var _igDebugHookIdInfo = Module["_igDebugHookIdInfo"] = wasmExports["igDebugHookIdInfo"];
+
+var __ZN5ImGui15DebugHookIdInfoEjiPKvS1_ = Module["__ZN5ImGui15DebugHookIdInfoEjiPKvS1_"] = wasmExports["_ZN5ImGui15DebugHookIdInfoEjiPKvS1_"];
+
+var _igDebugNodeColumns = Module["_igDebugNodeColumns"] = wasmExports["igDebugNodeColumns"];
+
+var __ZN5ImGui16DebugNodeColumnsEP15ImGuiOldColumns = Module["__ZN5ImGui16DebugNodeColumnsEP15ImGuiOldColumns"] = wasmExports["_ZN5ImGui16DebugNodeColumnsEP15ImGuiOldColumns"];
+
+var _igDebugNodeDockNode = Module["_igDebugNodeDockNode"] = wasmExports["igDebugNodeDockNode"];
+
+var __ZN5ImGui17DebugNodeDockNodeEP13ImGuiDockNodePKc = Module["__ZN5ImGui17DebugNodeDockNodeEP13ImGuiDockNodePKc"] = wasmExports["_ZN5ImGui17DebugNodeDockNodeEP13ImGuiDockNodePKc"];
+
+var _igDebugNodeDrawList = Module["_igDebugNodeDrawList"] = wasmExports["igDebugNodeDrawList"];
+
+var __ZN5ImGui17DebugNodeDrawListEP11ImGuiWindowP14ImGuiViewportPPK10ImDrawListPKc = Module["__ZN5ImGui17DebugNodeDrawListEP11ImGuiWindowP14ImGuiViewportPPK10ImDrawListPKc"] = wasmExports["_ZN5ImGui17DebugNodeDrawListEP11ImGuiWindowP14ImGuiViewportPPK10ImDrawListPKc"];
+
+var _igDebugNodeDrawCmdShowMeshAndBoundingBox = Module["_igDebugNodeDrawCmdShowMeshAndBoundingBox"] = wasmExports["igDebugNodeDrawCmdShowMeshAndBoundingBox"];
+
+var __ZN5ImGui38DebugNodeDrawCmdShowMeshAndBoundingBoxEP10ImDrawListPKS0_PK9ImDrawCmdbb = Module["__ZN5ImGui38DebugNodeDrawCmdShowMeshAndBoundingBoxEP10ImDrawListPKS0_PK9ImDrawCmdbb"] = wasmExports["_ZN5ImGui38DebugNodeDrawCmdShowMeshAndBoundingBoxEP10ImDrawListPKS0_PK9ImDrawCmdbb"];
+
+var _igDebugNodeFont = Module["_igDebugNodeFont"] = wasmExports["igDebugNodeFont"];
+
+var __ZN5ImGui13DebugNodeFontEP6ImFont = Module["__ZN5ImGui13DebugNodeFontEP6ImFont"] = wasmExports["_ZN5ImGui13DebugNodeFontEP6ImFont"];
+
+var _igDebugNodeFontGlyph = Module["_igDebugNodeFontGlyph"] = wasmExports["igDebugNodeFontGlyph"];
+
+var __ZN5ImGui18DebugNodeFontGlyphEP6ImFontPK11ImFontGlyph = Module["__ZN5ImGui18DebugNodeFontGlyphEP6ImFontPK11ImFontGlyph"] = wasmExports["_ZN5ImGui18DebugNodeFontGlyphEP6ImFontPK11ImFontGlyph"];
+
+var _igDebugNodeStorage = Module["_igDebugNodeStorage"] = wasmExports["igDebugNodeStorage"];
+
+var __ZN5ImGui16DebugNodeStorageEP12ImGuiStoragePKc = Module["__ZN5ImGui16DebugNodeStorageEP12ImGuiStoragePKc"] = wasmExports["_ZN5ImGui16DebugNodeStorageEP12ImGuiStoragePKc"];
+
+var _igDebugNodeTabBar = Module["_igDebugNodeTabBar"] = wasmExports["igDebugNodeTabBar"];
+
+var __ZN5ImGui15DebugNodeTabBarEP11ImGuiTabBarPKc = Module["__ZN5ImGui15DebugNodeTabBarEP11ImGuiTabBarPKc"] = wasmExports["_ZN5ImGui15DebugNodeTabBarEP11ImGuiTabBarPKc"];
+
+var _igDebugNodeTable = Module["_igDebugNodeTable"] = wasmExports["igDebugNodeTable"];
+
+var __ZN5ImGui14DebugNodeTableEP10ImGuiTable = Module["__ZN5ImGui14DebugNodeTableEP10ImGuiTable"] = wasmExports["_ZN5ImGui14DebugNodeTableEP10ImGuiTable"];
+
+var _igDebugNodeTableSettings = Module["_igDebugNodeTableSettings"] = wasmExports["igDebugNodeTableSettings"];
+
+var __ZN5ImGui22DebugNodeTableSettingsEP18ImGuiTableSettings = Module["__ZN5ImGui22DebugNodeTableSettingsEP18ImGuiTableSettings"] = wasmExports["_ZN5ImGui22DebugNodeTableSettingsEP18ImGuiTableSettings"];
+
+var _igDebugNodeInputTextState = Module["_igDebugNodeInputTextState"] = wasmExports["igDebugNodeInputTextState"];
+
+var __ZN5ImGui23DebugNodeInputTextStateEP19ImGuiInputTextState = Module["__ZN5ImGui23DebugNodeInputTextStateEP19ImGuiInputTextState"] = wasmExports["_ZN5ImGui23DebugNodeInputTextStateEP19ImGuiInputTextState"];
+
+var _igDebugNodeTypingSelectState = Module["_igDebugNodeTypingSelectState"] = wasmExports["igDebugNodeTypingSelectState"];
+
+var __ZN5ImGui26DebugNodeTypingSelectStateEP22ImGuiTypingSelectState = Module["__ZN5ImGui26DebugNodeTypingSelectStateEP22ImGuiTypingSelectState"] = wasmExports["_ZN5ImGui26DebugNodeTypingSelectStateEP22ImGuiTypingSelectState"];
+
+var _igDebugNodeWindow = Module["_igDebugNodeWindow"] = wasmExports["igDebugNodeWindow"];
+
+var __ZN5ImGui15DebugNodeWindowEP11ImGuiWindowPKc = Module["__ZN5ImGui15DebugNodeWindowEP11ImGuiWindowPKc"] = wasmExports["_ZN5ImGui15DebugNodeWindowEP11ImGuiWindowPKc"];
+
+var _igDebugNodeWindowSettings = Module["_igDebugNodeWindowSettings"] = wasmExports["igDebugNodeWindowSettings"];
+
+var __ZN5ImGui23DebugNodeWindowSettingsEP19ImGuiWindowSettings = Module["__ZN5ImGui23DebugNodeWindowSettingsEP19ImGuiWindowSettings"] = wasmExports["_ZN5ImGui23DebugNodeWindowSettingsEP19ImGuiWindowSettings"];
+
+var _igDebugNodeWindowsList = Module["_igDebugNodeWindowsList"] = wasmExports["igDebugNodeWindowsList"];
+
+var __ZN5ImGui20DebugNodeWindowsListEP8ImVectorIP11ImGuiWindowEPKc = Module["__ZN5ImGui20DebugNodeWindowsListEP8ImVectorIP11ImGuiWindowEPKc"] = wasmExports["_ZN5ImGui20DebugNodeWindowsListEP8ImVectorIP11ImGuiWindowEPKc"];
+
+var _igDebugNodeWindowsListByBeginStackParent = Module["_igDebugNodeWindowsListByBeginStackParent"] = wasmExports["igDebugNodeWindowsListByBeginStackParent"];
+
+var __ZN5ImGui38DebugNodeWindowsListByBeginStackParentEPP11ImGuiWindowiS1_ = Module["__ZN5ImGui38DebugNodeWindowsListByBeginStackParentEPP11ImGuiWindowiS1_"] = wasmExports["_ZN5ImGui38DebugNodeWindowsListByBeginStackParentEPP11ImGuiWindowiS1_"];
+
+var _igDebugNodeViewport = Module["_igDebugNodeViewport"] = wasmExports["igDebugNodeViewport"];
+
+var __ZN5ImGui17DebugNodeViewportEP14ImGuiViewportP = Module["__ZN5ImGui17DebugNodeViewportEP14ImGuiViewportP"] = wasmExports["_ZN5ImGui17DebugNodeViewportEP14ImGuiViewportP"];
+
+var _igDebugRenderKeyboardPreview = Module["_igDebugRenderKeyboardPreview"] = wasmExports["igDebugRenderKeyboardPreview"];
+
+var __ZN5ImGui26DebugRenderKeyboardPreviewEP10ImDrawList = Module["__ZN5ImGui26DebugRenderKeyboardPreviewEP10ImDrawList"] = wasmExports["_ZN5ImGui26DebugRenderKeyboardPreviewEP10ImDrawList"];
+
+var _igDebugRenderViewportThumbnail = Module["_igDebugRenderViewportThumbnail"] = wasmExports["igDebugRenderViewportThumbnail"];
+
+var __ZN5ImGui28DebugRenderViewportThumbnailEP10ImDrawListP14ImGuiViewportPRK6ImRect = Module["__ZN5ImGui28DebugRenderViewportThumbnailEP10ImDrawListP14ImGuiViewportPRK6ImRect"] = wasmExports["_ZN5ImGui28DebugRenderViewportThumbnailEP10ImDrawListP14ImGuiViewportPRK6ImRect"];
+
+var _igImFontAtlasGetBuilderForStbTruetype = Module["_igImFontAtlasGetBuilderForStbTruetype"] = wasmExports["igImFontAtlasGetBuilderForStbTruetype"];
+
+var __Z35ImFontAtlasGetBuilderForStbTruetypev = Module["__Z35ImFontAtlasGetBuilderForStbTruetypev"] = wasmExports["_Z35ImFontAtlasGetBuilderForStbTruetypev"];
+
+var _igImFontAtlasUpdateConfigDataPointers = Module["_igImFontAtlasUpdateConfigDataPointers"] = wasmExports["igImFontAtlasUpdateConfigDataPointers"];
+
+var __Z35ImFontAtlasUpdateConfigDataPointersP11ImFontAtlas = Module["__Z35ImFontAtlasUpdateConfigDataPointersP11ImFontAtlas"] = wasmExports["_Z35ImFontAtlasUpdateConfigDataPointersP11ImFontAtlas"];
+
+var _igImFontAtlasBuildInit = Module["_igImFontAtlasBuildInit"] = wasmExports["igImFontAtlasBuildInit"];
+
+var __Z20ImFontAtlasBuildInitP11ImFontAtlas = Module["__Z20ImFontAtlasBuildInitP11ImFontAtlas"] = wasmExports["_Z20ImFontAtlasBuildInitP11ImFontAtlas"];
+
+var _igImFontAtlasBuildSetupFont = Module["_igImFontAtlasBuildSetupFont"] = wasmExports["igImFontAtlasBuildSetupFont"];
+
+var __Z25ImFontAtlasBuildSetupFontP11ImFontAtlasP6ImFontP12ImFontConfigff = Module["__Z25ImFontAtlasBuildSetupFontP11ImFontAtlasP6ImFontP12ImFontConfigff"] = wasmExports["_Z25ImFontAtlasBuildSetupFontP11ImFontAtlasP6ImFontP12ImFontConfigff"];
+
+var _igImFontAtlasBuildPackCustomRects = Module["_igImFontAtlasBuildPackCustomRects"] = wasmExports["igImFontAtlasBuildPackCustomRects"];
+
+var __Z31ImFontAtlasBuildPackCustomRectsP11ImFontAtlasPv = Module["__Z31ImFontAtlasBuildPackCustomRectsP11ImFontAtlasPv"] = wasmExports["_Z31ImFontAtlasBuildPackCustomRectsP11ImFontAtlasPv"];
+
+var _igImFontAtlasBuildFinish = Module["_igImFontAtlasBuildFinish"] = wasmExports["igImFontAtlasBuildFinish"];
+
+var __Z22ImFontAtlasBuildFinishP11ImFontAtlas = Module["__Z22ImFontAtlasBuildFinishP11ImFontAtlas"] = wasmExports["_Z22ImFontAtlasBuildFinishP11ImFontAtlas"];
+
+var _igImFontAtlasBuildRender8bppRectFromString = Module["_igImFontAtlasBuildRender8bppRectFromString"] = wasmExports["igImFontAtlasBuildRender8bppRectFromString"];
+
+var __Z40ImFontAtlasBuildRender8bppRectFromStringP11ImFontAtlasiiiiPKcch = Module["__Z40ImFontAtlasBuildRender8bppRectFromStringP11ImFontAtlasiiiiPKcch"] = wasmExports["_Z40ImFontAtlasBuildRender8bppRectFromStringP11ImFontAtlasiiiiPKcch"];
+
+var _igImFontAtlasBuildRender32bppRectFromString = Module["_igImFontAtlasBuildRender32bppRectFromString"] = wasmExports["igImFontAtlasBuildRender32bppRectFromString"];
+
+var __Z41ImFontAtlasBuildRender32bppRectFromStringP11ImFontAtlasiiiiPKccj = Module["__Z41ImFontAtlasBuildRender32bppRectFromStringP11ImFontAtlasiiiiPKccj"] = wasmExports["_Z41ImFontAtlasBuildRender32bppRectFromStringP11ImFontAtlasiiiiPKccj"];
+
+var _igImFontAtlasBuildMultiplyCalcLookupTable = Module["_igImFontAtlasBuildMultiplyCalcLookupTable"] = wasmExports["igImFontAtlasBuildMultiplyCalcLookupTable"];
+
+var __Z39ImFontAtlasBuildMultiplyCalcLookupTablePhf = Module["__Z39ImFontAtlasBuildMultiplyCalcLookupTablePhf"] = wasmExports["_Z39ImFontAtlasBuildMultiplyCalcLookupTablePhf"];
+
+var _igImFontAtlasBuildMultiplyRectAlpha8 = Module["_igImFontAtlasBuildMultiplyRectAlpha8"] = wasmExports["igImFontAtlasBuildMultiplyRectAlpha8"];
+
+var __Z34ImFontAtlasBuildMultiplyRectAlpha8PKhPhiiiii = Module["__Z34ImFontAtlasBuildMultiplyRectAlpha8PKhPhiiiii"] = wasmExports["_Z34ImFontAtlasBuildMultiplyRectAlpha8PKhPhiiiii"];
+
+var _igLogText = Module["_igLogText"] = wasmExports["igLogText"];
+
+var _vsnprintf = Module["_vsnprintf"] = wasmExports["vsnprintf"];
+
+var __ZN5ImGui7LogTextEPKcz = Module["__ZN5ImGui7LogTextEPKcz"] = wasmExports["_ZN5ImGui7LogTextEPKcz"];
+
+var _ImGuiTextBuffer_appendf = Module["_ImGuiTextBuffer_appendf"] = wasmExports["ImGuiTextBuffer_appendf"];
+
+var _igGET_FLT_MAX = Module["_igGET_FLT_MAX"] = wasmExports["igGET_FLT_MAX"];
+
+var _igGET_FLT_MIN = Module["_igGET_FLT_MIN"] = wasmExports["igGET_FLT_MIN"];
+
+var _ImVector_ImWchar_create = Module["_ImVector_ImWchar_create"] = wasmExports["ImVector_ImWchar_create"];
+
+var _ImVector_ImWchar_destroy = Module["_ImVector_ImWchar_destroy"] = wasmExports["ImVector_ImWchar_destroy"];
+
+var _ImVector_ImWchar_Init = Module["_ImVector_ImWchar_Init"] = wasmExports["ImVector_ImWchar_Init"];
+
+var _ImVector_ImWchar_UnInit = Module["_ImVector_ImWchar_UnInit"] = wasmExports["ImVector_ImWchar_UnInit"];
+
+var __Z16GetCimguiStoragev = Module["__Z16GetCimguiStoragev"] = wasmExports["_Z16GetCimguiStoragev"];
+
+var __Znwm = Module["__Znwm"] = wasmExports["_Znwm"];
+
+var __Z26Platform_GetWindowPos_hookP13ImGuiViewport = Module["__Z26Platform_GetWindowPos_hookP13ImGuiViewport"] = wasmExports["_Z26Platform_GetWindowPos_hookP13ImGuiViewport"];
+
+var _ImGuiPlatformIO_Set_Platform_GetWindowPos = Module["_ImGuiPlatformIO_Set_Platform_GetWindowPos"] = wasmExports["ImGuiPlatformIO_Set_Platform_GetWindowPos"];
+
+var __Z27Platform_GetWindowSize_hookP13ImGuiViewport = Module["__Z27Platform_GetWindowSize_hookP13ImGuiViewport"] = wasmExports["_Z27Platform_GetWindowSize_hookP13ImGuiViewport"];
+
+var _ImGuiPlatformIO_Set_Platform_GetWindowSize = Module["_ImGuiPlatformIO_Set_Platform_GetWindowSize"] = wasmExports["ImGuiPlatformIO_Set_Platform_GetWindowSize"];
+
+var __ZN6ImPoolI11ImGuiTabBarE5ClearEv = Module["__ZN6ImPoolI11ImGuiTabBarE5ClearEv"] = wasmExports["_ZN6ImPoolI11ImGuiTabBarE5ClearEv"];
+
+var __ZN6ImPoolI10ImGuiTableE5ClearEv = Module["__ZN6ImPoolI10ImGuiTableE5ClearEv"] = wasmExports["_ZN6ImPoolI10ImGuiTableE5ClearEv"];
+
+var __ZN10ImGuiStyleC2Ev = Module["__ZN10ImGuiStyleC2Ev"] = wasmExports["_ZN10ImGuiStyleC2Ev"];
+
+var __ZN7ImGuiIOC2Ev = Module["__ZN7ImGuiIOC2Ev"] = wasmExports["_ZN7ImGuiIOC2Ev"];
+
+var __ZN8ImVectorI15ImGuiInputEventE7reserveEi = Module["__ZN8ImVectorI15ImGuiInputEventE7reserveEi"] = wasmExports["_ZN8ImVectorI15ImGuiInputEventE7reserveEi"];
+
+var __ZN8ImVectorItE7reserveEi = Module["__ZN8ImVectorItE7reserveEi"] = wasmExports["_ZN8ImVectorItE7reserveEi"];
+
+var __ZN7ImGuiIO20ClearInputCharactersEv = Module["__ZN7ImGuiIO20ClearInputCharactersEv"] = wasmExports["_ZN7ImGuiIO20ClearInputCharactersEv"];
+
+var _strncpy = Module["_strncpy"] = wasmExports["strncpy"];
+
+var __Z14ImFormatStringPcmPKcz = Module["__Z14ImFormatStringPcmPKcz"] = wasmExports["_Z14ImFormatStringPcmPKcz"];
+
+var __Z26ImFormatStringToTempBufferPPKcS1_S0_z = Module["__Z26ImFormatStringToTempBufferPPKcS1_S0_z"] = wasmExports["_Z26ImFormatStringToTempBufferPPKcS1_S0_z"];
+
+var __ZN8ImVectorIN12ImGuiStorage16ImGuiStoragePairEE7reserveEi = Module["__ZN8ImVectorIN12ImGuiStorage16ImGuiStoragePairEE7reserveEi"] = wasmExports["_ZN8ImVectorIN12ImGuiStorage16ImGuiStoragePairEE7reserveEi"];
+
+var __ZN15ImGuiTextFilterC2EPKc = Module["__ZN15ImGuiTextFilterC2EPKc"] = wasmExports["_ZN15ImGuiTextFilterC2EPKc"];
+
+var __ZN8ImVectorIN15ImGuiTextFilter14ImGuiTextRangeEE7reserveEi = Module["__ZN8ImVectorIN15ImGuiTextFilter14ImGuiTextRangeEE7reserveEi"] = wasmExports["_ZN8ImVectorIN15ImGuiTextFilter14ImGuiTextRangeEE7reserveEi"];
+
+var __ZN8ImVectorIcE7reserveEi = Module["__ZN8ImVectorIcE7reserveEi"] = wasmExports["_ZN8ImVectorIcE7reserveEi"];
+
+var __ZN15ImGuiTextBuffer7appendfEPKcz = Module["__ZN15ImGuiTextBuffer7appendfEPKcz"] = wasmExports["_ZN15ImGuiTextBuffer7appendfEPKcz"];
+
+var __ZN8ImVectorIiE7reserveEi = Module["__ZN8ImVectorIiE7reserveEi"] = wasmExports["_ZN8ImVectorIiE7reserveEi"];
+
+var __ZN16ImGuiListClipperC2Ev = Module["__ZN16ImGuiListClipperC2Ev"] = wasmExports["_ZN16ImGuiListClipperC2Ev"];
+
+var __ZN16ImGuiListClipperD2Ev = Module["__ZN16ImGuiListClipperD2Ev"] = wasmExports["_ZN16ImGuiListClipperD2Ev"];
+
+var __ZN5ImGui8DebugLogEPKcz = Module["__ZN5ImGui8DebugLogEPKcz"] = wasmExports["_ZN5ImGui8DebugLogEPKcz"];
+
+var __ZN8ImVectorI20ImGuiListClipperDataE7reserveEi = Module["__ZN8ImVectorI20ImGuiListClipperDataE7reserveEi"] = wasmExports["_ZN8ImVectorI20ImGuiListClipperDataE7reserveEi"];
+
+var __ZN8ImVectorI21ImGuiListClipperRangeE7reserveEi = Module["__ZN8ImVectorI21ImGuiListClipperRangeE7reserveEi"] = wasmExports["_ZN8ImVectorI21ImGuiListClipperRangeE7reserveEi"];
+
+var __ZN8ImVectorI21ImGuiListClipperRangeE9push_backERKS0_ = Module["__ZN8ImVectorI21ImGuiListClipperRangeE9push_backERKS0_"] = wasmExports["_ZN8ImVectorI21ImGuiListClipperRangeE9push_backERKS0_"];
+
+var __ZN8ImVectorI13ImGuiColorModE7reserveEi = Module["__ZN8ImVectorI13ImGuiColorModE7reserveEi"] = wasmExports["_ZN8ImVectorI13ImGuiColorModE7reserveEi"];
+
+var __ZN8ImVectorI13ImGuiStyleModE7reserveEi = Module["__ZN8ImVectorI13ImGuiStyleModE7reserveEi"] = wasmExports["_ZN8ImVectorI13ImGuiStyleModE7reserveEi"];
+
+var __ZN20ImGuiKeyRoutingTable5ClearEv = Module["__ZN20ImGuiKeyRoutingTable5ClearEv"] = wasmExports["_ZN20ImGuiKeyRoutingTable5ClearEv"];
+
+var __ZN8ImVectorIP14ImGuiViewportPE7reserveEi = Module["__ZN8ImVectorIP14ImGuiViewportPE7reserveEi"] = wasmExports["_ZN8ImVectorIP14ImGuiViewportPE7reserveEi"];
+
+var __ZN8ImVectorIP13ImGuiViewportE7reserveEi = Module["__ZN8ImVectorIP13ImGuiViewportE7reserveEi"] = wasmExports["_ZN8ImVectorIP13ImGuiViewportE7reserveEi"];
+
+var __ZN8ImVectorI20ImGuiSettingsHandlerE7reserveEi = Module["__ZN8ImVectorI20ImGuiSettingsHandlerE7reserveEi"] = wasmExports["_ZN8ImVectorI20ImGuiSettingsHandlerE7reserveEi"];
+
+var __ZN8ImVectorIP11ImGuiWindowE12clear_deleteEv = Module["__ZN8ImVectorIP11ImGuiWindowE12clear_deleteEv"] = wasmExports["_ZN8ImVectorIP11ImGuiWindowE12clear_deleteEv"];
+
+var __ZN8ImVectorIP14ImGuiViewportPE12clear_deleteEv = Module["__ZN8ImVectorIP14ImGuiViewportPE12clear_deleteEv"] = wasmExports["_ZN8ImVectorIP14ImGuiViewportPE12clear_deleteEv"];
+
+var __ZN8ImVectorI20ImGuiListClipperDataE14clear_destructEv = Module["__ZN8ImVectorI20ImGuiListClipperDataE14clear_destructEv"] = wasmExports["_ZN8ImVectorI20ImGuiListClipperDataE14clear_destructEv"];
+
+var __ZN8ImVectorI18ImGuiTableTempDataE14clear_destructEv = Module["__ZN8ImVectorI18ImGuiTableTempDataE14clear_destructEv"] = wasmExports["_ZN8ImVectorI18ImGuiTableTempDataE14clear_destructEv"];
+
+var __ZN19ImGuiInputTextState15ClearFreeMemoryEv = Module["__ZN19ImGuiInputTextState15ClearFreeMemoryEv"] = wasmExports["_ZN19ImGuiInputTextState15ClearFreeMemoryEv"];
+
+var _sscanf = Module["_sscanf"] = wasmExports["sscanf"];
+
+var __ZN10ImGuiTableD2Ev = Module["__ZN10ImGuiTableD2Ev"] = wasmExports["_ZN10ImGuiTableD2Ev"];
+
+var __ZN8ImVectorI16ImGuiContextHookE7reserveEi = Module["__ZN8ImVectorI16ImGuiContextHookE7reserveEi"] = wasmExports["_ZN8ImVectorI16ImGuiContextHookE7reserveEi"];
+
+var __ZN11ImGuiWindowC2EP12ImGuiContextPKc = Module["__ZN11ImGuiWindowC2EP12ImGuiContextPKc"] = wasmExports["_ZN11ImGuiWindowC2EP12ImGuiContextPKc"];
+
+var __ZN8ImVectorIjE7reserveEi = Module["__ZN8ImVectorIjE7reserveEi"] = wasmExports["_ZN8ImVectorIjE7reserveEi"];
+
+var __ZN11ImGuiWindowD2Ev = Module["__ZN11ImGuiWindowD2Ev"] = wasmExports["_ZN11ImGuiWindowD2Ev"];
+
+var __ZN8ImVectorI15ImGuiOldColumnsE14clear_destructEv = Module["__ZN8ImVectorI15ImGuiOldColumnsE14clear_destructEv"] = wasmExports["_ZN8ImVectorI15ImGuiOldColumnsE14clear_destructEv"];
+
+var __ZN19ImGuiWindowTempDataD2Ev = Module["__ZN19ImGuiWindowTempDataD2Ev"] = wasmExports["_ZN19ImGuiWindowTempDataD2Ev"];
+
+var __ZN8ImVectorI10ImDrawVertE7reserveEi = Module["__ZN8ImVectorI10ImDrawVertE7reserveEi"] = wasmExports["_ZN8ImVectorI10ImDrawVertE7reserveEi"];
+
+var __ZN8ImVectorI16ImGuiDockRequestE7reserveEi = Module["__ZN8ImVectorI16ImGuiDockRequestE7reserveEi"] = wasmExports["_ZN8ImVectorI16ImGuiDockRequestE7reserveEi"];
+
+var __ZNK11ImGuiWindow12TitleBarRectEv = Module["__ZNK11ImGuiWindow12TitleBarRectEv"] = wasmExports["_ZNK11ImGuiWindow12TitleBarRectEv"];
+
+var __ZN8ImVectorI20ImGuiWindowStackDataE7reserveEi = Module["__ZN8ImVectorI20ImGuiWindowStackDataE7reserveEi"] = wasmExports["_ZN8ImVectorI20ImGuiWindowStackDataE7reserveEi"];
+
+var __ZN8ImVectorI14ImGuiPopupDataE7reserveEi = Module["__ZN8ImVectorI14ImGuiPopupDataE7reserveEi"] = wasmExports["_ZN8ImVectorI14ImGuiPopupDataE7reserveEi"];
+
+var __ZN8ImVectorI14ImGuiGroupDataE7reserveEi = Module["__ZN8ImVectorI14ImGuiGroupDataE7reserveEi"] = wasmExports["_ZN8ImVectorI14ImGuiGroupDataE7reserveEi"];
+
+var __ZN5ImGui4TextEPKcz = Module["__ZN5ImGui4TextEPKcz"] = wasmExports["_ZN5ImGui4TextEPKcz"];
+
+var __ZN5ImGui11TextColoredERK6ImVec4PKcz = Module["__ZN5ImGui11TextColoredERK6ImVec4PKcz"] = wasmExports["_ZN5ImGui11TextColoredERK6ImVec4PKcz"];
+
+var _cosf = Module["_cosf"] = wasmExports["cosf"];
+
+var __ZN8ImVectorIP11ImGuiWindowE7reserveEi = Module["__ZN8ImVectorIP11ImGuiWindowE7reserveEi"] = wasmExports["_ZN8ImVectorIP11ImGuiWindowE7reserveEi"];
+
+var __ZN8ImVectorI19ImGuiFocusScopeDataE7reserveEi = Module["__ZN8ImVectorI19ImGuiFocusScopeDataE7reserveEi"] = wasmExports["_ZN8ImVectorI19ImGuiFocusScopeDataE7reserveEi"];
+
+var __ZN8ImVectorI6ImVec2E7reserveEi = Module["__ZN8ImVectorI6ImVec2E7reserveEi"] = wasmExports["_ZN8ImVectorI6ImVec2E7reserveEi"];
+
+var __ZN5ImGui10SetTooltipEPKcz = Module["__ZN5ImGui10SetTooltipEPKcz"] = wasmExports["_ZN5ImGui10SetTooltipEPKcz"];
+
+var __ZN8ImVectorIP10ImDrawListE7reserveEi = Module["__ZN8ImVectorIP10ImDrawListE7reserveEi"] = wasmExports["_ZN8ImVectorIP10ImDrawListE7reserveEi"];
+
+var __ZN5ImGui19SetItemAllowOverlapEv = Module["__ZN5ImGui19SetItemAllowOverlapEv"] = wasmExports["_ZN5ImGui19SetItemAllowOverlapEv"];
+
+var __ZN20ImGuiDockPreviewDataC2Ev = Module["__ZN20ImGuiDockPreviewDataC2Ev"] = wasmExports["_ZN20ImGuiDockPreviewDataC2Ev"];
+
+var __ZN8ImVectorIP6ImFontE7reserveEi = Module["__ZN8ImVectorIP6ImFontE7reserveEi"] = wasmExports["_ZN8ImVectorIP6ImFontE7reserveEi"];
+
+var __ZN8ImVectorIfE7reserveEi = Module["__ZN8ImVectorIfE7reserveEi"] = wasmExports["_ZN8ImVectorIfE7reserveEi"];
+
+var __ZN8ImVectorI19ImGuiStackLevelInfoE7reserveEi = Module["__ZN8ImVectorI19ImGuiStackLevelInfoE7reserveEi"] = wasmExports["_ZN8ImVectorI19ImGuiStackLevelInfoE7reserveEi"];
+
+var __ZN5ImGui11GetKeyIndexE8ImGuiKey = Module["__ZN5ImGui11GetKeyIndexE8ImGuiKey"] = wasmExports["_ZN5ImGui11GetKeyIndexE8ImGuiKey"];
+
+var __ZN8ImVectorI19ImGuiKeyRoutingDataE7reserveEi = Module["__ZN8ImVectorI19ImGuiKeyRoutingDataE7reserveEi"] = wasmExports["_ZN8ImVectorI19ImGuiKeyRoutingDataE7reserveEi"];
+
+var __ZN5ImGui14SetItemTooltipEPKcz = Module["__ZN5ImGui14SetItemTooltipEPKcz"] = wasmExports["_ZN5ImGui14SetItemTooltipEPKcz"];
+
+var __ZN8ImVectorIhE7reserveEi = Module["__ZN8ImVectorIhE7reserveEi"] = wasmExports["_ZN8ImVectorIhE7reserveEi"];
+
+var _strncmp = Module["_strncmp"] = wasmExports["strncmp"];
+
+var __ZN8ImVectorI21ImGuiDockNodeSettingsE7reserveEi = Module["__ZN8ImVectorI21ImGuiDockNodeSettingsE7reserveEi"] = wasmExports["_ZN8ImVectorI21ImGuiDockNodeSettingsE7reserveEi"];
+
+var __ZN6ImPoolI29ImGuiDockContextPruneNodeDataE3AddEv = Module["__ZN6ImPoolI29ImGuiDockContextPruneNodeDataE3AddEv"] = wasmExports["_ZN6ImPoolI29ImGuiDockContextPruneNodeDataE3AddEv"];
+
+var __ZN6ImPoolI29ImGuiDockContextPruneNodeDataED2Ev = Module["__ZN6ImPoolI29ImGuiDockContextPruneNodeDataED2Ev"] = wasmExports["_ZN6ImPoolI29ImGuiDockContextPruneNodeDataED2Ev"];
+
+var __Z9IM_DELETEI11ImGuiTabBarEvPT_ = Module["__Z9IM_DELETEI11ImGuiTabBarEvPT_"] = wasmExports["_Z9IM_DELETEI11ImGuiTabBarEvPT_"];
+
+var __ZN13ImGuiDockNodeC2Ej = Module["__ZN13ImGuiDockNodeC2Ej"] = wasmExports["_ZN13ImGuiDockNodeC2Ej"];
+
+var __ZN13ImGuiDockNodeD2Ev = Module["__ZN13ImGuiDockNodeD2Ev"] = wasmExports["_ZN13ImGuiDockNodeD2Ev"];
+
+var __ZN5ImGui8TreeNodeEPKcS1_z = Module["__ZN5ImGui8TreeNodeEPKcS1_z"] = wasmExports["_ZN5ImGui8TreeNodeEPKcS1_z"];
+
+var __ZN5ImGui8TreeNodeEPKvPKcz = Module["__ZN5ImGui8TreeNodeEPKvPKcz"] = wasmExports["_ZN5ImGui8TreeNodeEPKvPKcz"];
+
+var __ZN5ImGui10BulletTextEPKcz = Module["__ZN5ImGui10BulletTextEPKcz"] = wasmExports["_ZN5ImGui10BulletTextEPKcz"];
+
+var ___cxa_atexit = Module["___cxa_atexit"] = wasmExports["__cxa_atexit"];
+
+var _fmodf = Module["_fmodf"] = wasmExports["fmodf"];
+
+var __ZN5ImGui12TextDisabledEPKcz = Module["__ZN5ImGui12TextDisabledEPKcz"] = wasmExports["_ZN5ImGui12TextDisabledEPKcz"];
+
+var __ZN5ImGui10TreeNodeExEPKviPKcz = Module["__ZN5ImGui10TreeNodeExEPKviPKcz"] = wasmExports["_ZN5ImGui10TreeNodeExEPKviPKcz"];
+
+var __ZN5ImGui10TreeNodeExEPKciS1_z = Module["__ZN5ImGui10TreeNodeExEPKciS1_z"] = wasmExports["_ZN5ImGui10TreeNodeExEPKciS1_z"];
+
+var _iprintf = Module["_iprintf"] = wasmExports["iprintf"];
+
+var __ZN8ImVectorI9ImDrawCmdE7reserveEi = Module["__ZN8ImVectorI9ImDrawCmdE7reserveEi"] = wasmExports["_ZN8ImVectorI9ImDrawCmdE7reserveEi"];
+
+var __ZN8ImVectorIP13ImGuiDockNodeE7reserveEi = Module["__ZN8ImVectorIP13ImGuiDockNodeE7reserveEi"] = wasmExports["_ZN8ImVectorIP13ImGuiDockNodeE7reserveEi"];
+
+var __ZN6ImPoolI29ImGuiDockContextPruneNodeDataE5ClearEv = Module["__ZN6ImPoolI29ImGuiDockContextPruneNodeDataE5ClearEv"] = wasmExports["_ZN6ImPoolI29ImGuiDockContextPruneNodeDataE5ClearEv"];
+
+var __ZN8ImVectorI29ImGuiDockContextPruneNodeDataE7reserveEi = Module["__ZN8ImVectorI29ImGuiDockContextPruneNodeDataE7reserveEi"] = wasmExports["_ZN8ImVectorI29ImGuiDockContextPruneNodeDataE7reserveEi"];
+
+var __ZN16ImGuiDockContextD2Ev = Module["__ZN16ImGuiDockContextD2Ev"] = wasmExports["_ZN16ImGuiDockContextD2Ev"];
+
+var __ZN19ImGuiInputTextStateD2Ev = Module["__ZN19ImGuiInputTextStateD2Ev"] = wasmExports["_ZN19ImGuiInputTextStateD2Ev"];
+
+var __ZN6ImPoolI11ImGuiTabBarED2Ev = Module["__ZN6ImPoolI11ImGuiTabBarED2Ev"] = wasmExports["_ZN6ImPoolI11ImGuiTabBarED2Ev"];
+
+var __ZN6ImPoolI10ImGuiTableED2Ev = Module["__ZN6ImPoolI10ImGuiTableED2Ev"] = wasmExports["_ZN6ImPoolI10ImGuiTableED2Ev"];
+
+var __ZN20ImDrawListSharedDataC2Ev = Module["__ZN20ImDrawListSharedDataC2Ev"] = wasmExports["_ZN20ImDrawListSharedDataC2Ev"];
+
+var _sinf = Module["_sinf"] = wasmExports["sinf"];
+
+var _acosf = Module["_acosf"] = wasmExports["acosf"];
+
+var __ZN14ImTriangulator4InitEPK6ImVec2iPv = Module["__ZN14ImTriangulator4InitEPK6ImVec2iPv"] = wasmExports["_ZN14ImTriangulator4InitEPK6ImVec2iPv"];
+
+var __ZN14ImTriangulator10BuildNodesEPK6ImVec2i = Module["__ZN14ImTriangulator10BuildNodesEPK6ImVec2i"] = wasmExports["_ZN14ImTriangulator10BuildNodesEPK6ImVec2i"];
+
+var __ZN14ImTriangulator13BuildReflexesEv = Module["__ZN14ImTriangulator13BuildReflexesEv"] = wasmExports["_ZN14ImTriangulator13BuildReflexesEv"];
+
+var __ZN14ImTriangulator9BuildEarsEv = Module["__ZN14ImTriangulator9BuildEarsEv"] = wasmExports["_ZN14ImTriangulator9BuildEarsEv"];
+
+var __ZNK14ImTriangulator5IsEarEiiiRK6ImVec2S2_S2_ = Module["__ZNK14ImTriangulator5IsEarEiiiRK6ImVec2S2_S2_"] = wasmExports["_ZNK14ImTriangulator5IsEarEiiiRK6ImVec2S2_S2_"];
+
+var __ZN14ImTriangulator15GetNextTriangleEPj = Module["__ZN14ImTriangulator15GetNextTriangleEPj"] = wasmExports["_ZN14ImTriangulator15GetNextTriangleEPj"];
+
+var __ZN14ImTriangulator14ReclassifyNodeEP18ImTriangulatorNode = Module["__ZN14ImTriangulator14ReclassifyNodeEP18ImTriangulatorNode"] = wasmExports["_ZN14ImTriangulator14ReclassifyNodeEP18ImTriangulatorNode"];
+
+var __ZN14ImTriangulator12FlipNodeListEv = Module["__ZN14ImTriangulator12FlipNodeListEv"] = wasmExports["_ZN14ImTriangulator12FlipNodeListEv"];
+
+var __ZN12ImFontConfigC2Ev = Module["__ZN12ImFontConfigC2Ev"] = wasmExports["_ZN12ImFontConfigC2Ev"];
+
+var __ZN11ImFontAtlasC2Ev = Module["__ZN11ImFontAtlasC2Ev"] = wasmExports["_ZN11ImFontAtlasC2Ev"];
+
+var __ZN11ImFontAtlasD2Ev = Module["__ZN11ImFontAtlasD2Ev"] = wasmExports["_ZN11ImFontAtlasD2Ev"];
+
+var __ZN6ImFontC2Ev = Module["__ZN6ImFontC2Ev"] = wasmExports["_ZN6ImFontC2Ev"];
+
+var __ZN6ImFontD2Ev = Module["__ZN6ImFontD2Ev"] = wasmExports["_ZN6ImFontD2Ev"];
+
+var __ZN19ExampleAppDocumentsC2Ev = Module["__ZN19ExampleAppDocumentsC2Ev"] = wasmExports["_ZN19ExampleAppDocumentsC2Ev"];
+
+var __ZN10MyDocument15DisplayContentsEPS_ = Module["__ZN10MyDocument15DisplayContentsEPS_"] = wasmExports["_ZN10MyDocument15DisplayContentsEPS_"];
+
+var __ZN17ExampleAppConsoleC2Ev = Module["__ZN17ExampleAppConsoleC2Ev"] = wasmExports["_ZN17ExampleAppConsoleC2Ev"];
+
+var __ZN17ExampleAppConsole4DrawEPKcPb = Module["__ZN17ExampleAppConsole4DrawEPKcPb"] = wasmExports["_ZN17ExampleAppConsole4DrawEPKcPb"];
+
+var __ZN13ExampleAppLogC2Ev = Module["__ZN13ExampleAppLogC2Ev"] = wasmExports["_ZN13ExampleAppLogC2Ev"];
+
+var __ZN13ExampleAppLog6AddLogEPKcz = Module["__ZN13ExampleAppLog6AddLogEPKcz"] = wasmExports["_ZN13ExampleAppLog6AddLogEPKcz"];
+
+var __ZN13ExampleAppLog4DrawEPKcPb = Module["__ZN13ExampleAppLog4DrawEPKcPb"] = wasmExports["_ZN13ExampleAppLog4DrawEPKcPb"];
+
+var __ZN5ImGui11TextWrappedEPKcz = Module["__ZN5ImGui11TextWrappedEPKcz"] = wasmExports["_ZN5ImGui11TextWrappedEPKcz"];
+
+var __ZN5ImGui9LabelTextEPKcS1_z = Module["__ZN5ImGui9LabelTextEPKcS1_z"] = wasmExports["_ZN5ImGui9LabelTextEPKcS1_z"];
+
+var ___small_sprintf = Module["___small_sprintf"] = wasmExports["__small_sprintf"];
+
+var __ZN8ImVectorIiE9push_backERKi = Module["__ZN8ImVectorIiE9push_backERKi"] = wasmExports["_ZN8ImVectorIiE9push_backERKi"];
+
+var __ZN17ExampleAppConsole6AddLogEPKcz = Module["__ZN17ExampleAppConsole6AddLogEPKcz"] = wasmExports["_ZN17ExampleAppConsole6AddLogEPKcz"];
+
+var __ZN17ExampleAppConsoleD2Ev = Module["__ZN17ExampleAppConsoleD2Ev"] = wasmExports["_ZN17ExampleAppConsoleD2Ev"];
+
+var __ZN17ExampleAppConsole20TextEditCallbackStubEP26ImGuiInputTextCallbackData = Module["__ZN17ExampleAppConsole20TextEditCallbackStubEP26ImGuiInputTextCallbackData"] = wasmExports["_ZN17ExampleAppConsole20TextEditCallbackStubEP26ImGuiInputTextCallbackData"];
+
+var __ZN17ExampleAppConsole11ExecCommandEPKc = Module["__ZN17ExampleAppConsole11ExecCommandEPKc"] = wasmExports["_ZN17ExampleAppConsole11ExecCommandEPKc"];
+
+var __ZN17ExampleAppConsole16TextEditCallbackEP26ImGuiInputTextCallbackData = Module["__ZN17ExampleAppConsole16TextEditCallbackEP26ImGuiInputTextCallbackData"] = wasmExports["_ZN17ExampleAppConsole16TextEditCallbackEP26ImGuiInputTextCallbackData"];
+
+var __ZN13ExampleAppLog5ClearEv = Module["__ZN13ExampleAppLog5ClearEv"] = wasmExports["_ZN13ExampleAppLog5ClearEv"];
+
+var __ZN6ImPoolI10ImGuiTableE3AddEv = Module["__ZN6ImPoolI10ImGuiTableE3AddEv"] = wasmExports["_ZN6ImPoolI10ImGuiTableE3AddEv"];
+
+var __ZN6ImSpanI16ImGuiTableColumnEixEi = Module["__ZN6ImSpanI16ImGuiTableColumnEixEi"] = wasmExports["_ZN6ImSpanI16ImGuiTableColumnEixEi"];
+
+var __ZN6ImPoolI10ImGuiTableE6RemoveEji = Module["__ZN6ImPoolI10ImGuiTableE6RemoveEji"] = wasmExports["_ZN6ImPoolI10ImGuiTableE6RemoveEji"];
+
+var __ZN5ImGui11ImageButtonEPvRK6ImVec2S3_S3_iRK6ImVec4S6_ = Module["__ZN5ImGui11ImageButtonEPvRK6ImVec2S3_S3_iRK6ImVec4S6_"] = wasmExports["_ZN5ImGui11ImageButtonEPvRK6ImVec2S3_S3_iRK6ImVec4S6_"];
+
+var __ZN5ImGui7ListBoxEPKcPiPFbPviPS1_ES3_ii = Module["__ZN5ImGui7ListBoxEPKcPiPFbPviPS1_ES3_ii"] = wasmExports["_ZN5ImGui7ListBoxEPKcPiPFbPviPS1_ES3_ii"];
+
+var __ZN5ImGui5ComboEPKcPiPFbPviPS1_ES3_ii = Module["__ZN5ImGui5ComboEPKcPiPFbPviPS1_ES3_ii"] = wasmExports["_ZN5ImGui5ComboEPKcPiPFbPviPS1_ES3_ii"];
+
+var __ZN5ImGui13DragBehaviorTIiifEEbiPT_fS1_S1_PKci = Module["__ZN5ImGui13DragBehaviorTIiifEEbiPT_fS1_S1_PKci"] = wasmExports["_ZN5ImGui13DragBehaviorTIiifEEbiPT_fS1_S1_PKci"];
+
+var __ZN5ImGui13DragBehaviorTIjifEEbiPT_fS1_S1_PKci = Module["__ZN5ImGui13DragBehaviorTIjifEEbiPT_fS1_S1_PKci"] = wasmExports["_ZN5ImGui13DragBehaviorTIjifEEbiPT_fS1_S1_PKci"];
+
+var __ZN5ImGui13DragBehaviorTIxxdEEbiPT_fS1_S1_PKci = Module["__ZN5ImGui13DragBehaviorTIxxdEEbiPT_fS1_S1_PKci"] = wasmExports["_ZN5ImGui13DragBehaviorTIxxdEEbiPT_fS1_S1_PKci"];
+
+var __ZN5ImGui13DragBehaviorTIyxdEEbiPT_fS1_S1_PKci = Module["__ZN5ImGui13DragBehaviorTIyxdEEbiPT_fS1_S1_PKci"] = wasmExports["_ZN5ImGui13DragBehaviorTIyxdEEbiPT_fS1_S1_PKci"];
+
+var __ZN5ImGui13DragBehaviorTIfffEEbiPT_fS1_S1_PKci = Module["__ZN5ImGui13DragBehaviorTIfffEEbiPT_fS1_S1_PKci"] = wasmExports["_ZN5ImGui13DragBehaviorTIfffEEbiPT_fS1_S1_PKci"];
+
+var __ZN5ImGui13DragBehaviorTIdddEEbiPT_fS1_S1_PKci = Module["__ZN5ImGui13DragBehaviorTIdddEEbiPT_fS1_S1_PKci"] = wasmExports["_ZN5ImGui13DragBehaviorTIdddEEbiPT_fS1_S1_PKci"];
+
+var __ZN5ImGui20ScaleRatioFromValueTIiifEEfiT_S1_S1_bff = Module["__ZN5ImGui20ScaleRatioFromValueTIiifEEfiT_S1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleRatioFromValueTIiifEEfiT_S1_S1_bff"];
+
+var __ZN5ImGui20ScaleValueFromRatioTIiifEET_ifS1_S1_bff = Module["__ZN5ImGui20ScaleValueFromRatioTIiifEET_ifS1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleValueFromRatioTIiifEET_ifS1_S1_bff"];
+
+var __ZN5ImGui22RoundScalarWithFormatTIiEET_PKciS1_ = Module["__ZN5ImGui22RoundScalarWithFormatTIiEET_PKciS1_"] = wasmExports["_ZN5ImGui22RoundScalarWithFormatTIiEET_PKciS1_"];
+
+var __ZN5ImGui22RoundScalarWithFormatTIjEET_PKciS1_ = Module["__ZN5ImGui22RoundScalarWithFormatTIjEET_PKciS1_"] = wasmExports["_ZN5ImGui22RoundScalarWithFormatTIjEET_PKciS1_"];
+
+var __ZN5ImGui20ScaleRatioFromValueTIxxdEEfiT_S1_S1_bff = Module["__ZN5ImGui20ScaleRatioFromValueTIxxdEEfiT_S1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleRatioFromValueTIxxdEEfiT_S1_S1_bff"];
+
+var __ZN5ImGui20ScaleValueFromRatioTIxxdEET_ifS1_S1_bff = Module["__ZN5ImGui20ScaleValueFromRatioTIxxdEET_ifS1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleValueFromRatioTIxxdEET_ifS1_S1_bff"];
+
+var __ZN5ImGui22RoundScalarWithFormatTIxEET_PKciS1_ = Module["__ZN5ImGui22RoundScalarWithFormatTIxEET_PKciS1_"] = wasmExports["_ZN5ImGui22RoundScalarWithFormatTIxEET_PKciS1_"];
+
+var __ZN5ImGui22RoundScalarWithFormatTIyEET_PKciS1_ = Module["__ZN5ImGui22RoundScalarWithFormatTIyEET_PKciS1_"] = wasmExports["_ZN5ImGui22RoundScalarWithFormatTIyEET_PKciS1_"];
+
+var __ZN5ImGui20ScaleRatioFromValueTIfffEEfiT_S1_S1_bff = Module["__ZN5ImGui20ScaleRatioFromValueTIfffEEfiT_S1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleRatioFromValueTIfffEEfiT_S1_S1_bff"];
+
+var __ZN5ImGui20ScaleValueFromRatioTIfffEET_ifS1_S1_bff = Module["__ZN5ImGui20ScaleValueFromRatioTIfffEET_ifS1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleValueFromRatioTIfffEET_ifS1_S1_bff"];
+
+var __ZN5ImGui22RoundScalarWithFormatTIfEET_PKciS1_ = Module["__ZN5ImGui22RoundScalarWithFormatTIfEET_PKciS1_"] = wasmExports["_ZN5ImGui22RoundScalarWithFormatTIfEET_PKciS1_"];
+
+var __ZN5ImGui20ScaleRatioFromValueTIdddEEfiT_S1_S1_bff = Module["__ZN5ImGui20ScaleRatioFromValueTIdddEEfiT_S1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleRatioFromValueTIdddEEfiT_S1_S1_bff"];
+
+var __ZN5ImGui20ScaleValueFromRatioTIdddEET_ifS1_S1_bff = Module["__ZN5ImGui20ScaleValueFromRatioTIdddEET_ifS1_S1_bff"] = wasmExports["_ZN5ImGui20ScaleValueFromRatioTIdddEET_ifS1_S1_bff"];
+
+var __ZN5ImGui22RoundScalarWithFormatTIdEET_PKciS1_ = Module["__ZN5ImGui22RoundScalarWithFormatTIdEET_PKciS1_"] = wasmExports["_ZN5ImGui22RoundScalarWithFormatTIdEET_PKciS1_"];
+
+var __ZN5ImGui15SliderBehaviorTIiifEEbRK6ImRectjiPT_S4_S4_PKciPS1_ = Module["__ZN5ImGui15SliderBehaviorTIiifEEbRK6ImRectjiPT_S4_S4_PKciPS1_"] = wasmExports["_ZN5ImGui15SliderBehaviorTIiifEEbRK6ImRectjiPT_S4_S4_PKciPS1_"];
+
+var __ZN5ImGui15SliderBehaviorTIjifEEbRK6ImRectjiPT_S4_S4_PKciPS1_ = Module["__ZN5ImGui15SliderBehaviorTIjifEEbRK6ImRectjiPT_S4_S4_PKciPS1_"] = wasmExports["_ZN5ImGui15SliderBehaviorTIjifEEbRK6ImRectjiPT_S4_S4_PKciPS1_"];
+
+var __ZN5ImGui15SliderBehaviorTIxxdEEbRK6ImRectjiPT_S4_S4_PKciPS1_ = Module["__ZN5ImGui15SliderBehaviorTIxxdEEbRK6ImRectjiPT_S4_S4_PKciPS1_"] = wasmExports["_ZN5ImGui15SliderBehaviorTIxxdEEbRK6ImRectjiPT_S4_S4_PKciPS1_"];
+
+var __ZN5ImGui15SliderBehaviorTIyxdEEbRK6ImRectjiPT_S4_S4_PKciPS1_ = Module["__ZN5ImGui15SliderBehaviorTIyxdEEbRK6ImRectjiPT_S4_S4_PKciPS1_"] = wasmExports["_ZN5ImGui15SliderBehaviorTIyxdEEbRK6ImRectjiPT_S4_S4_PKciPS1_"];
+
+var __ZN5ImGui15SliderBehaviorTIfffEEbRK6ImRectjiPT_S4_S4_PKciPS1_ = Module["__ZN5ImGui15SliderBehaviorTIfffEEbRK6ImRectjiPT_S4_S4_PKciPS1_"] = wasmExports["_ZN5ImGui15SliderBehaviorTIfffEEbRK6ImRectjiPT_S4_S4_PKciPS1_"];
+
+var __ZN5ImGui15SliderBehaviorTIdddEEbRK6ImRectjiPT_S4_S4_PKciPS1_ = Module["__ZN5ImGui15SliderBehaviorTIdddEEbRK6ImRectjiPT_S4_S4_PKciPS1_"] = wasmExports["_ZN5ImGui15SliderBehaviorTIdddEEbRK6ImRectjiPT_S4_S4_PKciPS1_"];
+
+var __ZN8ImVectorItE6resizeEi = Module["__ZN8ImVectorItE6resizeEi"] = wasmExports["_ZN8ImVectorItE6resizeEi"];
+
+var __ZN26ImGuiInputTextCallbackDataC2Ev = Module["__ZN26ImGuiInputTextCallbackDataC2Ev"] = wasmExports["_ZN26ImGuiInputTextCallbackDataC2Ev"];
+
+var _atan2f = Module["_atan2f"] = wasmExports["atan2f"];
+
+var __ZN8ImVectorI20ImGuiNavTreeNodeDataE6resizeEi = Module["__ZN8ImVectorI20ImGuiNavTreeNodeDataE6resizeEi"] = wasmExports["_ZN8ImVectorI20ImGuiNavTreeNodeDataE6resizeEi"];
+
+var __ZN11ImGuiTabBarC2Ev = Module["__ZN11ImGuiTabBarC2Ev"] = wasmExports["_ZN11ImGuiTabBarC2Ev"];
+
+var __ZN6ImPoolI11ImGuiTabBarE3AddEv = Module["__ZN6ImPoolI11ImGuiTabBarE3AddEv"] = wasmExports["_ZN6ImPoolI11ImGuiTabBarE3AddEv"];
+
+var __ZN5ImGui17TabBarGetTabOrderEP11ImGuiTabBarP12ImGuiTabItem = Module["__ZN5ImGui17TabBarGetTabOrderEP11ImGuiTabBarP12ImGuiTabItem"] = wasmExports["_ZN5ImGui17TabBarGetTabOrderEP11ImGuiTabBarP12ImGuiTabItem"];
+
+var _atof = Module["_atof"] = wasmExports["atof"];
+
+var _ImGui_ImplOpenGL3_Init = Module["_ImGui_ImplOpenGL3_Init"] = wasmExports["ImGui_ImplOpenGL3_Init"];
+
+var _ImGui_ImplOpenGL3_Shutdown = Module["_ImGui_ImplOpenGL3_Shutdown"] = wasmExports["ImGui_ImplOpenGL3_Shutdown"];
+
+var _ImGui_ImplOpenGL3_DestroyDeviceObjects = Module["_ImGui_ImplOpenGL3_DestroyDeviceObjects"] = wasmExports["ImGui_ImplOpenGL3_DestroyDeviceObjects"];
+
+var _ImGui_ImplOpenGL3_NewFrame = Module["_ImGui_ImplOpenGL3_NewFrame"] = wasmExports["ImGui_ImplOpenGL3_NewFrame"];
+
+var _ImGui_ImplOpenGL3_CreateDeviceObjects = Module["_ImGui_ImplOpenGL3_CreateDeviceObjects"] = wasmExports["ImGui_ImplOpenGL3_CreateDeviceObjects"];
+
+var _ImGui_ImplOpenGL3_CreateFontsTexture = Module["_ImGui_ImplOpenGL3_CreateFontsTexture"] = wasmExports["ImGui_ImplOpenGL3_CreateFontsTexture"];
+
+var _ImGui_ImplOpenGL3_RenderDrawData = Module["_ImGui_ImplOpenGL3_RenderDrawData"] = wasmExports["ImGui_ImplOpenGL3_RenderDrawData"];
+
+var _ImGui_ImplOpenGL3_DestroyFontsTexture = Module["_ImGui_ImplOpenGL3_DestroyFontsTexture"] = wasmExports["ImGui_ImplOpenGL3_DestroyFontsTexture"];
+
+var _ImGui_ImplSDL2_ProcessEvent = Module["_ImGui_ImplSDL2_ProcessEvent"] = wasmExports["ImGui_ImplSDL2_ProcessEvent"];
+
+var _SDL_GetWindowFromID = Module["_SDL_GetWindowFromID"] = wasmExports["SDL_GetWindowFromID"];
+
+var _SDL_GetWindowPosition = Module["_SDL_GetWindowPosition"] = wasmExports["SDL_GetWindowPosition"];
+
+var _ImGui_ImplSDL2_InitForOpenGL = Module["_ImGui_ImplSDL2_InitForOpenGL"] = wasmExports["ImGui_ImplSDL2_InitForOpenGL"];
+
+var _SDL_CreateSystemCursor = Module["_SDL_CreateSystemCursor"] = wasmExports["SDL_CreateSystemCursor"];
+
+var _SDL_GetWindowWMInfo = Module["_SDL_GetWindowWMInfo"] = wasmExports["SDL_GetWindowWMInfo"];
+
+var _SDL_SetHint = Module["_SDL_SetHint"] = wasmExports["SDL_SetHint"];
+
+var _SDL_GetWindowID = Module["_SDL_GetWindowID"] = wasmExports["SDL_GetWindowID"];
+
+var _ImGui_ImplSDL2_InitForVulkan = Module["_ImGui_ImplSDL2_InitForVulkan"] = wasmExports["ImGui_ImplSDL2_InitForVulkan"];
+
+var _ImGui_ImplSDL2_InitForD3D = Module["_ImGui_ImplSDL2_InitForD3D"] = wasmExports["ImGui_ImplSDL2_InitForD3D"];
+
+var _ImGui_ImplSDL2_InitForMetal = Module["_ImGui_ImplSDL2_InitForMetal"] = wasmExports["ImGui_ImplSDL2_InitForMetal"];
+
+var _ImGui_ImplSDL2_InitForSDLRenderer = Module["_ImGui_ImplSDL2_InitForSDLRenderer"] = wasmExports["ImGui_ImplSDL2_InitForSDLRenderer"];
+
+var _ImGui_ImplSDL2_InitForOther = Module["_ImGui_ImplSDL2_InitForOther"] = wasmExports["ImGui_ImplSDL2_InitForOther"];
+
+var _ImGui_ImplSDL2_Shutdown = Module["_ImGui_ImplSDL2_Shutdown"] = wasmExports["ImGui_ImplSDL2_Shutdown"];
+
+var _SDL_free = Module["_SDL_free"] = wasmExports["SDL_free"];
+
+var _SDL_FreeCursor = Module["_SDL_FreeCursor"] = wasmExports["SDL_FreeCursor"];
+
+var _SDL_GameControllerClose = Module["_SDL_GameControllerClose"] = wasmExports["SDL_GameControllerClose"];
+
+var _ImGui_ImplSDL2_SetGamepadMode = Module["_ImGui_ImplSDL2_SetGamepadMode"] = wasmExports["ImGui_ImplSDL2_SetGamepadMode"];
+
+var _ImGui_ImplSDL2_NewFrame = Module["_ImGui_ImplSDL2_NewFrame"] = wasmExports["ImGui_ImplSDL2_NewFrame"];
+
+var _SDL_GetWindowSize = Module["_SDL_GetWindowSize"] = wasmExports["SDL_GetWindowSize"];
+
+var _SDL_GetWindowFlags = Module["_SDL_GetWindowFlags"] = wasmExports["SDL_GetWindowFlags"];
+
+var _SDL_GetRendererOutputSize = Module["_SDL_GetRendererOutputSize"] = wasmExports["SDL_GetRendererOutputSize"];
+
+var _SDL_GL_GetDrawableSize = Module["_SDL_GL_GetDrawableSize"] = wasmExports["SDL_GL_GetDrawableSize"];
+
+var _SDL_GetNumVideoDisplays = Module["_SDL_GetNumVideoDisplays"] = wasmExports["SDL_GetNumVideoDisplays"];
+
+var _SDL_GetDisplayBounds = Module["_SDL_GetDisplayBounds"] = wasmExports["SDL_GetDisplayBounds"];
+
+var _SDL_GetDisplayUsableBounds = Module["_SDL_GetDisplayUsableBounds"] = wasmExports["SDL_GetDisplayUsableBounds"];
+
+var _SDL_GetDisplayDPI = Module["_SDL_GetDisplayDPI"] = wasmExports["SDL_GetDisplayDPI"];
+
+var _SDL_GetPerformanceFrequency = Module["_SDL_GetPerformanceFrequency"] = wasmExports["SDL_GetPerformanceFrequency"];
+
+var _SDL_GetPerformanceCounter = Module["_SDL_GetPerformanceCounter"] = wasmExports["SDL_GetPerformanceCounter"];
+
+var _SDL_WarpMouseInWindow = Module["_SDL_WarpMouseInWindow"] = wasmExports["SDL_WarpMouseInWindow"];
+
+var _SDL_GetGlobalMouseState = Module["_SDL_GetGlobalMouseState"] = wasmExports["SDL_GetGlobalMouseState"];
+
+var _SDL_SetCursor = Module["_SDL_SetCursor"] = wasmExports["SDL_SetCursor"];
+
+var _SDL_ShowCursor = Module["_SDL_ShowCursor"] = wasmExports["SDL_ShowCursor"];
+
+var _SDL_NumJoysticks = Module["_SDL_NumJoysticks"] = wasmExports["SDL_NumJoysticks"];
+
+var _SDL_IsGameController = Module["_SDL_IsGameController"] = wasmExports["SDL_IsGameController"];
+
+var _SDL_GameControllerOpen = Module["_SDL_GameControllerOpen"] = wasmExports["SDL_GameControllerOpen"];
+
+var _SDL_GameControllerGetButton = Module["_SDL_GameControllerGetButton"] = wasmExports["SDL_GameControllerGetButton"];
+
+var _SDL_GameControllerGetAxis = Module["_SDL_GameControllerGetAxis"] = wasmExports["SDL_GameControllerGetAxis"];
+
+var _SDL_SetClipboardText = Module["_SDL_SetClipboardText"] = wasmExports["SDL_SetClipboardText"];
+
+var _SDL_GetClipboardText = Module["_SDL_GetClipboardText"] = wasmExports["SDL_GetClipboardText"];
+
+var _SDL_SetTextInputRect = Module["_SDL_SetTextInputRect"] = wasmExports["SDL_SetTextInputRect"];
+
+var _SDL_GL_GetCurrentContext = Module["_SDL_GL_GetCurrentContext"] = wasmExports["SDL_GL_GetCurrentContext"];
+
+var _SDL_GL_SetAttribute = Module["_SDL_GL_SetAttribute"] = wasmExports["SDL_GL_SetAttribute"];
+
+var _SDL_GL_MakeCurrent = Module["_SDL_GL_MakeCurrent"] = wasmExports["SDL_GL_MakeCurrent"];
+
+var _SDL_CreateWindow = Module["_SDL_CreateWindow"] = wasmExports["SDL_CreateWindow"];
+
+var _SDL_GL_CreateContext = Module["_SDL_GL_CreateContext"] = wasmExports["SDL_GL_CreateContext"];
+
+var _SDL_GL_SetSwapInterval = Module["_SDL_GL_SetSwapInterval"] = wasmExports["SDL_GL_SetSwapInterval"];
+
+var _SDL_GL_DeleteContext = Module["_SDL_GL_DeleteContext"] = wasmExports["SDL_GL_DeleteContext"];
+
+var _SDL_DestroyWindow = Module["_SDL_DestroyWindow"] = wasmExports["SDL_DestroyWindow"];
+
+var _SDL_ShowWindow = Module["_SDL_ShowWindow"] = wasmExports["SDL_ShowWindow"];
+
+var _SDL_SetWindowPosition = Module["_SDL_SetWindowPosition"] = wasmExports["SDL_SetWindowPosition"];
+
+var _SDL_SetWindowSize = Module["_SDL_SetWindowSize"] = wasmExports["SDL_SetWindowSize"];
+
+var _SDL_RaiseWindow = Module["_SDL_RaiseWindow"] = wasmExports["SDL_RaiseWindow"];
+
+var _SDL_SetWindowTitle = Module["_SDL_SetWindowTitle"] = wasmExports["SDL_SetWindowTitle"];
+
+var _SDL_GL_SwapWindow = Module["_SDL_GL_SwapWindow"] = wasmExports["SDL_GL_SwapWindow"];
+
+var _SDL_SetWindowOpacity = Module["_SDL_SetWindowOpacity"] = wasmExports["SDL_SetWindowOpacity"];
+
+var _SDL_Vulkan_CreateSurface = Module["_SDL_Vulkan_CreateSurface"] = wasmExports["SDL_Vulkan_CreateSurface"];
 
 var _jpeg_CreateCompress = Module["_jpeg_CreateCompress"] = wasmExports["jpeg_CreateCompress"];
 
@@ -31016,8 +36262,6 @@ var _jpeg_get_small = Module["_jpeg_get_small"] = wasmExports["jpeg_get_small"];
 
 var _jpeg_mem_term = Module["_jpeg_mem_term"] = wasmExports["jpeg_mem_term"];
 
-var _sscanf = Module["_sscanf"] = wasmExports["sscanf"];
-
 var _jpeg_get_large = Module["_jpeg_get_large"] = wasmExports["jpeg_get_large"];
 
 var _jpeg_mem_available = Module["_jpeg_mem_available"] = wasmExports["jpeg_mem_available"];
@@ -31158,8 +36402,6 @@ var _SDL_SIMDAlloc = Module["_SDL_SIMDAlloc"] = wasmExports["SDL_SIMDAlloc"];
 
 var _SDL_FillRect = Module["_SDL_FillRect"] = wasmExports["SDL_FillRect"];
 
-var _SDL_free = Module["_SDL_free"] = wasmExports["SDL_free"];
-
 var _SDL_malloc = Module["_SDL_malloc"] = wasmExports["SDL_malloc"];
 
 var _SDL_Error = Module["_SDL_Error"] = wasmExports["SDL_Error"];
@@ -31185,8 +36427,6 @@ var _SDL_getenv = Module["_SDL_getenv"] = wasmExports["SDL_getenv"];
 var _SDL_strcmp = Module["_SDL_strcmp"] = wasmExports["SDL_strcmp"];
 
 var _SDL_GetFocusWindow = Module["_SDL_GetFocusWindow"] = wasmExports["SDL_GetFocusWindow"];
-
-var _SDL_GetWindowFlags = Module["_SDL_GetWindowFlags"] = wasmExports["SDL_GetWindowFlags"];
 
 var _SDL_MinimizeWindow = Module["_SDL_MinimizeWindow"] = wasmExports["SDL_MinimizeWindow"];
 
@@ -31452,13 +36692,9 @@ var _SDL_WriteLE32 = Module["_SDL_WriteLE32"] = wasmExports["SDL_WriteLE32"];
 
 var _SDL_WriteLE16 = Module["_SDL_WriteLE16"] = wasmExports["SDL_WriteLE16"];
 
-var _SDL_SetClipboardText = Module["_SDL_SetClipboardText"] = wasmExports["SDL_SetClipboardText"];
-
 var _SDL_GetVideoDevice = Module["_SDL_GetVideoDevice"] = wasmExports["SDL_GetVideoDevice"];
 
 var _SDL_SetPrimarySelectionText = Module["_SDL_SetPrimarySelectionText"] = wasmExports["SDL_SetPrimarySelectionText"];
-
-var _SDL_GetClipboardText = Module["_SDL_GetClipboardText"] = wasmExports["SDL_GetClipboardText"];
 
 var _SDL_GetPrimarySelectionText = Module["_SDL_GetPrimarySelectionText"] = wasmExports["SDL_GetPrimarySelectionText"];
 
@@ -31566,8 +36802,6 @@ var _SDL_Log = Module["_SDL_Log"] = wasmExports["SDL_Log"];
 
 var _SDL_EGL_CreateContext = Module["_SDL_EGL_CreateContext"] = wasmExports["SDL_EGL_CreateContext"];
 
-var _SDL_GL_GetCurrentContext = Module["_SDL_GL_GetCurrentContext"] = wasmExports["SDL_GL_GetCurrentContext"];
-
 var _SDL_EGL_MakeCurrent = Module["_SDL_EGL_MakeCurrent"] = wasmExports["SDL_EGL_MakeCurrent"];
 
 var _SDL_GL_ExtensionSupported = Module["_SDL_GL_ExtensionSupported"] = wasmExports["SDL_GL_ExtensionSupported"];
@@ -31654,8 +36888,6 @@ var _Emscripten_GLES_MakeCurrent = Module["_Emscripten_GLES_MakeCurrent"] = wasm
 
 var _Emscripten_GLES_SwapWindow = Module["_Emscripten_GLES_SwapWindow"] = wasmExports["Emscripten_GLES_SwapWindow"];
 
-var _SDL_SetHint = Module["_SDL_SetHint"] = wasmExports["SDL_SetHint"];
-
 var _SDL_AddBasicVideoDisplay = Module["_SDL_AddBasicVideoDisplay"] = wasmExports["SDL_AddBasicVideoDisplay"];
 
 var _SDL_AddDisplayMode = Module["_SDL_AddDisplayMode"] = wasmExports["SDL_AddDisplayMode"];
@@ -31709,8 +36941,6 @@ var _SDL_PollEvent = Module["_SDL_PollEvent"] = wasmExports["SDL_PollEvent"];
 var _SDL_WaitEventTimeout = Module["_SDL_WaitEventTimeout"] = wasmExports["SDL_WaitEventTimeout"];
 
 var _SDL_GetTicks = Module["_SDL_GetTicks"] = wasmExports["SDL_GetTicks"];
-
-var _SDL_NumJoysticks = Module["_SDL_NumJoysticks"] = wasmExports["SDL_NumJoysticks"];
 
 var _SDL_NumSensors = Module["_SDL_NumSensors"] = wasmExports["SDL_NumSensors"];
 
@@ -31818,12 +37048,6 @@ var _SDL_GameControllerInitMappings = Module["_SDL_GameControllerInitMappings"] 
 
 var _SDL_LoadVIDPIDList = Module["_SDL_LoadVIDPIDList"] = wasmExports["SDL_LoadVIDPIDList"];
 
-var _SDL_GameControllerGetButton = Module["_SDL_GameControllerGetButton"] = wasmExports["SDL_GameControllerGetButton"];
-
-var _SDL_GameControllerGetAxis = Module["_SDL_GameControllerGetAxis"] = wasmExports["SDL_GameControllerGetAxis"];
-
-var _SDL_IsGameController = Module["_SDL_IsGameController"] = wasmExports["SDL_IsGameController"];
-
 var _SDL_GameControllerNameForIndex = Module["_SDL_GameControllerNameForIndex"] = wasmExports["SDL_GameControllerNameForIndex"];
 
 var _SDL_JoystickNameForIndex = Module["_SDL_JoystickNameForIndex"] = wasmExports["SDL_JoystickNameForIndex"];
@@ -31847,8 +37071,6 @@ var _SDL_ShouldIgnoreGameController = Module["_SDL_ShouldIgnoreGameController"] 
 var _SDL_IsJoystickSteamVirtualGamepad = Module["_SDL_IsJoystickSteamVirtualGamepad"] = wasmExports["SDL_IsJoystickSteamVirtualGamepad"];
 
 var _SDL_VIDPIDInList = Module["_SDL_VIDPIDInList"] = wasmExports["SDL_VIDPIDInList"];
-
-var _SDL_GameControllerOpen = Module["_SDL_GameControllerOpen"] = wasmExports["SDL_GameControllerOpen"];
 
 var _SDL_JoystickGetDeviceInstanceID = Module["_SDL_JoystickGetDeviceInstanceID"] = wasmExports["SDL_JoystickGetDeviceInstanceID"];
 
@@ -31973,8 +37195,6 @@ var _SDL_JoystickSetLED = Module["_SDL_JoystickSetLED"] = wasmExports["SDL_Joyst
 var _SDL_GameControllerSendEffect = Module["_SDL_GameControllerSendEffect"] = wasmExports["SDL_GameControllerSendEffect"];
 
 var _SDL_JoystickSendEffect = Module["_SDL_JoystickSendEffect"] = wasmExports["SDL_JoystickSendEffect"];
-
-var _SDL_GameControllerClose = Module["_SDL_GameControllerClose"] = wasmExports["SDL_GameControllerClose"];
 
 var _SDL_GameControllerQuitMappings = Module["_SDL_GameControllerQuitMappings"] = wasmExports["SDL_GameControllerQuitMappings"];
 
@@ -32400,10 +37620,6 @@ var _SDL_MousePostInit = Module["_SDL_MousePostInit"] = wasmExports["SDL_MousePo
 
 var _SDL_CreateColorCursor = Module["_SDL_CreateColorCursor"] = wasmExports["SDL_CreateColorCursor"];
 
-var _SDL_SetCursor = Module["_SDL_SetCursor"] = wasmExports["SDL_SetCursor"];
-
-var _SDL_GetWindowSize = Module["_SDL_GetWindowSize"] = wasmExports["SDL_GetWindowSize"];
-
 var _SDL_sqrtf = Module["_SDL_sqrtf"] = wasmExports["SDL_sqrtf"];
 
 var _SDL_GetWindowMouseRect = Module["_SDL_GetWindowMouseRect"] = wasmExports["SDL_GetWindowMouseRect"];
@@ -32416,31 +37632,21 @@ var _SDL_MouseQuit = Module["_SDL_MouseQuit"] = wasmExports["SDL_MouseQuit"];
 
 var _SDL_SetRelativeMouseMode = Module["_SDL_SetRelativeMouseMode"] = wasmExports["SDL_SetRelativeMouseMode"];
 
-var _SDL_FreeCursor = Module["_SDL_FreeCursor"] = wasmExports["SDL_FreeCursor"];
-
 var _SDL_GetMessageBoxCount = Module["_SDL_GetMessageBoxCount"] = wasmExports["SDL_GetMessageBoxCount"];
 
 var _SDL_UpdateWindowGrab = Module["_SDL_UpdateWindowGrab"] = wasmExports["SDL_UpdateWindowGrab"];
-
-var _SDL_ShowCursor = Module["_SDL_ShowCursor"] = wasmExports["SDL_ShowCursor"];
 
 var _SDL_GetMouseState = Module["_SDL_GetMouseState"] = wasmExports["SDL_GetMouseState"];
 
 var _SDL_GetRelativeMouseState = Module["_SDL_GetRelativeMouseState"] = wasmExports["SDL_GetRelativeMouseState"];
 
-var _SDL_GetGlobalMouseState = Module["_SDL_GetGlobalMouseState"] = wasmExports["SDL_GetGlobalMouseState"];
-
 var _SDL_PerformWarpMouseInWindow = Module["_SDL_PerformWarpMouseInWindow"] = wasmExports["SDL_PerformWarpMouseInWindow"];
-
-var _SDL_WarpMouseInWindow = Module["_SDL_WarpMouseInWindow"] = wasmExports["SDL_WarpMouseInWindow"];
 
 var _SDL_WarpMouseGlobal = Module["_SDL_WarpMouseGlobal"] = wasmExports["SDL_WarpMouseGlobal"];
 
 var _SDL_GetRelativeMouseMode = Module["_SDL_GetRelativeMouseMode"] = wasmExports["SDL_GetRelativeMouseMode"];
 
 var _SDL_CreateCursor = Module["_SDL_CreateCursor"] = wasmExports["SDL_CreateCursor"];
-
-var _SDL_CreateSystemCursor = Module["_SDL_CreateSystemCursor"] = wasmExports["SDL_CreateSystemCursor"];
 
 var _SDL_GetCursor = Module["_SDL_GetCursor"] = wasmExports["SDL_GetCursor"];
 
@@ -32492,8 +37698,6 @@ var _SDL_GetPowerInfo_Emscripten = Module["_SDL_GetPowerInfo_Emscripten"] = wasm
 
 var _SDL_qsort = Module["_SDL_qsort"] = wasmExports["SDL_qsort"];
 
-var _qsort = Module["_qsort"] = wasmExports["qsort"];
-
 var _SDL_bsearch = Module["_SDL_bsearch"] = wasmExports["SDL_bsearch"];
 
 var _bsearch = Module["_bsearch"] = wasmExports["bsearch"];
@@ -32532,8 +37736,6 @@ var _SDL_GetRenderDriverInfo = Module["_SDL_GetRenderDriverInfo"] = wasmExports[
 
 var _SDL_CreateWindowAndRenderer = Module["_SDL_CreateWindowAndRenderer"] = wasmExports["SDL_CreateWindowAndRenderer"];
 
-var _SDL_CreateWindow = Module["_SDL_CreateWindow"] = wasmExports["SDL_CreateWindow"];
-
 var _SDL_CreateRenderer = Module["_SDL_CreateRenderer"] = wasmExports["SDL_CreateRenderer"];
 
 var _SDL_HasWindowSurface = Module["_SDL_HasWindowSurface"] = wasmExports["SDL_HasWindowSurface"];
@@ -32549,10 +37751,6 @@ var _SDL_SetWindowData = Module["_SDL_SetWindowData"] = wasmExports["SDL_SetWind
 var _SDL_RenderSetViewport = Module["_SDL_RenderSetViewport"] = wasmExports["SDL_RenderSetViewport"];
 
 var _SDL_GetRenderer = Module["_SDL_GetRenderer"] = wasmExports["SDL_GetRenderer"];
-
-var _SDL_GetRendererOutputSize = Module["_SDL_GetRendererOutputSize"] = wasmExports["SDL_GetRendererOutputSize"];
-
-var _SDL_GetWindowFromID = Module["_SDL_GetWindowFromID"] = wasmExports["SDL_GetWindowFromID"];
 
 var _SDL_GetRenderTarget = Module["_SDL_GetRenderTarget"] = wasmExports["SDL_GetRenderTarget"];
 
@@ -32756,25 +37954,13 @@ var _SDL_RenderSetVSync = Module["_SDL_RenderSetVSync"] = wasmExports["SDL_Rende
 
 var _SDL_GL_GetAttribute = Module["_SDL_GL_GetAttribute"] = wasmExports["SDL_GL_GetAttribute"];
 
-var _SDL_GL_SetAttribute = Module["_SDL_GL_SetAttribute"] = wasmExports["SDL_GL_SetAttribute"];
-
 var _SDL_RecreateWindow = Module["_SDL_RecreateWindow"] = wasmExports["SDL_RecreateWindow"];
-
-var _SDL_GL_CreateContext = Module["_SDL_GL_CreateContext"] = wasmExports["SDL_GL_CreateContext"];
-
-var _SDL_GL_MakeCurrent = Module["_SDL_GL_MakeCurrent"] = wasmExports["SDL_GL_MakeCurrent"];
-
-var _SDL_GL_DeleteContext = Module["_SDL_GL_DeleteContext"] = wasmExports["SDL_GL_DeleteContext"];
 
 var _SDL_GL_GetProcAddress = Module["_SDL_GL_GetProcAddress"] = wasmExports["SDL_GL_GetProcAddress"];
 
 var _GLES2_GetTexCoordPrecisionEnumFromHint = Module["_GLES2_GetTexCoordPrecisionEnumFromHint"] = wasmExports["GLES2_GetTexCoordPrecisionEnumFromHint"];
 
-var _SDL_GL_SetSwapInterval = Module["_SDL_GL_SetSwapInterval"] = wasmExports["SDL_GL_SetSwapInterval"];
-
 var _SDL_GL_GetSwapInterval = Module["_SDL_GL_GetSwapInterval"] = wasmExports["SDL_GL_GetSwapInterval"];
-
-var _SDL_GL_GetDrawableSize = Module["_SDL_GL_GetDrawableSize"] = wasmExports["SDL_GL_GetDrawableSize"];
 
 var _SDL_atan2f = Module["_SDL_atan2f"] = wasmExports["SDL_atan2f"];
 
@@ -32898,8 +38084,6 @@ var _SDL_PrivateSensorUpdate = Module["_SDL_PrivateSensorUpdate"] = wasmExports[
 
 var _SDL_CreateShapedWindow = Module["_SDL_CreateShapedWindow"] = wasmExports["SDL_CreateShapedWindow"];
 
-var _SDL_DestroyWindow = Module["_SDL_DestroyWindow"] = wasmExports["SDL_DestroyWindow"];
-
 var _SDL_IsShapedWindow = Module["_SDL_IsShapedWindow"] = wasmExports["SDL_IsShapedWindow"];
 
 var _SDL_CalculateShapeBitmap = Module["_SDL_CalculateShapeBitmap"] = wasmExports["SDL_CalculateShapeBitmap"];
@@ -32911,10 +38095,6 @@ var _SDL_TraverseShapeTree = Module["_SDL_TraverseShapeTree"] = wasmExports["SDL
 var _SDL_FreeShapeTree = Module["_SDL_FreeShapeTree"] = wasmExports["SDL_FreeShapeTree"];
 
 var _SDL_SetWindowShape = Module["_SDL_SetWindowShape"] = wasmExports["SDL_SetWindowShape"];
-
-var _SDL_GetDisplayBounds = Module["_SDL_GetDisplayBounds"] = wasmExports["SDL_GetDisplayBounds"];
-
-var _SDL_SetWindowPosition = Module["_SDL_SetWindowPosition"] = wasmExports["SDL_SetWindowPosition"];
 
 var _SDL_GetShapedWindowMode = Module["_SDL_GetShapedWindowMode"] = wasmExports["SDL_GetShapedWindowMode"];
 
@@ -32928,13 +38108,9 @@ var _SDL_atanf = Module["_SDL_atanf"] = wasmExports["SDL_atanf"];
 
 var _atanf = Module["_atanf"] = wasmExports["atanf"];
 
-var _atan2f = Module["_atan2f"] = wasmExports["atan2f"];
-
 var _SDL_acos = Module["_SDL_acos"] = wasmExports["SDL_acos"];
 
 var _SDL_acosf = Module["_SDL_acosf"] = wasmExports["SDL_acosf"];
-
-var _acosf = Module["_acosf"] = wasmExports["acosf"];
 
 var _SDL_asin = Module["_SDL_asin"] = wasmExports["SDL_asin"];
 
@@ -32947,8 +38123,6 @@ var _SDL_ceilf = Module["_SDL_ceilf"] = wasmExports["SDL_ceilf"];
 var _SDL_copysign = Module["_SDL_copysign"] = wasmExports["SDL_copysign"];
 
 var _SDL_copysignf = Module["_SDL_copysignf"] = wasmExports["SDL_copysignf"];
-
-var _cosf = Module["_cosf"] = wasmExports["cosf"];
 
 var _SDL_exp = Module["_SDL_exp"] = wasmExports["SDL_exp"];
 
@@ -32966,13 +38140,9 @@ var _SDL_fmod = Module["_SDL_fmod"] = wasmExports["SDL_fmod"];
 
 var _SDL_fmodf = Module["_SDL_fmodf"] = wasmExports["SDL_fmodf"];
 
-var _fmodf = Module["_fmodf"] = wasmExports["fmodf"];
-
 var _SDL_log = Module["_SDL_log"] = wasmExports["SDL_log"];
 
 var _SDL_logf = Module["_SDL_logf"] = wasmExports["SDL_logf"];
-
-var _logf = Module["_logf"] = wasmExports["logf"];
 
 var _SDL_log10 = Module["_SDL_log10"] = wasmExports["SDL_log10"];
 
@@ -32981,8 +38151,6 @@ var _SDL_log10f = Module["_SDL_log10f"] = wasmExports["SDL_log10f"];
 var _log10f = Module["_log10f"] = wasmExports["log10f"];
 
 var _SDL_powf = Module["_SDL_powf"] = wasmExports["SDL_powf"];
-
-var _powf = Module["_powf"] = wasmExports["powf"];
 
 var _SDL_round = Module["_SDL_round"] = wasmExports["SDL_round"];
 
@@ -33005,8 +38173,6 @@ var _scalbn = Module["_scalbn"] = wasmExports["scalbn"];
 var _SDL_scalbnf = Module["_SDL_scalbnf"] = wasmExports["SDL_scalbnf"];
 
 var _scalbnf = Module["_scalbnf"] = wasmExports["scalbnf"];
-
-var _sinf = Module["_sinf"] = wasmExports["sinf"];
 
 var _SDL_tan = Module["_SDL_tan"] = wasmExports["SDL_tan"];
 
@@ -33116,8 +38282,6 @@ var _SDL_ulltoa = Module["_SDL_ulltoa"] = wasmExports["SDL_ulltoa"];
 
 var _atoi = Module["_atoi"] = wasmExports["atoi"];
 
-var _atof = Module["_atof"] = wasmExports["atof"];
-
 var _SDL_strtoll = Module["_SDL_strtoll"] = wasmExports["SDL_strtoll"];
 
 var _strtoll = Module["_strtoll"] = wasmExports["strtoll"];
@@ -33126,15 +38290,11 @@ var _strtoull = Module["_strtoull"] = wasmExports["strtoull"];
 
 var _SDL_strtod = Module["_SDL_strtod"] = wasmExports["SDL_strtod"];
 
-var _strncmp = Module["_strncmp"] = wasmExports["strncmp"];
-
 var _strcasecmp = Module["_strcasecmp"] = wasmExports["strcasecmp"];
 
 var _vsscanf = Module["_vsscanf"] = wasmExports["vsscanf"];
 
 var _SDL_vsscanf = Module["_SDL_vsscanf"] = wasmExports["SDL_vsscanf"];
-
-var _vsnprintf = Module["_vsnprintf"] = wasmExports["vsnprintf"];
 
 var _SDL_vasprintf = Module["_SDL_vasprintf"] = wasmExports["SDL_vasprintf"];
 
@@ -33212,10 +38372,6 @@ var _gettimeofday = Module["_gettimeofday"] = wasmExports["gettimeofday"];
 
 var _SDL_GetTicks64 = Module["_SDL_GetTicks64"] = wasmExports["SDL_GetTicks64"];
 
-var _SDL_GetPerformanceCounter = Module["_SDL_GetPerformanceCounter"] = wasmExports["SDL_GetPerformanceCounter"];
-
-var _SDL_GetPerformanceFrequency = Module["_SDL_GetPerformanceFrequency"] = wasmExports["SDL_GetPerformanceFrequency"];
-
 var _nanosleep = Module["_nanosleep"] = wasmExports["nanosleep"];
 
 var _SDL_SYS_InitTLSData = Module["_SDL_SYS_InitTLSData"] = wasmExports["SDL_SYS_InitTLSData"];
@@ -33276,8 +38432,6 @@ var _SDL_GetNumTouchFingers = Module["_SDL_GetNumTouchFingers"] = wasmExports["S
 
 var _SDL_GetTouchFinger = Module["_SDL_GetTouchFinger"] = wasmExports["SDL_GetTouchFinger"];
 
-var _SDL_GetWindowID = Module["_SDL_GetWindowID"] = wasmExports["SDL_GetWindowID"];
-
 var _SDL_DelTouch = Module["_SDL_DelTouch"] = wasmExports["SDL_DelTouch"];
 
 var _SDL_TouchQuit = Module["_SDL_TouchQuit"] = wasmExports["SDL_TouchQuit"];
@@ -33304,17 +38458,11 @@ var _SDL_AddVideoDisplay = Module["_SDL_AddVideoDisplay"] = wasmExports["SDL_Add
 
 var _SDL_DelVideoDisplay = Module["_SDL_DelVideoDisplay"] = wasmExports["SDL_DelVideoDisplay"];
 
-var _SDL_GetNumVideoDisplays = Module["_SDL_GetNumVideoDisplays"] = wasmExports["SDL_GetNumVideoDisplays"];
-
 var _SDL_GetDisplayDriverData = Module["_SDL_GetDisplayDriverData"] = wasmExports["SDL_GetDisplayDriverData"];
 
 var _SDL_IsVideoContextExternal = Module["_SDL_IsVideoContextExternal"] = wasmExports["SDL_IsVideoContextExternal"];
 
 var _SDL_GetDisplayName = Module["_SDL_GetDisplayName"] = wasmExports["SDL_GetDisplayName"];
-
-var _SDL_GetDisplayUsableBounds = Module["_SDL_GetDisplayUsableBounds"] = wasmExports["SDL_GetDisplayUsableBounds"];
-
-var _SDL_GetDisplayDPI = Module["_SDL_GetDisplayDPI"] = wasmExports["SDL_GetDisplayDPI"];
 
 var _SDL_GetDisplayOrientation = Module["_SDL_GetDisplayOrientation"] = wasmExports["SDL_GetDisplayOrientation"];
 
@@ -33346,13 +38494,9 @@ var _SDL_Vulkan_LoadLibrary = Module["_SDL_Vulkan_LoadLibrary"] = wasmExports["S
 
 var _SDL_HideWindow = Module["_SDL_HideWindow"] = wasmExports["SDL_HideWindow"];
 
-var _SDL_SetWindowTitle = Module["_SDL_SetWindowTitle"] = wasmExports["SDL_SetWindowTitle"];
-
 var _SDL_SetWindowFullscreen = Module["_SDL_SetWindowFullscreen"] = wasmExports["SDL_SetWindowFullscreen"];
 
 var _SDL_SetWindowGrab = Module["_SDL_SetWindowGrab"] = wasmExports["SDL_SetWindowGrab"];
-
-var _SDL_ShowWindow = Module["_SDL_ShowWindow"] = wasmExports["SDL_ShowWindow"];
 
 var _SDL_OnWindowResized = Module["_SDL_OnWindowResized"] = wasmExports["SDL_OnWindowResized"];
 
@@ -33366,15 +38510,11 @@ var _SDL_GetWindowTitle = Module["_SDL_GetWindowTitle"] = wasmExports["SDL_GetWi
 
 var _SDL_SetWindowIcon = Module["_SDL_SetWindowIcon"] = wasmExports["SDL_SetWindowIcon"];
 
-var _SDL_GetWindowPosition = Module["_SDL_GetWindowPosition"] = wasmExports["SDL_GetWindowPosition"];
-
 var _SDL_SetWindowBordered = Module["_SDL_SetWindowBordered"] = wasmExports["SDL_SetWindowBordered"];
 
 var _SDL_SetWindowResizable = Module["_SDL_SetWindowResizable"] = wasmExports["SDL_SetWindowResizable"];
 
 var _SDL_SetWindowAlwaysOnTop = Module["_SDL_SetWindowAlwaysOnTop"] = wasmExports["SDL_SetWindowAlwaysOnTop"];
-
-var _SDL_SetWindowSize = Module["_SDL_SetWindowSize"] = wasmExports["SDL_SetWindowSize"];
 
 var _SDL_GetWindowBordersSize = Module["_SDL_GetWindowBordersSize"] = wasmExports["SDL_GetWindowBordersSize"];
 
@@ -33385,8 +38525,6 @@ var _SDL_GetWindowMinimumSize = Module["_SDL_GetWindowMinimumSize"] = wasmExport
 var _SDL_SetWindowMaximumSize = Module["_SDL_SetWindowMaximumSize"] = wasmExports["SDL_SetWindowMaximumSize"];
 
 var _SDL_GetWindowMaximumSize = Module["_SDL_GetWindowMaximumSize"] = wasmExports["SDL_GetWindowMaximumSize"];
-
-var _SDL_RaiseWindow = Module["_SDL_RaiseWindow"] = wasmExports["SDL_RaiseWindow"];
 
 var _SDL_MaximizeWindow = Module["_SDL_MaximizeWindow"] = wasmExports["SDL_MaximizeWindow"];
 
@@ -33399,8 +38537,6 @@ var _SDL_SetWindowGammaRamp = Module["_SDL_SetWindowGammaRamp"] = wasmExports["S
 var _SDL_GetWindowGammaRamp = Module["_SDL_GetWindowGammaRamp"] = wasmExports["SDL_GetWindowGammaRamp"];
 
 var _SDL_GetWindowBrightness = Module["_SDL_GetWindowBrightness"] = wasmExports["SDL_GetWindowBrightness"];
-
-var _SDL_SetWindowOpacity = Module["_SDL_SetWindowOpacity"] = wasmExports["SDL_SetWindowOpacity"];
 
 var _SDL_GetWindowOpacity = Module["_SDL_GetWindowOpacity"] = wasmExports["SDL_GetWindowOpacity"];
 
@@ -33452,10 +38588,6 @@ var _SDL_GL_DeduceMaxSupportedESProfile = Module["_SDL_GL_DeduceMaxSupportedESPr
 
 var _SDL_GL_GetCurrentWindow = Module["_SDL_GL_GetCurrentWindow"] = wasmExports["SDL_GL_GetCurrentWindow"];
 
-var _SDL_GL_SwapWindow = Module["_SDL_GL_SwapWindow"] = wasmExports["SDL_GL_SwapWindow"];
-
-var _SDL_GetWindowWMInfo = Module["_SDL_GetWindowWMInfo"] = wasmExports["SDL_GetWindowWMInfo"];
-
 var _SDL_ClearComposition = Module["_SDL_ClearComposition"] = wasmExports["SDL_ClearComposition"];
 
 var _SDL_IsTextInputShown = Module["_SDL_IsTextInputShown"] = wasmExports["SDL_IsTextInputShown"];
@@ -33463,8 +38595,6 @@ var _SDL_IsTextInputShown = Module["_SDL_IsTextInputShown"] = wasmExports["SDL_I
 var _SDL_IsTextInputActive = Module["_SDL_IsTextInputActive"] = wasmExports["SDL_IsTextInputActive"];
 
 var _SDL_StopTextInput = Module["_SDL_StopTextInput"] = wasmExports["SDL_StopTextInput"];
-
-var _SDL_SetTextInputRect = Module["_SDL_SetTextInputRect"] = wasmExports["SDL_SetTextInputRect"];
 
 var _SDL_HasScreenKeyboardSupport = Module["_SDL_HasScreenKeyboardSupport"] = wasmExports["SDL_HasScreenKeyboardSupport"];
 
@@ -33493,8 +38623,6 @@ var _SDL_OnApplicationDidBecomeActive = Module["_SDL_OnApplicationDidBecomeActiv
 var _SDL_Vulkan_GetVkGetInstanceProcAddr = Module["_SDL_Vulkan_GetVkGetInstanceProcAddr"] = wasmExports["SDL_Vulkan_GetVkGetInstanceProcAddr"];
 
 var _SDL_Vulkan_GetInstanceExtensions = Module["_SDL_Vulkan_GetInstanceExtensions"] = wasmExports["SDL_Vulkan_GetInstanceExtensions"];
-
-var _SDL_Vulkan_CreateSurface = Module["_SDL_Vulkan_CreateSurface"] = wasmExports["SDL_Vulkan_CreateSurface"];
 
 var _SDL_Vulkan_GetDrawableSize = Module["_SDL_Vulkan_GetDrawableSize"] = wasmExports["SDL_Vulkan_GetDrawableSize"];
 
@@ -34736,8 +39864,6 @@ var ___syscall_wait4 = Module["___syscall_wait4"] = wasmExports["__syscall_wait4
 
 var _atexit = Module["_atexit"] = wasmExports["atexit"];
 
-var ___cxa_atexit = Module["___cxa_atexit"] = wasmExports["__cxa_atexit"];
-
 var ___cxa_finalize = Module["___cxa_finalize"] = wasmExports["__cxa_finalize"];
 
 var ___multf3 = Module["___multf3"] = wasmExports["__multf3"];
@@ -35874,8 +41000,6 @@ var _socket = Module["_socket"] = wasmExports["socket"];
 
 var _ioctl = Module["_ioctl"] = wasmExports["ioctl"];
 
-var _strncpy = Module["_strncpy"] = wasmExports["strncpy"];
-
 var _if_nameindex = Module["_if_nameindex"] = wasmExports["if_nameindex"];
 
 var _if_nametoindex = Module["_if_nametoindex"] = wasmExports["if_nametoindex"];
@@ -36568,8 +41692,6 @@ var _preadv = Module["_preadv"] = wasmExports["preadv"];
 
 var _printf = Module["_printf"] = wasmExports["printf"];
 
-var _iprintf = Module["_iprintf"] = wasmExports["iprintf"];
-
 var ___small_printf = Module["___small_printf"] = wasmExports["__small_printf"];
 
 var _em_proxying_queue_create = Module["_em_proxying_queue_create"] = wasmExports["em_proxying_queue_create"];
@@ -36921,8 +42043,6 @@ var _sockatmark = Module["_sockatmark"] = wasmExports["sockatmark"];
 var _vsprintf = Module["_vsprintf"] = wasmExports["vsprintf"];
 
 var _vsiprintf = Module["_vsiprintf"] = wasmExports["vsiprintf"];
-
-var ___small_sprintf = Module["___small_sprintf"] = wasmExports["__small_sprintf"];
 
 var ___small_vsprintf = Module["___small_vsprintf"] = wasmExports["__small_vsprintf"];
 
@@ -38909,8 +44029,6 @@ var __ZNKSt3__26chrono15__duration_castINS0_8durationIxNS_5ratioILx1ELx1000000EE
 var __ZNKSt3__26chrono8durationIxNS_5ratioILx1ELx1000000EEEE5countB8nn190106Ev = Module["__ZNKSt3__26chrono8durationIxNS_5ratioILx1ELx1000000EEEE5countB8nn190106Ev"] = wasmExports["_ZNKSt3__26chrono8durationIxNS_5ratioILx1ELx1000000EEEE5countB8nn190106Ev"];
 
 var __ZNSt3__234__construct_barrier_algorithm_baseERl = Module["__ZNSt3__234__construct_barrier_algorithm_baseERl"] = wasmExports["_ZNSt3__234__construct_barrier_algorithm_baseERl"];
-
-var __Znwm = Module["__Znwm"] = wasmExports["_Znwm"];
 
 var __ZNSt3__224__barrier_algorithm_baseC2ERl = Module["__ZNSt3__224__barrier_algorithm_baseC2ERl"] = wasmExports["_ZNSt3__224__barrier_algorithm_baseC2ERl"];
 
@@ -47614,1885 +52732,1893 @@ var _socketpair = Module["_socketpair"] = wasmExports["socketpair"];
 
 var ___wasm_apply_data_relocs = wasmExports["__wasm_apply_data_relocs"];
 
-var _luaT_typenames_ = Module["_luaT_typenames_"] = 492496;
+var _luaT_typenames_ = Module["_luaT_typenames_"] = 638e3;
 
 var _lua_ident = Module["_lua_ident"] = 1024;
 
-var _luaP_opmodes = Module["_luaP_opmodes"] = 84272;
+var _luaP_opmodes = Module["_luaP_opmodes"] = 200640;
 
-var _luai_ctype_ = Module["_luai_ctype_"] = 83744;
+var _luai_ctype_ = Module["_luai_ctype_"] = 200112;
 
-var ___THREW__ = Module["___THREW__"] = 580304;
+var ___THREW__ = Module["___THREW__"] = 773536;
 
-var ___threwValue = Module["___threwValue"] = 580308;
+var ___threwValue = Module["___threwValue"] = 773540;
 
-var _stdin = Module["_stdin"] = 513440;
+var _stdin = Module["_stdin"] = 679424;
 
-var _stderr = Module["_stderr"] = 513288;
+var _stderr = Module["_stderr"] = 679272;
 
-var _stdout = Module["_stdout"] = 513592;
+var _stdout = Module["_stdout"] = 679576;
 
-var _jit_key = Module["_jit_key"] = 551908;
+var _jit_key = Module["_jit_key"] = 717860;
 
-var _ffi_type_pointer = Module["_ffi_type_pointer"] = 85132;
+var _ffi_type_pointer = Module["_ffi_type_pointer"] = 201500;
 
-var _ffi_type_void = Module["_ffi_type_void"] = 85024;
+var _ffi_type_void = Module["_ffi_type_void"] = 201392;
 
-var _ffi_type_sint8 = Module["_ffi_type_sint8"] = 85048;
+var _ffi_type_sint8 = Module["_ffi_type_sint8"] = 201416;
 
-var _ffi_type_uint8 = Module["_ffi_type_uint8"] = 85036;
+var _ffi_type_uint8 = Module["_ffi_type_uint8"] = 201404;
 
-var _ffi_type_sint16 = Module["_ffi_type_sint16"] = 85072;
+var _ffi_type_sint16 = Module["_ffi_type_sint16"] = 201440;
 
-var _ffi_type_uint16 = Module["_ffi_type_uint16"] = 85060;
+var _ffi_type_uint16 = Module["_ffi_type_uint16"] = 201428;
 
-var _ffi_type_sint32 = Module["_ffi_type_sint32"] = 85096;
+var _ffi_type_sint32 = Module["_ffi_type_sint32"] = 201464;
 
-var _ffi_type_uint32 = Module["_ffi_type_uint32"] = 85084;
+var _ffi_type_uint32 = Module["_ffi_type_uint32"] = 201452;
 
-var _ffi_type_float = Module["_ffi_type_float"] = 85144;
+var _ffi_type_float = Module["_ffi_type_float"] = 201512;
 
-var _ffi_type_double = Module["_ffi_type_double"] = 85156;
+var _ffi_type_double = Module["_ffi_type_double"] = 201524;
 
-var _ffi_type_sint64 = Module["_ffi_type_sint64"] = 85120;
+var _ffi_type_sint64 = Module["_ffi_type_sint64"] = 201488;
 
-var _ffi_type_uint64 = Module["_ffi_type_uint64"] = 85108;
+var _ffi_type_uint64 = Module["_ffi_type_uint64"] = 201476;
 
-var _ffi_type_complex_float = Module["_ffi_type_complex_float"] = 494936;
+var _ffi_type_complex_float = Module["_ffi_type_complex_float"] = 640440;
 
-var _ffi_type_complex_double = Module["_ffi_type_complex_double"] = 494956;
+var _ffi_type_complex_double = Module["_ffi_type_complex_double"] = 640460;
 
-var _ctype_mt_key = Module["_ctype_mt_key"] = 551884;
+var _ctype_mt_key = Module["_ctype_mt_key"] = 717836;
 
-var _cdata_mt_key = Module["_cdata_mt_key"] = 551896;
+var _cdata_mt_key = Module["_cdata_mt_key"] = 717848;
 
-var _callback_mt_key = Module["_callback_mt_key"] = 551900;
+var _callback_mt_key = Module["_callback_mt_key"] = 717852;
 
-var _callbacks_key = Module["_callbacks_key"] = 551888;
+var _callbacks_key = Module["_callbacks_key"] = 717840;
 
-var _niluv_key = Module["_niluv_key"] = 551880;
+var _niluv_key = Module["_niluv_key"] = 717832;
 
-var _gc_key = Module["_gc_key"] = 551892;
+var _gc_key = Module["_gc_key"] = 717844;
 
-var _cmodule_mt_key = Module["_cmodule_mt_key"] = 551904;
+var _cmodule_mt_key = Module["_cmodule_mt_key"] = 717856;
 
-var _constants_key = Module["_constants_key"] = 551912;
+var _constants_key = Module["_constants_key"] = 717864;
 
-var _types_key = Module["_types_key"] = 551916;
+var _types_key = Module["_types_key"] = 717868;
 
-var _functions_key = Module["_functions_key"] = 551920;
+var _functions_key = Module["_functions_key"] = 717872;
 
-var _asmname_key = Module["_asmname_key"] = 551924;
+var _asmname_key = Module["_asmname_key"] = 717876;
 
-var _abi_key = Module["_abi_key"] = 551928;
+var _abi_key = Module["_abi_key"] = 717880;
 
-var _next_unnamed_key = Module["_next_unnamed_key"] = 551932;
+var _next_unnamed_key = Module["_next_unnamed_key"] = 717884;
 
-var _ffi_type_longdouble = Module["_ffi_type_longdouble"] = 85168;
+var _ffi_type_longdouble = Module["_ffi_type_longdouble"] = 201536;
 
-var _ffi_type_complex_longdouble = Module["_ffi_type_complex_longdouble"] = 494976;
+var _ffi_type_complex_longdouble = Module["_ffi_type_complex_longdouble"] = 640480;
 
-var _jpeg_aritab = Module["_jpeg_aritab"] = 85184;
+var __ZN15ImGuiTextBuffer11EmptyStringE = Module["__ZN15ImGuiTextBuffer11EmptyStringE"] = 717904;
 
-var _jpeg_natural_order = Module["_jpeg_natural_order"] = 88400;
+var _GImGui = Module["_GImGui"] = 717900;
 
-var _jpeg_natural_order2 = Module["_jpeg_natural_order2"] = 89616;
+var _GImGuiDemoMarkerCallback = Module["_GImGuiDemoMarkerCallback"] = 740084;
 
-var _jpeg_natural_order3 = Module["_jpeg_natural_order3"] = 89504;
+var _GImGuiDemoMarkerCallbackUserData = Module["_GImGuiDemoMarkerCallbackUserData"] = 740088;
 
-var _jpeg_natural_order4 = Module["_jpeg_natural_order4"] = 89376;
+var _jpeg_aritab = Module["_jpeg_aritab"] = 230688;
 
-var _jpeg_natural_order5 = Module["_jpeg_natural_order5"] = 89200;
+var _jpeg_natural_order = Module["_jpeg_natural_order"] = 233904;
 
-var _jpeg_natural_order6 = Module["_jpeg_natural_order6"] = 88992;
+var _jpeg_natural_order2 = Module["_jpeg_natural_order2"] = 235120;
 
-var _jpeg_natural_order7 = Module["_jpeg_natural_order7"] = 88720;
+var _jpeg_natural_order3 = Module["_jpeg_natural_order3"] = 235008;
 
-var _jpeg_std_message_table = Module["_jpeg_std_message_table"] = 495024;
+var _jpeg_natural_order4 = Module["_jpeg_natural_order4"] = 234880;
 
-var _SDL_expand_byte = Module["_SDL_expand_byte"] = 504096;
+var _jpeg_natural_order5 = Module["_jpeg_natural_order5"] = 234704;
 
-var _EMSCRIPTENAUDIO_bootstrap = Module["_EMSCRIPTENAUDIO_bootstrap"] = 499900;
+var _jpeg_natural_order6 = Module["_jpeg_natural_order6"] = 234496;
 
-var _DISKAUDIO_bootstrap = Module["_DISKAUDIO_bootstrap"] = 499764;
+var _jpeg_natural_order7 = Module["_jpeg_natural_order7"] = 234224;
 
-var _DUMMYAUDIO_bootstrap = Module["_DUMMYAUDIO_bootstrap"] = 499780;
+var _jpeg_std_message_table = Module["_jpeg_std_message_table"] = 661008;
 
-var _SDL_Convert_S8_to_F32 = Module["_SDL_Convert_S8_to_F32"] = 552200;
+var _SDL_expand_byte = Module["_SDL_expand_byte"] = 670080;
 
-var _SDL_Convert_U8_to_F32 = Module["_SDL_Convert_U8_to_F32"] = 552204;
+var _EMSCRIPTENAUDIO_bootstrap = Module["_EMSCRIPTENAUDIO_bootstrap"] = 665884;
 
-var _SDL_Convert_S16_to_F32 = Module["_SDL_Convert_S16_to_F32"] = 552208;
+var _DISKAUDIO_bootstrap = Module["_DISKAUDIO_bootstrap"] = 665748;
 
-var _SDL_Convert_U16_to_F32 = Module["_SDL_Convert_U16_to_F32"] = 552212;
+var _DUMMYAUDIO_bootstrap = Module["_DUMMYAUDIO_bootstrap"] = 665764;
 
-var _SDL_Convert_S32_to_F32 = Module["_SDL_Convert_S32_to_F32"] = 552216;
+var _SDL_Convert_S8_to_F32 = Module["_SDL_Convert_S8_to_F32"] = 745432;
 
-var _SDL_Convert_F32_to_S8 = Module["_SDL_Convert_F32_to_S8"] = 552220;
+var _SDL_Convert_U8_to_F32 = Module["_SDL_Convert_U8_to_F32"] = 745436;
 
-var _SDL_Convert_F32_to_U8 = Module["_SDL_Convert_F32_to_U8"] = 552224;
+var _SDL_Convert_S16_to_F32 = Module["_SDL_Convert_S16_to_F32"] = 745440;
 
-var _SDL_Convert_F32_to_S16 = Module["_SDL_Convert_F32_to_S16"] = 552228;
+var _SDL_Convert_U16_to_F32 = Module["_SDL_Convert_U16_to_F32"] = 745444;
 
-var _SDL_Convert_F32_to_U16 = Module["_SDL_Convert_F32_to_U16"] = 552232;
+var _SDL_Convert_S32_to_F32 = Module["_SDL_Convert_S32_to_F32"] = 745448;
 
-var _SDL_Convert_F32_to_S32 = Module["_SDL_Convert_F32_to_S32"] = 552236;
+var _SDL_Convert_F32_to_S8 = Module["_SDL_Convert_F32_to_S8"] = 745452;
 
-var _SDL_GeneratedBlitFuncTable = Module["_SDL_GeneratedBlitFuncTable"] = 497216;
+var _SDL_Convert_F32_to_U8 = Module["_SDL_Convert_F32_to_U8"] = 745456;
 
-var _SDL_DUMMY_SensorDriver = Module["_SDL_DUMMY_SensorDriver"] = 499796;
+var _SDL_Convert_F32_to_S16 = Module["_SDL_Convert_F32_to_S16"] = 745460;
 
-var _Emscripten_bootstrap = Module["_Emscripten_bootstrap"] = 499916;
+var _SDL_Convert_F32_to_U16 = Module["_SDL_Convert_F32_to_U16"] = 745464;
 
-var _SDL_EMSCRIPTEN_JoystickDriver = Module["_SDL_EMSCRIPTEN_JoystickDriver"] = 504456;
+var _SDL_Convert_F32_to_S32 = Module["_SDL_Convert_F32_to_S32"] = 745468;
 
-var _SDL_joystick_magic = Module["_SDL_joystick_magic"] = 553484;
+var _SDL_GeneratedBlitFuncTable = Module["_SDL_GeneratedBlitFuncTable"] = 663200;
 
-var _GLES2_RenderDriver = Module["_GLES2_RenderDriver"] = 504140;
+var _SDL_DUMMY_SensorDriver = Module["_SDL_DUMMY_SensorDriver"] = 665780;
 
-var _SW_RenderDriver = Module["_SW_RenderDriver"] = 504252;
+var _Emscripten_bootstrap = Module["_Emscripten_bootstrap"] = 665900;
 
-var _png_sRGB_table = Module["_png_sRGB_table"] = 136208;
+var _SDL_EMSCRIPTEN_JoystickDriver = Module["_SDL_EMSCRIPTEN_JoystickDriver"] = 670440;
 
-var _png_sRGB_base = Module["_png_sRGB_base"] = 136720;
+var _SDL_joystick_magic = Module["_SDL_joystick_magic"] = 746716;
 
-var _png_sRGB_delta = Module["_png_sRGB_delta"] = 137744;
+var _GLES2_RenderDriver = Module["_GLES2_RenderDriver"] = 670124;
 
-var _z_errmsg = Module["_z_errmsg"] = 511312;
+var _SW_RenderDriver = Module["_SW_RenderDriver"] = 670236;
 
-var __length_code = Module["__length_code"] = 150432;
+var _png_sRGB_table = Module["_png_sRGB_table"] = 281712;
 
-var __dist_code = Module["__dist_code"] = 149920;
+var _png_sRGB_base = Module["_png_sRGB_base"] = 282224;
 
-var _deflate_copyright = Module["_deflate_copyright"] = 145088;
+var _png_sRGB_delta = Module["_png_sRGB_delta"] = 283248;
 
-var _inflate_copyright = Module["_inflate_copyright"] = 149616;
+var _z_errmsg = Module["_z_errmsg"] = 677296;
 
-var ___environ = Module["___environ"] = 557152;
+var __length_code = Module["__length_code"] = 295936;
 
-var ____environ = Module["____environ"] = 557152;
+var __dist_code = Module["__dist_code"] = 295424;
 
-var __environ = Module["__environ"] = 557152;
+var _deflate_copyright = Module["_deflate_copyright"] = 290592;
 
-var _environ = Module["_environ"] = 557152;
+var _inflate_copyright = Module["_inflate_copyright"] = 295120;
 
-var ___stack_chk_guard = Module["___stack_chk_guard"] = 557164;
+var ___environ = Module["___environ"] = 750384;
 
-var _daylight = Module["_daylight"] = 557172;
+var ____environ = Module["____environ"] = 750384;
 
-var _timezone = Module["_timezone"] = 557168;
+var __environ = Module["__environ"] = 750384;
 
-var ___tzname = Module["___tzname"] = 557176;
+var _environ = Module["_environ"] = 750384;
 
-var ___timezone = Module["___timezone"] = 557168;
+var ___stack_chk_guard = Module["___stack_chk_guard"] = 750396;
 
-var ___daylight = Module["___daylight"] = 557172;
+var _daylight = Module["_daylight"] = 750404;
 
-var _tzname = Module["_tzname"] = 557176;
+var _timezone = Module["_timezone"] = 750400;
 
-var ___progname = Module["___progname"] = 559104;
+var ___tzname = Module["___tzname"] = 750408;
 
-var ___optreset = Module["___optreset"] = 558068;
+var ___timezone = Module["___timezone"] = 750400;
 
-var _optind = Module["_optind"] = 512568;
+var ___daylight = Module["___daylight"] = 750404;
 
-var ___optpos = Module["___optpos"] = 558072;
+var _tzname = Module["_tzname"] = 750408;
 
-var _optarg = Module["_optarg"] = 558076;
+var ___progname = Module["___progname"] = 752336;
 
-var _optopt = Module["_optopt"] = 558080;
+var ___optreset = Module["___optreset"] = 751300;
 
-var _opterr = Module["_opterr"] = 512572;
+var _optind = Module["_optind"] = 678552;
 
-var _optreset = Module["_optreset"] = 558068;
+var ___optpos = Module["___optpos"] = 751304;
 
-var _h_errno = Module["_h_errno"] = 558204;
+var _optarg = Module["_optarg"] = 751308;
 
-var ___signgam = Module["___signgam"] = 573500;
+var _optopt = Module["_optopt"] = 751312;
 
-var __ns_flagdata = Module["__ns_flagdata"] = 337792;
+var _opterr = Module["_opterr"] = 678556;
 
-var ___progname_full = Module["___progname_full"] = 559108;
+var _optreset = Module["_optreset"] = 751300;
 
-var _program_invocation_short_name = Module["_program_invocation_short_name"] = 559104;
+var _h_errno = Module["_h_errno"] = 751436;
 
-var _program_invocation_name = Module["_program_invocation_name"] = 559108;
+var ___signgam = Module["___signgam"] = 766732;
 
-var ___sig_pending = Module["___sig_pending"] = 563480;
+var __ns_flagdata = Module["__ns_flagdata"] = 483296;
 
-var ___sig_actions = Module["___sig_actions"] = 564400;
+var ___progname_full = Module["___progname_full"] = 752340;
 
-var _signgam = Module["_signgam"] = 573500;
+var _program_invocation_short_name = Module["_program_invocation_short_name"] = 752336;
 
-var __ZTVSt12bad_any_cast = Module["__ZTVSt12bad_any_cast"] = 513764;
+var _program_invocation_name = Module["_program_invocation_name"] = 752340;
 
-var __ZTISt12bad_any_cast = Module["__ZTISt12bad_any_cast"] = 513784;
+var ___sig_pending = Module["___sig_pending"] = 756712;
 
-var __ZTVN10__cxxabiv120__si_class_type_infoE = Module["__ZTVN10__cxxabiv120__si_class_type_infoE"] = 530712;
+var ___sig_actions = Module["___sig_actions"] = 757632;
 
-var __ZTSSt12bad_any_cast = Module["__ZTSSt12bad_any_cast"] = 356992;
+var _signgam = Module["_signgam"] = 766732;
 
-var __ZTISt8bad_cast = Module["__ZTISt8bad_cast"] = 531376;
+var __ZTVSt12bad_any_cast = Module["__ZTVSt12bad_any_cast"] = 679748;
 
-var __ZTVNSt12experimental15fundamentals_v112bad_any_castE = Module["__ZTVNSt12experimental15fundamentals_v112bad_any_castE"] = 513796;
+var __ZTISt12bad_any_cast = Module["__ZTISt12bad_any_cast"] = 679768;
 
-var __ZTINSt12experimental15fundamentals_v112bad_any_castE = Module["__ZTINSt12experimental15fundamentals_v112bad_any_castE"] = 513816;
+var __ZTVN10__cxxabiv120__si_class_type_infoE = Module["__ZTVN10__cxxabiv120__si_class_type_infoE"] = 696696;
 
-var __ZTSNSt12experimental15fundamentals_v112bad_any_castE = Module["__ZTSNSt12experimental15fundamentals_v112bad_any_castE"] = 357009;
+var __ZTSSt12bad_any_cast = Module["__ZTSSt12bad_any_cast"] = 502496;
 
-var __ZNSt3__212placeholders2_1E = Module["__ZNSt3__212placeholders2_1E"] = 357059;
+var __ZTISt8bad_cast = Module["__ZTISt8bad_cast"] = 697360;
 
-var __ZNSt3__212placeholders2_2E = Module["__ZNSt3__212placeholders2_2E"] = 357060;
+var __ZTVNSt12experimental15fundamentals_v112bad_any_castE = Module["__ZTVNSt12experimental15fundamentals_v112bad_any_castE"] = 679780;
 
-var __ZNSt3__212placeholders2_3E = Module["__ZNSt3__212placeholders2_3E"] = 357061;
+var __ZTINSt12experimental15fundamentals_v112bad_any_castE = Module["__ZTINSt12experimental15fundamentals_v112bad_any_castE"] = 679800;
 
-var __ZNSt3__212placeholders2_4E = Module["__ZNSt3__212placeholders2_4E"] = 357062;
+var __ZTSNSt12experimental15fundamentals_v112bad_any_castE = Module["__ZTSNSt12experimental15fundamentals_v112bad_any_castE"] = 502513;
 
-var __ZNSt3__212placeholders2_5E = Module["__ZNSt3__212placeholders2_5E"] = 357063;
+var __ZNSt3__212placeholders2_1E = Module["__ZNSt3__212placeholders2_1E"] = 502563;
 
-var __ZNSt3__212placeholders2_6E = Module["__ZNSt3__212placeholders2_6E"] = 357064;
+var __ZNSt3__212placeholders2_2E = Module["__ZNSt3__212placeholders2_2E"] = 502564;
 
-var __ZNSt3__212placeholders2_7E = Module["__ZNSt3__212placeholders2_7E"] = 357065;
+var __ZNSt3__212placeholders2_3E = Module["__ZNSt3__212placeholders2_3E"] = 502565;
 
-var __ZNSt3__212placeholders2_8E = Module["__ZNSt3__212placeholders2_8E"] = 357066;
+var __ZNSt3__212placeholders2_4E = Module["__ZNSt3__212placeholders2_4E"] = 502566;
 
-var __ZNSt3__212placeholders2_9E = Module["__ZNSt3__212placeholders2_9E"] = 357067;
+var __ZNSt3__212placeholders2_5E = Module["__ZNSt3__212placeholders2_5E"] = 502567;
 
-var __ZNSt3__212placeholders3_10E = Module["__ZNSt3__212placeholders3_10E"] = 357068;
+var __ZNSt3__212placeholders2_6E = Module["__ZNSt3__212placeholders2_6E"] = 502568;
 
-var __ZNSt3__26__itoa16_Charconv_digitsE = Module["__ZNSt3__26__itoa16_Charconv_digitsE"] = 357072;
+var __ZNSt3__212placeholders2_7E = Module["__ZNSt3__212placeholders2_7E"] = 502569;
 
-var __ZNSt3__26__itoa10__pow10_32E = Module["__ZNSt3__26__itoa10__pow10_32E"] = 357120;
+var __ZNSt3__212placeholders2_8E = Module["__ZNSt3__212placeholders2_8E"] = 502570;
 
-var __ZNSt3__26__itoa16__digits_base_10E = Module["__ZNSt3__26__itoa16__digits_base_10E"] = 357168;
+var __ZNSt3__212placeholders2_9E = Module["__ZNSt3__212placeholders2_9E"] = 502571;
 
-var __ZNSt3__225_General_precision_tablesIfE6_Max_PE = Module["__ZNSt3__225_General_precision_tablesIfE6_Max_PE"] = 357808;
+var __ZNSt3__212placeholders3_10E = Module["__ZNSt3__212placeholders3_10E"] = 502572;
 
-var __ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE = Module["__ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE"] = 357632;
+var __ZNSt3__26__itoa16_Charconv_digitsE = Module["__ZNSt3__26__itoa16_Charconv_digitsE"] = 502576;
 
-var __ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE = Module["__ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE"] = 357376;
+var __ZNSt3__26__itoa10__pow10_32E = Module["__ZNSt3__26__itoa10__pow10_32E"] = 502624;
 
-var __ZNSt3__225_General_precision_tablesIdE6_Max_PE = Module["__ZNSt3__225_General_precision_tablesIdE6_Max_PE"] = 361904;
+var __ZNSt3__26__itoa16__digits_base_10E = Module["__ZNSt3__26__itoa16__digits_base_10E"] = 502672;
 
-var __ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE = Module["__ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE"] = 359392;
+var __ZNSt3__225_General_precision_tablesIfE6_Max_PE = Module["__ZNSt3__225_General_precision_tablesIfE6_Max_PE"] = 503312;
 
-var __ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE = Module["__ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE"] = 357824;
+var __ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE = Module["__ZNSt3__225_General_precision_tablesIfE17_Ordinary_X_tableE"] = 503136;
 
-var __ZNSt3__26chrono12system_clock9is_steadyE = Module["__ZNSt3__26chrono12system_clock9is_steadyE"] = 361908;
+var __ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE = Module["__ZNSt3__225_General_precision_tablesIfE16_Special_X_tableE"] = 502880;
 
-var __ZNSt3__26chrono12steady_clock9is_steadyE = Module["__ZNSt3__26chrono12steady_clock9is_steadyE"] = 361909;
+var __ZNSt3__225_General_precision_tablesIdE6_Max_PE = Module["__ZNSt3__225_General_precision_tablesIdE6_Max_PE"] = 507408;
 
-var __ZTVNSt3__26chrono22nonexistent_local_timeE = Module["__ZTVNSt3__26chrono22nonexistent_local_timeE"] = 513828;
+var __ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE = Module["__ZNSt3__225_General_precision_tablesIdE17_Ordinary_X_tableE"] = 504896;
 
-var __ZTINSt3__26chrono22nonexistent_local_timeE = Module["__ZTINSt3__26chrono22nonexistent_local_timeE"] = 513848;
+var __ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE = Module["__ZNSt3__225_General_precision_tablesIdE16_Special_X_tableE"] = 503328;
 
-var __ZTSNSt3__26chrono22nonexistent_local_timeE = Module["__ZTSNSt3__26chrono22nonexistent_local_timeE"] = 361910;
+var __ZNSt3__26chrono12system_clock9is_steadyE = Module["__ZNSt3__26chrono12system_clock9is_steadyE"] = 507412;
 
-var __ZTISt13runtime_error = Module["__ZTISt13runtime_error"] = 531236;
+var __ZNSt3__26chrono12steady_clock9is_steadyE = Module["__ZNSt3__26chrono12steady_clock9is_steadyE"] = 507413;
 
-var __ZTVNSt3__26chrono20ambiguous_local_timeE = Module["__ZTVNSt3__26chrono20ambiguous_local_timeE"] = 513860;
+var __ZTVNSt3__26chrono22nonexistent_local_timeE = Module["__ZTVNSt3__26chrono22nonexistent_local_timeE"] = 679812;
 
-var __ZTINSt3__26chrono20ambiguous_local_timeE = Module["__ZTINSt3__26chrono20ambiguous_local_timeE"] = 513880;
+var __ZTINSt3__26chrono22nonexistent_local_timeE = Module["__ZTINSt3__26chrono22nonexistent_local_timeE"] = 679832;
 
-var __ZTSNSt3__26chrono20ambiguous_local_timeE = Module["__ZTSNSt3__26chrono20ambiguous_local_timeE"] = 361950;
+var __ZTSNSt3__26chrono22nonexistent_local_timeE = Module["__ZTSNSt3__26chrono22nonexistent_local_timeE"] = 507414;
 
-var __ZNSt3__214__POW10_OFFSETE = Module["__ZNSt3__214__POW10_OFFSETE"] = 391376;
+var __ZTISt13runtime_error = Module["__ZTISt13runtime_error"] = 697220;
 
-var __ZNSt3__213__POW10_SPLITE = Module["__ZNSt3__213__POW10_SPLITE"] = 362e3;
+var __ZTVNSt3__26chrono20ambiguous_local_timeE = Module["__ZTVNSt3__26chrono20ambiguous_local_timeE"] = 679844;
 
-var __ZNSt3__213__MIN_BLOCK_2E = Module["__ZNSt3__213__MIN_BLOCK_2E"] = 391504;
+var __ZTINSt3__26chrono20ambiguous_local_timeE = Module["__ZTINSt3__26chrono20ambiguous_local_timeE"] = 679864;
 
-var __ZNSt3__216__POW10_OFFSET_2E = Module["__ZNSt3__216__POW10_OFFSET_2E"] = 391584;
+var __ZTSNSt3__26chrono20ambiguous_local_timeE = Module["__ZTSNSt3__26chrono20ambiguous_local_timeE"] = 507454;
 
-var __ZNSt3__215__POW10_SPLIT_2E = Module["__ZNSt3__215__POW10_SPLIT_2E"] = 391728;
+var __ZNSt3__214__POW10_OFFSETE = Module["__ZNSt3__214__POW10_OFFSETE"] = 536880;
 
-var __ZNSt3__223__DOUBLE_POW5_INV_SPLITE = Module["__ZNSt3__223__DOUBLE_POW5_INV_SPLITE"] = 466928;
+var __ZNSt3__213__POW10_SPLITE = Module["__ZNSt3__213__POW10_SPLITE"] = 507504;
 
-var __ZNSt3__219__DOUBLE_POW5_SPLITE = Module["__ZNSt3__219__DOUBLE_POW5_SPLITE"] = 471600;
+var __ZNSt3__213__MIN_BLOCK_2E = Module["__ZNSt3__213__MIN_BLOCK_2E"] = 537008;
 
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment"] = 476816;
+var __ZNSt3__216__POW10_OFFSET_2E = Module["__ZNSt3__216__POW10_OFFSET_2E"] = 537088;
 
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa"] = 477136;
+var __ZNSt3__215__POW10_SPLIT_2E = Module["__ZNSt3__215__POW10_SPLIT_2E"] = 537232;
 
-var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module["__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE"] = 513892;
+var __ZNSt3__223__DOUBLE_POW5_INV_SPLITE = Module["__ZNSt3__223__DOUBLE_POW5_INV_SPLITE"] = 612432;
 
-var __ZTVNSt3__219__shared_weak_countE = Module["__ZTVNSt3__219__shared_weak_countE"] = 521596;
+var __ZNSt3__219__DOUBLE_POW5_SPLITE = Module["__ZNSt3__219__DOUBLE_POW5_SPLITE"] = 617104;
 
-var __ZTVNSt3__214__shared_countE = Module["__ZTVNSt3__214__shared_countE"] = 521568;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE11_Adjustment"] = 622320;
 
-var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module["__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE"] = 513932;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_64ENS_12chars_formatEdE21_Max_shifted_mantissa"] = 622640;
 
-var __ZNSt3__26ranges5__cpo9iter_moveE = Module["__ZNSt3__26ranges5__cpo9iter_moveE"] = 477526;
+var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module["__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE"] = 679876;
 
-var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module["__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE"] = 513920;
+var __ZTVNSt3__219__shared_weak_countE = Module["__ZTVNSt3__219__shared_weak_countE"] = 687580;
 
-var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module["__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE"] = 477332;
+var __ZTVNSt3__214__shared_countE = Module["__ZTVNSt3__214__shared_countE"] = 687552;
 
-var __ZTINSt3__219__shared_weak_countE = Module["__ZTINSt3__219__shared_weak_countE"] = 521624;
+var __ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module["__ZTVNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE"] = 679916;
 
-var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module["__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE"] = 513960;
+var __ZNSt3__26ranges5__cpo9iter_moveE = Module["__ZNSt3__26ranges5__cpo9iter_moveE"] = 623030;
 
-var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module["__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE"] = 477414;
+var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module["__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE"] = 679904;
 
-var __ZTVNSt3__214error_categoryE = Module["__ZTVNSt3__214error_categoryE"] = 513972;
+var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE = Module["__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem12__dir_streamENS_9allocatorIS2_EEEE"] = 622836;
 
-var __ZTINSt3__214error_categoryE = Module["__ZTINSt3__214error_categoryE"] = 514008;
+var __ZTINSt3__219__shared_weak_countE = Module["__ZTINSt3__219__shared_weak_countE"] = 687608;
 
-var __ZTVN10__cxxabiv117__class_type_infoE = Module["__ZTVN10__cxxabiv117__class_type_infoE"] = 530672;
+var __ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module["__ZTINSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE"] = 679944;
 
-var __ZTSNSt3__214error_categoryE = Module["__ZTSNSt3__214error_categoryE"] = 477539;
+var __ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE = Module["__ZTSNSt3__220__shared_ptr_emplaceINS_10filesystem28recursive_directory_iterator12__shared_impENS_9allocatorIS3_EEEE"] = 622918;
 
-var __ZTVSt16nested_exception = Module["__ZTVSt16nested_exception"] = 514016;
+var __ZTVNSt3__214error_categoryE = Module["__ZTVNSt3__214error_categoryE"] = 679956;
 
-var __ZTISt16nested_exception = Module["__ZTISt16nested_exception"] = 514032;
+var __ZTINSt3__214error_categoryE = Module["__ZTINSt3__214error_categoryE"] = 679992;
 
-var __ZTSSt16nested_exception = Module["__ZTSSt16nested_exception"] = 477564;
+var __ZTVN10__cxxabiv117__class_type_infoE = Module["__ZTVN10__cxxabiv117__class_type_infoE"] = 696656;
 
-var __ZTVNSt3__219bad_expected_accessIvEE = Module["__ZTVNSt3__219bad_expected_accessIvEE"] = 514040;
+var __ZTSNSt3__214error_categoryE = Module["__ZTSNSt3__214error_categoryE"] = 623043;
 
-var __ZTINSt3__219bad_expected_accessIvEE = Module["__ZTINSt3__219bad_expected_accessIvEE"] = 514060;
+var __ZTVSt16nested_exception = Module["__ZTVSt16nested_exception"] = 68e4;
 
-var __ZTSNSt3__219bad_expected_accessIvEE = Module["__ZTSNSt3__219bad_expected_accessIvEE"] = 477585;
+var __ZTISt16nested_exception = Module["__ZTISt16nested_exception"] = 680016;
 
-var __ZTISt9exception = Module["__ZTISt9exception"] = 530960;
+var __ZTSSt16nested_exception = Module["__ZTSSt16nested_exception"] = 623068;
 
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment"] = 478272;
+var __ZTVNSt3__219bad_expected_accessIvEE = Module["__ZTVNSt3__219bad_expected_accessIvEE"] = 680024;
 
-var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa"] = 478320;
+var __ZTINSt3__219bad_expected_accessIvEE = Module["__ZTINSt3__219bad_expected_accessIvEE"] = 680044;
 
-var __ZNSt3__222__FLOAT_POW5_INV_SPLITE = Module["__ZNSt3__222__FLOAT_POW5_INV_SPLITE"] = 477632;
+var __ZTSNSt3__219bad_expected_accessIvEE = Module["__ZTSNSt3__219bad_expected_accessIvEE"] = 623089;
 
-var __ZNSt3__218__FLOAT_POW5_SPLITE = Module["__ZNSt3__218__FLOAT_POW5_SPLITE"] = 477888;
+var __ZTISt9exception = Module["__ZTISt9exception"] = 696944;
 
-var __ZNSt3__210filesystem16_FilesystemClock9is_steadyE = Module["__ZNSt3__210filesystem16_FilesystemClock9is_steadyE"] = 478364;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE11_Adjustment"] = 623776;
 
-var __ZTVNSt3__210filesystem16filesystem_errorE = Module["__ZTVNSt3__210filesystem16filesystem_errorE"] = 514072;
+var __ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa = Module["__ZZNSt3__210__to_charsB8nn190106EPcS0_NS_21__floating_decimal_32ENS_12chars_formatEjjE21_Max_shifted_mantissa"] = 623824;
 
-var __ZTINSt3__210filesystem16filesystem_errorE = Module["__ZTINSt3__210filesystem16filesystem_errorE"] = 514092;
+var __ZNSt3__222__FLOAT_POW5_INV_SPLITE = Module["__ZNSt3__222__FLOAT_POW5_INV_SPLITE"] = 623136;
 
-var __ZTSNSt3__210filesystem16filesystem_errorE = Module["__ZTSNSt3__210filesystem16filesystem_errorE"] = 478365;
+var __ZNSt3__218__FLOAT_POW5_SPLITE = Module["__ZNSt3__218__FLOAT_POW5_SPLITE"] = 623392;
 
-var __ZTINSt3__212system_errorE = Module["__ZTINSt3__212system_errorE"] = 523860;
+var __ZNSt3__210filesystem16_FilesystemClock9is_steadyE = Module["__ZNSt3__210filesystem16_FilesystemClock9is_steadyE"] = 623868;
 
-var __ZTVNSt3__217bad_function_callE = Module["__ZTVNSt3__217bad_function_callE"] = 514104;
+var __ZTVNSt3__210filesystem16filesystem_errorE = Module["__ZTVNSt3__210filesystem16filesystem_errorE"] = 680056;
 
-var __ZTINSt3__217bad_function_callE = Module["__ZTINSt3__217bad_function_callE"] = 514124;
+var __ZTINSt3__210filesystem16filesystem_errorE = Module["__ZTINSt3__210filesystem16filesystem_errorE"] = 680076;
 
-var __ZTSNSt3__217bad_function_callE = Module["__ZTSNSt3__217bad_function_callE"] = 478404;
+var __ZTSNSt3__210filesystem16filesystem_errorE = Module["__ZTSNSt3__210filesystem16filesystem_errorE"] = 623869;
 
-var __ZTVNSt3__212future_errorE = Module["__ZTVNSt3__212future_errorE"] = 514176;
+var __ZTINSt3__212system_errorE = Module["__ZTINSt3__212system_errorE"] = 689844;
 
-var __ZTVNSt3__217__assoc_sub_stateE = Module["__ZTVNSt3__217__assoc_sub_stateE"] = 514208;
+var __ZTVNSt3__217bad_function_callE = Module["__ZTVNSt3__217bad_function_callE"] = 680088;
 
-var __ZTVNSt3__223__future_error_categoryE = Module["__ZTVNSt3__223__future_error_categoryE"] = 514140;
+var __ZTINSt3__217bad_function_callE = Module["__ZTINSt3__217bad_function_callE"] = 680108;
 
-var __ZTINSt3__223__future_error_categoryE = Module["__ZTINSt3__223__future_error_categoryE"] = 514244;
+var __ZTSNSt3__217bad_function_callE = Module["__ZTSNSt3__217bad_function_callE"] = 623908;
 
-var __ZTINSt3__212future_errorE = Module["__ZTINSt3__212future_errorE"] = 514196;
+var __ZTVNSt3__212future_errorE = Module["__ZTVNSt3__212future_errorE"] = 680160;
 
-var __ZTSNSt3__212future_errorE = Module["__ZTSNSt3__212future_errorE"] = 478432;
+var __ZTVNSt3__217__assoc_sub_stateE = Module["__ZTVNSt3__217__assoc_sub_stateE"] = 680192;
 
-var __ZTISt11logic_error = Module["__ZTISt11logic_error"] = 531096;
+var __ZTVNSt3__223__future_error_categoryE = Module["__ZTVNSt3__223__future_error_categoryE"] = 680124;
 
-var __ZTINSt3__217__assoc_sub_stateE = Module["__ZTINSt3__217__assoc_sub_stateE"] = 514232;
+var __ZTINSt3__223__future_error_categoryE = Module["__ZTINSt3__223__future_error_categoryE"] = 680228;
 
-var __ZTSNSt3__217__assoc_sub_stateE = Module["__ZTSNSt3__217__assoc_sub_stateE"] = 478455;
+var __ZTINSt3__212future_errorE = Module["__ZTINSt3__212future_errorE"] = 680180;
 
-var __ZTINSt3__214__shared_countE = Module["__ZTINSt3__214__shared_countE"] = 521588;
+var __ZTSNSt3__212future_errorE = Module["__ZTSNSt3__212future_errorE"] = 623936;
 
-var __ZTSNSt3__223__future_error_categoryE = Module["__ZTSNSt3__223__future_error_categoryE"] = 478483;
+var __ZTISt11logic_error = Module["__ZTISt11logic_error"] = 697080;
 
-var __ZTINSt3__212__do_messageE = Module["__ZTINSt3__212__do_messageE"] = 523824;
+var __ZTINSt3__217__assoc_sub_stateE = Module["__ZTINSt3__217__assoc_sub_stateE"] = 680216;
 
-var __ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE"] = 514276;
+var __ZTSNSt3__217__assoc_sub_stateE = Module["__ZTSNSt3__217__assoc_sub_stateE"] = 623959;
 
-var __ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 514380;
+var __ZTINSt3__214__shared_countE = Module["__ZTINSt3__214__shared_countE"] = 687572;
 
-var __ZNSt3__25ctypeIcE2idE = Module["__ZNSt3__25ctypeIcE2idE"] = 598248;
+var __ZTSNSt3__223__future_error_categoryE = Module["__ZTSNSt3__223__future_error_categoryE"] = 623987;
 
-var __ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 514428;
+var __ZTINSt3__212__do_messageE = Module["__ZTINSt3__212__do_messageE"] = 689808;
 
-var __ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 597928;
+var __ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__215basic_streambufIcNS_11char_traitsIcEEEE"] = 680260;
 
-var __ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 514496;
+var __ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 680364;
 
-var __ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE"] = 514524;
+var __ZNSt3__25ctypeIcE2idE = Module["__ZNSt3__25ctypeIcE2idE"] = 791528;
 
-var __ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 514628;
+var __ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 680412;
 
-var __ZNSt3__25ctypeIwE2idE = Module["__ZNSt3__25ctypeIwE2idE"] = 598240;
+var __ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 791208;
 
-var __ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 514676;
+var __ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 680480;
 
-var __ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 597936;
+var __ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__215basic_streambufIwNS_11char_traitsIwEEEE"] = 680508;
 
-var __ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 514684;
+var __ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTTNSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 680612;
 
-var __ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE"] = 514748;
+var __ZNSt3__25ctypeIwE2idE = Module["__ZNSt3__25ctypeIwE2idE"] = 791520;
 
-var __ZNSt3__27codecvtIcc11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIcc11__mbstate_tE2idE"] = 598256;
+var __ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTTNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 680660;
 
-var __ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515164;
+var __ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 791216;
 
-var __ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515396;
+var __ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 680668;
 
-var __ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515504;
+var __ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__213basic_filebufIcNS_11char_traitsIcEEEE"] = 680732;
 
-var __ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 515612;
+var __ZNSt3__27codecvtIcc11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIcc11__mbstate_tE2idE"] = 791536;
 
-var __ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 515720;
+var __ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTTNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681148;
 
-var __ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 597912;
+var __ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTTNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681380;
 
-var __ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 597920;
+var __ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTTNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681488;
 
-var __ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE"] = 514840;
+var __ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 681596;
 
-var __ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 514340;
+var __ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTTNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 681704;
 
-var __ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 514848;
+var __ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 791192;
 
-var __ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 514388;
+var __ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 791200;
 
-var __ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 514872;
+var __ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__215basic_streambufIcNS_11char_traitsIcEEEE"] = 680824;
 
-var __ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 514436;
+var __ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 680324;
 
-var __ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 514976;
+var __ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 680832;
 
-var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE"] = 514896;
+var __ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 680372;
 
-var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE8_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE8_NS_13basic_ostreamIcS2_EE"] = 514936;
+var __ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 680856;
 
-var __ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE"] = 515036;
+var __ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 680420;
 
-var __ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 514588;
+var __ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 680960;
 
-var __ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 515044;
+var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE"] = 680880;
 
-var __ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 514636;
+var __ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE8_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE8_NS_13basic_ostreamIcS2_EE"] = 680920;
 
-var __ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 515068;
+var __ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__215basic_streambufIwNS_11char_traitsIwEEEE"] = 681020;
 
-var __ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515092;
+var __ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 680572;
 
-var __ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE"] = 515788;
+var __ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 681028;
 
-var __ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE"] = 514812;
+var __ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 680620;
 
-var __ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE"] = 514828;
+var __ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 681052;
 
-var __ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE"] = 478912;
+var __ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681076;
 
-var __ZTINSt3__28ios_baseE = Module["__ZTINSt3__28ios_baseE"] = 515880;
+var __ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__213basic_filebufIcNS_11char_traitsIcEEEE"] = 681772;
 
-var __ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE"] = 478954;
+var __ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__29basic_iosIcNS_11char_traitsIcEEEE"] = 680796;
 
-var __ZTVN10__cxxabiv121__vmi_class_type_infoE = Module["__ZTVN10__cxxabiv121__vmi_class_type_infoE"] = 530764;
+var __ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__29basic_iosIcNS_11char_traitsIcEEEE"] = 680812;
 
-var __ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 479003;
+var __ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__29basic_iosIcNS_11char_traitsIcEEEE"] = 624416;
 
-var __ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 479050;
+var __ZTINSt3__28ios_baseE = Module["__ZTINSt3__28ios_baseE"] = 681864;
 
-var __ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 479097;
+var __ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__215basic_streambufIcNS_11char_traitsIcEEEE"] = 624458;
 
-var __ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE"] = 515008;
+var __ZTVN10__cxxabiv121__vmi_class_type_infoE = Module["__ZTVN10__cxxabiv121__vmi_class_type_infoE"] = 696748;
 
-var __ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE"] = 515024;
+var __ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__213basic_istreamIcNS_11char_traitsIcEEEE"] = 624507;
 
-var __ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE"] = 479145;
+var __ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__213basic_ostreamIcNS_11char_traitsIcEEEE"] = 624554;
 
-var __ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE"] = 479187;
+var __ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__214basic_iostreamIcNS_11char_traitsIcEEEE"] = 624601;
 
-var __ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 479236;
+var __ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module["__ZTVNSt3__29basic_iosIwNS_11char_traitsIwEEEE"] = 680992;
 
-var __ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 479283;
+var __ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module["__ZTINSt3__29basic_iosIwNS_11char_traitsIwEEEE"] = 681008;
 
-var __ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 479330;
+var __ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__29basic_iosIwNS_11char_traitsIwEEEE"] = 624649;
 
-var __ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515104;
+var __ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__215basic_streambufIwNS_11char_traitsIwEEEE"] = 624691;
 
-var __ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515344;
+var __ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__213basic_istreamIwNS_11char_traitsIwEEEE"] = 624740;
 
-var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE = Module["__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE"] = 515204;
+var __ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE = Module["__ZTSNSt3__213basic_ostreamIwNS_11char_traitsIwEEEE"] = 624787;
 
-var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE"] = 515264;
+var __ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__215basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 624834;
 
-var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE8_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE8_NS_13basic_ostreamIcS2_EE"] = 515304;
+var __ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681088;
 
-var __ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 479396;
+var __ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681328;
 
-var __ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515356;
+var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE = Module["__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE"] = 681188;
 
-var __ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515452;
+var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE"] = 681248;
 
-var __ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE"] = 515412;
+var __ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE8_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE8_NS_13basic_ostreamIcS2_EE"] = 681288;
 
-var __ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 479465;
+var __ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__218basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 624900;
 
-var __ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515464;
+var __ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681340;
 
-var __ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 515560;
+var __ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681436;
 
-var __ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE"] = 515520;
+var __ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_ostreamIcS2_EE"] = 681396;
 
-var __ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 479535;
+var __ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__219basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 624969;
 
-var __ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 515572;
+var __ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTVNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681448;
 
-var __ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 515668;
+var __ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTINSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 681544;
 
-var __ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE"] = 515628;
+var __ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE"] = 681504;
 
-var __ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 479605;
+var __ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE = Module["__ZTSNSt3__219basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE"] = 625039;
 
-var __ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 515680;
+var __ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 681556;
 
-var __ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 515776;
+var __ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 681652;
 
-var __ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE"] = 515736;
+var __ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE = Module["__ZTCNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE0_NS_13basic_istreamIcS2_EE"] = 681612;
 
-var __ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 479653;
+var __ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__214basic_ifstreamIcNS_11char_traitsIcEEEE"] = 625109;
 
-var __ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE"] = 479701;
+var __ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTVNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 681664;
 
-var __ZTVNSt3__28ios_base7failureE = Module["__ZTVNSt3__28ios_base7failureE"] = 515840;
+var __ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTINSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 681760;
 
-var __ZNSt3__28ios_base9__xindex_E = Module["__ZNSt3__28ios_base9__xindex_E"] = 596812;
+var __ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE = Module["__ZTCNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE0_NS_13basic_ostreamIcS2_EE"] = 681720;
 
-var __ZTVNSt3__28ios_baseE = Module["__ZTVNSt3__28ios_baseE"] = 515860;
+var __ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__214basic_ofstreamIcNS_11char_traitsIcEEEE"] = 625157;
 
-var __ZTVNSt3__219__iostream_categoryE = Module["__ZTVNSt3__219__iostream_categoryE"] = 515804;
+var __ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE = Module["__ZTSNSt3__213basic_filebufIcNS_11char_traitsIcEEEE"] = 625205;
 
-var __ZTINSt3__219__iostream_categoryE = Module["__ZTINSt3__219__iostream_categoryE"] = 515888;
+var __ZTVNSt3__28ios_base7failureE = Module["__ZTVNSt3__28ios_base7failureE"] = 681824;
 
-var __ZTINSt3__28ios_base7failureE = Module["__ZTINSt3__28ios_base7failureE"] = 515900;
+var __ZNSt3__28ios_base9__xindex_E = Module["__ZNSt3__28ios_base9__xindex_E"] = 790092;
 
-var __ZNSt3__28ios_base9boolalphaE = Module["__ZNSt3__28ios_base9boolalphaE"] = 479748;
+var __ZTVNSt3__28ios_baseE = Module["__ZTVNSt3__28ios_baseE"] = 681844;
 
-var __ZNSt3__28ios_base3decE = Module["__ZNSt3__28ios_base3decE"] = 479752;
+var __ZTVNSt3__219__iostream_categoryE = Module["__ZTVNSt3__219__iostream_categoryE"] = 681788;
 
-var __ZNSt3__28ios_base5fixedE = Module["__ZNSt3__28ios_base5fixedE"] = 479756;
+var __ZTINSt3__219__iostream_categoryE = Module["__ZTINSt3__219__iostream_categoryE"] = 681872;
 
-var __ZNSt3__28ios_base3hexE = Module["__ZNSt3__28ios_base3hexE"] = 479760;
+var __ZTINSt3__28ios_base7failureE = Module["__ZTINSt3__28ios_base7failureE"] = 681884;
 
-var __ZNSt3__28ios_base8internalE = Module["__ZNSt3__28ios_base8internalE"] = 479764;
+var __ZNSt3__28ios_base9boolalphaE = Module["__ZNSt3__28ios_base9boolalphaE"] = 625252;
 
-var __ZNSt3__28ios_base4leftE = Module["__ZNSt3__28ios_base4leftE"] = 479768;
+var __ZNSt3__28ios_base3decE = Module["__ZNSt3__28ios_base3decE"] = 625256;
 
-var __ZNSt3__28ios_base3octE = Module["__ZNSt3__28ios_base3octE"] = 479772;
+var __ZNSt3__28ios_base5fixedE = Module["__ZNSt3__28ios_base5fixedE"] = 625260;
 
-var __ZNSt3__28ios_base5rightE = Module["__ZNSt3__28ios_base5rightE"] = 479776;
+var __ZNSt3__28ios_base3hexE = Module["__ZNSt3__28ios_base3hexE"] = 625264;
 
-var __ZNSt3__28ios_base10scientificE = Module["__ZNSt3__28ios_base10scientificE"] = 479780;
+var __ZNSt3__28ios_base8internalE = Module["__ZNSt3__28ios_base8internalE"] = 625268;
 
-var __ZNSt3__28ios_base8showbaseE = Module["__ZNSt3__28ios_base8showbaseE"] = 479784;
+var __ZNSt3__28ios_base4leftE = Module["__ZNSt3__28ios_base4leftE"] = 625272;
 
-var __ZNSt3__28ios_base9showpointE = Module["__ZNSt3__28ios_base9showpointE"] = 479788;
+var __ZNSt3__28ios_base3octE = Module["__ZNSt3__28ios_base3octE"] = 625276;
 
-var __ZNSt3__28ios_base7showposE = Module["__ZNSt3__28ios_base7showposE"] = 479792;
+var __ZNSt3__28ios_base5rightE = Module["__ZNSt3__28ios_base5rightE"] = 625280;
 
-var __ZNSt3__28ios_base6skipwsE = Module["__ZNSt3__28ios_base6skipwsE"] = 479796;
+var __ZNSt3__28ios_base10scientificE = Module["__ZNSt3__28ios_base10scientificE"] = 625284;
 
-var __ZNSt3__28ios_base7unitbufE = Module["__ZNSt3__28ios_base7unitbufE"] = 479800;
+var __ZNSt3__28ios_base8showbaseE = Module["__ZNSt3__28ios_base8showbaseE"] = 625288;
 
-var __ZNSt3__28ios_base9uppercaseE = Module["__ZNSt3__28ios_base9uppercaseE"] = 479804;
+var __ZNSt3__28ios_base9showpointE = Module["__ZNSt3__28ios_base9showpointE"] = 625292;
 
-var __ZNSt3__28ios_base11adjustfieldE = Module["__ZNSt3__28ios_base11adjustfieldE"] = 479808;
+var __ZNSt3__28ios_base7showposE = Module["__ZNSt3__28ios_base7showposE"] = 625296;
 
-var __ZNSt3__28ios_base9basefieldE = Module["__ZNSt3__28ios_base9basefieldE"] = 479812;
+var __ZNSt3__28ios_base6skipwsE = Module["__ZNSt3__28ios_base6skipwsE"] = 625300;
 
-var __ZNSt3__28ios_base10floatfieldE = Module["__ZNSt3__28ios_base10floatfieldE"] = 479816;
+var __ZNSt3__28ios_base7unitbufE = Module["__ZNSt3__28ios_base7unitbufE"] = 625304;
 
-var __ZNSt3__28ios_base6badbitE = Module["__ZNSt3__28ios_base6badbitE"] = 479820;
+var __ZNSt3__28ios_base9uppercaseE = Module["__ZNSt3__28ios_base9uppercaseE"] = 625308;
 
-var __ZNSt3__28ios_base6eofbitE = Module["__ZNSt3__28ios_base6eofbitE"] = 479824;
+var __ZNSt3__28ios_base11adjustfieldE = Module["__ZNSt3__28ios_base11adjustfieldE"] = 625312;
 
-var __ZNSt3__28ios_base7failbitE = Module["__ZNSt3__28ios_base7failbitE"] = 479828;
+var __ZNSt3__28ios_base9basefieldE = Module["__ZNSt3__28ios_base9basefieldE"] = 625316;
 
-var __ZNSt3__28ios_base7goodbitE = Module["__ZNSt3__28ios_base7goodbitE"] = 479832;
+var __ZNSt3__28ios_base10floatfieldE = Module["__ZNSt3__28ios_base10floatfieldE"] = 625320;
 
-var __ZNSt3__28ios_base3appE = Module["__ZNSt3__28ios_base3appE"] = 479836;
+var __ZNSt3__28ios_base6badbitE = Module["__ZNSt3__28ios_base6badbitE"] = 625324;
 
-var __ZNSt3__28ios_base3ateE = Module["__ZNSt3__28ios_base3ateE"] = 479840;
+var __ZNSt3__28ios_base6eofbitE = Module["__ZNSt3__28ios_base6eofbitE"] = 625328;
 
-var __ZNSt3__28ios_base6binaryE = Module["__ZNSt3__28ios_base6binaryE"] = 479844;
+var __ZNSt3__28ios_base7failbitE = Module["__ZNSt3__28ios_base7failbitE"] = 625332;
 
-var __ZNSt3__28ios_base2inE = Module["__ZNSt3__28ios_base2inE"] = 479848;
+var __ZNSt3__28ios_base7goodbitE = Module["__ZNSt3__28ios_base7goodbitE"] = 625336;
 
-var __ZNSt3__28ios_base3outE = Module["__ZNSt3__28ios_base3outE"] = 479852;
+var __ZNSt3__28ios_base3appE = Module["__ZNSt3__28ios_base3appE"] = 625340;
 
-var __ZNSt3__28ios_base5truncE = Module["__ZNSt3__28ios_base5truncE"] = 479856;
+var __ZNSt3__28ios_base3ateE = Module["__ZNSt3__28ios_base3ateE"] = 625344;
 
-var __ZTSNSt3__28ios_baseE = Module["__ZTSNSt3__28ios_baseE"] = 479860;
+var __ZNSt3__28ios_base6binaryE = Module["__ZNSt3__28ios_base6binaryE"] = 625348;
 
-var __ZTSNSt3__219__iostream_categoryE = Module["__ZTSNSt3__219__iostream_categoryE"] = 479878;
+var __ZNSt3__28ios_base2inE = Module["__ZNSt3__28ios_base2inE"] = 625352;
 
-var __ZTSNSt3__28ios_base7failureE = Module["__ZTSNSt3__28ios_base7failureE"] = 479908;
+var __ZNSt3__28ios_base3outE = Module["__ZNSt3__28ios_base3outE"] = 625356;
 
-var __ZNSt3__219__start_std_streamsE = Module["__ZNSt3__219__start_std_streamsE"] = 597536;
+var __ZNSt3__28ios_base5truncE = Module["__ZNSt3__28ios_base5truncE"] = 625360;
 
-var __ZNSt3__23cinE = Module["__ZNSt3__23cinE"] = 596824;
+var __ZTSNSt3__28ios_baseE = Module["__ZTSNSt3__28ios_baseE"] = 625364;
 
-var __ZNSt3__24coutE = Module["__ZNSt3__24coutE"] = 597008;
+var __ZTSNSt3__219__iostream_categoryE = Module["__ZTSNSt3__219__iostream_categoryE"] = 625382;
 
-var __ZNSt3__24cerrE = Module["__ZNSt3__24cerrE"] = 597184;
+var __ZTSNSt3__28ios_base7failureE = Module["__ZTSNSt3__28ios_base7failureE"] = 625412;
 
-var __ZNSt3__24clogE = Module["__ZNSt3__24clogE"] = 597360;
+var __ZNSt3__219__start_std_streamsE = Module["__ZNSt3__219__start_std_streamsE"] = 790816;
 
-var __ZNSt3__24wcinE = Module["__ZNSt3__24wcinE"] = 596916;
+var __ZNSt3__23cinE = Module["__ZNSt3__23cinE"] = 790104;
 
-var __ZNSt3__25wcoutE = Module["__ZNSt3__25wcoutE"] = 597096;
+var __ZNSt3__24coutE = Module["__ZNSt3__24coutE"] = 790288;
 
-var __ZNSt3__25wcerrE = Module["__ZNSt3__25wcerrE"] = 597272;
+var __ZNSt3__24cerrE = Module["__ZNSt3__24cerrE"] = 790464;
 
-var __ZNSt3__25wclogE = Module["__ZNSt3__25wclogE"] = 597448;
+var __ZNSt3__24clogE = Module["__ZNSt3__24clogE"] = 790640;
 
-var __ZTVNSt3__210__stdinbufIcEE = Module["__ZTVNSt3__210__stdinbufIcEE"] = 515912;
+var __ZNSt3__24wcinE = Module["__ZNSt3__24wcinE"] = 790196;
 
-var __ZTVNSt3__211__stdoutbufIcEE = Module["__ZTVNSt3__211__stdoutbufIcEE"] = 515988;
+var __ZNSt3__25wcoutE = Module["__ZNSt3__25wcoutE"] = 790376;
 
-var __ZTVNSt3__210__stdinbufIwEE = Module["__ZTVNSt3__210__stdinbufIwEE"] = 516064;
+var __ZNSt3__25wcerrE = Module["__ZNSt3__25wcerrE"] = 790552;
 
-var __ZTVNSt3__211__stdoutbufIwEE = Module["__ZTVNSt3__211__stdoutbufIwEE"] = 516140;
+var __ZNSt3__25wclogE = Module["__ZNSt3__25wclogE"] = 790728;
 
-var __ZNSt3__27codecvtIwc11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIwc11__mbstate_tE2idE"] = 598264;
+var __ZTVNSt3__210__stdinbufIcEE = Module["__ZTVNSt3__210__stdinbufIcEE"] = 681896;
 
-var __ZTINSt3__210__stdinbufIcEE = Module["__ZTINSt3__210__stdinbufIcEE"] = 515976;
+var __ZTVNSt3__211__stdoutbufIcEE = Module["__ZTVNSt3__211__stdoutbufIcEE"] = 681972;
 
-var __ZTSNSt3__210__stdinbufIcEE = Module["__ZTSNSt3__210__stdinbufIcEE"] = 479934;
+var __ZTVNSt3__210__stdinbufIwEE = Module["__ZTVNSt3__210__stdinbufIwEE"] = 682048;
 
-var __ZTINSt3__211__stdoutbufIcEE = Module["__ZTINSt3__211__stdoutbufIcEE"] = 516052;
+var __ZTVNSt3__211__stdoutbufIwEE = Module["__ZTVNSt3__211__stdoutbufIwEE"] = 682124;
 
-var __ZTSNSt3__211__stdoutbufIcEE = Module["__ZTSNSt3__211__stdoutbufIcEE"] = 479958;
+var __ZNSt3__27codecvtIwc11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIwc11__mbstate_tE2idE"] = 791544;
 
-var __ZTINSt3__210__stdinbufIwEE = Module["__ZTINSt3__210__stdinbufIwEE"] = 516128;
+var __ZTINSt3__210__stdinbufIcEE = Module["__ZTINSt3__210__stdinbufIcEE"] = 681960;
 
-var __ZTSNSt3__210__stdinbufIwEE = Module["__ZTSNSt3__210__stdinbufIwEE"] = 479983;
+var __ZTSNSt3__210__stdinbufIcEE = Module["__ZTSNSt3__210__stdinbufIcEE"] = 625438;
 
-var __ZTINSt3__211__stdoutbufIwEE = Module["__ZTINSt3__211__stdoutbufIwEE"] = 516204;
+var __ZTINSt3__211__stdoutbufIcEE = Module["__ZTINSt3__211__stdoutbufIcEE"] = 682036;
 
-var __ZTSNSt3__211__stdoutbufIwEE = Module["__ZTSNSt3__211__stdoutbufIwEE"] = 480007;
+var __ZTSNSt3__211__stdoutbufIcEE = Module["__ZTSNSt3__211__stdoutbufIcEE"] = 625462;
 
-var __ZNSt3__28numpunctIcE2idE = Module["__ZNSt3__28numpunctIcE2idE"] = 598304;
+var __ZTINSt3__210__stdinbufIwEE = Module["__ZTINSt3__210__stdinbufIwEE"] = 682112;
 
-var __ZNSt3__214__num_get_base5__srcE = Module["__ZNSt3__214__num_get_base5__srcE"] = 480032;
+var __ZTSNSt3__210__stdinbufIwEE = Module["__ZTSNSt3__210__stdinbufIwEE"] = 625487;
 
-var __ZNSt3__28numpunctIwE2idE = Module["__ZNSt3__28numpunctIwE2idE"] = 598312;
+var __ZTINSt3__211__stdoutbufIwEE = Module["__ZTINSt3__211__stdoutbufIwEE"] = 682188;
 
-var __ZNSt3__210moneypunctIcLb1EE2idE = Module["__ZNSt3__210moneypunctIcLb1EE2idE"] = 597984;
+var __ZTSNSt3__211__stdoutbufIwEE = Module["__ZTSNSt3__211__stdoutbufIwEE"] = 625511;
 
-var __ZNSt3__210moneypunctIcLb0EE2idE = Module["__ZNSt3__210moneypunctIcLb0EE2idE"] = 597976;
+var __ZNSt3__28numpunctIcE2idE = Module["__ZNSt3__28numpunctIcE2idE"] = 791584;
 
-var __ZNSt3__210moneypunctIwLb1EE2idE = Module["__ZNSt3__210moneypunctIwLb1EE2idE"] = 598e3;
+var __ZNSt3__214__num_get_base5__srcE = Module["__ZNSt3__214__num_get_base5__srcE"] = 625536;
 
-var __ZNSt3__210moneypunctIwLb0EE2idE = Module["__ZNSt3__210moneypunctIwLb0EE2idE"] = 597992;
+var __ZNSt3__28numpunctIwE2idE = Module["__ZNSt3__28numpunctIwE2idE"] = 791592;
 
-var __ZTVNSt3__26locale5__impE = Module["__ZTVNSt3__26locale5__impE"] = 516216;
+var __ZNSt3__210moneypunctIcLb1EE2idE = Module["__ZNSt3__210moneypunctIcLb1EE2idE"] = 791264;
 
-var __ZTVNSt3__26locale5facetE = Module["__ZTVNSt3__26locale5facetE"] = 516704;
+var __ZNSt3__210moneypunctIcLb0EE2idE = Module["__ZNSt3__210moneypunctIcLb0EE2idE"] = 791256;
 
-var __ZNSt3__27collateIcE2idE = Module["__ZNSt3__27collateIcE2idE"] = 597896;
+var __ZNSt3__210moneypunctIwLb1EE2idE = Module["__ZNSt3__210moneypunctIwLb1EE2idE"] = 791280;
 
-var __ZNSt3__27collateIwE2idE = Module["__ZNSt3__27collateIwE2idE"] = 597904;
+var __ZNSt3__210moneypunctIwLb0EE2idE = Module["__ZNSt3__210moneypunctIwLb0EE2idE"] = 791272;
 
-var __ZNSt3__27codecvtIDsc11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDsc11__mbstate_tE2idE"] = 598272;
+var __ZTVNSt3__26locale5__impE = Module["__ZTVNSt3__26locale5__impE"] = 682200;
 
-var __ZNSt3__27codecvtIDic11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDic11__mbstate_tE2idE"] = 598288;
+var __ZTVNSt3__26locale5facetE = Module["__ZTVNSt3__26locale5facetE"] = 682688;
 
-var __ZNSt3__27codecvtIDsDu11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDsDu11__mbstate_tE2idE"] = 598280;
+var __ZNSt3__27collateIcE2idE = Module["__ZNSt3__27collateIcE2idE"] = 791176;
 
-var __ZNSt3__27codecvtIDiDu11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDiDu11__mbstate_tE2idE"] = 598296;
+var __ZNSt3__27collateIwE2idE = Module["__ZNSt3__27collateIwE2idE"] = 791184;
 
-var __ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 598008;
+var __ZNSt3__27codecvtIDsc11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDsc11__mbstate_tE2idE"] = 791552;
 
-var __ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 598016;
+var __ZNSt3__27codecvtIDic11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDic11__mbstate_tE2idE"] = 791568;
 
-var __ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 598024;
+var __ZNSt3__27codecvtIDsDu11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDsDu11__mbstate_tE2idE"] = 791560;
 
-var __ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 598032;
+var __ZNSt3__27codecvtIDiDu11__mbstate_tE2idE = Module["__ZNSt3__27codecvtIDiDu11__mbstate_tE2idE"] = 791576;
 
-var __ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 597944;
+var __ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 791288;
 
-var __ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 597952;
+var __ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 791296;
 
-var __ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 597960;
+var __ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 791304;
 
-var __ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 597968;
+var __ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 791312;
 
-var __ZNSt3__28messagesIcE2idE = Module["__ZNSt3__28messagesIcE2idE"] = 598040;
+var __ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 791224;
 
-var __ZNSt3__28messagesIwE2idE = Module["__ZNSt3__28messagesIwE2idE"] = 598048;
+var __ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 791232;
 
-var __ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE"] = 520856;
+var __ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE = Module["__ZNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEE2idE"] = 791240;
 
-var __ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE"] = 520916;
+var __ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE = Module["__ZNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEE2idE"] = 791248;
 
-var __ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE"] = 520976;
+var __ZNSt3__28messagesIcE2idE = Module["__ZNSt3__28messagesIcE2idE"] = 791320;
 
-var __ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE"] = 521036;
+var __ZNSt3__28messagesIwE2idE = Module["__ZNSt3__28messagesIwE2idE"] = 791328;
 
-var __ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE"] = 521096;
+var __ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIcc11__mbstate_tEE"] = 686840;
 
-var __ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE"] = 521156;
+var __ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIwc11__mbstate_tEE"] = 686900;
 
-var __ZTVNSt3__217moneypunct_bynameIcLb0EEE = Module["__ZTVNSt3__217moneypunct_bynameIcLb0EEE"] = 520088;
+var __ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDsc11__mbstate_tEE"] = 686960;
 
-var __ZTVNSt3__217moneypunct_bynameIcLb1EEE = Module["__ZTVNSt3__217moneypunct_bynameIcLb1EEE"] = 520156;
+var __ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDic11__mbstate_tEE"] = 687020;
 
-var __ZTVNSt3__217moneypunct_bynameIwLb0EEE = Module["__ZTVNSt3__217moneypunct_bynameIwLb0EEE"] = 520224;
+var __ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDsDu11__mbstate_tEE"] = 687080;
 
-var __ZTVNSt3__217moneypunct_bynameIwLb1EEE = Module["__ZTVNSt3__217moneypunct_bynameIwLb1EEE"] = 520292;
+var __ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module["__ZTVNSt3__214codecvt_bynameIDiDu11__mbstate_tEE"] = 687140;
 
-var __ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519216;
+var __ZTVNSt3__217moneypunct_bynameIcLb0EEE = Module["__ZTVNSt3__217moneypunct_bynameIcLb0EEE"] = 686072;
 
-var __ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519380;
+var __ZTVNSt3__217moneypunct_bynameIcLb1EEE = Module["__ZTVNSt3__217moneypunct_bynameIcLb1EEE"] = 686140;
 
-var __ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519656;
+var __ZTVNSt3__217moneypunct_bynameIwLb0EEE = Module["__ZTVNSt3__217moneypunct_bynameIwLb0EEE"] = 686208;
 
-var __ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519692;
+var __ZTVNSt3__217moneypunct_bynameIwLb1EEE = Module["__ZTVNSt3__217moneypunct_bynameIwLb1EEE"] = 686276;
 
-var __ZTVNSt3__215messages_bynameIcEE = Module["__ZTVNSt3__215messages_bynameIcEE"] = 520768;
+var __ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685200;
 
-var __ZTVNSt3__215messages_bynameIwEE = Module["__ZTVNSt3__215messages_bynameIwEE"] = 520812;
+var __ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685364;
 
-var __ZNSt3__26locale5__imp19classic_locale_imp_E = Module["__ZNSt3__26locale5__imp19classic_locale_imp_E"] = 598064;
+var __ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685640;
 
-var __ZTVNSt3__214collate_bynameIcEE = Module["__ZTVNSt3__214collate_bynameIcEE"] = 516236;
+var __ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685676;
 
-var __ZTVNSt3__214collate_bynameIwEE = Module["__ZTVNSt3__214collate_bynameIwEE"] = 516268;
+var __ZTVNSt3__215messages_bynameIcEE = Module["__ZTVNSt3__215messages_bynameIcEE"] = 686752;
 
-var __ZTVNSt3__25ctypeIcEE = Module["__ZTVNSt3__25ctypeIcEE"] = 516300;
+var __ZTVNSt3__215messages_bynameIwEE = Module["__ZTVNSt3__215messages_bynameIwEE"] = 686796;
 
-var __ZTVNSt3__212ctype_bynameIcEE = Module["__ZTVNSt3__212ctype_bynameIcEE"] = 516352;
+var __ZNSt3__26locale5__imp19classic_locale_imp_E = Module["__ZNSt3__26locale5__imp19classic_locale_imp_E"] = 791344;
 
-var __ZTVNSt3__212ctype_bynameIwEE = Module["__ZTVNSt3__212ctype_bynameIwEE"] = 516404;
+var __ZTVNSt3__214collate_bynameIcEE = Module["__ZTVNSt3__214collate_bynameIcEE"] = 682220;
 
-var __ZTVNSt3__27codecvtIwc11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIwc11__mbstate_tEE"] = 516472;
+var __ZTVNSt3__214collate_bynameIwEE = Module["__ZTVNSt3__214collate_bynameIwEE"] = 682252;
 
-var __ZTVNSt3__28numpunctIcEE = Module["__ZTVNSt3__28numpunctIcEE"] = 516520;
+var __ZTVNSt3__25ctypeIcEE = Module["__ZTVNSt3__25ctypeIcEE"] = 682284;
 
-var __ZTVNSt3__28numpunctIwEE = Module["__ZTVNSt3__28numpunctIwEE"] = 516560;
+var __ZTVNSt3__212ctype_bynameIcEE = Module["__ZTVNSt3__212ctype_bynameIcEE"] = 682336;
 
-var __ZTVNSt3__215numpunct_bynameIcEE = Module["__ZTVNSt3__215numpunct_bynameIcEE"] = 516600;
+var __ZTVNSt3__212ctype_bynameIwEE = Module["__ZTVNSt3__212ctype_bynameIwEE"] = 682388;
 
-var __ZTVNSt3__215numpunct_bynameIwEE = Module["__ZTVNSt3__215numpunct_bynameIwEE"] = 516640;
+var __ZTVNSt3__27codecvtIwc11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIwc11__mbstate_tEE"] = 682456;
 
-var __ZTVNSt3__215__time_get_tempIcEE = Module["__ZTVNSt3__215__time_get_tempIcEE"] = 521288;
+var __ZTVNSt3__28numpunctIcEE = Module["__ZTVNSt3__28numpunctIcEE"] = 682504;
 
-var __ZTVNSt3__215__time_get_tempIwEE = Module["__ZTVNSt3__215__time_get_tempIwEE"] = 521352;
+var __ZTVNSt3__28numpunctIwEE = Module["__ZTVNSt3__28numpunctIwEE"] = 682544;
 
-var __ZTVNSt3__27collateIcEE = Module["__ZTVNSt3__27collateIcEE"] = 518408;
+var __ZTVNSt3__215numpunct_bynameIcEE = Module["__ZTVNSt3__215numpunct_bynameIcEE"] = 682584;
 
-var __ZTVNSt3__27collateIwEE = Module["__ZTVNSt3__27collateIwEE"] = 518440;
+var __ZTVNSt3__215numpunct_bynameIwEE = Module["__ZTVNSt3__215numpunct_bynameIwEE"] = 682624;
 
-var __ZTVNSt3__25ctypeIwEE = Module["__ZTVNSt3__25ctypeIwEE"] = 516736;
+var __ZTVNSt3__215__time_get_tempIcEE = Module["__ZTVNSt3__215__time_get_tempIcEE"] = 687272;
 
-var __ZTVNSt3__27codecvtIcc11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIcc11__mbstate_tEE"] = 516844;
+var __ZTVNSt3__215__time_get_tempIwEE = Module["__ZTVNSt3__215__time_get_tempIwEE"] = 687336;
 
-var __ZTVNSt3__27codecvtIDsc11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDsc11__mbstate_tEE"] = 516932;
+var __ZTVNSt3__27collateIcEE = Module["__ZTVNSt3__27collateIcEE"] = 684392;
 
-var __ZTVNSt3__27codecvtIDic11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDic11__mbstate_tEE"] = 517092;
+var __ZTVNSt3__27collateIwEE = Module["__ZTVNSt3__27collateIwEE"] = 684424;
 
-var __ZTVNSt3__27codecvtIDsDu11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDsDu11__mbstate_tEE"] = 517012;
+var __ZTVNSt3__25ctypeIwEE = Module["__ZTVNSt3__25ctypeIwEE"] = 682720;
 
-var __ZTVNSt3__27codecvtIDiDu11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDiDu11__mbstate_tEE"] = 517172;
+var __ZTVNSt3__27codecvtIcc11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIcc11__mbstate_tEE"] = 682828;
 
-var __ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 518472;
+var __ZTVNSt3__27codecvtIDsc11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDsc11__mbstate_tEE"] = 682916;
 
-var __ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 518600;
+var __ZTVNSt3__27codecvtIDic11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDic11__mbstate_tEE"] = 683076;
 
-var __ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 518720;
+var __ZTVNSt3__27codecvtIDsDu11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDsDu11__mbstate_tEE"] = 682996;
 
-var __ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 518836;
+var __ZTVNSt3__27codecvtIDiDu11__mbstate_tEE = Module["__ZTVNSt3__27codecvtIDiDu11__mbstate_tEE"] = 683156;
 
-var __ZTVNSt3__210moneypunctIcLb0EEE = Module["__ZTVNSt3__210moneypunctIcLb0EEE"] = 519728;
+var __ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 684456;
 
-var __ZTVNSt3__210moneypunctIcLb1EEE = Module["__ZTVNSt3__210moneypunctIcLb1EEE"] = 519824;
+var __ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 684584;
 
-var __ZTVNSt3__210moneypunctIwLb0EEE = Module["__ZTVNSt3__210moneypunctIwLb0EEE"] = 519912;
+var __ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 684704;
 
-var __ZTVNSt3__210moneypunctIwLb1EEE = Module["__ZTVNSt3__210moneypunctIwLb1EEE"] = 52e4;
+var __ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 684820;
 
-var __ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 520360;
+var __ZTVNSt3__210moneypunctIcLb0EEE = Module["__ZTVNSt3__210moneypunctIcLb0EEE"] = 685712;
 
-var __ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 520428;
+var __ZTVNSt3__210moneypunctIcLb1EEE = Module["__ZTVNSt3__210moneypunctIcLb1EEE"] = 685808;
 
-var __ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 520496;
+var __ZTVNSt3__210moneypunctIwLb0EEE = Module["__ZTVNSt3__210moneypunctIwLb0EEE"] = 685896;
 
-var __ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 520564;
+var __ZTVNSt3__210moneypunctIwLb1EEE = Module["__ZTVNSt3__210moneypunctIwLb1EEE"] = 685984;
 
-var __ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 518944;
+var __ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 686344;
 
-var __ZTVNSt3__220__time_get_c_storageIcEE = Module["__ZTVNSt3__220__time_get_c_storageIcEE"] = 521216;
+var __ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 686412;
 
-var __ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519084;
+var __ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 686480;
 
-var __ZTVNSt3__220__time_get_c_storageIwEE = Module["__ZTVNSt3__220__time_get_c_storageIwEE"] = 521252;
+var __ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 686548;
 
-var __ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519536;
+var __ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 684928;
 
-var __ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519600;
+var __ZTVNSt3__220__time_get_c_storageIcEE = Module["__ZTVNSt3__220__time_get_c_storageIcEE"] = 687200;
 
-var __ZTVNSt3__28messagesIcEE = Module["__ZTVNSt3__28messagesIcEE"] = 520632;
+var __ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685068;
 
-var __ZTVNSt3__28messagesIwEE = Module["__ZTVNSt3__28messagesIwEE"] = 520704;
+var __ZTVNSt3__220__time_get_c_storageIwEE = Module["__ZTVNSt3__220__time_get_c_storageIwEE"] = 687236;
 
-var __ZNSt3__26locale2id9__next_idE = Module["__ZNSt3__26locale2id9__next_idE"] = 598236;
+var __ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTVNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685520;
 
-var __ZNSt3__210moneypunctIcLb0EE4intlE = Module["__ZNSt3__210moneypunctIcLb0EE4intlE"] = 480272;
+var __ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTVNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685584;
 
-var __ZNSt3__210moneypunctIcLb1EE4intlE = Module["__ZNSt3__210moneypunctIcLb1EE4intlE"] = 480273;
+var __ZTVNSt3__28messagesIcEE = Module["__ZTVNSt3__28messagesIcEE"] = 686616;
 
-var __ZNSt3__210moneypunctIwLb0EE4intlE = Module["__ZNSt3__210moneypunctIwLb0EE4intlE"] = 480274;
+var __ZTVNSt3__28messagesIwEE = Module["__ZTVNSt3__28messagesIwEE"] = 686688;
 
-var __ZNSt3__210moneypunctIwLb1EE4intlE = Module["__ZNSt3__210moneypunctIwLb1EE4intlE"] = 480275;
+var __ZNSt3__26locale2id9__next_idE = Module["__ZNSt3__26locale2id9__next_idE"] = 791516;
 
-var __ZNSt3__26locale4noneE = Module["__ZNSt3__26locale4noneE"] = 480276;
+var __ZNSt3__210moneypunctIcLb0EE4intlE = Module["__ZNSt3__210moneypunctIcLb0EE4intlE"] = 625776;
 
-var __ZNSt3__26locale7collateE = Module["__ZNSt3__26locale7collateE"] = 480280;
+var __ZNSt3__210moneypunctIcLb1EE4intlE = Module["__ZNSt3__210moneypunctIcLb1EE4intlE"] = 625777;
 
-var __ZNSt3__26locale5ctypeE = Module["__ZNSt3__26locale5ctypeE"] = 480284;
+var __ZNSt3__210moneypunctIwLb0EE4intlE = Module["__ZNSt3__210moneypunctIwLb0EE4intlE"] = 625778;
 
-var __ZNSt3__26locale8monetaryE = Module["__ZNSt3__26locale8monetaryE"] = 480288;
+var __ZNSt3__210moneypunctIwLb1EE4intlE = Module["__ZNSt3__210moneypunctIwLb1EE4intlE"] = 625779;
 
-var __ZNSt3__26locale7numericE = Module["__ZNSt3__26locale7numericE"] = 480292;
+var __ZNSt3__26locale4noneE = Module["__ZNSt3__26locale4noneE"] = 625780;
 
-var __ZNSt3__26locale4timeE = Module["__ZNSt3__26locale4timeE"] = 480296;
+var __ZNSt3__26locale7collateE = Module["__ZNSt3__26locale7collateE"] = 625784;
 
-var __ZNSt3__26locale8messagesE = Module["__ZNSt3__26locale8messagesE"] = 480300;
+var __ZNSt3__26locale5ctypeE = Module["__ZNSt3__26locale5ctypeE"] = 625788;
 
-var __ZNSt3__26locale3allE = Module["__ZNSt3__26locale3allE"] = 480304;
+var __ZNSt3__26locale8monetaryE = Module["__ZNSt3__26locale8monetaryE"] = 625792;
 
-var __ZTINSt3__26locale5__impE = Module["__ZTINSt3__26locale5__impE"] = 518244;
+var __ZNSt3__26locale7numericE = Module["__ZNSt3__26locale7numericE"] = 625796;
 
-var __ZTINSt3__214collate_bynameIcEE = Module["__ZTINSt3__214collate_bynameIcEE"] = 518256;
+var __ZNSt3__26locale4timeE = Module["__ZNSt3__26locale4timeE"] = 625800;
 
-var __ZTINSt3__214collate_bynameIwEE = Module["__ZTINSt3__214collate_bynameIwEE"] = 518280;
+var __ZNSt3__26locale8messagesE = Module["__ZNSt3__26locale8messagesE"] = 625804;
 
-var __ZNSt3__210ctype_base5spaceE = Module["__ZNSt3__210ctype_base5spaceE"] = 480308;
+var __ZNSt3__26locale3allE = Module["__ZNSt3__26locale3allE"] = 625808;
 
-var __ZNSt3__210ctype_base5printE = Module["__ZNSt3__210ctype_base5printE"] = 480312;
+var __ZTINSt3__26locale5__impE = Module["__ZTINSt3__26locale5__impE"] = 684228;
 
-var __ZNSt3__210ctype_base5cntrlE = Module["__ZNSt3__210ctype_base5cntrlE"] = 480316;
+var __ZTINSt3__214collate_bynameIcEE = Module["__ZTINSt3__214collate_bynameIcEE"] = 684240;
 
-var __ZNSt3__210ctype_base5upperE = Module["__ZNSt3__210ctype_base5upperE"] = 480320;
+var __ZTINSt3__214collate_bynameIwEE = Module["__ZTINSt3__214collate_bynameIwEE"] = 684264;
 
-var __ZNSt3__210ctype_base5lowerE = Module["__ZNSt3__210ctype_base5lowerE"] = 480324;
+var __ZNSt3__210ctype_base5spaceE = Module["__ZNSt3__210ctype_base5spaceE"] = 625812;
 
-var __ZNSt3__210ctype_base5alphaE = Module["__ZNSt3__210ctype_base5alphaE"] = 480328;
+var __ZNSt3__210ctype_base5printE = Module["__ZNSt3__210ctype_base5printE"] = 625816;
 
-var __ZNSt3__210ctype_base5digitE = Module["__ZNSt3__210ctype_base5digitE"] = 480332;
+var __ZNSt3__210ctype_base5cntrlE = Module["__ZNSt3__210ctype_base5cntrlE"] = 625820;
 
-var __ZNSt3__210ctype_base5punctE = Module["__ZNSt3__210ctype_base5punctE"] = 480336;
+var __ZNSt3__210ctype_base5upperE = Module["__ZNSt3__210ctype_base5upperE"] = 625824;
 
-var __ZNSt3__210ctype_base6xdigitE = Module["__ZNSt3__210ctype_base6xdigitE"] = 480340;
+var __ZNSt3__210ctype_base5lowerE = Module["__ZNSt3__210ctype_base5lowerE"] = 625828;
 
-var __ZNSt3__210ctype_base5blankE = Module["__ZNSt3__210ctype_base5blankE"] = 480344;
+var __ZNSt3__210ctype_base5alphaE = Module["__ZNSt3__210ctype_base5alphaE"] = 625832;
 
-var __ZNSt3__210ctype_base5alnumE = Module["__ZNSt3__210ctype_base5alnumE"] = 480348;
+var __ZNSt3__210ctype_base5digitE = Module["__ZNSt3__210ctype_base5digitE"] = 625836;
 
-var __ZNSt3__210ctype_base5graphE = Module["__ZNSt3__210ctype_base5graphE"] = 480352;
+var __ZNSt3__210ctype_base5punctE = Module["__ZNSt3__210ctype_base5punctE"] = 625840;
 
-var __ZNSt3__25ctypeIcE10table_sizeE = Module["__ZNSt3__25ctypeIcE10table_sizeE"] = 480356;
+var __ZNSt3__210ctype_base6xdigitE = Module["__ZNSt3__210ctype_base6xdigitE"] = 625844;
 
-var __ZTINSt3__25ctypeIcEE = Module["__ZTINSt3__25ctypeIcEE"] = 518304;
+var __ZNSt3__210ctype_base5blankE = Module["__ZNSt3__210ctype_base5blankE"] = 625848;
 
-var __ZTINSt3__212ctype_bynameIcEE = Module["__ZTINSt3__212ctype_bynameIcEE"] = 518336;
+var __ZNSt3__210ctype_base5alnumE = Module["__ZNSt3__210ctype_base5alnumE"] = 625852;
 
-var __ZTINSt3__212ctype_bynameIwEE = Module["__ZTINSt3__212ctype_bynameIwEE"] = 518348;
+var __ZNSt3__210ctype_base5graphE = Module["__ZNSt3__210ctype_base5graphE"] = 625856;
 
-var __ZTINSt3__27codecvtIwc11__mbstate_tEE = Module["__ZTINSt3__27codecvtIwc11__mbstate_tEE"] = 517552;
+var __ZNSt3__25ctypeIcE10table_sizeE = Module["__ZNSt3__25ctypeIcE10table_sizeE"] = 625860;
 
-var __ZTINSt3__28numpunctIcEE = Module["__ZTINSt3__28numpunctIcEE"] = 518360;
+var __ZTINSt3__25ctypeIcEE = Module["__ZTINSt3__25ctypeIcEE"] = 684288;
 
-var __ZTINSt3__28numpunctIwEE = Module["__ZTINSt3__28numpunctIwEE"] = 518372;
+var __ZTINSt3__212ctype_bynameIcEE = Module["__ZTINSt3__212ctype_bynameIcEE"] = 684320;
 
-var __ZTINSt3__215numpunct_bynameIcEE = Module["__ZTINSt3__215numpunct_bynameIcEE"] = 518384;
+var __ZTINSt3__212ctype_bynameIwEE = Module["__ZTINSt3__212ctype_bynameIwEE"] = 684332;
 
-var __ZTINSt3__215numpunct_bynameIwEE = Module["__ZTINSt3__215numpunct_bynameIwEE"] = 518396;
+var __ZTINSt3__27codecvtIwc11__mbstate_tEE = Module["__ZTINSt3__27codecvtIwc11__mbstate_tEE"] = 683536;
 
-var __ZTINSt3__26locale5facetE = Module["__ZTINSt3__26locale5facetE"] = 516724;
+var __ZTINSt3__28numpunctIcEE = Module["__ZTINSt3__28numpunctIcEE"] = 684344;
 
-var __ZTSNSt3__26locale5facetE = Module["__ZTSNSt3__26locale5facetE"] = 481652;
+var __ZTINSt3__28numpunctIwEE = Module["__ZTINSt3__28numpunctIwEE"] = 684356;
 
-var __ZTINSt3__25ctypeIwEE = Module["__ZTINSt3__25ctypeIwEE"] = 516804;
+var __ZTINSt3__215numpunct_bynameIcEE = Module["__ZTINSt3__215numpunct_bynameIcEE"] = 684368;
 
-var __ZTSNSt3__25ctypeIwEE = Module["__ZTSNSt3__25ctypeIwEE"] = 481674;
+var __ZTINSt3__215numpunct_bynameIwEE = Module["__ZTINSt3__215numpunct_bynameIwEE"] = 684380;
 
-var __ZTINSt3__210ctype_baseE = Module["__ZTINSt3__210ctype_baseE"] = 516836;
+var __ZTINSt3__26locale5facetE = Module["__ZTINSt3__26locale5facetE"] = 682708;
 
-var __ZTSNSt3__210ctype_baseE = Module["__ZTSNSt3__210ctype_baseE"] = 481692;
+var __ZTSNSt3__26locale5facetE = Module["__ZTSNSt3__26locale5facetE"] = 627156;
 
-var __ZTINSt3__27codecvtIcc11__mbstate_tEE = Module["__ZTINSt3__27codecvtIcc11__mbstate_tEE"] = 516892;
+var __ZTINSt3__25ctypeIwEE = Module["__ZTINSt3__25ctypeIwEE"] = 682788;
 
-var __ZTSNSt3__27codecvtIcc11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIcc11__mbstate_tEE"] = 481713;
+var __ZTSNSt3__25ctypeIwEE = Module["__ZTSNSt3__25ctypeIwEE"] = 627178;
 
-var __ZTINSt3__212codecvt_baseE = Module["__ZTINSt3__212codecvt_baseE"] = 516924;
+var __ZTINSt3__210ctype_baseE = Module["__ZTINSt3__210ctype_baseE"] = 682820;
 
-var __ZTSNSt3__212codecvt_baseE = Module["__ZTSNSt3__212codecvt_baseE"] = 481747;
+var __ZTSNSt3__210ctype_baseE = Module["__ZTSNSt3__210ctype_baseE"] = 627196;
 
-var __ZTINSt3__27codecvtIDsc11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDsc11__mbstate_tEE"] = 516980;
+var __ZTINSt3__27codecvtIcc11__mbstate_tEE = Module["__ZTINSt3__27codecvtIcc11__mbstate_tEE"] = 682876;
 
-var __ZTSNSt3__27codecvtIDsc11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDsc11__mbstate_tEE"] = 481770;
+var __ZTSNSt3__27codecvtIcc11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIcc11__mbstate_tEE"] = 627217;
 
-var __ZTINSt3__27codecvtIDsDu11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDsDu11__mbstate_tEE"] = 517060;
+var __ZTINSt3__212codecvt_baseE = Module["__ZTINSt3__212codecvt_baseE"] = 682908;
 
-var __ZTSNSt3__27codecvtIDsDu11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDsDu11__mbstate_tEE"] = 481805;
+var __ZTSNSt3__212codecvt_baseE = Module["__ZTSNSt3__212codecvt_baseE"] = 627251;
 
-var __ZTINSt3__27codecvtIDic11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDic11__mbstate_tEE"] = 517140;
+var __ZTINSt3__27codecvtIDsc11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDsc11__mbstate_tEE"] = 682964;
 
-var __ZTSNSt3__27codecvtIDic11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDic11__mbstate_tEE"] = 481841;
+var __ZTSNSt3__27codecvtIDsc11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDsc11__mbstate_tEE"] = 627274;
 
-var __ZTINSt3__27codecvtIDiDu11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDiDu11__mbstate_tEE"] = 517220;
+var __ZTINSt3__27codecvtIDsDu11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDsDu11__mbstate_tEE"] = 683044;
 
-var __ZTSNSt3__27codecvtIDiDu11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDiDu11__mbstate_tEE"] = 481876;
+var __ZTSNSt3__27codecvtIDsDu11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDsDu11__mbstate_tEE"] = 627309;
 
-var __ZTVNSt3__216__narrow_to_utf8ILm16EEE = Module["__ZTVNSt3__216__narrow_to_utf8ILm16EEE"] = 517252;
+var __ZTINSt3__27codecvtIDic11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDic11__mbstate_tEE"] = 683124;
 
-var __ZTINSt3__216__narrow_to_utf8ILm16EEE = Module["__ZTINSt3__216__narrow_to_utf8ILm16EEE"] = 517300;
+var __ZTSNSt3__27codecvtIDic11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDic11__mbstate_tEE"] = 627345;
 
-var __ZTSNSt3__216__narrow_to_utf8ILm16EEE = Module["__ZTSNSt3__216__narrow_to_utf8ILm16EEE"] = 481912;
+var __ZTINSt3__27codecvtIDiDu11__mbstate_tEE = Module["__ZTINSt3__27codecvtIDiDu11__mbstate_tEE"] = 683204;
 
-var __ZTVNSt3__216__narrow_to_utf8ILm32EEE = Module["__ZTVNSt3__216__narrow_to_utf8ILm32EEE"] = 517312;
+var __ZTSNSt3__27codecvtIDiDu11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIDiDu11__mbstate_tEE"] = 627380;
 
-var __ZTINSt3__216__narrow_to_utf8ILm32EEE = Module["__ZTINSt3__216__narrow_to_utf8ILm32EEE"] = 517360;
+var __ZTVNSt3__216__narrow_to_utf8ILm16EEE = Module["__ZTVNSt3__216__narrow_to_utf8ILm16EEE"] = 683236;
 
-var __ZTSNSt3__216__narrow_to_utf8ILm32EEE = Module["__ZTSNSt3__216__narrow_to_utf8ILm32EEE"] = 481946;
+var __ZTINSt3__216__narrow_to_utf8ILm16EEE = Module["__ZTINSt3__216__narrow_to_utf8ILm16EEE"] = 683284;
 
-var __ZTVNSt3__217__widen_from_utf8ILm16EEE = Module["__ZTVNSt3__217__widen_from_utf8ILm16EEE"] = 517372;
+var __ZTSNSt3__216__narrow_to_utf8ILm16EEE = Module["__ZTSNSt3__216__narrow_to_utf8ILm16EEE"] = 627416;
 
-var __ZTINSt3__217__widen_from_utf8ILm16EEE = Module["__ZTINSt3__217__widen_from_utf8ILm16EEE"] = 517420;
+var __ZTVNSt3__216__narrow_to_utf8ILm32EEE = Module["__ZTVNSt3__216__narrow_to_utf8ILm32EEE"] = 683296;
 
-var __ZTSNSt3__217__widen_from_utf8ILm16EEE = Module["__ZTSNSt3__217__widen_from_utf8ILm16EEE"] = 481980;
+var __ZTINSt3__216__narrow_to_utf8ILm32EEE = Module["__ZTINSt3__216__narrow_to_utf8ILm32EEE"] = 683344;
 
-var __ZTVNSt3__217__widen_from_utf8ILm32EEE = Module["__ZTVNSt3__217__widen_from_utf8ILm32EEE"] = 517432;
+var __ZTSNSt3__216__narrow_to_utf8ILm32EEE = Module["__ZTSNSt3__216__narrow_to_utf8ILm32EEE"] = 627450;
 
-var __ZTINSt3__217__widen_from_utf8ILm32EEE = Module["__ZTINSt3__217__widen_from_utf8ILm32EEE"] = 517480;
+var __ZTVNSt3__217__widen_from_utf8ILm16EEE = Module["__ZTVNSt3__217__widen_from_utf8ILm16EEE"] = 683356;
 
-var __ZTSNSt3__217__widen_from_utf8ILm32EEE = Module["__ZTSNSt3__217__widen_from_utf8ILm32EEE"] = 482015;
+var __ZTINSt3__217__widen_from_utf8ILm16EEE = Module["__ZTINSt3__217__widen_from_utf8ILm16EEE"] = 683404;
 
-var __ZTVNSt3__214__codecvt_utf8IwEE = Module["__ZTVNSt3__214__codecvt_utf8IwEE"] = 517492;
+var __ZTSNSt3__217__widen_from_utf8ILm16EEE = Module["__ZTSNSt3__217__widen_from_utf8ILm16EEE"] = 627484;
 
-var __ZTINSt3__214__codecvt_utf8IwEE = Module["__ZTINSt3__214__codecvt_utf8IwEE"] = 517540;
+var __ZTVNSt3__217__widen_from_utf8ILm32EEE = Module["__ZTVNSt3__217__widen_from_utf8ILm32EEE"] = 683416;
 
-var __ZTSNSt3__214__codecvt_utf8IwEE = Module["__ZTSNSt3__214__codecvt_utf8IwEE"] = 482050;
+var __ZTINSt3__217__widen_from_utf8ILm32EEE = Module["__ZTINSt3__217__widen_from_utf8ILm32EEE"] = 683464;
 
-var __ZTSNSt3__27codecvtIwc11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIwc11__mbstate_tEE"] = 482078;
+var __ZTSNSt3__217__widen_from_utf8ILm32EEE = Module["__ZTSNSt3__217__widen_from_utf8ILm32EEE"] = 627519;
 
-var __ZTVNSt3__214__codecvt_utf8IDsEE = Module["__ZTVNSt3__214__codecvt_utf8IDsEE"] = 517584;
+var __ZTVNSt3__214__codecvt_utf8IwEE = Module["__ZTVNSt3__214__codecvt_utf8IwEE"] = 683476;
 
-var __ZTINSt3__214__codecvt_utf8IDsEE = Module["__ZTINSt3__214__codecvt_utf8IDsEE"] = 517632;
+var __ZTINSt3__214__codecvt_utf8IwEE = Module["__ZTINSt3__214__codecvt_utf8IwEE"] = 683524;
 
-var __ZTSNSt3__214__codecvt_utf8IDsEE = Module["__ZTSNSt3__214__codecvt_utf8IDsEE"] = 482112;
+var __ZTSNSt3__214__codecvt_utf8IwEE = Module["__ZTSNSt3__214__codecvt_utf8IwEE"] = 627554;
 
-var __ZTVNSt3__214__codecvt_utf8IDiEE = Module["__ZTVNSt3__214__codecvt_utf8IDiEE"] = 517644;
+var __ZTSNSt3__27codecvtIwc11__mbstate_tEE = Module["__ZTSNSt3__27codecvtIwc11__mbstate_tEE"] = 627582;
 
-var __ZTINSt3__214__codecvt_utf8IDiEE = Module["__ZTINSt3__214__codecvt_utf8IDiEE"] = 517692;
+var __ZTVNSt3__214__codecvt_utf8IDsEE = Module["__ZTVNSt3__214__codecvt_utf8IDsEE"] = 683568;
 
-var __ZTSNSt3__214__codecvt_utf8IDiEE = Module["__ZTSNSt3__214__codecvt_utf8IDiEE"] = 482141;
+var __ZTINSt3__214__codecvt_utf8IDsEE = Module["__ZTINSt3__214__codecvt_utf8IDsEE"] = 683616;
 
-var __ZTVNSt3__215__codecvt_utf16IwLb0EEE = Module["__ZTVNSt3__215__codecvt_utf16IwLb0EEE"] = 517704;
+var __ZTSNSt3__214__codecvt_utf8IDsEE = Module["__ZTSNSt3__214__codecvt_utf8IDsEE"] = 627616;
 
-var __ZTINSt3__215__codecvt_utf16IwLb0EEE = Module["__ZTINSt3__215__codecvt_utf16IwLb0EEE"] = 517752;
+var __ZTVNSt3__214__codecvt_utf8IDiEE = Module["__ZTVNSt3__214__codecvt_utf8IDiEE"] = 683628;
 
-var __ZTSNSt3__215__codecvt_utf16IwLb0EEE = Module["__ZTSNSt3__215__codecvt_utf16IwLb0EEE"] = 482170;
+var __ZTINSt3__214__codecvt_utf8IDiEE = Module["__ZTINSt3__214__codecvt_utf8IDiEE"] = 683676;
 
-var __ZTVNSt3__215__codecvt_utf16IwLb1EEE = Module["__ZTVNSt3__215__codecvt_utf16IwLb1EEE"] = 517764;
+var __ZTSNSt3__214__codecvt_utf8IDiEE = Module["__ZTSNSt3__214__codecvt_utf8IDiEE"] = 627645;
 
-var __ZTINSt3__215__codecvt_utf16IwLb1EEE = Module["__ZTINSt3__215__codecvt_utf16IwLb1EEE"] = 517812;
+var __ZTVNSt3__215__codecvt_utf16IwLb0EEE = Module["__ZTVNSt3__215__codecvt_utf16IwLb0EEE"] = 683688;
 
-var __ZTSNSt3__215__codecvt_utf16IwLb1EEE = Module["__ZTSNSt3__215__codecvt_utf16IwLb1EEE"] = 482203;
+var __ZTINSt3__215__codecvt_utf16IwLb0EEE = Module["__ZTINSt3__215__codecvt_utf16IwLb0EEE"] = 683736;
 
-var __ZTVNSt3__215__codecvt_utf16IDsLb0EEE = Module["__ZTVNSt3__215__codecvt_utf16IDsLb0EEE"] = 517824;
+var __ZTSNSt3__215__codecvt_utf16IwLb0EEE = Module["__ZTSNSt3__215__codecvt_utf16IwLb0EEE"] = 627674;
 
-var __ZTINSt3__215__codecvt_utf16IDsLb0EEE = Module["__ZTINSt3__215__codecvt_utf16IDsLb0EEE"] = 517872;
+var __ZTVNSt3__215__codecvt_utf16IwLb1EEE = Module["__ZTVNSt3__215__codecvt_utf16IwLb1EEE"] = 683748;
 
-var __ZTSNSt3__215__codecvt_utf16IDsLb0EEE = Module["__ZTSNSt3__215__codecvt_utf16IDsLb0EEE"] = 482236;
+var __ZTINSt3__215__codecvt_utf16IwLb1EEE = Module["__ZTINSt3__215__codecvt_utf16IwLb1EEE"] = 683796;
 
-var __ZTVNSt3__215__codecvt_utf16IDsLb1EEE = Module["__ZTVNSt3__215__codecvt_utf16IDsLb1EEE"] = 517884;
+var __ZTSNSt3__215__codecvt_utf16IwLb1EEE = Module["__ZTSNSt3__215__codecvt_utf16IwLb1EEE"] = 627707;
 
-var __ZTINSt3__215__codecvt_utf16IDsLb1EEE = Module["__ZTINSt3__215__codecvt_utf16IDsLb1EEE"] = 517932;
+var __ZTVNSt3__215__codecvt_utf16IDsLb0EEE = Module["__ZTVNSt3__215__codecvt_utf16IDsLb0EEE"] = 683808;
 
-var __ZTSNSt3__215__codecvt_utf16IDsLb1EEE = Module["__ZTSNSt3__215__codecvt_utf16IDsLb1EEE"] = 482270;
+var __ZTINSt3__215__codecvt_utf16IDsLb0EEE = Module["__ZTINSt3__215__codecvt_utf16IDsLb0EEE"] = 683856;
 
-var __ZTVNSt3__215__codecvt_utf16IDiLb0EEE = Module["__ZTVNSt3__215__codecvt_utf16IDiLb0EEE"] = 517944;
+var __ZTSNSt3__215__codecvt_utf16IDsLb0EEE = Module["__ZTSNSt3__215__codecvt_utf16IDsLb0EEE"] = 627740;
 
-var __ZTINSt3__215__codecvt_utf16IDiLb0EEE = Module["__ZTINSt3__215__codecvt_utf16IDiLb0EEE"] = 517992;
+var __ZTVNSt3__215__codecvt_utf16IDsLb1EEE = Module["__ZTVNSt3__215__codecvt_utf16IDsLb1EEE"] = 683868;
 
-var __ZTSNSt3__215__codecvt_utf16IDiLb0EEE = Module["__ZTSNSt3__215__codecvt_utf16IDiLb0EEE"] = 482304;
+var __ZTINSt3__215__codecvt_utf16IDsLb1EEE = Module["__ZTINSt3__215__codecvt_utf16IDsLb1EEE"] = 683916;
 
-var __ZTVNSt3__215__codecvt_utf16IDiLb1EEE = Module["__ZTVNSt3__215__codecvt_utf16IDiLb1EEE"] = 518004;
+var __ZTSNSt3__215__codecvt_utf16IDsLb1EEE = Module["__ZTSNSt3__215__codecvt_utf16IDsLb1EEE"] = 627774;
 
-var __ZTINSt3__215__codecvt_utf16IDiLb1EEE = Module["__ZTINSt3__215__codecvt_utf16IDiLb1EEE"] = 518052;
+var __ZTVNSt3__215__codecvt_utf16IDiLb0EEE = Module["__ZTVNSt3__215__codecvt_utf16IDiLb0EEE"] = 683928;
 
-var __ZTSNSt3__215__codecvt_utf16IDiLb1EEE = Module["__ZTSNSt3__215__codecvt_utf16IDiLb1EEE"] = 482338;
+var __ZTINSt3__215__codecvt_utf16IDiLb0EEE = Module["__ZTINSt3__215__codecvt_utf16IDiLb0EEE"] = 683976;
 
-var __ZTVNSt3__220__codecvt_utf8_utf16IwEE = Module["__ZTVNSt3__220__codecvt_utf8_utf16IwEE"] = 518064;
+var __ZTSNSt3__215__codecvt_utf16IDiLb0EEE = Module["__ZTSNSt3__215__codecvt_utf16IDiLb0EEE"] = 627808;
 
-var __ZTINSt3__220__codecvt_utf8_utf16IwEE = Module["__ZTINSt3__220__codecvt_utf8_utf16IwEE"] = 518112;
+var __ZTVNSt3__215__codecvt_utf16IDiLb1EEE = Module["__ZTVNSt3__215__codecvt_utf16IDiLb1EEE"] = 683988;
 
-var __ZTSNSt3__220__codecvt_utf8_utf16IwEE = Module["__ZTSNSt3__220__codecvt_utf8_utf16IwEE"] = 482372;
+var __ZTINSt3__215__codecvt_utf16IDiLb1EEE = Module["__ZTINSt3__215__codecvt_utf16IDiLb1EEE"] = 684036;
 
-var __ZTVNSt3__220__codecvt_utf8_utf16IDiEE = Module["__ZTVNSt3__220__codecvt_utf8_utf16IDiEE"] = 518124;
+var __ZTSNSt3__215__codecvt_utf16IDiLb1EEE = Module["__ZTSNSt3__215__codecvt_utf16IDiLb1EEE"] = 627842;
 
-var __ZTINSt3__220__codecvt_utf8_utf16IDiEE = Module["__ZTINSt3__220__codecvt_utf8_utf16IDiEE"] = 518172;
+var __ZTVNSt3__220__codecvt_utf8_utf16IwEE = Module["__ZTVNSt3__220__codecvt_utf8_utf16IwEE"] = 684048;
 
-var __ZTSNSt3__220__codecvt_utf8_utf16IDiEE = Module["__ZTSNSt3__220__codecvt_utf8_utf16IDiEE"] = 482406;
+var __ZTINSt3__220__codecvt_utf8_utf16IwEE = Module["__ZTINSt3__220__codecvt_utf8_utf16IwEE"] = 684096;
 
-var __ZTVNSt3__220__codecvt_utf8_utf16IDsEE = Module["__ZTVNSt3__220__codecvt_utf8_utf16IDsEE"] = 518184;
+var __ZTSNSt3__220__codecvt_utf8_utf16IwEE = Module["__ZTSNSt3__220__codecvt_utf8_utf16IwEE"] = 627876;
 
-var __ZTINSt3__220__codecvt_utf8_utf16IDsEE = Module["__ZTINSt3__220__codecvt_utf8_utf16IDsEE"] = 518232;
+var __ZTVNSt3__220__codecvt_utf8_utf16IDiEE = Module["__ZTVNSt3__220__codecvt_utf8_utf16IDiEE"] = 684108;
 
-var __ZTSNSt3__220__codecvt_utf8_utf16IDsEE = Module["__ZTSNSt3__220__codecvt_utf8_utf16IDsEE"] = 482441;
+var __ZTINSt3__220__codecvt_utf8_utf16IDiEE = Module["__ZTINSt3__220__codecvt_utf8_utf16IDiEE"] = 684156;
 
-var __ZTSNSt3__26locale5__impE = Module["__ZTSNSt3__26locale5__impE"] = 482476;
+var __ZTSNSt3__220__codecvt_utf8_utf16IDiEE = Module["__ZTSNSt3__220__codecvt_utf8_utf16IDiEE"] = 627910;
 
-var __ZTSNSt3__214collate_bynameIcEE = Module["__ZTSNSt3__214collate_bynameIcEE"] = 482498;
+var __ZTVNSt3__220__codecvt_utf8_utf16IDsEE = Module["__ZTVNSt3__220__codecvt_utf8_utf16IDsEE"] = 684168;
 
-var __ZTINSt3__27collateIcEE = Module["__ZTINSt3__27collateIcEE"] = 518268;
+var __ZTINSt3__220__codecvt_utf8_utf16IDsEE = Module["__ZTINSt3__220__codecvt_utf8_utf16IDsEE"] = 684216;
 
-var __ZTSNSt3__27collateIcEE = Module["__ZTSNSt3__27collateIcEE"] = 482526;
+var __ZTSNSt3__220__codecvt_utf8_utf16IDsEE = Module["__ZTSNSt3__220__codecvt_utf8_utf16IDsEE"] = 627945;
 
-var __ZTSNSt3__214collate_bynameIwEE = Module["__ZTSNSt3__214collate_bynameIwEE"] = 482546;
+var __ZTSNSt3__26locale5__impE = Module["__ZTSNSt3__26locale5__impE"] = 627980;
 
-var __ZTINSt3__27collateIwEE = Module["__ZTINSt3__27collateIwEE"] = 518292;
+var __ZTSNSt3__214collate_bynameIcEE = Module["__ZTSNSt3__214collate_bynameIcEE"] = 628002;
 
-var __ZTSNSt3__27collateIwEE = Module["__ZTSNSt3__27collateIwEE"] = 482574;
+var __ZTINSt3__27collateIcEE = Module["__ZTINSt3__27collateIcEE"] = 684252;
 
-var __ZTSNSt3__25ctypeIcEE = Module["__ZTSNSt3__25ctypeIcEE"] = 482594;
+var __ZTSNSt3__27collateIcEE = Module["__ZTSNSt3__27collateIcEE"] = 628030;
 
-var __ZTSNSt3__212ctype_bynameIcEE = Module["__ZTSNSt3__212ctype_bynameIcEE"] = 482612;
+var __ZTSNSt3__214collate_bynameIwEE = Module["__ZTSNSt3__214collate_bynameIwEE"] = 628050;
 
-var __ZTSNSt3__212ctype_bynameIwEE = Module["__ZTSNSt3__212ctype_bynameIwEE"] = 482638;
+var __ZTINSt3__27collateIwEE = Module["__ZTINSt3__27collateIwEE"] = 684276;
 
-var __ZTSNSt3__28numpunctIcEE = Module["__ZTSNSt3__28numpunctIcEE"] = 482664;
+var __ZTSNSt3__27collateIwEE = Module["__ZTSNSt3__27collateIwEE"] = 628078;
 
-var __ZTSNSt3__28numpunctIwEE = Module["__ZTSNSt3__28numpunctIwEE"] = 482685;
+var __ZTSNSt3__25ctypeIcEE = Module["__ZTSNSt3__25ctypeIcEE"] = 628098;
 
-var __ZTSNSt3__215numpunct_bynameIcEE = Module["__ZTSNSt3__215numpunct_bynameIcEE"] = 482706;
+var __ZTSNSt3__212ctype_bynameIcEE = Module["__ZTSNSt3__212ctype_bynameIcEE"] = 628116;
 
-var __ZTSNSt3__215numpunct_bynameIwEE = Module["__ZTSNSt3__215numpunct_bynameIwEE"] = 482735;
+var __ZTSNSt3__212ctype_bynameIwEE = Module["__ZTSNSt3__212ctype_bynameIwEE"] = 628142;
 
-var __ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 518536;
+var __ZTSNSt3__28numpunctIcEE = Module["__ZTSNSt3__28numpunctIcEE"] = 628168;
 
-var __ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 482764;
+var __ZTSNSt3__28numpunctIwEE = Module["__ZTSNSt3__28numpunctIwEE"] = 628189;
 
-var __ZTINSt3__29__num_getIcEE = Module["__ZTINSt3__29__num_getIcEE"] = 518568;
+var __ZTSNSt3__215numpunct_bynameIcEE = Module["__ZTSNSt3__215numpunct_bynameIcEE"] = 628210;
 
-var __ZTSNSt3__29__num_getIcEE = Module["__ZTSNSt3__29__num_getIcEE"] = 482832;
+var __ZTSNSt3__215numpunct_bynameIwEE = Module["__ZTSNSt3__215numpunct_bynameIwEE"] = 628239;
 
-var __ZTINSt3__214__num_get_baseE = Module["__ZTINSt3__214__num_get_baseE"] = 518592;
+var __ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 684520;
 
-var __ZTSNSt3__214__num_get_baseE = Module["__ZTSNSt3__214__num_get_baseE"] = 482854;
+var __ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__27num_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 628268;
 
-var __ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 518664;
+var __ZTINSt3__29__num_getIcEE = Module["__ZTINSt3__29__num_getIcEE"] = 684552;
 
-var __ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 482879;
+var __ZTSNSt3__29__num_getIcEE = Module["__ZTSNSt3__29__num_getIcEE"] = 628336;
 
-var __ZTINSt3__29__num_getIwEE = Module["__ZTINSt3__29__num_getIwEE"] = 518696;
+var __ZTINSt3__214__num_get_baseE = Module["__ZTINSt3__214__num_get_baseE"] = 684576;
 
-var __ZTSNSt3__29__num_getIwEE = Module["__ZTSNSt3__29__num_getIwEE"] = 482947;
+var __ZTSNSt3__214__num_get_baseE = Module["__ZTSNSt3__214__num_get_baseE"] = 628358;
 
-var __ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 518772;
+var __ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 684648;
 
-var __ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 482969;
+var __ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__27num_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 628383;
 
-var __ZTINSt3__29__num_putIcEE = Module["__ZTINSt3__29__num_putIcEE"] = 518804;
+var __ZTINSt3__29__num_getIwEE = Module["__ZTINSt3__29__num_getIwEE"] = 684680;
 
-var __ZTSNSt3__29__num_putIcEE = Module["__ZTSNSt3__29__num_putIcEE"] = 483037;
+var __ZTSNSt3__29__num_getIwEE = Module["__ZTSNSt3__29__num_getIwEE"] = 628451;
 
-var __ZTINSt3__214__num_put_baseE = Module["__ZTINSt3__214__num_put_baseE"] = 518828;
+var __ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 684756;
 
-var __ZTSNSt3__214__num_put_baseE = Module["__ZTSNSt3__214__num_put_baseE"] = 483059;
+var __ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__27num_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 628473;
 
-var __ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 518888;
+var __ZTINSt3__29__num_putIcEE = Module["__ZTINSt3__29__num_putIcEE"] = 684788;
 
-var __ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 483084;
+var __ZTSNSt3__29__num_putIcEE = Module["__ZTSNSt3__29__num_putIcEE"] = 628541;
 
-var __ZTINSt3__29__num_putIwEE = Module["__ZTINSt3__29__num_putIwEE"] = 518920;
+var __ZTINSt3__214__num_put_baseE = Module["__ZTINSt3__214__num_put_baseE"] = 684812;
 
-var __ZTSNSt3__29__num_putIwEE = Module["__ZTSNSt3__29__num_putIwEE"] = 483152;
+var __ZTSNSt3__214__num_put_baseE = Module["__ZTSNSt3__214__num_put_baseE"] = 628563;
 
-var __ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519028;
+var __ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 684872;
 
-var __ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 483174;
+var __ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__27num_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 628588;
 
-var __ZTINSt3__29time_baseE = Module["__ZTINSt3__29time_baseE"] = 519068;
+var __ZTINSt3__29__num_putIwEE = Module["__ZTINSt3__29__num_putIwEE"] = 684904;
 
-var __ZTINSt3__220__time_get_c_storageIcEE = Module["__ZTINSt3__220__time_get_c_storageIcEE"] = 519076;
+var __ZTSNSt3__29__num_putIwEE = Module["__ZTSNSt3__29__num_putIwEE"] = 628656;
 
-var __ZTSNSt3__29time_baseE = Module["__ZTSNSt3__29time_baseE"] = 483243;
+var __ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685012;
 
-var __ZTSNSt3__220__time_get_c_storageIcEE = Module["__ZTSNSt3__220__time_get_c_storageIcEE"] = 483262;
+var __ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__28time_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 628678;
 
-var __ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519168;
+var __ZTINSt3__29time_baseE = Module["__ZTINSt3__29time_baseE"] = 685052;
 
-var __ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 483296;
+var __ZTINSt3__220__time_get_c_storageIcEE = Module["__ZTINSt3__220__time_get_c_storageIcEE"] = 685060;
 
-var __ZTINSt3__220__time_get_c_storageIwEE = Module["__ZTINSt3__220__time_get_c_storageIwEE"] = 519208;
+var __ZTSNSt3__29time_baseE = Module["__ZTSNSt3__29time_baseE"] = 628747;
 
-var __ZTSNSt3__220__time_get_c_storageIwEE = Module["__ZTSNSt3__220__time_get_c_storageIwEE"] = 483365;
+var __ZTSNSt3__220__time_get_c_storageIcEE = Module["__ZTSNSt3__220__time_get_c_storageIcEE"] = 628766;
 
-var __ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519328;
+var __ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685152;
 
-var __ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 483399;
+var __ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__28time_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 628800;
 
-var __ZTINSt3__218__time_get_storageIcEE = Module["__ZTINSt3__218__time_get_storageIcEE"] = 519360;
+var __ZTINSt3__220__time_get_c_storageIwEE = Module["__ZTINSt3__220__time_get_c_storageIwEE"] = 685192;
 
-var __ZTSNSt3__218__time_get_storageIcEE = Module["__ZTSNSt3__218__time_get_storageIcEE"] = 483476;
+var __ZTSNSt3__220__time_get_c_storageIwEE = Module["__ZTSNSt3__220__time_get_c_storageIwEE"] = 628869;
 
-var __ZTINSt3__210__time_getE = Module["__ZTINSt3__210__time_getE"] = 519372;
+var __ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685312;
 
-var __ZTSNSt3__210__time_getE = Module["__ZTSNSt3__210__time_getE"] = 483508;
+var __ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__215time_get_bynameIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 628903;
 
-var __ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519492;
+var __ZTINSt3__218__time_get_storageIcEE = Module["__ZTINSt3__218__time_get_storageIcEE"] = 685344;
 
-var __ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 483529;
+var __ZTSNSt3__218__time_get_storageIcEE = Module["__ZTSNSt3__218__time_get_storageIcEE"] = 628980;
 
-var __ZTINSt3__218__time_get_storageIwEE = Module["__ZTINSt3__218__time_get_storageIwEE"] = 519524;
+var __ZTINSt3__210__time_getE = Module["__ZTINSt3__210__time_getE"] = 685356;
 
-var __ZTSNSt3__218__time_get_storageIwEE = Module["__ZTSNSt3__218__time_get_storageIwEE"] = 483606;
+var __ZTSNSt3__210__time_getE = Module["__ZTSNSt3__210__time_getE"] = 629012;
 
-var __ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519560;
+var __ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685476;
 
-var __ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 483638;
+var __ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__215time_get_bynameIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 629033;
 
-var __ZTINSt3__210__time_putE = Module["__ZTINSt3__210__time_putE"] = 519592;
+var __ZTINSt3__218__time_get_storageIwEE = Module["__ZTINSt3__218__time_get_storageIwEE"] = 685508;
 
-var __ZTSNSt3__210__time_putE = Module["__ZTSNSt3__210__time_putE"] = 483707;
+var __ZTSNSt3__218__time_get_storageIwEE = Module["__ZTSNSt3__218__time_get_storageIwEE"] = 629110;
 
-var __ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519624;
+var __ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685544;
 
-var __ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 483728;
+var __ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__28time_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 629142;
 
-var __ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 519680;
+var __ZTINSt3__210__time_putE = Module["__ZTINSt3__210__time_putE"] = 685576;
 
-var __ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 483797;
+var __ZTSNSt3__210__time_putE = Module["__ZTSNSt3__210__time_putE"] = 629211;
 
-var __ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 519716;
+var __ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685608;
 
-var __ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 483874;
+var __ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__28time_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 629232;
 
-var __ZTINSt3__210moneypunctIcLb0EEE = Module["__ZTINSt3__210moneypunctIcLb0EEE"] = 519784;
+var __ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 685664;
 
-var __ZTSNSt3__210moneypunctIcLb0EEE = Module["__ZTSNSt3__210moneypunctIcLb0EEE"] = 483951;
+var __ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__215time_put_bynameIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 629301;
 
-var __ZTINSt3__210money_baseE = Module["__ZTINSt3__210money_baseE"] = 519816;
+var __ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 685700;
 
-var __ZTSNSt3__210money_baseE = Module["__ZTSNSt3__210money_baseE"] = 483979;
+var __ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__215time_put_bynameIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 629378;
 
-var __ZTINSt3__210moneypunctIcLb1EEE = Module["__ZTINSt3__210moneypunctIcLb1EEE"] = 519880;
+var __ZTINSt3__210moneypunctIcLb0EEE = Module["__ZTINSt3__210moneypunctIcLb0EEE"] = 685768;
 
-var __ZTSNSt3__210moneypunctIcLb1EEE = Module["__ZTSNSt3__210moneypunctIcLb1EEE"] = 484e3;
+var __ZTSNSt3__210moneypunctIcLb0EEE = Module["__ZTSNSt3__210moneypunctIcLb0EEE"] = 629455;
 
-var __ZTINSt3__210moneypunctIwLb0EEE = Module["__ZTINSt3__210moneypunctIwLb0EEE"] = 519968;
+var __ZTINSt3__210money_baseE = Module["__ZTINSt3__210money_baseE"] = 685800;
 
-var __ZTSNSt3__210moneypunctIwLb0EEE = Module["__ZTSNSt3__210moneypunctIwLb0EEE"] = 484028;
+var __ZTSNSt3__210money_baseE = Module["__ZTSNSt3__210money_baseE"] = 629483;
 
-var __ZTINSt3__210moneypunctIwLb1EEE = Module["__ZTINSt3__210moneypunctIwLb1EEE"] = 520056;
+var __ZTINSt3__210moneypunctIcLb1EEE = Module["__ZTINSt3__210moneypunctIcLb1EEE"] = 685864;
 
-var __ZTSNSt3__210moneypunctIwLb1EEE = Module["__ZTSNSt3__210moneypunctIwLb1EEE"] = 484056;
+var __ZTSNSt3__210moneypunctIcLb1EEE = Module["__ZTSNSt3__210moneypunctIcLb1EEE"] = 629504;
 
-var __ZTINSt3__217moneypunct_bynameIcLb0EEE = Module["__ZTINSt3__217moneypunct_bynameIcLb0EEE"] = 520144;
+var __ZTINSt3__210moneypunctIwLb0EEE = Module["__ZTINSt3__210moneypunctIwLb0EEE"] = 685952;
 
-var __ZTSNSt3__217moneypunct_bynameIcLb0EEE = Module["__ZTSNSt3__217moneypunct_bynameIcLb0EEE"] = 484084;
+var __ZTSNSt3__210moneypunctIwLb0EEE = Module["__ZTSNSt3__210moneypunctIwLb0EEE"] = 629532;
 
-var __ZTINSt3__217moneypunct_bynameIcLb1EEE = Module["__ZTINSt3__217moneypunct_bynameIcLb1EEE"] = 520212;
+var __ZTINSt3__210moneypunctIwLb1EEE = Module["__ZTINSt3__210moneypunctIwLb1EEE"] = 686040;
 
-var __ZTSNSt3__217moneypunct_bynameIcLb1EEE = Module["__ZTSNSt3__217moneypunct_bynameIcLb1EEE"] = 484119;
+var __ZTSNSt3__210moneypunctIwLb1EEE = Module["__ZTSNSt3__210moneypunctIwLb1EEE"] = 629560;
 
-var __ZTINSt3__217moneypunct_bynameIwLb0EEE = Module["__ZTINSt3__217moneypunct_bynameIwLb0EEE"] = 520280;
+var __ZTINSt3__217moneypunct_bynameIcLb0EEE = Module["__ZTINSt3__217moneypunct_bynameIcLb0EEE"] = 686128;
 
-var __ZTSNSt3__217moneypunct_bynameIwLb0EEE = Module["__ZTSNSt3__217moneypunct_bynameIwLb0EEE"] = 484154;
+var __ZTSNSt3__217moneypunct_bynameIcLb0EEE = Module["__ZTSNSt3__217moneypunct_bynameIcLb0EEE"] = 629588;
 
-var __ZTINSt3__217moneypunct_bynameIwLb1EEE = Module["__ZTINSt3__217moneypunct_bynameIwLb1EEE"] = 520348;
+var __ZTINSt3__217moneypunct_bynameIcLb1EEE = Module["__ZTINSt3__217moneypunct_bynameIcLb1EEE"] = 686196;
 
-var __ZTSNSt3__217moneypunct_bynameIwLb1EEE = Module["__ZTSNSt3__217moneypunct_bynameIwLb1EEE"] = 484189;
+var __ZTSNSt3__217moneypunct_bynameIcLb1EEE = Module["__ZTSNSt3__217moneypunct_bynameIcLb1EEE"] = 629623;
 
-var __ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 520388;
+var __ZTINSt3__217moneypunct_bynameIwLb0EEE = Module["__ZTINSt3__217moneypunct_bynameIwLb0EEE"] = 686264;
 
-var __ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 484224;
+var __ZTSNSt3__217moneypunct_bynameIwLb0EEE = Module["__ZTSNSt3__217moneypunct_bynameIwLb0EEE"] = 629658;
 
-var __ZTINSt3__211__money_getIcEE = Module["__ZTINSt3__211__money_getIcEE"] = 520420;
+var __ZTINSt3__217moneypunct_bynameIwLb1EEE = Module["__ZTINSt3__217moneypunct_bynameIwLb1EEE"] = 686332;
 
-var __ZTSNSt3__211__money_getIcEE = Module["__ZTSNSt3__211__money_getIcEE"] = 484294;
+var __ZTSNSt3__217moneypunct_bynameIwLb1EEE = Module["__ZTSNSt3__217moneypunct_bynameIwLb1EEE"] = 629693;
 
-var __ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 520456;
+var __ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 686372;
 
-var __ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 484319;
+var __ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__29money_getIcNS_19istreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 629728;
 
-var __ZTINSt3__211__money_getIwEE = Module["__ZTINSt3__211__money_getIwEE"] = 520488;
+var __ZTINSt3__211__money_getIcEE = Module["__ZTINSt3__211__money_getIcEE"] = 686404;
 
-var __ZTSNSt3__211__money_getIwEE = Module["__ZTSNSt3__211__money_getIwEE"] = 484389;
+var __ZTSNSt3__211__money_getIcEE = Module["__ZTSNSt3__211__money_getIcEE"] = 629798;
 
-var __ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 520524;
+var __ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 686440;
 
-var __ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 484414;
+var __ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__29money_getIwNS_19istreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 629823;
 
-var __ZTINSt3__211__money_putIcEE = Module["__ZTINSt3__211__money_putIcEE"] = 520556;
+var __ZTINSt3__211__money_getIwEE = Module["__ZTINSt3__211__money_getIwEE"] = 686472;
 
-var __ZTSNSt3__211__money_putIcEE = Module["__ZTSNSt3__211__money_putIcEE"] = 484484;
+var __ZTSNSt3__211__money_getIwEE = Module["__ZTSNSt3__211__money_getIwEE"] = 629893;
 
-var __ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 520592;
+var __ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTINSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 686508;
 
-var __ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 484509;
+var __ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE = Module["__ZTSNSt3__29money_putIcNS_19ostreambuf_iteratorIcNS_11char_traitsIcEEEEEE"] = 629918;
 
-var __ZTINSt3__211__money_putIwEE = Module["__ZTINSt3__211__money_putIwEE"] = 520624;
+var __ZTINSt3__211__money_putIcEE = Module["__ZTINSt3__211__money_putIcEE"] = 686540;
 
-var __ZTSNSt3__211__money_putIwEE = Module["__ZTSNSt3__211__money_putIwEE"] = 484579;
+var __ZTSNSt3__211__money_putIcEE = Module["__ZTSNSt3__211__money_putIcEE"] = 629988;
 
-var __ZTINSt3__28messagesIcEE = Module["__ZTINSt3__28messagesIcEE"] = 520664;
+var __ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTINSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 686576;
 
-var __ZTSNSt3__28messagesIcEE = Module["__ZTSNSt3__28messagesIcEE"] = 484604;
+var __ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE = Module["__ZTSNSt3__29money_putIwNS_19ostreambuf_iteratorIwNS_11char_traitsIwEEEEEE"] = 630013;
 
-var __ZTINSt3__213messages_baseE = Module["__ZTINSt3__213messages_baseE"] = 520696;
+var __ZTINSt3__211__money_putIwEE = Module["__ZTINSt3__211__money_putIwEE"] = 686608;
 
-var __ZTSNSt3__213messages_baseE = Module["__ZTSNSt3__213messages_baseE"] = 484625;
+var __ZTSNSt3__211__money_putIwEE = Module["__ZTSNSt3__211__money_putIwEE"] = 630083;
 
-var __ZTINSt3__28messagesIwEE = Module["__ZTINSt3__28messagesIwEE"] = 520736;
+var __ZTINSt3__28messagesIcEE = Module["__ZTINSt3__28messagesIcEE"] = 686648;
 
-var __ZTSNSt3__28messagesIwEE = Module["__ZTSNSt3__28messagesIwEE"] = 484649;
+var __ZTSNSt3__28messagesIcEE = Module["__ZTSNSt3__28messagesIcEE"] = 630108;
 
-var __ZTINSt3__215messages_bynameIcEE = Module["__ZTINSt3__215messages_bynameIcEE"] = 520800;
+var __ZTINSt3__213messages_baseE = Module["__ZTINSt3__213messages_baseE"] = 686680;
 
-var __ZTSNSt3__215messages_bynameIcEE = Module["__ZTSNSt3__215messages_bynameIcEE"] = 484670;
+var __ZTSNSt3__213messages_baseE = Module["__ZTSNSt3__213messages_baseE"] = 630129;
 
-var __ZTINSt3__215messages_bynameIwEE = Module["__ZTINSt3__215messages_bynameIwEE"] = 520844;
+var __ZTINSt3__28messagesIwEE = Module["__ZTINSt3__28messagesIwEE"] = 686720;
 
-var __ZTSNSt3__215messages_bynameIwEE = Module["__ZTSNSt3__215messages_bynameIwEE"] = 484699;
+var __ZTSNSt3__28messagesIwEE = Module["__ZTSNSt3__28messagesIwEE"] = 630153;
 
-var __ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE"] = 520904;
+var __ZTINSt3__215messages_bynameIcEE = Module["__ZTINSt3__215messages_bynameIcEE"] = 686784;
 
-var __ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE"] = 484728;
+var __ZTSNSt3__215messages_bynameIcEE = Module["__ZTSNSt3__215messages_bynameIcEE"] = 630174;
 
-var __ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE"] = 520964;
+var __ZTINSt3__215messages_bynameIwEE = Module["__ZTINSt3__215messages_bynameIwEE"] = 686828;
 
-var __ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE"] = 484770;
+var __ZTSNSt3__215messages_bynameIwEE = Module["__ZTSNSt3__215messages_bynameIwEE"] = 630203;
 
-var __ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE"] = 521024;
+var __ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIcc11__mbstate_tEE"] = 686888;
 
-var __ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE"] = 484812;
+var __ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIcc11__mbstate_tEE"] = 630232;
 
-var __ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE"] = 521084;
+var __ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIwc11__mbstate_tEE"] = 686948;
 
-var __ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE"] = 484855;
+var __ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIwc11__mbstate_tEE"] = 630274;
 
-var __ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE"] = 521144;
+var __ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDsc11__mbstate_tEE"] = 687008;
 
-var __ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE"] = 484898;
+var __ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDsc11__mbstate_tEE"] = 630316;
 
-var __ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE"] = 521204;
+var __ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDic11__mbstate_tEE"] = 687068;
 
-var __ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE"] = 484942;
+var __ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDic11__mbstate_tEE"] = 630359;
 
-var __ZTINSt3__215__time_get_tempIcEE = Module["__ZTINSt3__215__time_get_tempIcEE"] = 521340;
+var __ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDsDu11__mbstate_tEE"] = 687128;
 
-var __ZTSNSt3__215__time_get_tempIcEE = Module["__ZTSNSt3__215__time_get_tempIcEE"] = 485872;
+var __ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDsDu11__mbstate_tEE"] = 630402;
 
-var __ZTINSt3__215__time_get_tempIwEE = Module["__ZTINSt3__215__time_get_tempIwEE"] = 521420;
+var __ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module["__ZTINSt3__214codecvt_bynameIDiDu11__mbstate_tEE"] = 687188;
 
-var __ZTSNSt3__215__time_get_tempIwEE = Module["__ZTSNSt3__215__time_get_tempIwEE"] = 485901;
+var __ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE = Module["__ZTSNSt3__214codecvt_bynameIDiDu11__mbstate_tEE"] = 630446;
 
-var __ZTSNSt3__214__shared_countE = Module["__ZTSNSt3__214__shared_countE"] = 485930;
+var __ZTINSt3__215__time_get_tempIcEE = Module["__ZTINSt3__215__time_get_tempIcEE"] = 687324;
 
-var __ZTSNSt3__219__shared_weak_countE = Module["__ZTSNSt3__219__shared_weak_countE"] = 485955;
+var __ZTSNSt3__215__time_get_tempIcEE = Module["__ZTSNSt3__215__time_get_tempIcEE"] = 631376;
 
-var __ZTVNSt3__212bad_weak_ptrE = Module["__ZTVNSt3__212bad_weak_ptrE"] = 521648;
+var __ZTINSt3__215__time_get_tempIwEE = Module["__ZTINSt3__215__time_get_tempIwEE"] = 687404;
 
-var __ZTINSt3__212bad_weak_ptrE = Module["__ZTINSt3__212bad_weak_ptrE"] = 521668;
+var __ZTSNSt3__215__time_get_tempIwEE = Module["__ZTSNSt3__215__time_get_tempIwEE"] = 631405;
 
-var __ZTSNSt3__212bad_weak_ptrE = Module["__ZTSNSt3__212bad_weak_ptrE"] = 485985;
+var __ZTSNSt3__214__shared_countE = Module["__ZTSNSt3__214__shared_countE"] = 631434;
 
-var __ZTVNSt3__23pmr28unsynchronized_pool_resourceE = Module["__ZTVNSt3__23pmr28unsynchronized_pool_resourceE"] = 521744;
+var __ZTSNSt3__219__shared_weak_countE = Module["__ZTSNSt3__219__shared_weak_countE"] = 631459;
 
-var __ZTVNSt3__23pmr15memory_resourceE = Module["__ZTVNSt3__23pmr15memory_resourceE"] = 521820;
+var __ZTVNSt3__212bad_weak_ptrE = Module["__ZTVNSt3__212bad_weak_ptrE"] = 687632;
 
-var __ZTVNSt3__23pmr25monotonic_buffer_resourceE = Module["__ZTVNSt3__23pmr25monotonic_buffer_resourceE"] = 521772;
+var __ZTINSt3__212bad_weak_ptrE = Module["__ZTINSt3__212bad_weak_ptrE"] = 687652;
 
-var __ZTVNSt3__23pmr26synchronized_pool_resourceE = Module["__ZTVNSt3__23pmr26synchronized_pool_resourceE"] = 521860;
+var __ZTSNSt3__212bad_weak_ptrE = Module["__ZTSNSt3__212bad_weak_ptrE"] = 631489;
 
-var __ZTVNSt3__23pmr32__new_delete_memory_resource_impE = Module["__ZTVNSt3__23pmr32__new_delete_memory_resource_impE"] = 521680;
+var __ZTVNSt3__23pmr28unsynchronized_pool_resourceE = Module["__ZTVNSt3__23pmr28unsynchronized_pool_resourceE"] = 687728;
 
-var __ZTINSt3__23pmr32__new_delete_memory_resource_impE = Module["__ZTINSt3__23pmr32__new_delete_memory_resource_impE"] = 521900;
+var __ZTVNSt3__23pmr15memory_resourceE = Module["__ZTVNSt3__23pmr15memory_resourceE"] = 687804;
 
-var __ZTVNSt3__23pmr26__null_memory_resource_impE = Module["__ZTVNSt3__23pmr26__null_memory_resource_impE"] = 521708;
+var __ZTVNSt3__23pmr25monotonic_buffer_resourceE = Module["__ZTVNSt3__23pmr25monotonic_buffer_resourceE"] = 687756;
 
-var __ZTINSt3__23pmr26__null_memory_resource_impE = Module["__ZTINSt3__23pmr26__null_memory_resource_impE"] = 521912;
+var __ZTVNSt3__23pmr26synchronized_pool_resourceE = Module["__ZTVNSt3__23pmr26synchronized_pool_resourceE"] = 687844;
 
-var __ZTINSt3__23pmr28unsynchronized_pool_resourceE = Module["__ZTINSt3__23pmr28unsynchronized_pool_resourceE"] = 521848;
+var __ZTVNSt3__23pmr32__new_delete_memory_resource_impE = Module["__ZTVNSt3__23pmr32__new_delete_memory_resource_impE"] = 687664;
 
-var __ZTINSt3__23pmr25monotonic_buffer_resourceE = Module["__ZTINSt3__23pmr25monotonic_buffer_resourceE"] = 521800;
+var __ZTINSt3__23pmr32__new_delete_memory_resource_impE = Module["__ZTINSt3__23pmr32__new_delete_memory_resource_impE"] = 687884;
 
-var __ZTSNSt3__23pmr25monotonic_buffer_resourceE = Module["__ZTSNSt3__23pmr25monotonic_buffer_resourceE"] = 486008;
+var __ZTVNSt3__23pmr26__null_memory_resource_impE = Module["__ZTVNSt3__23pmr26__null_memory_resource_impE"] = 687692;
 
-var __ZTINSt3__23pmr15memory_resourceE = Module["__ZTINSt3__23pmr15memory_resourceE"] = 521812;
+var __ZTINSt3__23pmr26__null_memory_resource_impE = Module["__ZTINSt3__23pmr26__null_memory_resource_impE"] = 687896;
 
-var __ZTSNSt3__23pmr15memory_resourceE = Module["__ZTSNSt3__23pmr15memory_resourceE"] = 486048;
+var __ZTINSt3__23pmr28unsynchronized_pool_resourceE = Module["__ZTINSt3__23pmr28unsynchronized_pool_resourceE"] = 687832;
 
-var __ZTSNSt3__23pmr28unsynchronized_pool_resourceE = Module["__ZTSNSt3__23pmr28unsynchronized_pool_resourceE"] = 486078;
+var __ZTINSt3__23pmr25monotonic_buffer_resourceE = Module["__ZTINSt3__23pmr25monotonic_buffer_resourceE"] = 687784;
 
-var __ZTINSt3__23pmr26synchronized_pool_resourceE = Module["__ZTINSt3__23pmr26synchronized_pool_resourceE"] = 521888;
+var __ZTSNSt3__23pmr25monotonic_buffer_resourceE = Module["__ZTSNSt3__23pmr25monotonic_buffer_resourceE"] = 631512;
 
-var __ZTSNSt3__23pmr26synchronized_pool_resourceE = Module["__ZTSNSt3__23pmr26synchronized_pool_resourceE"] = 486121;
+var __ZTINSt3__23pmr15memory_resourceE = Module["__ZTINSt3__23pmr15memory_resourceE"] = 687796;
 
-var __ZTSNSt3__23pmr32__new_delete_memory_resource_impE = Module["__ZTSNSt3__23pmr32__new_delete_memory_resource_impE"] = 486162;
+var __ZTSNSt3__23pmr15memory_resourceE = Module["__ZTSNSt3__23pmr15memory_resourceE"] = 631552;
 
-var __ZTSNSt3__23pmr26__null_memory_resource_impE = Module["__ZTSNSt3__23pmr26__null_memory_resource_impE"] = 486209;
+var __ZTSNSt3__23pmr28unsynchronized_pool_resourceE = Module["__ZTSNSt3__23pmr28unsynchronized_pool_resourceE"] = 631582;
 
-var __ZSt7nothrow = Module["__ZSt7nothrow"] = 486250;
+var __ZTINSt3__23pmr26synchronized_pool_resourceE = Module["__ZTINSt3__23pmr26synchronized_pool_resourceE"] = 687872;
 
-var __ZTVSt19bad_optional_access = Module["__ZTVSt19bad_optional_access"] = 521952;
+var __ZTSNSt3__23pmr26synchronized_pool_resourceE = Module["__ZTSNSt3__23pmr26synchronized_pool_resourceE"] = 631625;
 
-var __ZTISt19bad_optional_access = Module["__ZTISt19bad_optional_access"] = 521972;
+var __ZTSNSt3__23pmr32__new_delete_memory_resource_impE = Module["__ZTSNSt3__23pmr32__new_delete_memory_resource_impE"] = 631666;
 
-var __ZTSSt19bad_optional_access = Module["__ZTSSt19bad_optional_access"] = 486251;
+var __ZTSNSt3__23pmr26__null_memory_resource_impE = Module["__ZTSNSt3__23pmr26__null_memory_resource_impE"] = 631713;
 
-var __ZTVNSt12experimental19bad_optional_accessE = Module["__ZTVNSt12experimental19bad_optional_accessE"] = 521984;
+var __ZSt7nothrow = Module["__ZSt7nothrow"] = 631754;
 
-var __ZTINSt12experimental19bad_optional_accessE = Module["__ZTINSt12experimental19bad_optional_accessE"] = 522004;
+var __ZTVSt19bad_optional_access = Module["__ZTVSt19bad_optional_access"] = 687936;
 
-var __ZTSNSt12experimental19bad_optional_accessE = Module["__ZTSNSt12experimental19bad_optional_accessE"] = 486275;
+var __ZTISt19bad_optional_access = Module["__ZTISt19bad_optional_access"] = 687956;
 
-var __ZNSt3__210filesystem4path19preferred_separatorE = Module["__ZNSt3__210filesystem4path19preferred_separatorE"] = 486315;
+var __ZTSSt19bad_optional_access = Module["__ZTSSt19bad_optional_access"] = 631755;
 
-var __ZNSt3__212__rs_default4__c_E = Module["__ZNSt3__212__rs_default4__c_E"] = 600560;
+var __ZTVNSt12experimental19bad_optional_accessE = Module["__ZTVNSt12experimental19bad_optional_accessE"] = 687968;
 
-var __ZTVNSt3__211regex_errorE = Module["__ZTVNSt3__211regex_errorE"] = 522016;
+var __ZTINSt12experimental19bad_optional_accessE = Module["__ZTINSt12experimental19bad_optional_accessE"] = 687988;
 
-var __ZTINSt3__211regex_errorE = Module["__ZTINSt3__211regex_errorE"] = 523064;
+var __ZTSNSt12experimental19bad_optional_accessE = Module["__ZTSNSt12experimental19bad_optional_accessE"] = 631779;
 
-var __ZTSNSt3__211regex_errorE = Module["__ZTSNSt3__211regex_errorE"] = 486316;
+var __ZNSt3__210filesystem4path19preferred_separatorE = Module["__ZNSt3__210filesystem4path19preferred_separatorE"] = 631819;
 
-var __ZTVSt11logic_error = Module["__ZTVSt11logic_error"] = 531024;
+var __ZNSt3__212__rs_default4__c_E = Module["__ZNSt3__212__rs_default4__c_E"] = 793840;
 
-var __ZTVSt9exception = Module["__ZTVSt9exception"] = 530940;
+var __ZTVNSt3__211regex_errorE = Module["__ZTVNSt3__211regex_errorE"] = 688e3;
 
-var __ZTVSt13runtime_error = Module["__ZTVSt13runtime_error"] = 531044;
+var __ZTINSt3__211regex_errorE = Module["__ZTINSt3__211regex_errorE"] = 689048;
 
-var __ZNSt3__26__itoa10__pow10_64E = Module["__ZNSt3__26__itoa10__pow10_64E"] = 486384;
+var __ZTSNSt3__211regex_errorE = Module["__ZTSNSt3__211regex_errorE"] = 631820;
 
-var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE = Module["__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE"] = 486340;
+var __ZTVSt11logic_error = Module["__ZTVSt11logic_error"] = 697008;
 
-var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE = Module["__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE"] = 486344;
+var __ZTVSt9exception = Module["__ZTVSt9exception"] = 696924;
 
-var __ZTVNSt3__212strstreambufE = Module["__ZTVNSt3__212strstreambufE"] = 523144;
+var __ZTVSt13runtime_error = Module["__ZTVSt13runtime_error"] = 697028;
 
-var __ZTTNSt3__210istrstreamE = Module["__ZTTNSt3__210istrstreamE"] = 523248;
+var __ZNSt3__26__itoa10__pow10_64E = Module["__ZNSt3__26__itoa10__pow10_64E"] = 631888;
 
-var __ZTTNSt3__210ostrstreamE = Module["__ZTTNSt3__210ostrstreamE"] = 523304;
+var __ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE = Module["__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE4nposE"] = 631844;
 
-var __ZTTNSt3__29strstreamE = Module["__ZTTNSt3__29strstreamE"] = 523380;
+var __ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE = Module["__ZNSt3__212basic_stringIwNS_11char_traitsIwEENS_9allocatorIwEEE4nposE"] = 631848;
 
-var __ZTINSt3__212strstreambufE = Module["__ZTINSt3__212strstreambufE"] = 523420;
+var __ZTVNSt3__212strstreambufE = Module["__ZTVNSt3__212strstreambufE"] = 689128;
 
-var __ZTVNSt3__210istrstreamE = Module["__ZTVNSt3__210istrstreamE"] = 523208;
+var __ZTTNSt3__210istrstreamE = Module["__ZTTNSt3__210istrstreamE"] = 689232;
 
-var __ZTINSt3__210istrstreamE = Module["__ZTINSt3__210istrstreamE"] = 523472;
+var __ZTTNSt3__210ostrstreamE = Module["__ZTTNSt3__210ostrstreamE"] = 689288;
 
-var __ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE"] = 523432;
+var __ZTTNSt3__29strstreamE = Module["__ZTTNSt3__29strstreamE"] = 689364;
 
-var __ZTVNSt3__210ostrstreamE = Module["__ZTVNSt3__210ostrstreamE"] = 523264;
+var __ZTINSt3__212strstreambufE = Module["__ZTINSt3__212strstreambufE"] = 689404;
 
-var __ZTINSt3__210ostrstreamE = Module["__ZTINSt3__210ostrstreamE"] = 523524;
+var __ZTVNSt3__210istrstreamE = Module["__ZTVNSt3__210istrstreamE"] = 689192;
 
-var __ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE"] = 523484;
+var __ZTINSt3__210istrstreamE = Module["__ZTINSt3__210istrstreamE"] = 689456;
 
-var __ZTVNSt3__29strstreamE = Module["__ZTVNSt3__29strstreamE"] = 523320;
+var __ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__210istrstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE"] = 689416;
 
-var __ZTINSt3__29strstreamE = Module["__ZTINSt3__29strstreamE"] = 523676;
+var __ZTVNSt3__210ostrstreamE = Module["__ZTVNSt3__210ostrstreamE"] = 689248;
 
-var __ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE"] = 523536;
+var __ZTINSt3__210ostrstreamE = Module["__ZTINSt3__210ostrstreamE"] = 689508;
 
-var __ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE"] = 523596;
+var __ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__210ostrstreamE0_NS_13basic_ostreamIcNS_11char_traitsIcEEEE"] = 689468;
 
-var __ZTCNSt3__29strstreamE8_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__29strstreamE8_NS_13basic_ostreamIcNS_11char_traitsIcEEEE"] = 523636;
+var __ZTVNSt3__29strstreamE = Module["__ZTVNSt3__29strstreamE"] = 689304;
 
-var __ZTSNSt3__212strstreambufE = Module["__ZTSNSt3__212strstreambufE"] = 486544;
+var __ZTINSt3__29strstreamE = Module["__ZTINSt3__29strstreamE"] = 689660;
 
-var __ZTSNSt3__210istrstreamE = Module["__ZTSNSt3__210istrstreamE"] = 486567;
+var __ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__29strstreamE0_NS_14basic_iostreamIcNS_11char_traitsIcEEEE"] = 689520;
 
-var __ZTSNSt3__210ostrstreamE = Module["__ZTSNSt3__210ostrstreamE"] = 486588;
+var __ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__29strstreamE0_NS_13basic_istreamIcNS_11char_traitsIcEEEE"] = 689580;
 
-var __ZTSNSt3__29strstreamE = Module["__ZTSNSt3__29strstreamE"] = 486609;
+var __ZTCNSt3__29strstreamE8_NS_13basic_ostreamIcNS_11char_traitsIcEEEE = Module["__ZTCNSt3__29strstreamE8_NS_13basic_ostreamIcNS_11char_traitsIcEEEE"] = 689620;
 
-var __ZTVNSt3__212system_errorE = Module["__ZTVNSt3__212system_errorE"] = 523768;
+var __ZTSNSt3__212strstreambufE = Module["__ZTSNSt3__212strstreambufE"] = 632048;
 
-var __ZTVNSt3__224__generic_error_categoryE = Module["__ZTVNSt3__224__generic_error_categoryE"] = 523692;
+var __ZTSNSt3__210istrstreamE = Module["__ZTSNSt3__210istrstreamE"] = 632071;
 
-var __ZTINSt3__224__generic_error_categoryE = Module["__ZTINSt3__224__generic_error_categoryE"] = 523836;
+var __ZTSNSt3__210ostrstreamE = Module["__ZTSNSt3__210ostrstreamE"] = 632092;
 
-var __ZTVNSt3__223__system_error_categoryE = Module["__ZTVNSt3__223__system_error_categoryE"] = 523732;
+var __ZTSNSt3__29strstreamE = Module["__ZTSNSt3__29strstreamE"] = 632113;
 
-var __ZTINSt3__223__system_error_categoryE = Module["__ZTINSt3__223__system_error_categoryE"] = 523848;
+var __ZTVNSt3__212system_errorE = Module["__ZTVNSt3__212system_errorE"] = 689752;
 
-var __ZTVNSt3__212__do_messageE = Module["__ZTVNSt3__212__do_messageE"] = 523788;
+var __ZTVNSt3__224__generic_error_categoryE = Module["__ZTVNSt3__224__generic_error_categoryE"] = 689676;
 
-var __ZTSNSt3__212__do_messageE = Module["__ZTSNSt3__212__do_messageE"] = 486628;
+var __ZTINSt3__224__generic_error_categoryE = Module["__ZTINSt3__224__generic_error_categoryE"] = 689820;
 
-var __ZTSNSt3__224__generic_error_categoryE = Module["__ZTSNSt3__224__generic_error_categoryE"] = 486651;
+var __ZTVNSt3__223__system_error_categoryE = Module["__ZTVNSt3__223__system_error_categoryE"] = 689716;
 
-var __ZTSNSt3__223__system_error_categoryE = Module["__ZTSNSt3__223__system_error_categoryE"] = 486686;
+var __ZTINSt3__223__system_error_categoryE = Module["__ZTINSt3__223__system_error_categoryE"] = 689832;
 
-var __ZTSNSt3__212system_errorE = Module["__ZTSNSt3__212system_errorE"] = 486720;
+var __ZTVNSt3__212__do_messageE = Module["__ZTVNSt3__212__do_messageE"] = 689772;
 
-var __ZTVSt18bad_variant_access = Module["__ZTVSt18bad_variant_access"] = 523872;
+var __ZTSNSt3__212__do_messageE = Module["__ZTSNSt3__212__do_messageE"] = 632132;
 
-var __ZTISt18bad_variant_access = Module["__ZTISt18bad_variant_access"] = 523892;
+var __ZTSNSt3__224__generic_error_categoryE = Module["__ZTSNSt3__224__generic_error_categoryE"] = 632155;
 
-var __ZTSSt18bad_variant_access = Module["__ZTSSt18bad_variant_access"] = 486743;
+var __ZTSNSt3__223__system_error_categoryE = Module["__ZTSNSt3__223__system_error_categoryE"] = 632190;
 
-var ___cxa_unexpected_handler = Module["___cxa_unexpected_handler"] = 523908;
+var __ZTSNSt3__212system_errorE = Module["__ZTSNSt3__212system_errorE"] = 632224;
 
-var ___cxa_terminate_handler = Module["___cxa_terminate_handler"] = 523904;
+var __ZTVSt18bad_variant_access = Module["__ZTVSt18bad_variant_access"] = 689856;
 
-var ___cxa_new_handler = Module["___cxa_new_handler"] = 603104;
+var __ZTISt18bad_variant_access = Module["__ZTISt18bad_variant_access"] = 689876;
 
-var __ZTIN10__cxxabiv117__class_type_infoE = Module["__ZTIN10__cxxabiv117__class_type_infoE"] = 529436;
+var __ZTSSt18bad_variant_access = Module["__ZTSSt18bad_variant_access"] = 632247;
 
-var __ZTIN10__cxxabiv116__shim_type_infoE = Module["__ZTIN10__cxxabiv116__shim_type_infoE"] = 529424;
+var ___cxa_unexpected_handler = Module["___cxa_unexpected_handler"] = 689892;
 
-var __ZTIN10__cxxabiv117__pbase_type_infoE = Module["__ZTIN10__cxxabiv117__pbase_type_infoE"] = 529448;
+var ___cxa_terminate_handler = Module["___cxa_terminate_handler"] = 689888;
 
-var __ZTIDn = Module["__ZTIDn"] = 529604;
+var ___cxa_new_handler = Module["___cxa_new_handler"] = 796384;
 
-var __ZTIN10__cxxabiv119__pointer_type_infoE = Module["__ZTIN10__cxxabiv119__pointer_type_infoE"] = 529460;
+var __ZTIN10__cxxabiv117__class_type_infoE = Module["__ZTIN10__cxxabiv117__class_type_infoE"] = 695420;
 
-var __ZTIv = Module["__ZTIv"] = 529564;
+var __ZTIN10__cxxabiv116__shim_type_infoE = Module["__ZTIN10__cxxabiv116__shim_type_infoE"] = 695408;
 
-var __ZTIN10__cxxabiv120__function_type_infoE = Module["__ZTIN10__cxxabiv120__function_type_infoE"] = 529472;
+var __ZTIN10__cxxabiv117__pbase_type_infoE = Module["__ZTIN10__cxxabiv117__pbase_type_infoE"] = 695432;
 
-var __ZTIN10__cxxabiv129__pointer_to_member_type_infoE = Module["__ZTIN10__cxxabiv129__pointer_to_member_type_infoE"] = 529484;
+var __ZTIDn = Module["__ZTIDn"] = 695588;
 
-var __ZTISt9type_info = Module["__ZTISt9type_info"] = 531368;
+var __ZTIN10__cxxabiv119__pointer_type_infoE = Module["__ZTIN10__cxxabiv119__pointer_type_infoE"] = 695444;
 
-var __ZTSN10__cxxabiv116__shim_type_infoE = Module["__ZTSN10__cxxabiv116__shim_type_infoE"] = 491377;
+var __ZTIv = Module["__ZTIv"] = 695548;
 
-var __ZTSN10__cxxabiv117__class_type_infoE = Module["__ZTSN10__cxxabiv117__class_type_infoE"] = 491410;
+var __ZTIN10__cxxabiv120__function_type_infoE = Module["__ZTIN10__cxxabiv120__function_type_infoE"] = 695456;
 
-var __ZTSN10__cxxabiv117__pbase_type_infoE = Module["__ZTSN10__cxxabiv117__pbase_type_infoE"] = 491444;
+var __ZTIN10__cxxabiv129__pointer_to_member_type_infoE = Module["__ZTIN10__cxxabiv129__pointer_to_member_type_infoE"] = 695468;
 
-var __ZTSN10__cxxabiv119__pointer_type_infoE = Module["__ZTSN10__cxxabiv119__pointer_type_infoE"] = 491478;
+var __ZTISt9type_info = Module["__ZTISt9type_info"] = 697352;
 
-var __ZTSN10__cxxabiv120__function_type_infoE = Module["__ZTSN10__cxxabiv120__function_type_infoE"] = 491514;
+var __ZTSN10__cxxabiv116__shim_type_infoE = Module["__ZTSN10__cxxabiv116__shim_type_infoE"] = 636881;
 
-var __ZTSN10__cxxabiv129__pointer_to_member_type_infoE = Module["__ZTSN10__cxxabiv129__pointer_to_member_type_infoE"] = 491551;
+var __ZTSN10__cxxabiv117__class_type_infoE = Module["__ZTSN10__cxxabiv117__class_type_infoE"] = 636914;
 
-var __ZTVN10__cxxabiv116__shim_type_infoE = Module["__ZTVN10__cxxabiv116__shim_type_infoE"] = 529496;
+var __ZTSN10__cxxabiv117__pbase_type_infoE = Module["__ZTSN10__cxxabiv117__pbase_type_infoE"] = 636948;
 
-var __ZTVN10__cxxabiv123__fundamental_type_infoE = Module["__ZTVN10__cxxabiv123__fundamental_type_infoE"] = 529524;
+var __ZTSN10__cxxabiv119__pointer_type_infoE = Module["__ZTSN10__cxxabiv119__pointer_type_infoE"] = 636982;
 
-var __ZTIN10__cxxabiv123__fundamental_type_infoE = Module["__ZTIN10__cxxabiv123__fundamental_type_infoE"] = 529552;
+var __ZTSN10__cxxabiv120__function_type_infoE = Module["__ZTSN10__cxxabiv120__function_type_infoE"] = 637018;
 
-var __ZTSN10__cxxabiv123__fundamental_type_infoE = Module["__ZTSN10__cxxabiv123__fundamental_type_infoE"] = 491612;
+var __ZTSN10__cxxabiv129__pointer_to_member_type_infoE = Module["__ZTSN10__cxxabiv129__pointer_to_member_type_infoE"] = 637055;
 
-var __ZTSv = Module["__ZTSv"] = 491652;
+var __ZTVN10__cxxabiv116__shim_type_infoE = Module["__ZTVN10__cxxabiv116__shim_type_infoE"] = 695480;
 
-var __ZTIPv = Module["__ZTIPv"] = 529572;
+var __ZTVN10__cxxabiv123__fundamental_type_infoE = Module["__ZTVN10__cxxabiv123__fundamental_type_infoE"] = 695508;
 
-var __ZTVN10__cxxabiv119__pointer_type_infoE = Module["__ZTVN10__cxxabiv119__pointer_type_infoE"] = 530844;
+var __ZTIN10__cxxabiv123__fundamental_type_infoE = Module["__ZTIN10__cxxabiv123__fundamental_type_infoE"] = 695536;
 
-var __ZTSPv = Module["__ZTSPv"] = 491654;
+var __ZTSN10__cxxabiv123__fundamental_type_infoE = Module["__ZTSN10__cxxabiv123__fundamental_type_infoE"] = 637116;
 
-var __ZTIPKv = Module["__ZTIPKv"] = 529588;
+var __ZTSv = Module["__ZTSv"] = 637156;
 
-var __ZTSPKv = Module["__ZTSPKv"] = 491657;
+var __ZTIPv = Module["__ZTIPv"] = 695556;
 
-var __ZTSDn = Module["__ZTSDn"] = 491661;
+var __ZTVN10__cxxabiv119__pointer_type_infoE = Module["__ZTVN10__cxxabiv119__pointer_type_infoE"] = 696828;
 
-var __ZTIPDn = Module["__ZTIPDn"] = 529612;
+var __ZTSPv = Module["__ZTSPv"] = 637158;
 
-var __ZTSPDn = Module["__ZTSPDn"] = 491664;
+var __ZTIPKv = Module["__ZTIPKv"] = 695572;
 
-var __ZTIPKDn = Module["__ZTIPKDn"] = 529628;
+var __ZTSPKv = Module["__ZTSPKv"] = 637161;
 
-var __ZTSPKDn = Module["__ZTSPKDn"] = 491668;
+var __ZTSDn = Module["__ZTSDn"] = 637165;
 
-var __ZTIb = Module["__ZTIb"] = 529644;
+var __ZTIPDn = Module["__ZTIPDn"] = 695596;
 
-var __ZTSb = Module["__ZTSb"] = 491673;
+var __ZTSPDn = Module["__ZTSPDn"] = 637168;
 
-var __ZTIPb = Module["__ZTIPb"] = 529652;
+var __ZTIPKDn = Module["__ZTIPKDn"] = 695612;
 
-var __ZTSPb = Module["__ZTSPb"] = 491675;
+var __ZTSPKDn = Module["__ZTSPKDn"] = 637172;
 
-var __ZTIPKb = Module["__ZTIPKb"] = 529668;
+var __ZTIb = Module["__ZTIb"] = 695628;
 
-var __ZTSPKb = Module["__ZTSPKb"] = 491678;
+var __ZTSb = Module["__ZTSb"] = 637177;
 
-var __ZTIw = Module["__ZTIw"] = 529684;
+var __ZTIPb = Module["__ZTIPb"] = 695636;
 
-var __ZTSw = Module["__ZTSw"] = 491682;
+var __ZTSPb = Module["__ZTSPb"] = 637179;
 
-var __ZTIPw = Module["__ZTIPw"] = 529692;
+var __ZTIPKb = Module["__ZTIPKb"] = 695652;
 
-var __ZTSPw = Module["__ZTSPw"] = 491684;
+var __ZTSPKb = Module["__ZTSPKb"] = 637182;
 
-var __ZTIPKw = Module["__ZTIPKw"] = 529708;
+var __ZTIw = Module["__ZTIw"] = 695668;
 
-var __ZTSPKw = Module["__ZTSPKw"] = 491687;
+var __ZTSw = Module["__ZTSw"] = 637186;
 
-var __ZTIc = Module["__ZTIc"] = 529724;
+var __ZTIPw = Module["__ZTIPw"] = 695676;
 
-var __ZTSc = Module["__ZTSc"] = 491691;
+var __ZTSPw = Module["__ZTSPw"] = 637188;
 
-var __ZTIPc = Module["__ZTIPc"] = 529732;
+var __ZTIPKw = Module["__ZTIPKw"] = 695692;
 
-var __ZTSPc = Module["__ZTSPc"] = 491693;
+var __ZTSPKw = Module["__ZTSPKw"] = 637191;
 
-var __ZTIPKc = Module["__ZTIPKc"] = 529748;
+var __ZTIc = Module["__ZTIc"] = 695708;
 
-var __ZTSPKc = Module["__ZTSPKc"] = 491696;
+var __ZTSc = Module["__ZTSc"] = 637195;
 
-var __ZTIh = Module["__ZTIh"] = 529764;
+var __ZTIPc = Module["__ZTIPc"] = 695716;
 
-var __ZTSh = Module["__ZTSh"] = 491700;
+var __ZTSPc = Module["__ZTSPc"] = 637197;
 
-var __ZTIPh = Module["__ZTIPh"] = 529772;
+var __ZTIPKc = Module["__ZTIPKc"] = 695732;
 
-var __ZTSPh = Module["__ZTSPh"] = 491702;
+var __ZTSPKc = Module["__ZTSPKc"] = 637200;
 
-var __ZTIPKh = Module["__ZTIPKh"] = 529788;
+var __ZTIh = Module["__ZTIh"] = 695748;
 
-var __ZTSPKh = Module["__ZTSPKh"] = 491705;
+var __ZTSh = Module["__ZTSh"] = 637204;
 
-var __ZTIa = Module["__ZTIa"] = 529804;
+var __ZTIPh = Module["__ZTIPh"] = 695756;
 
-var __ZTSa = Module["__ZTSa"] = 491709;
+var __ZTSPh = Module["__ZTSPh"] = 637206;
 
-var __ZTIPa = Module["__ZTIPa"] = 529812;
+var __ZTIPKh = Module["__ZTIPKh"] = 695772;
 
-var __ZTSPa = Module["__ZTSPa"] = 491711;
+var __ZTSPKh = Module["__ZTSPKh"] = 637209;
 
-var __ZTIPKa = Module["__ZTIPKa"] = 529828;
+var __ZTIa = Module["__ZTIa"] = 695788;
 
-var __ZTSPKa = Module["__ZTSPKa"] = 491714;
+var __ZTSa = Module["__ZTSa"] = 637213;
 
-var __ZTIs = Module["__ZTIs"] = 529844;
+var __ZTIPa = Module["__ZTIPa"] = 695796;
 
-var __ZTSs = Module["__ZTSs"] = 491718;
+var __ZTSPa = Module["__ZTSPa"] = 637215;
 
-var __ZTIPs = Module["__ZTIPs"] = 529852;
+var __ZTIPKa = Module["__ZTIPKa"] = 695812;
 
-var __ZTSPs = Module["__ZTSPs"] = 491720;
+var __ZTSPKa = Module["__ZTSPKa"] = 637218;
 
-var __ZTIPKs = Module["__ZTIPKs"] = 529868;
+var __ZTIs = Module["__ZTIs"] = 695828;
 
-var __ZTSPKs = Module["__ZTSPKs"] = 491723;
+var __ZTSs = Module["__ZTSs"] = 637222;
 
-var __ZTIt = Module["__ZTIt"] = 529884;
+var __ZTIPs = Module["__ZTIPs"] = 695836;
 
-var __ZTSt = Module["__ZTSt"] = 491727;
+var __ZTSPs = Module["__ZTSPs"] = 637224;
 
-var __ZTIPt = Module["__ZTIPt"] = 529892;
+var __ZTIPKs = Module["__ZTIPKs"] = 695852;
 
-var __ZTSPt = Module["__ZTSPt"] = 491729;
+var __ZTSPKs = Module["__ZTSPKs"] = 637227;
 
-var __ZTIPKt = Module["__ZTIPKt"] = 529908;
+var __ZTIt = Module["__ZTIt"] = 695868;
 
-var __ZTSPKt = Module["__ZTSPKt"] = 491732;
+var __ZTSt = Module["__ZTSt"] = 637231;
 
-var __ZTIi = Module["__ZTIi"] = 529924;
+var __ZTIPt = Module["__ZTIPt"] = 695876;
 
-var __ZTSi = Module["__ZTSi"] = 491736;
+var __ZTSPt = Module["__ZTSPt"] = 637233;
 
-var __ZTIPi = Module["__ZTIPi"] = 529932;
+var __ZTIPKt = Module["__ZTIPKt"] = 695892;
 
-var __ZTSPi = Module["__ZTSPi"] = 491738;
+var __ZTSPKt = Module["__ZTSPKt"] = 637236;
 
-var __ZTIPKi = Module["__ZTIPKi"] = 529948;
+var __ZTIi = Module["__ZTIi"] = 695908;
 
-var __ZTSPKi = Module["__ZTSPKi"] = 491741;
+var __ZTSi = Module["__ZTSi"] = 637240;
 
-var __ZTIj = Module["__ZTIj"] = 529964;
+var __ZTIPi = Module["__ZTIPi"] = 695916;
 
-var __ZTSj = Module["__ZTSj"] = 491745;
+var __ZTSPi = Module["__ZTSPi"] = 637242;
 
-var __ZTIPj = Module["__ZTIPj"] = 529972;
+var __ZTIPKi = Module["__ZTIPKi"] = 695932;
 
-var __ZTSPj = Module["__ZTSPj"] = 491747;
+var __ZTSPKi = Module["__ZTSPKi"] = 637245;
 
-var __ZTIPKj = Module["__ZTIPKj"] = 529988;
+var __ZTIj = Module["__ZTIj"] = 695948;
 
-var __ZTSPKj = Module["__ZTSPKj"] = 491750;
+var __ZTSj = Module["__ZTSj"] = 637249;
 
-var __ZTIl = Module["__ZTIl"] = 530004;
+var __ZTIPj = Module["__ZTIPj"] = 695956;
 
-var __ZTSl = Module["__ZTSl"] = 491754;
+var __ZTSPj = Module["__ZTSPj"] = 637251;
 
-var __ZTIPl = Module["__ZTIPl"] = 530012;
+var __ZTIPKj = Module["__ZTIPKj"] = 695972;
 
-var __ZTSPl = Module["__ZTSPl"] = 491756;
+var __ZTSPKj = Module["__ZTSPKj"] = 637254;
 
-var __ZTIPKl = Module["__ZTIPKl"] = 530028;
+var __ZTIl = Module["__ZTIl"] = 695988;
 
-var __ZTSPKl = Module["__ZTSPKl"] = 491759;
+var __ZTSl = Module["__ZTSl"] = 637258;
 
-var __ZTIm = Module["__ZTIm"] = 530044;
+var __ZTIPl = Module["__ZTIPl"] = 695996;
 
-var __ZTSm = Module["__ZTSm"] = 491763;
+var __ZTSPl = Module["__ZTSPl"] = 637260;
 
-var __ZTIPm = Module["__ZTIPm"] = 530052;
+var __ZTIPKl = Module["__ZTIPKl"] = 696012;
 
-var __ZTSPm = Module["__ZTSPm"] = 491765;
+var __ZTSPKl = Module["__ZTSPKl"] = 637263;
 
-var __ZTIPKm = Module["__ZTIPKm"] = 530068;
+var __ZTIm = Module["__ZTIm"] = 696028;
 
-var __ZTSPKm = Module["__ZTSPKm"] = 491768;
+var __ZTSm = Module["__ZTSm"] = 637267;
 
-var __ZTIx = Module["__ZTIx"] = 530084;
+var __ZTIPm = Module["__ZTIPm"] = 696036;
 
-var __ZTSx = Module["__ZTSx"] = 491772;
+var __ZTSPm = Module["__ZTSPm"] = 637269;
 
-var __ZTIPx = Module["__ZTIPx"] = 530092;
+var __ZTIPKm = Module["__ZTIPKm"] = 696052;
 
-var __ZTSPx = Module["__ZTSPx"] = 491774;
+var __ZTSPKm = Module["__ZTSPKm"] = 637272;
 
-var __ZTIPKx = Module["__ZTIPKx"] = 530108;
+var __ZTIx = Module["__ZTIx"] = 696068;
 
-var __ZTSPKx = Module["__ZTSPKx"] = 491777;
+var __ZTSx = Module["__ZTSx"] = 637276;
 
-var __ZTIy = Module["__ZTIy"] = 530124;
+var __ZTIPx = Module["__ZTIPx"] = 696076;
 
-var __ZTSy = Module["__ZTSy"] = 491781;
+var __ZTSPx = Module["__ZTSPx"] = 637278;
 
-var __ZTIPy = Module["__ZTIPy"] = 530132;
+var __ZTIPKx = Module["__ZTIPKx"] = 696092;
 
-var __ZTSPy = Module["__ZTSPy"] = 491783;
+var __ZTSPKx = Module["__ZTSPKx"] = 637281;
 
-var __ZTIPKy = Module["__ZTIPKy"] = 530148;
+var __ZTIy = Module["__ZTIy"] = 696108;
 
-var __ZTSPKy = Module["__ZTSPKy"] = 491786;
+var __ZTSy = Module["__ZTSy"] = 637285;
 
-var __ZTIn = Module["__ZTIn"] = 530164;
+var __ZTIPy = Module["__ZTIPy"] = 696116;
 
-var __ZTSn = Module["__ZTSn"] = 491790;
+var __ZTSPy = Module["__ZTSPy"] = 637287;
 
-var __ZTIPn = Module["__ZTIPn"] = 530172;
+var __ZTIPKy = Module["__ZTIPKy"] = 696132;
 
-var __ZTSPn = Module["__ZTSPn"] = 491792;
+var __ZTSPKy = Module["__ZTSPKy"] = 637290;
 
-var __ZTIPKn = Module["__ZTIPKn"] = 530188;
+var __ZTIn = Module["__ZTIn"] = 696148;
 
-var __ZTSPKn = Module["__ZTSPKn"] = 491795;
+var __ZTSn = Module["__ZTSn"] = 637294;
 
-var __ZTIo = Module["__ZTIo"] = 530204;
+var __ZTIPn = Module["__ZTIPn"] = 696156;
 
-var __ZTSo = Module["__ZTSo"] = 491799;
+var __ZTSPn = Module["__ZTSPn"] = 637296;
 
-var __ZTIPo = Module["__ZTIPo"] = 530212;
+var __ZTIPKn = Module["__ZTIPKn"] = 696172;
 
-var __ZTSPo = Module["__ZTSPo"] = 491801;
+var __ZTSPKn = Module["__ZTSPKn"] = 637299;
 
-var __ZTIPKo = Module["__ZTIPKo"] = 530228;
+var __ZTIo = Module["__ZTIo"] = 696188;
 
-var __ZTSPKo = Module["__ZTSPKo"] = 491804;
+var __ZTSo = Module["__ZTSo"] = 637303;
 
-var __ZTIDh = Module["__ZTIDh"] = 530244;
+var __ZTIPo = Module["__ZTIPo"] = 696196;
 
-var __ZTSDh = Module["__ZTSDh"] = 491808;
+var __ZTSPo = Module["__ZTSPo"] = 637305;
 
-var __ZTIPDh = Module["__ZTIPDh"] = 530252;
+var __ZTIPKo = Module["__ZTIPKo"] = 696212;
 
-var __ZTSPDh = Module["__ZTSPDh"] = 491811;
+var __ZTSPKo = Module["__ZTSPKo"] = 637308;
 
-var __ZTIPKDh = Module["__ZTIPKDh"] = 530268;
+var __ZTIDh = Module["__ZTIDh"] = 696228;
 
-var __ZTSPKDh = Module["__ZTSPKDh"] = 491815;
+var __ZTSDh = Module["__ZTSDh"] = 637312;
 
-var __ZTIf = Module["__ZTIf"] = 530284;
+var __ZTIPDh = Module["__ZTIPDh"] = 696236;
 
-var __ZTSf = Module["__ZTSf"] = 491820;
+var __ZTSPDh = Module["__ZTSPDh"] = 637315;
 
-var __ZTIPf = Module["__ZTIPf"] = 530292;
+var __ZTIPKDh = Module["__ZTIPKDh"] = 696252;
 
-var __ZTSPf = Module["__ZTSPf"] = 491822;
+var __ZTSPKDh = Module["__ZTSPKDh"] = 637319;
 
-var __ZTIPKf = Module["__ZTIPKf"] = 530308;
+var __ZTIf = Module["__ZTIf"] = 696268;
 
-var __ZTSPKf = Module["__ZTSPKf"] = 491825;
+var __ZTSf = Module["__ZTSf"] = 637324;
 
-var __ZTId = Module["__ZTId"] = 530324;
+var __ZTIPf = Module["__ZTIPf"] = 696276;
 
-var __ZTSd = Module["__ZTSd"] = 491829;
+var __ZTSPf = Module["__ZTSPf"] = 637326;
 
-var __ZTIPd = Module["__ZTIPd"] = 530332;
+var __ZTIPKf = Module["__ZTIPKf"] = 696292;
 
-var __ZTSPd = Module["__ZTSPd"] = 491831;
+var __ZTSPKf = Module["__ZTSPKf"] = 637329;
 
-var __ZTIPKd = Module["__ZTIPKd"] = 530348;
+var __ZTId = Module["__ZTId"] = 696308;
 
-var __ZTSPKd = Module["__ZTSPKd"] = 491834;
+var __ZTSd = Module["__ZTSd"] = 637333;
 
-var __ZTIe = Module["__ZTIe"] = 530364;
+var __ZTIPd = Module["__ZTIPd"] = 696316;
 
-var __ZTSe = Module["__ZTSe"] = 491838;
+var __ZTSPd = Module["__ZTSPd"] = 637335;
 
-var __ZTIPe = Module["__ZTIPe"] = 530372;
+var __ZTIPKd = Module["__ZTIPKd"] = 696332;
 
-var __ZTSPe = Module["__ZTSPe"] = 491840;
+var __ZTSPKd = Module["__ZTSPKd"] = 637338;
 
-var __ZTIPKe = Module["__ZTIPKe"] = 530388;
+var __ZTIe = Module["__ZTIe"] = 696348;
 
-var __ZTSPKe = Module["__ZTSPKe"] = 491843;
+var __ZTSe = Module["__ZTSe"] = 637342;
 
-var __ZTIg = Module["__ZTIg"] = 530404;
+var __ZTIPe = Module["__ZTIPe"] = 696356;
 
-var __ZTSg = Module["__ZTSg"] = 491847;
+var __ZTSPe = Module["__ZTSPe"] = 637344;
 
-var __ZTIPg = Module["__ZTIPg"] = 530412;
+var __ZTIPKe = Module["__ZTIPKe"] = 696372;
 
-var __ZTSPg = Module["__ZTSPg"] = 491849;
+var __ZTSPKe = Module["__ZTSPKe"] = 637347;
 
-var __ZTIPKg = Module["__ZTIPKg"] = 530428;
+var __ZTIg = Module["__ZTIg"] = 696388;
 
-var __ZTSPKg = Module["__ZTSPKg"] = 491852;
+var __ZTSg = Module["__ZTSg"] = 637351;
 
-var __ZTIDu = Module["__ZTIDu"] = 530444;
+var __ZTIPg = Module["__ZTIPg"] = 696396;
 
-var __ZTSDu = Module["__ZTSDu"] = 491856;
+var __ZTSPg = Module["__ZTSPg"] = 637353;
 
-var __ZTIPDu = Module["__ZTIPDu"] = 530452;
+var __ZTIPKg = Module["__ZTIPKg"] = 696412;
 
-var __ZTSPDu = Module["__ZTSPDu"] = 491859;
+var __ZTSPKg = Module["__ZTSPKg"] = 637356;
 
-var __ZTIPKDu = Module["__ZTIPKDu"] = 530468;
+var __ZTIDu = Module["__ZTIDu"] = 696428;
 
-var __ZTSPKDu = Module["__ZTSPKDu"] = 491863;
+var __ZTSDu = Module["__ZTSDu"] = 637360;
 
-var __ZTIDs = Module["__ZTIDs"] = 530484;
+var __ZTIPDu = Module["__ZTIPDu"] = 696436;
 
-var __ZTSDs = Module["__ZTSDs"] = 491868;
+var __ZTSPDu = Module["__ZTSPDu"] = 637363;
 
-var __ZTIPDs = Module["__ZTIPDs"] = 530492;
+var __ZTIPKDu = Module["__ZTIPKDu"] = 696452;
 
-var __ZTSPDs = Module["__ZTSPDs"] = 491871;
+var __ZTSPKDu = Module["__ZTSPKDu"] = 637367;
 
-var __ZTIPKDs = Module["__ZTIPKDs"] = 530508;
+var __ZTIDs = Module["__ZTIDs"] = 696468;
 
-var __ZTSPKDs = Module["__ZTSPKDs"] = 491875;
+var __ZTSDs = Module["__ZTSDs"] = 637372;
 
-var __ZTIDi = Module["__ZTIDi"] = 530524;
+var __ZTIPDs = Module["__ZTIPDs"] = 696476;
 
-var __ZTSDi = Module["__ZTSDi"] = 491880;
+var __ZTSPDs = Module["__ZTSPDs"] = 637375;
 
-var __ZTIPDi = Module["__ZTIPDi"] = 530532;
+var __ZTIPKDs = Module["__ZTIPKDs"] = 696492;
 
-var __ZTSPDi = Module["__ZTSPDi"] = 491883;
+var __ZTSPKDs = Module["__ZTSPKDs"] = 637379;
 
-var __ZTIPKDi = Module["__ZTIPKDi"] = 530548;
+var __ZTIDi = Module["__ZTIDi"] = 696508;
 
-var __ZTSPKDi = Module["__ZTSPKDi"] = 491887;
+var __ZTSDi = Module["__ZTSDi"] = 637384;
 
-var __ZTVN10__cxxabiv117__array_type_infoE = Module["__ZTVN10__cxxabiv117__array_type_infoE"] = 530564;
+var __ZTIPDi = Module["__ZTIPDi"] = 696516;
 
-var __ZTIN10__cxxabiv117__array_type_infoE = Module["__ZTIN10__cxxabiv117__array_type_infoE"] = 530592;
+var __ZTSPDi = Module["__ZTSPDi"] = 637387;
 
-var __ZTSN10__cxxabiv117__array_type_infoE = Module["__ZTSN10__cxxabiv117__array_type_infoE"] = 491892;
+var __ZTIPKDi = Module["__ZTIPKDi"] = 696532;
 
-var __ZTVN10__cxxabiv120__function_type_infoE = Module["__ZTVN10__cxxabiv120__function_type_infoE"] = 530604;
+var __ZTSPKDi = Module["__ZTSPKDi"] = 637391;
 
-var __ZTVN10__cxxabiv116__enum_type_infoE = Module["__ZTVN10__cxxabiv116__enum_type_infoE"] = 530632;
+var __ZTVN10__cxxabiv117__array_type_infoE = Module["__ZTVN10__cxxabiv117__array_type_infoE"] = 696548;
 
-var __ZTIN10__cxxabiv116__enum_type_infoE = Module["__ZTIN10__cxxabiv116__enum_type_infoE"] = 530660;
+var __ZTIN10__cxxabiv117__array_type_infoE = Module["__ZTIN10__cxxabiv117__array_type_infoE"] = 696576;
 
-var __ZTSN10__cxxabiv116__enum_type_infoE = Module["__ZTSN10__cxxabiv116__enum_type_infoE"] = 491926;
+var __ZTSN10__cxxabiv117__array_type_infoE = Module["__ZTSN10__cxxabiv117__array_type_infoE"] = 637396;
 
-var __ZTIN10__cxxabiv120__si_class_type_infoE = Module["__ZTIN10__cxxabiv120__si_class_type_infoE"] = 530752;
+var __ZTVN10__cxxabiv120__function_type_infoE = Module["__ZTVN10__cxxabiv120__function_type_infoE"] = 696588;
 
-var __ZTSN10__cxxabiv120__si_class_type_infoE = Module["__ZTSN10__cxxabiv120__si_class_type_infoE"] = 491959;
+var __ZTVN10__cxxabiv116__enum_type_infoE = Module["__ZTVN10__cxxabiv116__enum_type_infoE"] = 696616;
 
-var __ZTIN10__cxxabiv121__vmi_class_type_infoE = Module["__ZTIN10__cxxabiv121__vmi_class_type_infoE"] = 530804;
+var __ZTIN10__cxxabiv116__enum_type_infoE = Module["__ZTIN10__cxxabiv116__enum_type_infoE"] = 696644;
 
-var __ZTSN10__cxxabiv121__vmi_class_type_infoE = Module["__ZTSN10__cxxabiv121__vmi_class_type_infoE"] = 491996;
+var __ZTSN10__cxxabiv116__enum_type_infoE = Module["__ZTSN10__cxxabiv116__enum_type_infoE"] = 637430;
 
-var __ZTVN10__cxxabiv117__pbase_type_infoE = Module["__ZTVN10__cxxabiv117__pbase_type_infoE"] = 530816;
+var __ZTIN10__cxxabiv120__si_class_type_infoE = Module["__ZTIN10__cxxabiv120__si_class_type_infoE"] = 696736;
 
-var __ZTVN10__cxxabiv129__pointer_to_member_type_infoE = Module["__ZTVN10__cxxabiv129__pointer_to_member_type_infoE"] = 530872;
+var __ZTSN10__cxxabiv120__si_class_type_infoE = Module["__ZTSN10__cxxabiv120__si_class_type_infoE"] = 637463;
 
-var __ZTVSt9bad_alloc = Module["__ZTVSt9bad_alloc"] = 530900;
+var __ZTIN10__cxxabiv121__vmi_class_type_infoE = Module["__ZTIN10__cxxabiv121__vmi_class_type_infoE"] = 696788;
 
-var __ZTVSt20bad_array_new_length = Module["__ZTVSt20bad_array_new_length"] = 530920;
+var __ZTSN10__cxxabiv121__vmi_class_type_infoE = Module["__ZTSN10__cxxabiv121__vmi_class_type_infoE"] = 637500;
 
-var __ZTISt9bad_alloc = Module["__ZTISt9bad_alloc"] = 531e3;
+var __ZTVN10__cxxabiv117__pbase_type_infoE = Module["__ZTVN10__cxxabiv117__pbase_type_infoE"] = 696800;
 
-var __ZTISt20bad_array_new_length = Module["__ZTISt20bad_array_new_length"] = 531012;
+var __ZTVN10__cxxabiv129__pointer_to_member_type_infoE = Module["__ZTVN10__cxxabiv129__pointer_to_member_type_infoE"] = 696856;
 
-var __ZTSSt9exception = Module["__ZTSSt9exception"] = 492034;
+var __ZTVSt9bad_alloc = Module["__ZTVSt9bad_alloc"] = 696884;
 
-var __ZTVSt13bad_exception = Module["__ZTVSt13bad_exception"] = 530968;
+var __ZTVSt20bad_array_new_length = Module["__ZTVSt20bad_array_new_length"] = 696904;
 
-var __ZTISt13bad_exception = Module["__ZTISt13bad_exception"] = 530988;
+var __ZTISt9bad_alloc = Module["__ZTISt9bad_alloc"] = 696984;
 
-var __ZTSSt13bad_exception = Module["__ZTSSt13bad_exception"] = 492047;
+var __ZTISt20bad_array_new_length = Module["__ZTISt20bad_array_new_length"] = 696996;
 
-var __ZTSSt9bad_alloc = Module["__ZTSSt9bad_alloc"] = 492065;
+var __ZTSSt9exception = Module["__ZTSSt9exception"] = 637538;
 
-var __ZTSSt20bad_array_new_length = Module["__ZTSSt20bad_array_new_length"] = 492078;
+var __ZTVSt13bad_exception = Module["__ZTVSt13bad_exception"] = 696952;
 
-var __ZTVSt12domain_error = Module["__ZTVSt12domain_error"] = 531064;
+var __ZTISt13bad_exception = Module["__ZTISt13bad_exception"] = 696972;
 
-var __ZTISt12domain_error = Module["__ZTISt12domain_error"] = 531084;
+var __ZTSSt13bad_exception = Module["__ZTSSt13bad_exception"] = 637551;
 
-var __ZTSSt12domain_error = Module["__ZTSSt12domain_error"] = 492103;
+var __ZTSSt9bad_alloc = Module["__ZTSSt9bad_alloc"] = 637569;
 
-var __ZTSSt11logic_error = Module["__ZTSSt11logic_error"] = 492120;
+var __ZTSSt20bad_array_new_length = Module["__ZTSSt20bad_array_new_length"] = 637582;
 
-var __ZTVSt16invalid_argument = Module["__ZTVSt16invalid_argument"] = 531108;
+var __ZTVSt12domain_error = Module["__ZTVSt12domain_error"] = 697048;
 
-var __ZTISt16invalid_argument = Module["__ZTISt16invalid_argument"] = 531128;
+var __ZTISt12domain_error = Module["__ZTISt12domain_error"] = 697068;
 
-var __ZTSSt16invalid_argument = Module["__ZTSSt16invalid_argument"] = 492136;
+var __ZTSSt12domain_error = Module["__ZTSSt12domain_error"] = 637607;
 
-var __ZTVSt12length_error = Module["__ZTVSt12length_error"] = 531140;
+var __ZTSSt11logic_error = Module["__ZTSSt11logic_error"] = 637624;
 
-var __ZTISt12length_error = Module["__ZTISt12length_error"] = 531160;
+var __ZTVSt16invalid_argument = Module["__ZTVSt16invalid_argument"] = 697092;
 
-var __ZTSSt12length_error = Module["__ZTSSt12length_error"] = 492157;
+var __ZTISt16invalid_argument = Module["__ZTISt16invalid_argument"] = 697112;
 
-var __ZTVSt12out_of_range = Module["__ZTVSt12out_of_range"] = 531172;
+var __ZTSSt16invalid_argument = Module["__ZTSSt16invalid_argument"] = 637640;
 
-var __ZTISt12out_of_range = Module["__ZTISt12out_of_range"] = 531192;
+var __ZTVSt12length_error = Module["__ZTVSt12length_error"] = 697124;
 
-var __ZTSSt12out_of_range = Module["__ZTSSt12out_of_range"] = 492174;
+var __ZTISt12length_error = Module["__ZTISt12length_error"] = 697144;
 
-var __ZTVSt11range_error = Module["__ZTVSt11range_error"] = 531204;
+var __ZTSSt12length_error = Module["__ZTSSt12length_error"] = 637661;
 
-var __ZTISt11range_error = Module["__ZTISt11range_error"] = 531224;
+var __ZTVSt12out_of_range = Module["__ZTVSt12out_of_range"] = 697156;
 
-var __ZTSSt11range_error = Module["__ZTSSt11range_error"] = 492191;
+var __ZTISt12out_of_range = Module["__ZTISt12out_of_range"] = 697176;
 
-var __ZTSSt13runtime_error = Module["__ZTSSt13runtime_error"] = 492207;
+var __ZTSSt12out_of_range = Module["__ZTSSt12out_of_range"] = 637678;
 
-var __ZTVSt14overflow_error = Module["__ZTVSt14overflow_error"] = 531248;
+var __ZTVSt11range_error = Module["__ZTVSt11range_error"] = 697188;
 
-var __ZTISt14overflow_error = Module["__ZTISt14overflow_error"] = 531268;
+var __ZTISt11range_error = Module["__ZTISt11range_error"] = 697208;
 
-var __ZTSSt14overflow_error = Module["__ZTSSt14overflow_error"] = 492225;
+var __ZTSSt11range_error = Module["__ZTSSt11range_error"] = 637695;
 
-var __ZTVSt15underflow_error = Module["__ZTVSt15underflow_error"] = 531280;
+var __ZTSSt13runtime_error = Module["__ZTSSt13runtime_error"] = 637711;
 
-var __ZTISt15underflow_error = Module["__ZTISt15underflow_error"] = 531300;
+var __ZTVSt14overflow_error = Module["__ZTVSt14overflow_error"] = 697232;
 
-var __ZTSSt15underflow_error = Module["__ZTSSt15underflow_error"] = 492244;
+var __ZTISt14overflow_error = Module["__ZTISt14overflow_error"] = 697252;
 
-var __ZTVSt8bad_cast = Module["__ZTVSt8bad_cast"] = 531312;
+var __ZTSSt14overflow_error = Module["__ZTSSt14overflow_error"] = 637729;
 
-var __ZTVSt10bad_typeid = Module["__ZTVSt10bad_typeid"] = 531332;
+var __ZTVSt15underflow_error = Module["__ZTVSt15underflow_error"] = 697264;
 
-var __ZTISt10bad_typeid = Module["__ZTISt10bad_typeid"] = 531388;
+var __ZTISt15underflow_error = Module["__ZTISt15underflow_error"] = 697284;
 
-var __ZTVSt9type_info = Module["__ZTVSt9type_info"] = 531352;
+var __ZTSSt15underflow_error = Module["__ZTSSt15underflow_error"] = 637748;
 
-var __ZTSSt9type_info = Module["__ZTSSt9type_info"] = 492264;
+var __ZTVSt8bad_cast = Module["__ZTVSt8bad_cast"] = 697296;
 
-var __ZTSSt8bad_cast = Module["__ZTSSt8bad_cast"] = 492277;
+var __ZTVSt10bad_typeid = Module["__ZTVSt10bad_typeid"] = 697316;
 
-var __ZTSSt10bad_typeid = Module["__ZTSSt10bad_typeid"] = 492289;
+var __ZTISt10bad_typeid = Module["__ZTISt10bad_typeid"] = 697372;
 
-var _in6addr_any = Module["_in6addr_any"] = 492304;
+var __ZTVSt9type_info = Module["__ZTVSt9type_info"] = 697336;
 
-var _in6addr_loopback = Module["_in6addr_loopback"] = 492320;
+var __ZTSSt9type_info = Module["__ZTSSt9type_info"] = 637768;
+
+var __ZTSSt8bad_cast = Module["__ZTSSt8bad_cast"] = 637781;
+
+var __ZTSSt10bad_typeid = Module["__ZTSSt10bad_typeid"] = 637793;
+
+var _in6addr_any = Module["_in6addr_any"] = 637808;
+
+var _in6addr_loopback = Module["_in6addr_loopback"] = 637824;
 
 function invoke_vii(index, a1, a2) {
   var sp = stackSave();
