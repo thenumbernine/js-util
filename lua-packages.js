@@ -455,12 +455,12 @@ const luaPackages = {
 	['threadmanager'] : [
 		{from : '/lua/threadmanager', to : 'threadmanager', files : ['threadmanager.lua']},
 	],
-	['topple'] :  [
-		{from : '/cpp/Topple', to : 'topple', files : ['plot.lua', 'test.lua', 'topple-glsl.lua', 'topple-gpu-3d-display.lua', 'topple-gpu-display.lua', 'topple-gpu.lua']},
-	],
 	['vec-ffi'] : [{from : '/lua/vec-ffi', to : 'vec-ffi', files : ['box2f.lua', 'box2i.lua', 'box3f.lua', 'create_box.lua', 'create_plane.lua', 'create_quat.lua', 'create_vec2.lua', 'create_vec3.lua', 'create_vec.lua', 'plane2f.lua', 'plane3f.lua', 'quatd.lua', 'quatf.lua', 'suffix.lua', 'vec2b.lua', 'vec2d.lua', 'vec2f.lua', 'vec2i.lua', 'vec2s.lua', 'vec2sz.lua', 'vec2ub.lua', 'vec3b.lua', 'vec3d.lua', 'vec3f.lua', 'vec3i.lua', 'vec3s.lua', 'vec3sz.lua', 'vec3ub.lua', 'vec4b.lua', 'vec4d.lua', 'vec4f.lua', 'vec4i.lua', 'vec4ub.lua', 'vec-ffi.lua']}],
 	['vec'] : [
 		{from : '/lua/vec', to : 'vec', files : ['box2.lua', 'box3.lua', 'create.lua', 'quat.lua', 'vec2.lua', 'vec3.lua', 'vec4.lua', 'vec.lua']},
+	],
+	['topple'] :  [
+		{from : '/cpp/Topple', to : 'topple', files : ['plot.lua', 'test.lua', 'topple-glsl.lua', 'topple-gpu-3d-display.lua', 'topple-gpu-display.lua', 'topple-gpu.lua']},
 	],
 };
 
