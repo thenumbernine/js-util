@@ -351,6 +351,9 @@ const mountFile = (FS, filePath, luaPath, fileCallback) => {
 	return fetchBytes(filePath)
 	.then(fileContent => {
 
+		const oldcwd = FS.cwd();
+		FS.chdir('/');
+
 		const fileSep = luaPath.lastIndexOf('/');
 		const file = luaPath.substring(fileSep + 1);
 		const body = luaPath.substring(0, luaPath.length - file.length - 1);
@@ -378,6 +381,8 @@ const mountFile = (FS, filePath, luaPath, fileCallback) => {
 		if (fileCallback) {
 			fileCallback(luaPath);
 		}
+
+		FS.chdir(oldcwd);
 	});
 }
 
