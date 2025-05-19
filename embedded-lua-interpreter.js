@@ -7,6 +7,8 @@ This is all deprecated.  Check out lua-interop.js and the glapp-js project.
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
 This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it shouldn't do that.
+
+I think only emoji-lua is using this.
 */
 
 
@@ -30,7 +32,9 @@ await Promise.all(
 for (let pkgname in luaPackages) {
 	const files = [];
 	const tests = [];
-	luaPackages[pkgname].forEach(fileset => {
+	const pkg = luaPackages[pkgname];
+	if (pkg === false) continue;
+	pkg.forEach(fileset => {
 		fileset.files.forEach(file => {
 			const entry = {
 				url : (fileset.from + '/' + file).replace('+', '%2b'),

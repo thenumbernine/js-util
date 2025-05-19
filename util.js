@@ -551,9 +551,10 @@ function isa(sub, cl) {
 let tmplua;
 const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 //console.log('loadDistInfoPackageAndDeps', pkgname);
-	if (luaPackages[pkgname]) {
+	const v = luaPackages[pkgname];
+	if (v !== undefined) {
 //console.log('...is already loaded');
-		return;
+		return v;
 	}
 
 	// TODO this assumes a package path is in /lua/$pkgname
@@ -594,6 +595,7 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 		console.log('WARNING - distinfo file missing:', pkgname);
 //TODO maybe, how about storing a 'false' and not trying a second time?
 // but then, we'd have to make sure to filter out the 'false's from the resulting luaPackages ...
+		luaPackages[pkgname] = false;
 		return;
 	}
 	const distinfo = await distinfoResponse.text();
@@ -627,6 +629,7 @@ end
 `, distinfo, files, deps);
 	} catch (err) {
 		console.log('WARNING - distinfo failed to parse', pkgname, err);
+		luaPackages[pkgname] = false;
 		return;
 	}
 //console.log('has files', files);
@@ -647,10 +650,6 @@ end
 		}
 	];
 	luaPackages[pkgname] = pkg;
-
-	// don't need to load files just yet, we just need distinfo deps.
-	//await loadPackageAndAddToGUI(pkgname, pkg);
-
 	return Promise.all(deps.map(dep =>
 		loadDistInfoPackageAndDeps(dep, luaPackages, lua)
 	));
@@ -671,7 +670,10 @@ const loadPackageAndDeps = async (FS, pkgnames, luaPackages = {}) => {
 	// then load them all
 	return Promise.all(
 		Object.values(luaPackages)
-		.map(pkg => addPackage(FS, pkg))
+		.map(pkg => {
+			if (pkg === false) return false;
+			return addPackage(FS, pkg);
+		})
 	);
 };
 
