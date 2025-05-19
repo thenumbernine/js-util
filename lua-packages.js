@@ -1,5 +1,65 @@
 // packages containing filesystem info, so emscripten-lua modules can pick which ones they want and load batches of files
 
+// right now the load and lookup and path evaluation has to be handled by whoever handles the .deps inside each
+// which is going to be done by the loadDistInfoPackageAndDeps function
+const packageNames = [
+	'chompman',
+	'interpreter',
+	'mesh',
+	'bignumber',
+	'glapp',
+	'lambda-cdm',
+	'bit',
+	'ips',
+	'gnuplot',
+	'plot3d',
+	'complex',
+	'imgui',
+	'ext',
+	'fibonacci-modulo',
+	'template',
+	'chess-on-manifold',
+	'htmlparser',
+	'neuralnet',
+	'solver',
+	'parser',
+	'earth-magnetic-field',
+	'resourcecache',
+	'prime-spiral',
+	'image',
+	'space-filling-curve',
+	'struct',
+	'SandAttack',
+	'rule110',
+	'pong',
+	'audio',
+	'vec',
+	'stat',
+	'sdl',
+	'seashell',
+	'make',
+	'csv',
+	'n-points',
+	'gui',
+	'gl',
+	'numo9',
+	'surface-from-connection',
+	'SphericalHarmonicGraphs',
+	'plot2d',
+	'langfix',
+	'vec-ffi',
+	'netrefl',
+	'line-integral-convolution',
+	'cl',
+	'modules',
+	'metric',
+	'stupid-text-rpg',
+	'super_metroid_randomizer',
+	'matrix',
+	'symmath',
+	'geographic-charts',
+];
+
 const luaPackages = {
 	['SphericalHarmonicGraphs'] : [{from : '/lua/SphericalHarmonicGraphs', to : 'SphericalHarmonicGraphs', files : ['associatedlegendre.lua', 'factorial.lua', 'plot_associatedlegendre.lua', 'run.lua', 'sphericalharmonics.lua', 'associatedlegendre.rua', 'factorial.rua', 'run.rua']}],
 	['audio'] : [
@@ -464,4 +524,4 @@ const luaPackages = {
 	],
 };
 
-export { luaPackages };
+export {luaPackages, packageNames};

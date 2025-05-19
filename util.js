@@ -542,6 +542,87 @@ function isa(sub, cl) {
 		|| sub === cl;
 }
 
+// Given a path on the server,
+// load the distinfo file
+// parse and check its 'deps'
+// then load those ones as well.
+// Bail out if the package is already loaded.
+let tmplua;
+const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
+//console.log('loadDistInfoPackageAndDeps', pkgname);
+	if (luaPackages[pkgname]) {
+//console.log('...is already loaded');
+		return;
+	}
+
+	// TODO this assumes a package path is in /lua/$pkgname
+	// what about /cpp/Topple or /js/black-hole-skymap ?
+	// and even if I accept a fully qualified path here, still the "distinfo" references aren't fully-qualified...
+	// So I guess I'll just have special rules for those.
+	const dir =
+		pkgname == 'black-hole-skymap' ? '/black-hole-skymap/lua' :
+		pkgname == 'topple' ? '/cpp/Topple' :
+		'/lua/'+pkgname;
+
+	const distinfoBytes = await fetchBytes(dir+'/distinfo');
+//console.log('has distinfoBytes', distinfoBytes);
+	const distinfo = Array.from(distinfoBytes)
+		.map(ch => String.fromCharCode(ch))
+		.join('');
+//console.log('has distinfo', distinfo);
+
+	const files = [];
+	const deps = [];
+/* using a full on Lua state ... */
+	if (!lua) {
+		if (!tmplua) {
+			const newLua = (await import('/js/lua-interop.js')).newLua;
+			tmplua = await newLua();
+			tmplua.newState();
+		}
+		lua = tmplua;
+	}
+	lua.run(`
+local distinfo, files, deps = ...
+local env = {}
+assert(load(distinfo, nil, nil, env))()
+for k,v in pairs(env.files) do
+	-- value = install location, which I'm going to assert is the key + the pkgname, which is the dir pkgname ...
+	-- lots of assertions going on here
+	files:push(k)
+end
+for _,v in ipairs(env.deps or {}) do
+	deps:push(v)
+end
+`, distinfo, files, deps);
+//console.log('has files', files);
+console.log(pkgname, 'has deps', deps);
+/**/
+/* just parse out strings * /
+	const lines = distinfo.split('\n');
+	// find the line that matches "deps = {"
+	// find the line that matches "}"
+	// parse what's between them.
+/**/
+
+	const pkg = [
+		{
+			from : dir,
+			to : pkgname,
+			files : files,
+		}
+	];
+	luaPackages[pkgname] = pkg;
+
+	// don't need to load files just yet, we just need distinfo deps.
+	//await loadPackageAndAddToGUI(pkgname, pkg);
+
+	return Promise.all(deps.map(dep =>
+		loadDistInfoPackageAndDeps(dep, luaPackages, lua)
+	));
+};
+
+
 export {
 	arrayRemove,
 	arrayMax,
@@ -577,4 +658,5 @@ export {
 	require,
 	makeClass,
 	isa,
+	loadDistInfoPackageAndDeps,
 };
