@@ -323,22 +323,23 @@ function getIDs() {
 	return ids;
 }
 
-// TODO move to js/util.js
 const fetchBytes = src => {
 	return new Promise((resolve, reject) => {
 		const req = new XMLHttpRequest();
 		req.open('GET', src, true);
 		req.responseType = 'arraybuffer';
-		req.onload = ev => {
+		req.addEventListener('load', ev => {
+// this is being called even for missing files ... smh why is web tech so stupid and broken all the time
+//console.log('XMLHttpRequest success', src, ev);
 			resolve(new Uint8Array(req.response));
-		};
-		req.onerror = function() {
-			console.log("failed on", src);
+		});
+		req.addEventListener('error', function() {
+//console.log("XMLHttpRequest failed on", src);
 			reject({
 				status: this.status,
 				statusText: req.statusText
 			});
-		};
+		});
 		req.send(null);
 	});
 };
@@ -346,6 +347,7 @@ const fetchBytes = src => {
 // https://github.com/hellpanderrr/lua-in-browser
 //emscripten filesystem helper function
 const mountFile = (FS, filePath, luaPath, fileCallback) => {
+//console.log('mountFile', filePath, luaPath);
 	return fetchBytes(filePath)
 	.then(fileContent => {
 
@@ -396,7 +398,6 @@ const addPackage = (FS, pkg, fileCallback) =>
 			addFromToDir(FS, fileset.from, fileset.to, fileset.files, fileCallback)
 		)
 	);
-
 
 
 //used especially with the lua.vm-utils.js
@@ -564,12 +565,31 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 		pkgname == 'topple' ? '/cpp/Topple' :
 		'/lua/'+pkgname;
 
-	const distinfoBytes = await fetchBytes(dir+'/distinfo');
-//console.log('has distinfoBytes', distinfoBytes);
+	// This is coming back with byte-arrays of strings of error messages even for missing files
+	// where is the underlying stupidity taking place?
+	// I don't even want to know.
+	/* * /
+	const distinfoPromise = fetch(dir+'/distinfo');
+//console.log('distinfoPromise', pkgname, distinfoPromise);
+	const distinfoBytes = await distinfoPromise;
+//console.log('has distinfoBytes', pkgname, distinfoBytes);
 	const distinfo = Array.from(distinfoBytes)
 		.map(ch => String.fromCharCode(ch))
 		.join('');
-//console.log('has distinfo', distinfo);
+//console.log('has distinfo', pkgname, distinfo);
+	/**/
+	/* so just use fetch. idk why I stopped using only ever fetch everywhere, something about control over callbacks, I forget */
+	const distinfoPromise = fetch(dir+'/distinfo');
+//console.log('distinfoPromise', pkgname, distinfoPromise);
+	const distinfoResponse = await distinfoPromise;
+//console.log('distinfoResponse', pkgname, distinfoResponse);
+	if (!distinfoResponse.ok) {
+		console.log('WARNING - distinfo file missing:', pkgname);
+		return;
+	}
+	const distinfo = await distinfoResponse.text();
+//console.log('has distinfo', pkgname, distinfo);
+	/**/
 
 	const files = [];
 	const deps = [];
@@ -596,7 +616,7 @@ for _,v in ipairs(env.deps or {}) do
 end
 `, distinfo, files, deps);
 //console.log('has files', files);
-console.log(pkgname, 'has deps', deps);
+//console.log(pkgname, 'has deps', deps);
 /**/
 /* just parse out strings * /
 	const lines = distinfo.split('\n');
@@ -622,6 +642,24 @@ console.log(pkgname, 'has deps', deps);
 	));
 };
 
+// this is for the non-glapp-js that don't do extra crap like FS-GUI manipulation
+// this 1) traverses deps and 2) loads the full list
+const loadPackageAndDeps = async (FS, pkgnames, luaPackages = {}) => {
+//console.log('loadPackageAndDeps', pkgnames);
+
+	// first traverse all dependencies...
+	await Promise.all(
+		pkgnames.map(pkgname =>
+			loadDistInfoPackageAndDeps(pkgname, luaPackages)
+		)
+	);
+//console.log('loadPackageAndDeps got', luaPackages);
+	// then load them all
+	return Promise.all(
+		Object.values(luaPackages)
+		.map(pkg => addPackage(FS, pkg))
+	);
+};
 
 export {
 	arrayRemove,
@@ -659,4 +697,5 @@ export {
 	makeClass,
 	isa,
 	loadDistInfoPackageAndDeps,
+	loadPackageAndDeps,
 };

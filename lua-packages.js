@@ -522,6 +522,7 @@ const luaPackages = {
 	['topple'] :  [
 		{from : '/cpp/Topple', to : 'topple', files : ['plot.lua', 'test.lua', 'topple-glsl.lua', 'topple-gpu-3d-display.lua', 'topple-gpu-display.lua', 'topple-gpu.lua']},
 	],
+	['stupid-text-rpg'] : [{from : '/lua/stupid-text-rpg', to : 'stupid-text-rpg', files : ['army.lua', 'battle.lua', 'box.lua', 'client.lua', 'entity.lua', 'items.lua', 'jobs.lua', 'launch_js.lua', 'log.lua', 'map.lua', 'monster.lua', 'player.lua', 'stupid.lua', 'treasure.lua', 'unit.lua', 'util.lua', 'vec.lua', 'view.lua']}],
 };
 
 export {luaPackages, packageNames};

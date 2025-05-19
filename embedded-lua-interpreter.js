@@ -2,6 +2,8 @@ import {A, Br, Div, Span, Input, Button} from './dom.js';
 import {assert, show, hide, fileSetLoader, assertExists, arrayClone, asyncfor, pathToParts} from './util.js';
 import {newLua} from '/js/lua-interop.js';
 /*
+This is all deprecated.  Check out lua-interop.js and the glapp-js project.
+
 Some helper functions for using lua.vm.js
 I want this to turn into an in-page filesystem + lua interpreter.
 This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it shouldn't do that.
@@ -14,7 +16,17 @@ This assumes util.js is already loaded.  This loads lua.vm.js itself.  Maybe it 
 // TODO get rid of that though, just use this /tests test instead.
 const luaVmPackageInfos = {};
 
-import { luaPackages } from '/js/lua-packages.js';
+// populate all packages
+//TODO do this by request, don't just store them all
+import {loadDistInfoPackageAndDeps} from '/js/util.js';
+import {packageNames} from '/js/lua-packages.js';
+const luaPackages = {}
+await Promise.all(
+	packageNames.map(pkgname =>
+		loadDistInfoPackageAndDeps(pkgname, luaPackages)
+	)
+);
+
 for (let pkgname in luaPackages) {
 	const files = [];
 	const tests = [];
