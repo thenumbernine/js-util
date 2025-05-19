@@ -611,7 +611,8 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 		}
 		lua = tmplua;
 	}
-	lua.run(`
+	try {
+		lua.run(`
 local distinfo, files, deps = ...
 local env = {}
 assert(load(distinfo, nil, nil, env))()
@@ -624,6 +625,10 @@ for _,v in ipairs(env.deps or {}) do
 	deps:push(v)
 end
 `, distinfo, files, deps);
+	} catch (err) {
+		console.log('WARNING - distinfo failed to parse', pkgname, err);
+		return;
+	}
 //console.log('has files', files);
 //console.log(pkgname, 'has deps', deps);
 /**/
