@@ -560,16 +560,23 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 	// what about /cpp/Topple or /js/black-hole-skymap ?
 	// and even if I accept a fully qualified path here, still the "distinfo" references aren't fully-qualified...
 	// So I guess I'll just have special rules for those.
-	const dir =
-		pkgname == 'black-hole-skymap' ? '/black-hole-skymap/lua' :
-		pkgname == 'topple' ? '/cpp/Topple' :
-		'/lua/'+pkgname;
+	let dir, distinfoPath;
+	if (pkgname == 'dkjson') {
+		distinfoPath = '/lua/dkjson.distinfo';
+		dir = '/lua/dkjson';
+	} else {
+		dir =
+			pkgname == 'black-hole-skymap' ? '/black-hole-skymap/lua' :
+			pkgname == 'Topple' ? '/cpp/Topple' :
+			'/lua/'+pkgname;
+		distinfoPath = dir+'/distinfo';
+	}
 
 	// This is coming back with byte-arrays of strings of error messages even for missing files
 	// where is the underlying stupidity taking place?
 	// I don't even want to know.
 	/* * /
-	const distinfoPromise = fetch(dir+'/distinfo');
+	const distinfoPromise = fetch(distinfoPath);
 //console.log('distinfoPromise', pkgname, distinfoPromise);
 	const distinfoBytes = await distinfoPromise;
 //console.log('has distinfoBytes', pkgname, distinfoBytes);
@@ -579,12 +586,14 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 //console.log('has distinfo', pkgname, distinfo);
 	/**/
 	/* so just use fetch. idk why I stopped using only ever fetch everywhere, something about control over callbacks, I forget */
-	const distinfoPromise = fetch(dir+'/distinfo');
+	const distinfoPromise = fetch(distinfoPath);
 //console.log('distinfoPromise', pkgname, distinfoPromise);
 	const distinfoResponse = await distinfoPromise;
 //console.log('distinfoResponse', pkgname, distinfoResponse);
 	if (!distinfoResponse.ok) {
 		console.log('WARNING - distinfo file missing:', pkgname);
+//TODO maybe, how about storing a 'false' and not trying a second time?
+// but then, we'd have to make sure to filter out the 'false's from the resulting luaPackages ...
 		return;
 	}
 	const distinfo = await distinfoResponse.text();

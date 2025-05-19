@@ -58,6 +58,9 @@ const packageNames = [
 	'matrix',
 	'symmath',
 	'geographic-charts',
+	'dkjson',				// custom handled dir in js/util.js's loadDistInfoPackageAndDeps() 
+	'black-hole-skymap',	// custom handled dir
+	'Topple',				// custom handled dir
 ];
 
 const luaPackages = {
