@@ -397,12 +397,14 @@ const addFromToDir = (FS, fromPath, toPath, files, fileCallback) =>
 	)));
 
 //emscripten filesystem helper function
-const addPackage = (FS, pkg, fileCallback) =>
-	Promise.all(
+const addPackage = (FS, pkg, fileCallback) => {
+	if (pkg === false) return false;	// pkgs[pkgname] = false happens when it tries to load and fails.
+	return Promise.all(
 		pkg.map(fileset =>
 			addFromToDir(FS, fileset.from, fileset.to, fileset.files, fileCallback)
 		)
 	);
+};
 
 
 //used especially with the lua.vm-utils.js

@@ -59,6 +59,7 @@ const packageNames = [
 	'rule110',
 	'sdl',
 	'seashell',
+	'simplexnoise',
 	'solver',
 	'space-filling-curve',
 	'stat',
@@ -68,8 +69,10 @@ const packageNames = [
 	'surface-from-connection',
 	'symmath',
 	'template',
+	'threadmanager',
 	'vec',
 	'vec-ffi',
+	'zeta2d',
 	'dkjson',				// custom handled dir in js/util.js's loadDistInfoPackageAndDeps() 
 	'black-hole-skymap',	// custom handled dir
 	'Topple',				// custom handled dir
