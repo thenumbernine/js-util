@@ -572,10 +572,11 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 	if (pkgname == 'dkjson') {
 		distinfoPath = '/lua/dkjson.distinfo';
 		dir = '/lua/dkjson';
+	} else if (pkgname == 'black-hole-skymap') {
+		dir = '/black-hole-skymap';
+		distinfoPath = '/black-hole-skymap/distinfo';
 	} else {
-		dir =
-			pkgname == 'black-hole-skymap' ? '/black-hole-skymap/lua' :
-			pkgname == 'Topple' ? '/cpp/Topple' :
+		dir = pkgname == 'Topple' ? '/cpp/Topple' :
 			'/lua/'+pkgname;
 		distinfoPath = dir+'/distinfo';
 	}
