@@ -685,6 +685,8 @@ const loadPackageAndDeps = async (FS, pkgnames, luaPackages = {}) => {
 	);
 };
 
+const clamp = (x, min, max) => Math.max(min, Math.min(max, x));
+
 export {
 	arrayRemove,
 	arrayMax,
@@ -722,4 +724,5 @@ export {
 	isa,
 	loadDistInfoPackageAndDeps,
 	loadPackageAndDeps,
+	clamp,
 };
