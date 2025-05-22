@@ -31,6 +31,7 @@ const packageNames = [
 	'gl',
 	'glapp',
 	'gnuplot',
+	'gravitational-waves',
 	'gui',
 	'htmlparser',
 	'image',
