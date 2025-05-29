@@ -25,6 +25,7 @@ const packageNames = [
 	'complex',
 	'csv',
 	'earth-magnetic-field',
+	'earthquake-shear-lines',
 	'ext',
 	'fibonacci-modulo',
 	'geographic-charts',
