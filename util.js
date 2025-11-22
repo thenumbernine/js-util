@@ -624,7 +624,8 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 	try {
 		lua.run(`
 local distinfo, files, deps = ...
-local env = {}
+local env = setmetatable({}, {__index=_G})
+env.ffi = require 'ffi'
 
 -- hmm, distinfo expects lua-ext to be present ... chicken and the egg
 table.__index = table
@@ -647,10 +648,6 @@ function table:append(...)
 	end
 	return self
 end
-
-env.ffi = require 'ffi'
-env.string = string
-env.table = table
 
 function table:union(...)
 	for i=1,select('#', ...) do
