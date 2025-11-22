@@ -334,7 +334,7 @@ const fetchBytes = src => {
 			resolve(new Uint8Array(req.response));
 		});
 		req.addEventListener('error', function() {
-//console.log("XMLHttpRequest failed on", src);
+console.log("XMLHttpRequest failed on", src);
 			reject({
 				status: this.status,
 				statusText: req.statusText
@@ -625,6 +625,45 @@ const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
 		lua.run(`
 local distinfo, files, deps = ...
 local env = {}
+
+-- hmm, distinfo expects lua-ext to be present ... chicken and the egg
+table.__index = table
+function table.new(...)
+	return setmetatable({}, table):union(...)
+end
+setmetatable(table, {
+	__call = function(t, ...)
+		return table.new(...)
+	end
+})
+function table:append(...)
+	for i=1,select('#', ...) do
+		local u = select(i, ...)
+		if u then
+			for _,v in ipairs(u) do
+				table.insert(self, v)
+			end
+		end
+	end
+	return self
+end
+
+env.ffi = require 'ffi'
+env.string = string
+env.table = table
+
+function table:union(...)
+	for i=1,select('#', ...) do
+		local o = select(i, ...)
+		if o then
+			for k,v in pairs(o) do
+				self[k] = v
+			end
+		end
+	end
+	return self
+end
+
 assert(load(distinfo, nil, nil, env))()
 for k,v in pairs(env.files) do
 	-- value = install location, which I'm going to assert is the key + the pkgname, which is the dir pkgname ...
