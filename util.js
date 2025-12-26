@@ -556,7 +556,13 @@ function isa(sub, cl) {
 // then load those ones as well.
 // Bail out if the package is already loaded.
 let tmplua;
-const loadDistInfoPackageAndDeps = async(pkgname, luaPackages, lua) => {
+const loadDistInfoPackageAndDeps = async(
+	pkgname,
+	luaPackages,
+	lua,
+	distinfoKey = 'files',
+	skipDeps
+) => {
 //console.log('loadDistInfoPackageAndDeps', pkgname);
 	const v = luaPackages[pkgname];
 	if (v !== undefined) {
@@ -662,7 +668,7 @@ function table:union(...)
 end
 
 assert(load(distinfo, nil, nil, env))()
-for k,v in pairs(env.files) do
+for k,v in pairs(env.`+distinfoKey+`) do
 	-- value = install location, which I'm going to assert is the key + the pkgname, which is the dir pkgname ...
 	-- lots of assertions going on here
 	files:push(k)
@@ -676,7 +682,7 @@ end
 		luaPackages[pkgname] = false;
 		return;
 	}
-//console.log('has files', files);
+//console.log('has', distinfoKey, files);
 //console.log(pkgname, 'has deps', deps);
 /**/
 /* just parse out strings * /
@@ -694,9 +700,11 @@ end
 		}
 	];
 	luaPackages[pkgname] = pkg;
-	return Promise.all(deps.map(dep =>
-		loadDistInfoPackageAndDeps(dep, luaPackages, lua)
-	));
+	if (!skipDeps) {
+		return Promise.all(deps.map(dep =>
+			loadDistInfoPackageAndDeps(dep, luaPackages, lua)
+		));
+	}
 };
 
 // this is for the non-glapp-js that don't do extra crap like FS-GUI manipulation
@@ -719,6 +727,28 @@ const loadPackageAndDeps = async (FS, pkgnames, luaPackages = {}) => {
 			return addPackage(FS, pkg);
 		})
 	);
+};
+
+const loadPackageTests = async (FS, pkgname, luaPackages = {}) => {
+	// this is a mess but here it goes ...
+	// loadPackageTests will try to load the package named 'pkgname'
+	// but if it was alread loaded (and it shoud have been) with loadPackageAndDeps
+	// then the next call to loadDistInfoPackageAndDeps will kick it back for already being loaded
+	// so here goes me pushing and popping its load so that I can use the same function for loading its tests as well
+	// I would include a flag in loadDistInfoPackageAndDeps for loading tests, but as the name says, it loads dependencies too, and I just want one packages' tests, not all.
+	const oldpkg = luaPackages[pkgname];
+	luaPackages[pkgname] = undefined;
+	await loadDistInfoPackageAndDeps(
+		pkgname,
+		luaPackages,
+		undefined,		// lua
+		'testfiles',	// distinfoKey
+		true			// skipDeps
+	);
+	const newpkg = luaPackages[pkgname];
+	await addPackage(FS, newpkg);
+	// and now merge the two ... does it matter though? nothing checks package file listing contents, it's just there to make sure packages don't get loaded twice
+	luaPackages[pkgname] = oldpkg.concat(newpkg);
 };
 
 const clamp = (x, min, max) => Math.max(min, Math.min(max, x));
@@ -760,5 +790,6 @@ export {
 	isa,
 	loadDistInfoPackageAndDeps,
 	loadPackageAndDeps,
+	loadPackageTests,
 	clamp,
 };
