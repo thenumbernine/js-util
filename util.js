@@ -668,10 +668,8 @@ function table:union(...)
 end
 
 assert(load(distinfo, nil, nil, env))()
-for k,v in pairs(env.`+distinfoKey+`) do
-	-- value = install location, which I'm going to assert is the key + the pkgname, which is the dir pkgname ...
-	-- lots of assertions going on here
-	files:push(k)
+for i,v in ipairs(env.`+distinfoKey+`) do
+	files:push(v)
 end
 for _,v in ipairs(env.deps or {}) do
 	deps:push(v)
