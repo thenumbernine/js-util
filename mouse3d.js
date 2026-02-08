@@ -119,19 +119,21 @@ class Mouse3D {
 				//do a pinch zoom
 				if (!thiz.isTouchDown) {
 					//record current events
-					thiz.getTouchPts(e, thiz.zoomTouchPts);
-					thiz.isTouchDown = true;
+					if (thiz.getTouchPts(e, thiz.zoomTouchPts)) {
+						thiz.isTouchDown = true;
+					}
 				} else {
 					//do zoom based on movement
-					thiz.getTouchPts(e, thiz.newZoomTouchPts);
-					let zoomChange = thiz.calcDist(thiz.newZoomTouchPts) - thiz.calcDist(thiz.zoomTouchPts);
-					if (zoomChange != 0) {
-						if (thiz.zoom) {
-							thiz.zoom(100 * zoomChange, 'pinch');
-							thiz.zoomTouchPts[0][0] = thiz.newZoomTouchPts[0][0];
-							thiz.zoomTouchPts[0][1] = thiz.newZoomTouchPts[0][1];
-							thiz.zoomTouchPts[1][0] = thiz.newZoomTouchPts[1][0];
-							thiz.zoomTouchPts[1][1] = thiz.newZoomTouchPts[1][1];
+					if (thiz.getTouchPts(e, thiz.newZoomTouchPts)) {
+						let zoomChange = thiz.calcDist(thiz.newZoomTouchPts) - thiz.calcDist(thiz.zoomTouchPts);
+						if (zoomChange != 0) {
+							if (thiz.zoom) {
+								thiz.zoom(100 * zoomChange, 'pinch');
+								thiz.zoomTouchPts[0][0] = thiz.newZoomTouchPts[0][0];
+								thiz.zoomTouchPts[0][1] = thiz.newZoomTouchPts[0][1];
+								thiz.zoomTouchPts[1][0] = thiz.newZoomTouchPts[1][0];
+								thiz.zoomTouchPts[1][1] = thiz.newZoomTouchPts[1][1];
+							}
 						}
 					}
 				}
@@ -208,12 +210,14 @@ class Mouse3D {
 		}
 	}
 	getTouchPts(e, pts) {
+		if (e.changedTouches.length < 2) return false;
 		let [pt0x, pt0y] = this.getEventXY(e.changedTouches[0]);
 		pts[0][0] = pt0x;
 		pts[0][1] = pt0y;
 		let [pt1x, pt1y] = this.getEventXY(e.changedTouches[1]);
 		pts[1][0] = pt1x;
 		pts[1][1] = pt1y;
+		return true;
 	}
 	calcDist(pts) {
 		let dx = pts[0][0] - pts[1][0];
