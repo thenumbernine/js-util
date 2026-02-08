@@ -84,6 +84,8 @@ class Texture2D extends glutil.Texture {
 					scale = 255;
 				} else if (type == gl.FLOAT) {
 					data = new Float32Array(width * height * channels);
+					// TODO only upon override
+					this.internalFormat = internalFormat = gl.RGBA32F;
 					scale = 1;
 				}
 		
