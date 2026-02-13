@@ -14,6 +14,8 @@ loadPackageAndDeps = load a set of packages and its dependencies into the filesy
 Most all of the pacakges and their 'distinfo' files reside in /lua/${package name}, with 3 ecxeptions that are all hard-coded into loadDistInfoPackageAndDeps
 */
 const packageNames = [
+	'app3d',
+	'stl',
 	'sand-attack',
 	'SphericalHarmonicGraphs',
 	'audio',
@@ -30,7 +32,6 @@ const packageNames = [
 	'fibonacci-modulo',
 	'geographic-charts',
 	'gl',
-	'glapp',
 	'gnuplot',
 	'gravitational-waves',
 	'gui',
