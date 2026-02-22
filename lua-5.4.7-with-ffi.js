@@ -28489,13 +28489,6 @@ var _lua_checkstack,
   _luaT_adjustvarargs,
   _luaT_getvarargs,
   _luaZ_read,
-  _strcoll,
-  _luaV_idiv,
-  _luaV_mod,
-  _luaV_modf,
-  _fmod,
-  _luaV_shiftl,
-  _pow,
   _luaL_traceback,
   _luaL_buffinit,
   _luaL_addstring,
@@ -28582,6 +28575,7 @@ var _lua_checkstack,
   _atan2,
   _cos,
   _exp,
+  _fmod,
   _log,
   _log2,
   _log10,
@@ -28590,6 +28584,7 @@ var _lua_checkstack,
   _cosh,
   _sinh,
   _tanh,
+  _pow,
   _luaopen_package,
   _getenv,
   _luaopen_os,
@@ -28612,12 +28607,17 @@ var _lua_checkstack,
   _ispunct,
   _luaopen_table,
   _luaopen_utf8,
+  _luaV_modf,
+  _luaV_mod,
+  _luaV_idiv,
+  _luaV_shiftl,
   _luaO_hexavalue,
   _strtod,
   _strcpy,
   _luaO_utf8esc,
   _luaL_openlibs,
   _luaopen_ffi,
+  _strcoll,
   _get_jit,
   _pushRegistry,
   _compile_globals,
@@ -41847,13 +41847,6 @@ function assignWasmExports(wasmExports) {
   _luaT_adjustvarargs = Module['_luaT_adjustvarargs'] = wasmExports['luaT_adjustvarargs'];
   _luaT_getvarargs = Module['_luaT_getvarargs'] = wasmExports['luaT_getvarargs'];
   _luaZ_read = Module['_luaZ_read'] = wasmExports['luaZ_read'];
-  _strcoll = Module['_strcoll'] = wasmExports['strcoll'];
-  _luaV_idiv = Module['_luaV_idiv'] = wasmExports['luaV_idiv'];
-  _luaV_mod = Module['_luaV_mod'] = wasmExports['luaV_mod'];
-  _luaV_modf = Module['_luaV_modf'] = wasmExports['luaV_modf'];
-  _fmod = Module['_fmod'] = wasmExports['fmod'];
-  _luaV_shiftl = Module['_luaV_shiftl'] = wasmExports['luaV_shiftl'];
-  _pow = Module['_pow'] = wasmExports['pow'];
   _luaL_traceback = Module['_luaL_traceback'] = wasmExports['luaL_traceback'];
   _luaL_buffinit = Module['_luaL_buffinit'] = wasmExports['luaL_buffinit'];
   _luaL_addstring = Module['_luaL_addstring'] = wasmExports['luaL_addstring'];
@@ -41940,6 +41933,7 @@ function assignWasmExports(wasmExports) {
   _atan2 = Module['_atan2'] = wasmExports['atan2'];
   _cos = Module['_cos'] = wasmExports['cos'];
   _exp = Module['_exp'] = wasmExports['exp'];
+  _fmod = Module['_fmod'] = wasmExports['fmod'];
   _log = Module['_log'] = wasmExports['log'];
   _log2 = Module['_log2'] = wasmExports['log2'];
   _log10 = Module['_log10'] = wasmExports['log10'];
@@ -41948,6 +41942,7 @@ function assignWasmExports(wasmExports) {
   _cosh = Module['_cosh'] = wasmExports['cosh'];
   _sinh = Module['_sinh'] = wasmExports['sinh'];
   _tanh = Module['_tanh'] = wasmExports['tanh'];
+  _pow = Module['_pow'] = wasmExports['pow'];
   _luaopen_package = Module['_luaopen_package'] = wasmExports['luaopen_package'];
   _getenv = Module['_getenv'] = wasmExports['getenv'];
   _luaopen_os = Module['_luaopen_os'] = wasmExports['luaopen_os'];
@@ -41970,12 +41965,17 @@ function assignWasmExports(wasmExports) {
   _ispunct = Module['_ispunct'] = wasmExports['ispunct'];
   _luaopen_table = Module['_luaopen_table'] = wasmExports['luaopen_table'];
   _luaopen_utf8 = Module['_luaopen_utf8'] = wasmExports['luaopen_utf8'];
+  _luaV_modf = Module['_luaV_modf'] = wasmExports['luaV_modf'];
+  _luaV_mod = Module['_luaV_mod'] = wasmExports['luaV_mod'];
+  _luaV_idiv = Module['_luaV_idiv'] = wasmExports['luaV_idiv'];
+  _luaV_shiftl = Module['_luaV_shiftl'] = wasmExports['luaV_shiftl'];
   _luaO_hexavalue = Module['_luaO_hexavalue'] = wasmExports['luaO_hexavalue'];
   _strtod = Module['_strtod'] = wasmExports['strtod'];
   _strcpy = Module['_strcpy'] = wasmExports['strcpy'];
   _luaO_utf8esc = Module['_luaO_utf8esc'] = wasmExports['luaO_utf8esc'];
   _luaL_openlibs = Module['_luaL_openlibs'] = wasmExports['luaL_openlibs'];
   _luaopen_ffi = Module['_luaopen_ffi'] = wasmExports['luaopen_ffi'];
+  _strcoll = Module['_strcoll'] = wasmExports['strcoll'];
   _get_jit = Module['_get_jit'] = wasmExports['get_jit'];
   _pushRegistry = Module['_pushRegistry'] = wasmExports['pushRegistry'];
   _compile_globals = Module['_compile_globals'] = wasmExports['compile_globals'];
