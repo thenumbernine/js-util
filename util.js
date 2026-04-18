@@ -575,10 +575,7 @@ const loadDistInfoPackageAndDeps = async(
 	// and even if I accept a fully qualified path here, still the "distinfo" references aren't fully-qualified...
 	// So I guess I'll just have special rules for those.
 	let dir, distinfoPath;
-	if (pkgname == 'dkjson') {
-		distinfoPath = '/lua/dkjson.distinfo';
-		dir = '/lua/dkjson';
-	} else if (pkgname == 'black-hole-skymap') {
+	if (pkgname == 'black-hole-skymap') {
 		dir = '/black-hole-skymap';
 		distinfoPath = '/black-hole-skymap/distinfo';
 	} else {

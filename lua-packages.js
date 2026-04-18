@@ -26,6 +26,7 @@ const packageNames = [
 	'cl',
 	'complex',
 	'csv',
+	'dkjson',
 	'earth-magnetic-field',
 	'earthquake-shear-lines',
 	'ext',
@@ -82,7 +83,6 @@ const packageNames = [
 	'vec',
 	'vec-ffi',
 	'zeta2d',
-	'dkjson',				// custom handled dir in js/util.js's loadDistInfoPackageAndDeps() 
 	'black-hole-skymap',	// custom handled dir
 	'Topple',				// custom handled dir
 ];
