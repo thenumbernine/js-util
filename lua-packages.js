@@ -30,6 +30,7 @@ const packageNames = [
 	'earth-magnetic-field',
 	'earthquake-shear-lines',
 	'ext',
+	'ff6',
 	'fibonacci-modulo',
 	'force-directed-graph',
 	'geographic-charts',
