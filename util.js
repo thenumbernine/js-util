@@ -1,3 +1,10 @@
+/*
+mountFile = read a file from 'filePath' and write to the FS virtual-filesystem at 'luaPath', invoke 'fileCallback' if it is provided.
+addFromToDir = load files pertaining to a single from/to entry.  These used to correspond with folders, but not really so much anymore.
+addPackage = load files pertaining to a single package.
+loadDistInfoPackageAndDeps = recursively load packages based on their 'distinfo' files' '.deps' property.
+loadPackageAndDeps = load a set of packages and its dependencies into the filesystem, return the luaPackages object mapping names to package-objects.
+*/
 import {merge, Img, Div, Span, Br, Progress} from './dom.js';
 
 //http://stackoverflow.com/questions/3954438/remove-item-from-array-by-value
@@ -398,7 +405,6 @@ const addFromToDir = (FS, fromPath, toPath, files, fileCallback) =>
 
 //emscripten filesystem helper function
 const addPackage = (FS, pkg, fileCallback) => {
-	if (pkg === false) return false;	// pkgs[pkgname] = false happens when it tries to load and fails.
 	return Promise.all(
 		pkg.map(fileset =>
 			addFromToDir(FS, fileset.from, fileset.to, fileset.files, fileCallback)

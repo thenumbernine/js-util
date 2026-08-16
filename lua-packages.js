@@ -5,16 +5,9 @@ They are used with remote-loading of groups of interdependent lua script folders
 
 These are used in conjuction with a few /js/util.js files which maybe can be argued should belong in here.
 
-mountFile = read a file from 'filePath' and write to the FS virtual-filesystem at 'luaPath', invoke 'fileCallback' if it is provided.
-addFromToDir = load files pertaining to a single from/to entry.  These used to correspond with folders, but not really so much anymore.
-addPackage = load files pertaining to a single package.
-loadDistInfoPackageAndDeps = recursively load packages based on their 'distinfo' files' '.deps' property.
-loadPackageAndDeps = load a set of packages and its dependencies into the filesystem, return the luaPackages object mapping names to package-objects.
-
 Most all of the pacakges and their 'distinfo' files reside in /lua/${package name}, with 3 ecxeptions that are all hard-coded into loadDistInfoPackageAndDeps
 */
 const packageNames = [
-
 	'app3d',
 	'audio',
 	'bignumber',
@@ -42,6 +35,7 @@ const packageNames = [
 	'image',
 	'imgui',
 	'interpreter',
+	'integrate',
 	'ips',
 	'lambda-cdm',
 	'langfix',
@@ -67,6 +61,7 @@ const packageNames = [
 	'sdl',
 	'seashell',
 	'simplexnoise',
+	'solarsystem',
 	'solver',
 	'space-filling-curve',
 	'sphere-grid',
@@ -81,6 +76,7 @@ const packageNames = [
 	'template',
 	'tensor',
 	'threadmanager',
+	'url',
 	'vec',
 	'vec-ffi',
 	'zeta2d',
