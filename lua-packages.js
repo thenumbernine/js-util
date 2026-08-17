@@ -60,6 +60,7 @@ const packageNames = [
 	'sand-attack',
 	'sdl',
 	'seashell',
+	'sha2',
 	'simplexnoise',
 	'solarsystem',
 	'solver',
