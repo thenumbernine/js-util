@@ -102,14 +102,19 @@ const DomTag = tagName => {
 };
 
 const A = DomTag('a');
+const Article = DomTag('article');
 const Br = DomTag('br');
 const Button = DomTag('button');
 const Canvas = DomTag('canvas');
 const Div = DomTag('div');
 const Hr = DomTag('hr');
+const H1 = DomTag('h1');
+const H2 = DomTag('h2');
+const H3 = DomTag('h3');
 const Img = DomTag('img');
 const Input = DomTag('input');
 const Option = DomTag('option');
+const P = DomTag('p');
 const Pre = DomTag('pre');
 const Progress = DomTag('progress');
 const Select = DomTag('select');
@@ -129,14 +134,19 @@ export {
 	Dom,
 	DomTag,
 	A,
+	Article,
 	Br,
 	Button,
 	Canvas,
 	Div,
 	Hr,
+	H1,
+	H2,
+	H3,
 	Img,
 	Input,
 	Option,
+	P,
 	Pre,
 	Progress,
 	Select,
